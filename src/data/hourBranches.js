@@ -1,0 +1,21 @@
+export const HOUR_BRANCHES = [
+  { value: 'ty',   label: 'Giờ Tý',   hours: [23, 0],  hourZh: '子' },
+  { value: 'suu',  label: 'Giờ Sửu',  hours: [1, 2],   hourZh: '丑' },
+  { value: 'dan',  label: 'Giờ Dần',  hours: [3, 4],   hourZh: '寅' },
+  { value: 'mao',  label: 'Giờ Mão',  hours: [5, 6],   hourZh: '卯' },
+  { value: 'thin', label: 'Giờ Thìn', hours: [7, 8],   hourZh: '辰' },
+  { value: 'ti',   label: 'Giờ Tị',   hours: [9, 10],  hourZh: '巳' },
+  { value: 'ngo',  label: 'Giờ Ngọ',  hours: [11, 12], hourZh: '午' },
+  { value: 'mui',  label: 'Giờ Mùi',  hours: [13, 14], hourZh: '未' },
+  { value: 'than', label: 'Giờ Thân', hours: [15, 16], hourZh: '申' },
+  { value: 'dau',  label: 'Giờ Dậu',  hours: [17, 18], hourZh: '酉' },
+  { value: 'tuat', label: 'Giờ Tuất', hours: [19, 20], hourZh: '戌' },
+  { value: 'hoi',  label: 'Giờ Hợi',  hours: [21, 22], hourZh: '亥' },
+];
+
+/**
+ * Tự động lấy địa chi giờ từ giờ hiện tại
+ */
+export function getHourBranchFromHour(hour) {
+  return HOUR_BRANCHES.find(b => b.hours.includes(hour)) || HOUR_BRANCHES[0];
+}
