@@ -208,7 +208,7 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     changedAnnotated = annotateLines({
       binary:        changedBinary,
       palaceName:    changedPalaceInfo?.palaceName    || palaceName,
-      palaceElement: changedPalaceInfo?.palaceElement || palaceElement,
+      palaceElement: palaceElement, // Lục Thân quẻ biến bắt buộc tính theo Cung quẻ chủ
       theHao:        changedTheHao,
       ungHao:        changedUngHao,
       ngayCan,

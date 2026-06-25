@@ -26,8 +26,8 @@ export const HEXAGRAMS = [
   { id: 4,  binary: '010001', nameVi: 'Sơn Thủy Mông',   nameZh: '蒙', lower: '010', upper: '001' },
   { id: 5,  binary: '111010', nameVi: 'Thủy Thiên Nhu',  nameZh: '需', lower: '111', upper: '010' },
   { id: 6,  binary: '010111', nameVi: 'Thiên Thủy Tụng', nameZh: '訟', lower: '010', upper: '111' },
-  { id: 7,  binary: '000010', nameVi: 'Địa Thủy Sư',     nameZh: '師', lower: '000', upper: '010' },  // fixed
-  { id: 8,  binary: '010000', nameVi: 'Thủy Địa Tỷ',     nameZh: '比', lower: '010', upper: '000' },  // fixed
+  { id: 7,  binary: '010000', nameVi: 'Địa Thủy Sư',     nameZh: '師', lower: '010', upper: '000' },  // fixed
+  { id: 8,  binary: '000010', nameVi: 'Thủy Địa Tỷ',     nameZh: '比', lower: '000', upper: '010' },  // fixed
   { id: 9,  binary: '111011', nameVi: 'Phong Thiên Tiểu Súc', nameZh: '小畜', lower: '111', upper: '011' },
   { id: 10, binary: '110111', nameVi: 'Thiên Trạch Lý',  nameZh: '履', lower: '110', upper: '111' },
   { id: 11, binary: '111000', nameVi: 'Địa Thiên Thái',  nameZh: '泰', lower: '111', upper: '000' },
@@ -78,9 +78,9 @@ export const HEXAGRAMS = [
   { id: 56, binary: '001101', nameVi: 'Hỏa Sơn Lữ',     nameZh: '旅', lower: '001', upper: '101' },
   { id: 57, binary: '011011', nameVi: 'Thuần Tốn',       nameZh: '巽', lower: '011', upper: '011' },
   { id: 58, binary: '110110', nameVi: 'Thuần Đoài',      nameZh: '兌', lower: '110', upper: '110' },
-  { id: 59, binary: '011010', nameVi: 'Phong Thủy Hoán', nameZh: '渙', lower: '010', upper: '011' },
-  { id: 60, binary: '010110', nameVi: 'Thủy Trạch Tiết', nameZh: '節', lower: '110', upper: '010' },
-  { id: 61, binary: '011110', nameVi: 'Phong Trạch Trung Phu', nameZh: '中孚', lower: '110', upper: '011' },
+  { id: 59, binary: '010011', nameVi: 'Phong Thủy Hoán', nameZh: '渙', lower: '010', upper: '011' },
+  { id: 60, binary: '110010', nameVi: 'Thủy Trạch Tiết', nameZh: '節', lower: '110', upper: '010' },
+  { id: 61, binary: '110011', nameVi: 'Phong Trạch Trung Phu', nameZh: '中孚', lower: '110', upper: '011' },
   { id: 62, binary: '001100', nameVi: 'Lôi Sơn Tiểu Quá', nameZh: '小過', lower: '001', upper: '100' },
   { id: 63, binary: '101010', nameVi: 'Thủy Hỏa Ký Tế', nameZh: '既濟', lower: '101', upper: '010' },
   { id: 64, binary: '010101', nameVi: 'Hỏa Thủy Vị Tế', nameZh: '未濟', lower: '010', upper: '101' },

@@ -302,83 +302,43 @@ export const HEX_PALACE_AUTHORITATIVE = {
 };
 
 // ──────────────────────────────────────────────────────────────────────────
-// NOTE: The above has duplicate binary keys because the algorithm to correctly
-// assign each of 64 hexagrams to exactly one palace is non-trivial.
-// We use a DEFINITIVE, manually-verified lookup table below.
-// Source: Standard reference from 增删卜易 (Zeng Shan Bu Yi)
+// Programmatic Jing Fang Palace System Generator
+// Automatically maps 64 hexagrams to their palace, type, and Thế line (1-6)
 // ──────────────────────────────────────────────────────────────────────────
+function buildDefinitivePalaceTable() {
+  const TRIGRAMS_LOCAL = {
+    'Càn':  [1, 1, 1],
+    'Khôn': [0, 0, 0],
+    'Chấn': [1, 0, 0],
+    'Tốn':  [0, 1, 1],
+    'Khảm': [0, 1, 0],
+    'Ly':   [1, 0, 1],
+    'Cấn':  [0, 0, 1],
+    'Đoài': [1, 1, 0]
+  };
 
-/**
- * Definitive 64-hexagram palace table
- * key = lower3bits + upper3bits (hào 1-6, '1'=dương '0'=âm)
- * theHao: 1-6, ungHao = computed as (theHao<=3 ? theHao+3 : theHao-3)
- */
-export const DEFINITIVE_PALACE_TABLE = {
-  '111111': { palace:'Càn',  queType:'bat-thuan', theHao:6 }, // 01 Thuần Càn
-  '000000': { palace:'Khôn', queType:'bat-thuan', theHao:6 }, // 02 Thuần Khôn
-  '100010': { palace:'Khảm', queType:'nhi-the',   theHao:2 }, // 03 Thủy Lôi Truân
-  '010001': { palace:'Cấn',  queType:'nhat-the',  theHao:1 }, // 04 Sơn Thủy Mông  — Ly H1→Bí? Need verify
-  '111010': { palace:'Khảm', queType:'nhat-the',  theHao:1 }, // 05 Thủy Thiên Nhu  -- actually lower=111=Càn,upper=010=Khảm → Cung Khảm nhất thế??
-  '010111': { palace:'Càn',  queType:'ngu-the',   theHao:5 }, // 06 Thiên Thủy Tụng
-  '000010': { palace:'Khôn', queType:'quy-hon',   theHao:3 }, // 07 Địa Thủy Sư
-  '010000': { palace:'Khôn', queType:'nhi-the',   theHao:2 }, // 08 Thủy Địa Tỷ
-  '111011': { palace:'Tốn',  queType:'nhat-the',  theHao:1 }, // 09 Phong Thiên Tiểu Súc
-  '110111': { palace:'Cấn',  queType:'ngu-the',   theHao:5 }, // 10 Thiên Trạch Lý
-  '111000': { palace:'Càn',  queType:'tam-the',   theHao:3 }, // 11 Địa Thiên Thái
-  '000111': { palace:'Càn',  queType:'tam-the',   theHao:3 }, // 12 Thiên Địa Bĩ -- wait same as Thái??
-  '101111': { palace:'Càn',  queType:'quy-hon',   theHao:3 }, // 13 Thiên Hỏa Đồng Nhân
-  '111101': { palace:'Ly',   queType:'nhat-the',  theHao:1 }, // 14 Hỏa Thiên Đại Hữu
-  '001000': { palace:'Khôn', queType:'tam-the',   theHao:3 }, // 15 Địa Sơn Khiêm
-  '000100': { palace:'Chấn', queType:'nhat-the',  theHao:1 }, // 16 Lôi Địa Dự
-  '100110': { palace:'Chấn', queType:'nhi-the',   theHao:2 }, // 17 Trạch Lôi Tùy -- lower=100=Chấn,upper=110=Đoài
-  '011001': { palace:'Ly',   queType:'tam-the',   theHao:3 }, // 18 Sơn Phong Cổ
-  '110000': { palace:'Khôn', queType:'nhat-the',  theHao:1 }, // 19 Địa Trạch Lâm
-  '000011': { palace:'Càn',  queType:'tu-the',    theHao:4 }, // 20 Phong Địa Quan
-  '100101': { palace:'Khảm', queType:'du-hon',    theHao:4 }, // 21 Hỏa Lôi Phệ Hạp
-  '101001': { palace:'Cấn',  queType:'nhat-the',  theHao:1 }, // 22 Sơn Hỏa Bí
-  '000001': { palace:'Càn',  queType:'ngu-the',   theHao:5 }, // 23 Sơn Địa Bác
-  '100000': { palace:'Khôn', queType:'nhat-the',  theHao:1 }, // 24 Địa Lôi Phục
-  '100111': { palace:'Chấn', queType:'ngu-the',   theHao:5 }, // 25 Thiên Lôi Vô Vọng -- lower=100=Chấn,upper=111=Càn
-  '111001': { palace:'Cấn',  queType:'nhi-the',   theHao:2 }, // 26 Sơn Thiên Đại Súc
-  '100001': { palace:'Cấn',  queType:'du-hon',    theHao:4 }, // 27 Sơn Lôi Di -- lower=100=Chấn,upper=001=Cấn → Cấn Tứ thế?
-  '011110': { palace:'Chấn', queType:'tu-the',    theHao:4 }, // 28 Trạch Phong Đại Quá
-  '010010': { palace:'Khảm', queType:'bat-thuan', theHao:6 }, // 29 Thuần Khảm
-  '101101': { palace:'Ly',   queType:'bat-thuan', theHao:6 }, // 30 Thuần Ly
-  '001110': { palace:'Khôn', queType:'ngu-the',   theHao:5 }, // 31 Trạch Sơn Hàm
-  '011100': { palace:'Chấn', queType:'tam-the',   theHao:3 }, // 32 Lôi Phong Hằng
-  '001111': { palace:'Càn',  queType:'nhi-the',   theHao:2 }, // 33 Thiên Sơn Độn
-  '111100': { palace:'Chấn', queType:'du-hon',    theHao:4 }, // 34 Lôi Thiên Đại Tráng -- lower=111=Càn, upper=100=Chấn
-  '000101': { palace:'Càn',  queType:'du-hon',    theHao:4 }, // 35 Hỏa Địa Tấn
-  '101000': { palace:'Ly',   queType:'tu-the',    theHao:4 }, // 36 Địa Hỏa Minh Di
-  '101011': { palace:'Tốn',  queType:'nhi-the',   theHao:2 }, // 37 Phong Hỏa Gia Nhân
-  '110101': { palace:'Cấn',  queType:'du-hon',    theHao:4 }, // 38 Hỏa Trạch Khuê
-  '001010': { palace:'Khôn', queType:'du-hon',    theHao:4 }, // 39 Thủy Sơn Kiển
-  '010100': { palace:'Chấn', queType:'nhi-the',   theHao:2 }, // 40 Lôi Thủy Giải
-  '110001': { palace:'Cấn',  queType:'tam-the',   theHao:3 }, // 41 Sơn Trạch Tổn
-  '100011': { palace:'Tốn',  queType:'tam-the',   theHao:3 }, // 42 Phong Lôi Ích
-  '111110': { palace:'Càn',  queType:'nhat-the',  theHao:1 }, // 43 Trạch Thiên Quải -- lower=111=Càn,upper=110=Đoài
-  '011111': { palace:'Càn',  queType:'nhat-the',  theHao:1 }, // 44 Thiên Phong Cấu
-  '000110': { palace:'Đoài', queType:'nhi-the',   theHao:2 }, // 45 Trạch Địa Tụy
-  '011000': { palace:'Ly',   queType:'ngu-the',   theHao:5 }, // 46 Địa Phong Thăng
-  '010110': { palace:'Đoài', queType:'nhat-the',  theHao:1 }, // 47 Trạch Thủy Khốn
-  '011010': { palace:'Tốn',  queType:'ngu-the',   theHao:5 }, // 48 Thủy Phong Tỉnh
-  '101110': { palace:'Đoài', queType:'du-hon',    theHao:4 }, // 49 Trạch Hỏa Cách
-  '011101': { palace:'Ly',   queType:'nhi-the',   theHao:2 }, // 50 Hỏa Phong Đỉnh
-  '100100': { palace:'Chấn', queType:'bat-thuan', theHao:6 }, // 51 Thuần Chấn
-  '001001': { palace:'Cấn',  queType:'bat-thuan', theHao:6 }, // 52 Thuần Cấn
-  '001011': { palace:'Đoài', queType:'du-hon',    theHao:4 }, // 53 Phong Sơn Tiệm
-  '110100': { palace:'Chấn', queType:'quy-hon',   theHao:3 }, // 54 Lôi Trạch Quy Muội
-  '101100': { palace:'Chấn', queType:'quy-hon',   theHao:3 }, // 55 Lôi Hỏa Phong
-  '001101': { palace:'Ly',   queType:'nhat-the',  theHao:1 }, // 56 Hỏa Sơn Lữ
-  '011011': { palace:'Tốn',  queType:'bat-thuan', theHao:6 }, // 57 Thuần Tốn
-  '110110': { palace:'Đoài', queType:'bat-thuan', theHao:6 }, // 58 Thuần Đoài
-  '010011': { palace:'Khảm', queType:'quy-hon',   theHao:3 }, // 59 Phong Thủy Hoán
-  '110010': { palace:'Khảm', queType:'nhat-the',  theHao:1 }, // 60 Thủy Trạch Tiết
-  '110011': { palace:'Đoài', queType:'quy-hon',   theHao:3 }, // 61 Phong Trạch Trung Phu
-  '001100': { palace:'Khôn', queType:'tu-the',    theHao:4 }, // 62 Lôi Sơn Tiểu Quá
-  '101010': { palace:'Ly',   queType:'quy-hon',   theHao:3 }, // 63 Thủy Hỏa Ký Tế
-  '010101': { palace:'Khảm', queType:'quy-hon',   theHao:3 }, // 64 Hỏa Thủy Vị Tế -- lower=010=Khảm,upper=101=Ly
-};
+  const table = {};
+  for (const [palaceName, t] of Object.entries(TRIGRAMS_LOCAL)) {
+    const steps = [
+      { queType: 'bat-thuan', theHao: 6, line: [t[0], t[1], t[2], t[0], t[1], t[2]] },
+      { queType: 'nhat-the',  theHao: 1, line: [1-t[0], t[1], t[2], t[0], t[1], t[2]] },
+      { queType: 'nhi-the',   theHao: 2, line: [1-t[0], 1-t[1], t[2], t[0], t[1], t[2]] },
+      { queType: 'tam-the',   theHao: 3, line: [1-t[0], 1-t[1], 1-t[2], t[0], t[1], t[2]] },
+      { queType: 'tu-the',    theHao: 4, line: [1-t[0], 1-t[1], 1-t[2], 1-t[0], t[1], t[2]] },
+      { queType: 'ngu-the',   theHao: 5, line: [1-t[0], 1-t[1], 1-t[2], 1-t[0], 1-t[1], t[2]] },
+      { queType: 'du-hon',    theHao: 4, line: [1-t[0], 1-t[1], 1-t[2], t[0], 1-t[1], t[2]] },
+      { queType: 'quy-hon',   theHao: 3, line: [t[0], t[1], t[2], t[0], 1-t[1], t[2]] }
+    ];
+
+    steps.forEach((step) => {
+      const binary = step.line.join('');
+      table[binary] = { palace: palaceName, queType: step.queType, theHao: step.theHao };
+    });
+  }
+  return table;
+}
+
+export const DEFINITIVE_PALACE_TABLE = buildDefinitivePalaceTable();
 
 /**
  * Tính hào Ứng từ hào Thế
