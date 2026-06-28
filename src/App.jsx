@@ -7,7 +7,11 @@ import HexagramPreview from './components/HexagramPreview.jsx';
 import LucHaoTable from './components/LucHaoTable.jsx';
 import ResultMetadata from './components/ResultMetadata.jsx';
 import PlainTextExportCard from './components/PlainTextExportCard.jsx';
+import MaiHoaPanel from './components/MaiHoaPanel.jsx';
+import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
 import { buildResult } from './logic/buildHexagram.js';
+import { buildMaiHoaPlainText } from './logic/buildPlainText.js';
+import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
 
 function EmptyHexPlaceholder({ lines, mode }) {
   const count = lines.length;
@@ -106,11 +110,83 @@ function getDefaultForm() {
   };
 }
 
+/** Card xuất kết quả cho Mai Hoa — giống PlainTextExportCard nhưng dùng buildMaiHoaPlainText */
+function MaiHoaExportCard({ result }) {
+  const [copied,  setCopied]  = useState(false);
+  const [copiedJ, setCopiedJ] = useState(false);
+
+  const hasResult = !!result;
+  const text      = hasResult ? buildMaiHoaPlainText(result) : '';
+
+  async function handleCopyText() {
+    if (!hasResult) return;
+    await copyToClipboard(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  async function handleCopyJson() {
+    if (!hasResult) return;
+    await copyToClipboard(JSON.stringify(result, null, 2));
+    setCopiedJ(true);
+    setTimeout(() => setCopiedJ(false), 2000);
+  }
+  function handleDownloadTxt() {
+    if (!hasResult) return;
+    const ts = new Date().toISOString().slice(0, 10);
+    downloadTxt(text, `mai-hoa-${ts}.txt`);
+  }
+  function handleDownloadJson() {
+    if (!hasResult) return;
+    const ts = new Date().toISOString().slice(0, 10);
+    downloadJson(result, `mai-hoa-${ts}.json`);
+  }
+
+  return (
+    <div className="terminal-card">
+      <div className="terminal-header" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="terminal-dot" style={{ background: '#ff5f56' }} />
+          <div className="terminal-dot" style={{ background: '#ffbd2e' }} />
+          <div className="terminal-dot" style={{ background: '#27c93f' }} />
+          <span style={{ marginLeft: 8, color: '#718096', fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+            plaintext — mai hoa dịch số
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { label: copied  ? '✓ Đã copy' : '⎘ Copy text', onClick: handleCopyText,  bg: copied  ? '#27c93f' : 'rgba(246,201,14,0.15)', color: copied  ? 'white' : 'var(--color-terminal-accent)' },
+            { label: '↓ .txt',                               onClick: handleDownloadTxt, bg: 'transparent', color: '#718096', border: '1px solid rgba(113,128,150,0.4)' },
+            { label: copiedJ ? '✓ JSON'    : '⎘ JSON',      onClick: handleCopyJson,   bg: copiedJ ? '#27c93f' : 'rgba(39,201,63,0.1)',   color: copiedJ ? 'white' : '#27c93f' },
+            { label: '↓ .json',                              onClick: handleDownloadJson, bg: 'transparent', color: '#27c93f', border: '1px solid rgba(39,201,63,0.3)' },
+          ].map(({ label, onClick, bg, color, border }) => (
+            <button key={label} onClick={onClick} disabled={!hasResult} style={{
+              padding: '5px 12px', borderRadius: 6, border: border || 'none',
+              background: bg, color, fontSize: '0.8125rem', fontWeight: 600,
+              cursor: hasResult ? 'pointer' : 'not-allowed', opacity: hasResult ? 1 : 0.4,
+              transition: 'all 0.2s', fontFamily: 'monospace',
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="terminal-body">
+        {hasResult ? (
+          <span style={{ color: 'var(--color-terminal-text)' }}>{text}</span>
+        ) : (
+          <span style={{ color: '#4a5568', fontStyle: 'italic' }}>
+            {`// Chưa có kết quả.\n// Hãy lập quẻ Mai Hoa để xem kết quả ở đây.`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [formData,  setFormData]  = useState(getDefaultForm());
-  const [mode,      setMode]      = useState('quick');
-  const [lines,     setLines]     = useState([]);
-  const [result,    setResult]    = useState(null);
+  const [formData,     setFormData]     = useState(getDefaultForm());
+  const [mode,         setMode]         = useState('quick');
+  const [lines,        setLines]        = useState([]);
+  const [result,       setResult]       = useState(null);
+  const [maiHoaResult, setMaiHoaResult] = useState(null);
 
   // Mỗi khi lines thay đổi đủ 6, build result
   function computeResult(newLines, currentMode) {
@@ -143,10 +219,16 @@ export default function App() {
     setResult(null);
   }
 
-  // Mode change → reset lines
+  // Reset Mai Hoa
+  function handleMaiHoaReset() {
+    setMaiHoaResult(null);
+  }
+
+  // Mode change → reset lines & Mai Hoa
   function handleModeChange(newMode) {
     setMode(newMode);
     handleReset();
+    setMaiHoaResult(null);
   }
 
   const canCast = formData.question.trim().length > 0;
@@ -192,9 +274,9 @@ export default function App() {
             </div>
           </div>
 
-          {result && (
+          {(result || maiHoaResult) && (
             <button
-              onClick={handleReset}
+              onClick={() => { handleReset(); handleMaiHoaReset(); }}
               style={{
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.2)',
@@ -248,16 +330,25 @@ export default function App() {
                     onResult={handleQuickResult}
                     disabled={!canCast}
                   />
-                ) : (
+                ) : mode === 'manual-step' ? (
                   <ManualLineStepper
                     completedLines={lines}
                     onLineAdded={handleLineAdded}
                     onReset={handleReset}
+                    disabled={!canCast}
+                  />
+                ) : (
+                  /* mode === 'mai-hoa-time' | 'mai-hoa-serial' */
+                  <MaiHoaPanel
+                    mode={mode}
+                    question={formData.question}
+                    onResult={setMaiHoaResult}
+                    onReset={handleMaiHoaReset}
                   />
                 )}
               </div>
 
-              {!canCast && (
+              {!mode.startsWith('mai-hoa') && !canCast && (
                 <div style={{
                   marginTop: 10,
                   padding: '8px 12px',
@@ -276,54 +367,119 @@ export default function App() {
           {/* ===== RIGHT COLUMN ===== */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-            {/* Quẻ Preview */}
-            <section className="card" style={{ padding: 20 }}>
-              <div className="section-title" style={{ marginBottom: 16 }}>
-                Kết quả quẻ
-              </div>
-              {result ? (
-                <div className="animate-in">
-                  <HexagramPreview result={result} />
-                </div>
-              ) : (
-                <EmptyHexPlaceholder lines={lines} mode={mode} />
-              )}
-            </section>
+            {mode.startsWith('mai-hoa') ? (
+              /* ── Mai Hoa result column ── */
+              <>
+                <section className="card" style={{ padding: 20 }}>
+                  <div className="section-title" style={{ marginBottom: 16 }}>
+                    🌸 Kết quả quẻ Mai Hoa
+                  </div>
+                  {maiHoaResult ? (
+                    <div className="animate-in">
+                      <MaiHoaResultCard result={maiHoaResult} />
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      justifyContent: 'center', gap: 12, padding: '32px 20px', opacity: 0.5,
+                    }}>
+                      <div style={{ fontSize: '2.5rem' }}>🌸</div>
+                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
+                        Nhập thông tin bên trái và bấm "Lập quẻ Mai Hoa"
+                      </p>
+                    </div>
+                  )}
+                </section>
 
-            {/* Bảng Lục Hào đầy đủ */}
-            {result && (
-              <section className="card animate-in" style={{ padding: 20 }}>
-                <div className="section-title" style={{ marginBottom: 12 }}>
-                  Bảng Lục Hào
-                </div>
-                <LucHaoTable result={result} />
-              </section>
+                {/* Câu hỏi + thời gian */}
+                {maiHoaResult && (
+                  <section className="card animate-in" style={{ padding: 20 }}>
+                    <div className="section-title" style={{ marginBottom: 12 }}>
+                      Thông tin lần lập quẻ
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {maiHoaResult.question && (
+                        <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
+                          <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Việc cần xem</span>
+                          <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>{maiHoaResult.question}</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
+                        <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Phương pháp</span>
+                        <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
+                          Mai Hoa — {maiHoaResult.subMode === 'time' ? 'Ngày giờ động tâm' : 'Theo số'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 12, padding: '5px 0' }}>
+                        <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Thời gian lập</span>
+                        <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
+                          {new Date(maiHoaResult.createdAt).toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+                )}
+                {/* Xuất kết quả Mai Hoa */}
+                <section className="animate-in" style={{ marginTop: maiHoaResult ? 0 : 'auto' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    📋 Xuất kết quả
+                  </div>
+                  <MaiHoaExportCard result={maiHoaResult} />
+                </section>
+              </>
+            ) : (
+              /* ── Coin casting result column ── */
+              <>
+                {/* Quẻ Preview */}
+                <section className="card" style={{ padding: 20 }}>
+                  <div className="section-title" style={{ marginBottom: 16 }}>
+                    Kết quả quẻ
+                  </div>
+                  {result ? (
+                    <div className="animate-in">
+                      <HexagramPreview result={result} />
+                    </div>
+                  ) : (
+                    <EmptyHexPlaceholder lines={lines} mode={mode} />
+                  )}
+                </section>
+
+                {/* Bảng Lục Hào đầy đủ */}
+                {result && (
+                  <section className="card animate-in" style={{ padding: 20 }}>
+                    <div className="section-title" style={{ marginBottom: 12 }}>
+                      Bảng Lục Hào
+                    </div>
+                    <LucHaoTable result={result} />
+                  </section>
+                )}
+
+                {/* Can Chi Info */}
+                {result?.canChi && (
+                  <section className="card animate-in" style={{ padding: '14px 20px' }}>
+                    <CanChiInfoBar canChi={result.canChi} />
+                  </section>
+                )}
+
+                {/* Metadata */}
+                {result && (
+                  <section className="card animate-in" style={{ padding: 20 }}>
+                    <div className="section-title" style={{ marginBottom: 12 }}>
+                      Thông tin lần lập quẻ
+                    </div>
+                    <ResultMetadata result={result} />
+                  </section>
+                )}
+
+                {/* Plaintext Export */}
+                <section className="animate-in" style={{ marginTop: result ? 0 : 'auto' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    📋 Xuất kết quả
+                  </div>
+                  <PlainTextExportCard result={result} />
+                </section>
+              </>
             )}
-
-            {/* Can Chi Info */}
-            {result?.canChi && (
-              <section className="card animate-in" style={{ padding: '14px 20px' }}>
-                <CanChiInfoBar canChi={result.canChi} />
-              </section>
-            )}
-
-            {/* Metadata */}
-            {result && (
-              <section className="card animate-in" style={{ padding: 20 }}>
-                <div className="section-title" style={{ marginBottom: 12 }}>
-                  Thông tin lần lập quẻ
-                </div>
-                <ResultMetadata result={result} />
-              </section>
-            )}
-
-            {/* Plaintext Export */}
-            <section className="animate-in" style={{ marginTop: result ? 0 : 'auto' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                📋 Xuất kết quả
-              </div>
-              <PlainTextExportCard result={result} />
-            </section>
           </div>
         </div>
       </main>

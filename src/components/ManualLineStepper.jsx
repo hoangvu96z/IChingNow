@@ -10,7 +10,7 @@ const STEP_LABELS = ['Hào 1', 'Hào 2', 'Hào 3', 'Hào 4', 'Hào 5', 'Hào 6']
  * onLineAdded: callback(line)
  * onReset: callback
  */
-export default function ManualLineStepper({ completedLines, onLineAdded, onReset }) {
+export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled }) {
   const currentStep = completedLines.length; // 0..5
   const isDone      = completedLines.length === 6;
 
@@ -119,8 +119,23 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
         </div>
       )}
 
+      {/* Chặn gieo khi chưa nhập việc cần xem */}
+      {disabled && (
+        <div style={{
+          padding: '10px 14px',
+          background: 'rgba(192,57,43,0.08)',
+          borderRadius: 8,
+          border: '1px solid rgba(192,57,43,0.2)',
+          fontSize: '0.8125rem',
+          color: 'var(--color-vermillion)',
+          textAlign: 'center',
+        }}>
+          ⚠ Hãy nhập việc cần xem trước khi gieo quẻ
+        </div>
+      )}
+
       {/* Controls */}
-      {!isDone && (
+      {!isDone && !disabled && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{
             fontSize: '0.9rem',

@@ -170,3 +170,95 @@ const QUE_TYPE_LABELS = {
   'du-hon':    'Du Hồn',
   'quy-hon':   'Quy Hồn',
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plaintext cho kết quả Mai Hoa (3 quẻ)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Vẽ 6 hào dạng ASCII, từ hào 6 xuống hào 1
+ * @param {Array} lines  - [{index, yinYang, moving}]
+ * @param {number|null} movingLine
+ */
+function drawHexAscii(lines, movingLine = null) {
+  const sorted = [...lines].sort((a, b) => b.index - a.index);
+  return sorted.map(l => {
+    const moving = l.index === movingLine || l.moving;
+    const sym = l.yinYang === 'yang'
+      ? (moving ? '═══○═══' : '═══════')
+      : (moving ? '══ ● ══' : '══   ══');
+    return `  H${l.index}: ${sym}${moving ? ' ← động' : ''}`;
+  }).join('\n');
+}
+
+export function buildMaiHoaPlainText(result) {
+  if (!result) return '';
+
+  const SEP = '─'.repeat(62);
+  const lines = [];
+  const createdAt = result.createdAt ? new Date(result.createdAt) : new Date();
+
+  // Header
+  lines.push('╔══════════════════════════════════════════════════════════╗');
+  lines.push('║              LẬP QUẺ MAI HOA DỊCH SỐ                   ║');
+  lines.push('╚══════════════════════════════════════════════════════════╝');
+  lines.push('');
+  lines.push(`Thời gian lập : ${formatDateTime(createdAt)}`);
+  if (result.question) lines.push(`Việc cần xem  : ${result.question}`);
+  const subLabel = result.subMode === 'time' ? 'Ngày giờ động tâm (Âm lịch)' : 'Số seri tiền (digit-sum)';
+  lines.push(`Phương pháp   : Mai Hoa — ${subLabel}`);
+  lines.push('');
+  lines.push(SEP);
+  lines.push('');
+
+  // Tính toán
+  const calc = result.inputs?.calc || {};
+  const li   = result.inputs?.lunarInfo;
+  lines.push('CHI TIẾT TÍNH TOÁN:');
+  if (result.subMode === 'time' && li) {
+    lines.push(`  Năm (chi)  : ${li.yearStemVi} ${li.yearChiName} — số ${li.yearChiNumber}`);
+    lines.push(`  Tháng AL   : ${li.monthNumber}`);
+    lines.push(`  Ngày AL    : ${li.dayNumber}`);
+    lines.push(`  Giờ (chi)  : ${li.hourBranchInfo?.nameVi} — số ${li.hourBranchInfo?.chiNumber}`);
+    lines.push(`  Số thượng  : ${li.yearChiNumber} + ${li.monthNumber} + ${li.dayNumber} = ${calc.soThuong}`);
+    lines.push(`  Số hạ      : ${calc.soThuong} + ${li.hourBranchInfo?.chiNumber} = ${calc.soHa}`);
+    lines.push(`  Số hào     : ${calc.soHao}`);
+  } else {
+    lines.push(`  Số nhập    : ${calc.first4} | ${calc.last4}`);
+    lines.push(`  Số thượng  : tổng ${calc.first4} = ${calc.soThuong}`);
+    lines.push(`  Số hạ      : tổng ${calc.last4} = ${calc.soHa}`);
+    lines.push(`  Số hào     : ${calc.soHao}`);
+  }
+  lines.push(`  Thượng quái: ${result.upperTrigram?.nameVi} (số ${result.upperTrigramNumber})`);
+  lines.push(`  Hạ quái    : ${result.lowerTrigram?.nameVi} (số ${result.lowerTrigramNumber})`);
+  lines.push(`  Hào động   : Hào ${result.movingLine}`);
+  lines.push('');
+  lines.push(SEP);
+  lines.push('');
+
+  // 3 quẻ
+  const theDung = result.theDung;
+  const dungLabel = theDung?.dung === 'lower'
+    ? `Hạ quái (${result.lowerTrigram?.nameVi}) = Dụng  |  Thượng quái (${result.upperTrigram?.nameVi}) = Thể`
+    : `Thượng quái (${result.upperTrigram?.nameVi}) = Dụng  |  Hạ quái (${result.lowerTrigram?.nameVi}) = Thể`;
+
+  lines.push('QUẺ CHỦ (Hiện tại):');
+  lines.push(`  ${result.primaryHexagram?.nameVi?.toUpperCase() || '?'}  (Quẻ số ${result.primaryHexagram?.id || '?'})`);
+  lines.push(`  ${dungLabel}`);
+  lines.push(drawHexAscii(result.primaryLines, result.movingLine));
+  lines.push('');
+
+  lines.push('QUẺ HỖ (Diễn biến):');
+  lines.push(`  ${result.queHo?.hexagram?.nameVi?.toUpperCase() || '?'}  (Quẻ số ${result.queHo?.hexagram?.id || '?'})`);
+  lines.push(`  Thượng / Hạ: ${result.queHo?.upperTrigram?.nameVi} / ${result.queHo?.lowerTrigram?.nameVi}`);
+  lines.push(drawHexAscii(result.queHo?.lines || []));
+  lines.push('');
+
+  lines.push('QUẺ BIẾN (Kết quả):');
+  lines.push(`  ${result.changedHexagram?.nameVi?.toUpperCase() || '?'}  (Quẻ số ${result.changedHexagram?.id || '?'})`);
+  lines.push(drawHexAscii(result.changedLines));
+  lines.push('');
+  lines.push(SEP);
+
+  return lines.join('\n');
+}
