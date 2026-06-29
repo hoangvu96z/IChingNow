@@ -4,10 +4,14 @@ import React from 'react';
  * Hiển thị 6 vạch âm/dương của một quẻ
  * lines: mảng từ hào 1 đến hào 6 (index 1=dưới, 6=trên)
  * Render từ trên xuống (hào 6 hiển thị ở trên cùng)
+ *
+ * Quy tắc hiển thị hào động:
+ *   - Hào Dương động (moving yang): vạch liền ĐỎ + vòng tròn ● trắng ở giữa
+ *   - Hào Âm động (moving yin)  : 2 vạch KHÔNG đổi màu + vòng tròn ● đỏ ở khe giữa
+ *   → Luôn phân biệt rõ Dương (liền) và Âm (đứt), chỉ dấu ● báo hào động
  */
 export default function HexagramDisplay({ lines, size = 'md', showIndex = false }) {
   if (!lines || lines.length < 6) {
-    // Placeholder khi chưa có quẻ
     return (
       <div className={`hexagram-display ${size}`} style={{ padding: '12px 0' }}>
         {[...Array(6)].map((_, i) => (
@@ -29,60 +33,65 @@ export default function HexagramDisplay({ lines, size = 'md', showIndex = false 
 }
 
 function HexLine({ line, size, showIndex }) {
-  const h = size === 'sm' ? 5 : size === 'lg' ? 10 : 7;
-  const gap = size === 'sm' ? 10 : 14;
+  const h       = size === 'sm' ? 5 : size === 'lg' ? 10 : 7;
+  const gap     = size === 'sm' ? 10 : 14;
+  const dotSize = h + 6; // đường kính vòng tròn hào động
 
-  const lineStyle = {
-    height: h,
-    background: line.moving ? '#c0392b' : 'var(--color-ink)',
+  // Thanh vạch — KHÔNG đổi màu khi động (màu do yin/yang, không do moving)
+  const barStyle = {
+    height:     h,
+    background: 'var(--color-ink)',
     borderRadius: 2,
     flex: 1,
     transition: 'background 0.3s',
   };
 
+  // Vòng tròn ● báo hào động
+  const dotStyle = {
+    width:        dotSize,
+    height:       dotSize,
+    background:   '#c0392b',
+    border:       '2px solid white',
+    borderRadius: '50%',
+    flexShrink:   0,
+  };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {showIndex && (
-        <span style={{ fontSize: 10, color: 'var(--color-ink-muted)', width: 14, textAlign: 'right', flexShrink: 0 }}>
+        <span style={{
+          fontSize: 10, color: 'var(--color-ink-muted)',
+          width: 14, textAlign: 'right', flexShrink: 0,
+        }}>
           {line.index}
         </span>
       )}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', position: 'relative' }}>
+
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
         {line.yinYang === 'yang' ? (
-          // Dương: vạch liền
-          <div style={{ ...lineStyle, flex: 1, position: 'relative' }}>
-            {line.moving && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: h + 8,
-                height: h + 8,
-                background: '#c0392b',
-                border: '2px solid white',
-                borderRadius: '50%',
-                zIndex: 2,
-              }} />
-            )}
+          /* ── Hào Dương: vạch liền ── */
+          <div style={{
+            ...barStyle,
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            // Nếu động: tô đỏ vạch Dương để dễ nhận biết
+            background: line.moving ? '#c0392b' : 'var(--color-ink)',
+          }}>
+            {line.moving && <div style={dotStyle} />}
           </div>
         ) : (
-          // Âm: hai vạch gián
-          <div style={{ flex: 1, display: 'flex', gap: gap }}>
-            <div style={lineStyle} />
-            <div style={lineStyle} />
-            {line.moving && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                fontSize: 10,
-                color: '#c0392b',
-                fontWeight: 'bold',
-                lineHeight: 1,
-              }}>✕</div>
-            )}
+          /* ── Hào Âm: hai vạch đứt + ● ở khe giữa nếu động ── */
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: line.moving ? 6 : gap, // thu hẹp gap khi có dot để dot vừa vặn
+          }}>
+            <div style={barStyle} />
+            {line.moving && <div style={dotStyle} />}
+            <div style={barStyle} />
           </div>
         )}
       </div>
