@@ -20,6 +20,25 @@ import { computeNapGiap }    from './napGiap.js';
 import { computeLucThan }    from './lucThan.js';
 import { attachLucThu }      from './lucThu.js';
 import { computePhucThan }   from './phucThan.js';
+import { getHexagramDescription } from '../data/hexagramDescriptions.js';
+
+const BINARY_TO_QUAI_NUMBER = {
+  '111': 1, // Càn
+  '110': 2, // Đoài
+  '101': 3, // Ly
+  '100': 4, // Chấn
+  '011': 5, // Tốn
+  '010': 6, // Khảm
+  '001': 7, // Cấn
+  '000': 8, // Khôn
+};
+
+function getDescriptionForHex(hex) {
+  if (!hex) return null;
+  const upperId = BINARY_TO_QUAI_NUMBER[hex.upper];
+  const lowerId = BINARY_TO_QUAI_NUMBER[hex.lower];
+  return getHexagramDescription(upperId, lowerId);
+}
 
 // ──────────────────────────────────────────────────────────────────────────
 // Bước 2+3: Tầm Cung (Palace Finder)
@@ -218,8 +237,15 @@ export function buildLucHaoResult({ formData, lines, mode }) {
   }
 
   // ── Lookup tên quẻ ─────────────────────────────────────────────────────
-  const primaryHexagram = findHexagram(lines);
-  const changedHexagram = movingLines.length > 0 ? findChangedHexagram(lines) : null;
+  const primaryHexResult = findHexagram(lines);
+  const primaryHexagram = primaryHexResult
+    ? { ...primaryHexResult, description: getDescriptionForHex(primaryHexResult) }
+    : null;
+
+  const changedHexResult = movingLines.length > 0 ? findChangedHexagram(lines) : null;
+  const changedHexagram = changedHexResult
+    ? { ...changedHexResult, description: getDescriptionForHex(changedHexResult) }
+    : null;
 
   // ── Build createdAt ─────────────────────────────────────────────────────
   const createdAt = formData.castDate && formData.castTime

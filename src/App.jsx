@@ -9,6 +9,7 @@ import ResultMetadata from './components/ResultMetadata.jsx';
 import PlainTextExportCard from './components/PlainTextExportCard.jsx';
 import MaiHoaPanel from './components/MaiHoaPanel.jsx';
 import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
+import DescriptionPanel from './components/DescriptionPanel.jsx';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -167,6 +168,17 @@ function CoinCastResultSection({ result }) {
         <div className="section-title" style={{ marginBottom: 12 }}>Bảng Lục Hào</div>
         <LucHaoTable result={result} />
       </section>
+
+      {/* Luận giải cơ bản quẻ Lục Hào */}
+      {(result.primaryHexagram?.description || result.changedHexagram?.description) && (
+        <section className="card animate-in" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="section-title">Luận giải cơ bản</div>
+          <DescriptionPanel hexagram={result.primaryHexagram} color="var(--color-vermillion)" />
+          {result.changedHexagram && (
+            <DescriptionPanel hexagram={result.changedHexagram} color="var(--color-jade)" />
+          )}
+        </section>
+      )}
 
       {/* Can Chi Info */}
       {result.canChi && (
