@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import CastingForm from './components/CastingForm.jsx';
-import CastingModeTabs from './components/CastingModeTabs.jsx';
+import MethodPicker from './components/MethodPicker.jsx';
 import QuickCastPanel from './components/QuickCastPanel.jsx';
 import ManualLineStepper from './components/ManualLineStepper.jsx';
 import HexagramPreview from './components/HexagramPreview.jsx';
@@ -13,49 +13,7 @@ import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
 
-function EmptyHexPlaceholder({ lines, mode }) {
-  const count = lines.length;
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 12,
-      padding: '32px 20px',
-      opacity: 0.5,
-    }}>
-      {/* Placeholder lines */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: 120 }}>
-        {[...Array(6)].map((_, i) => {
-          const filled = i < count;
-          const lineIdx = 5 - i; // top-to-bottom = hào 6 to 1
-          const line = lines.find(l => l.index === lineIdx + 1);
-          if (filled && line) {
-            return (
-              <div key={i} style={{ display: 'flex', gap: line.yinYang === 'yin' ? 14 : 0 }}>
-                {line.yinYang === 'yang'
-                  ? <div style={{ height: 7, background: 'var(--color-ink)', borderRadius: 2, flex: 1 }} />
-                  : <>
-                      <div style={{ height: 7, background: 'var(--color-ink)', borderRadius: 2, flex: 1 }} />
-                      <div style={{ height: 7, background: 'var(--color-ink)', borderRadius: 2, flex: 1 }} />
-                    </>}
-              </div>
-            );
-          }
-          return (
-            <div key={i} style={{ height: 7, background: 'rgba(44,24,16,0.12)', borderRadius: 2 }} />
-          );
-        })}
-      </div>
-      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
-        {count === 0
-          ? (mode === 'quick' ? 'Bấm "Gieo nhanh 6 hào" để bắt đầu' : 'Gieo từng hào theo các bước')
-          : `Đã gieo ${count}/6 hào...`}
-      </p>
-    </div>
-  );
-}
+
 
 function CanChiInfoBar({ canChi }) {
   if (!canChi) return null;
@@ -181,12 +139,115 @@ function MaiHoaExportCard({ result }) {
   );
 }
 
+/**
+ * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
+ * Tách riêng để App.jsx gọn gàng, dễ đọc flow 3 trạng thái.
+ */
+function ResultSection({ mode, result, maiHoaResult, onChangeMethod }) {
+  if (mode.startsWith('mai-hoa')) {
+    return <MaiHoaResultSection result={maiHoaResult} />;
+  }
+  return <CoinCastResultSection result={result} />;
+}
+
+function CoinCastResultSection({ result }) {
+  if (!result) return null;
+  return (
+    <>
+      {/* Quẻ Preview */}
+      <section className="card" style={{ padding: 20 }}>
+        <div className="section-title" style={{ marginBottom: 16 }}>Kết quả quẻ</div>
+        <div className="animate-in">
+          <HexagramPreview result={result} />
+        </div>
+      </section>
+
+      {/* Bảng Lục Hào đầy đủ */}
+      <section className="card animate-in" style={{ padding: 20 }}>
+        <div className="section-title" style={{ marginBottom: 12 }}>Bảng Lục Hào</div>
+        <LucHaoTable result={result} />
+      </section>
+
+      {/* Can Chi Info */}
+      {result.canChi && (
+        <section className="card animate-in" style={{ padding: '14px 20px' }}>
+          <CanChiInfoBar canChi={result.canChi} />
+        </section>
+      )}
+
+      {/* Metadata */}
+      <section className="card animate-in" style={{ padding: 20 }}>
+        <div className="section-title" style={{ marginBottom: 12 }}>Thông tin lần lập quẻ</div>
+        <ResultMetadata result={result} />
+      </section>
+
+      {/* Plaintext Export */}
+      <section className="animate-in">
+        <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          📋 Xuất kết quả
+        </div>
+        <PlainTextExportCard result={result} />
+      </section>
+    </>
+  );
+}
+
+function MaiHoaResultSection({ result }) {
+  if (!result) return null;
+  return (
+    <>
+      <section className="card" style={{ padding: 20 }}>
+        <div className="section-title" style={{ marginBottom: 16 }}>🌸 Kết quả quẻ Mai Hoa</div>
+        <div className="animate-in">
+          <MaiHoaResultCard result={result} />
+        </div>
+      </section>
+
+      {/* Câu hỏi + thời gian */}
+      <section className="card animate-in" style={{ padding: 20 }}>
+        <div className="section-title" style={{ marginBottom: 12 }}>Thông tin lần lập quẻ</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {result.question && (
+            <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
+              <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Việc cần xem</span>
+              <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>{result.question}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
+            <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Phương pháp</span>
+            <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
+              Mai Hoa — {result.subMode === 'time' ? 'Ngày giờ động tâm' : 'Theo số'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 12, padding: '5px 0' }}>
+            <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Thời gian lập</span>
+            <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
+              {new Date(result.createdAt).toLocaleString('vi-VN')}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Xuất kết quả Mai Hoa */}
+      <section className="animate-in">
+        <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          📋 Xuất kết quả
+        </div>
+        <MaiHoaExportCard result={result} />
+      </section>
+    </>
+  );
+}
+
 export default function App() {
-  const [formData,     setFormData]     = useState(getDefaultForm());
-  const [mode,         setMode]         = useState('quick');
-  const [lines,        setLines]        = useState([]);
-  const [result,       setResult]       = useState(null);
-  const [maiHoaResult, setMaiHoaResult] = useState(null);
+  const [formData,         setFormData]         = useState(getDefaultForm());
+  const [mode,             setMode]             = useState('quick');
+  const [lines,            setLines]            = useState([]);
+  const [result,           setResult]           = useState(null);
+  const [maiHoaResult,     setMaiHoaResult]     = useState(null);
+  const [hasPickedMethod,  setHasPickedMethod]  = useState(false);
+
+  const hasResult = !!(result || maiHoaResult);
 
   // Mỗi khi lines thay đổi đủ 6, build result
   function computeResult(newLines, currentMode) {
@@ -213,7 +274,7 @@ export default function App() {
     computeResult(next, 'manual-step');
   }
 
-  // Reset
+  // Reset (chỉ xoá lines + result, giữ mode để user gieo lại)
   function handleReset() {
     setLines([]);
     setResult(null);
@@ -224,11 +285,30 @@ export default function App() {
     setMaiHoaResult(null);
   }
 
-  // Mode change → reset lines & Mai Hoa
-  function handleModeChange(newMode) {
+  // User chọn method từ MethodPicker → sang casting panel
+  function handleMethodPick(newMode) {
     setMode(newMode);
-    handleReset();
+    setLines([]);
+    setResult(null);
     setMaiHoaResult(null);
+    setHasPickedMethod(true);
+  }
+
+  // Quay lại màn hình chọn method (giữ form để đổi method khác không phải nhập lại)
+  function handleChangeMethod() {
+    setLines([]);
+    setResult(null);
+    setMaiHoaResult(null);
+    setHasPickedMethod(false);
+  }
+
+  // Lập quẻ mới hoàn toàn: clear cả form lẫn state
+  function handleFullReset() {
+    setFormData(getDefaultForm());
+    setLines([]);
+    setResult(null);
+    setMaiHoaResult(null);
+    setHasPickedMethod(false);
   }
 
   const canCast = formData.question.trim().length > 0;
@@ -276,7 +356,7 @@ export default function App() {
 
           {(result || maiHoaResult) && (
             <button
-              onClick={() => { handleReset(); handleMaiHoaReset(); }}
+              onClick={handleFullReset}
               style={{
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.2)',
@@ -317,14 +397,45 @@ export default function App() {
               <CastingForm formData={formData} onChange={setFormData} />
             </section>
 
-            {/* Mode tabs + panel gieo */}
-            <section className="card" style={{ padding: 20 }}>
-              <div className="section-title" style={{ marginBottom: 12 }}>
-                Phương pháp gieo
-              </div>
-              <CastingModeTabs mode={mode} onChange={handleModeChange} />
+            {/* Nút "Đổi phương pháp" nếu đang ở state casting/result */}
+            {(hasPickedMethod || hasResult) && (
+              <button
+                onClick={handleChangeMethod}
+                className="btn-ghost"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: '10px 16px',
+                  fontWeight: 600,
+                }}
+              >
+                ← Đổi phương pháp gieo
+              </button>
+            )}
+          </div>
 
-              <div style={{ marginTop: 16 }}>
+          {/* ===== RIGHT COLUMN ===== */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* ─── STATE 1: Chưa chọn phương pháp → MethodPicker ─── */}
+            {!hasPickedMethod && !hasResult && (
+              <section className="card" style={{ padding: 24 }}>
+                <MethodPicker onPick={handleMethodPick} questionEmpty={!canCast} />
+              </section>
+            )}
+
+            {/* ─── STATE 2: Đã chọn phương pháp nhưng chưa gieo → Casting Panel ─── */}
+            {hasPickedMethod && !hasResult && (
+              <section className="card animate-in" style={{ padding: 20 }}>
+                <div className="section-title" style={{ marginBottom: 12 }}>
+                  {mode === 'quick'          && '⚡ Gieo nhanh 6 hào'}
+                  {mode === 'manual-step'    && '🪙 Gieo từng hào'}
+                  {mode === 'mai-hoa-time'   && '🕐 Mai Hoa — Ngày giờ động tâm'}
+                  {mode === 'mai-hoa-serial' && '💵 Mai Hoa — Số seri tiền'}
+                </div>
+
                 {mode === 'quick' ? (
                   <QuickCastPanel
                     onResult={handleQuickResult}
@@ -346,139 +457,31 @@ export default function App() {
                     onReset={handleMaiHoaReset}
                   />
                 )}
-              </div>
 
-              {!mode.startsWith('mai-hoa') && !canCast && (
-                <div style={{
-                  marginTop: 10,
-                  padding: '8px 12px',
-                  background: 'rgba(192,57,43,0.08)',
-                  borderRadius: 6,
-                  fontSize: '0.8125rem',
-                  color: 'var(--color-vermillion)',
-                  border: '1px solid rgba(192,57,43,0.2)',
-                }}>
-                  ⚠ Hãy nhập việc cần xem trước khi gieo quẻ
-                </div>
-              )}
-            </section>
-          </div>
-
-          {/* ===== RIGHT COLUMN ===== */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-            {mode.startsWith('mai-hoa') ? (
-              /* ── Mai Hoa result column ── */
-              <>
-                <section className="card" style={{ padding: 20 }}>
-                  <div className="section-title" style={{ marginBottom: 16 }}>
-                    🌸 Kết quả quẻ Mai Hoa
+                {!canCast && !mode.startsWith('mai-hoa') && (
+                  <div style={{
+                    marginTop: 10,
+                    padding: '8px 12px',
+                    background: 'rgba(192,57,43,0.08)',
+                    borderRadius: 6,
+                    fontSize: '0.8125rem',
+                    color: 'var(--color-vermillion)',
+                    border: '1px solid rgba(192,57,43,0.2)',
+                  }}>
+                    ⚠ Hãy nhập việc cần xem ở cột bên trái trước khi gieo quẻ
                   </div>
-                  {maiHoaResult ? (
-                    <div className="animate-in">
-                      <MaiHoaResultCard result={maiHoaResult} />
-                    </div>
-                  ) : (
-                    <div style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center',
-                      justifyContent: 'center', gap: 12, padding: '32px 20px', opacity: 0.5,
-                    }}>
-                      <div style={{ fontSize: '2.5rem' }}>🌸</div>
-                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
-                        Nhập thông tin bên trái và bấm "Lập quẻ Mai Hoa"
-                      </p>
-                    </div>
-                  )}
-                </section>
-
-                {/* Câu hỏi + thời gian */}
-                {maiHoaResult && (
-                  <section className="card animate-in" style={{ padding: 20 }}>
-                    <div className="section-title" style={{ marginBottom: 12 }}>
-                      Thông tin lần lập quẻ
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {maiHoaResult.question && (
-                        <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
-                          <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Việc cần xem</span>
-                          <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>{maiHoaResult.question}</span>
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
-                        <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Phương pháp</span>
-                        <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
-                          Mai Hoa — {maiHoaResult.subMode === 'time' ? 'Ngày giờ động tâm' : 'Theo số'}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: 12, padding: '5px 0' }}>
-                        <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Thời gian lập</span>
-                        <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
-                          {new Date(maiHoaResult.createdAt).toLocaleString('vi-VN')}
-                        </span>
-                      </div>
-                    </div>
-                  </section>
                 )}
-                {/* Xuất kết quả Mai Hoa */}
-                <section className="animate-in" style={{ marginTop: maiHoaResult ? 0 : 'auto' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    📋 Xuất kết quả
-                  </div>
-                  <MaiHoaExportCard result={maiHoaResult} />
-                </section>
-              </>
-            ) : (
-              /* ── Coin casting result column ── */
-              <>
-                {/* Quẻ Preview */}
-                <section className="card" style={{ padding: 20 }}>
-                  <div className="section-title" style={{ marginBottom: 16 }}>
-                    Kết quả quẻ
-                  </div>
-                  {result ? (
-                    <div className="animate-in">
-                      <HexagramPreview result={result} />
-                    </div>
-                  ) : (
-                    <EmptyHexPlaceholder lines={lines} mode={mode} />
-                  )}
-                </section>
+              </section>
+            )}
 
-                {/* Bảng Lục Hào đầy đủ */}
-                {result && (
-                  <section className="card animate-in" style={{ padding: 20 }}>
-                    <div className="section-title" style={{ marginBottom: 12 }}>
-                      Bảng Lục Hào
-                    </div>
-                    <LucHaoTable result={result} />
-                  </section>
-                )}
-
-                {/* Can Chi Info */}
-                {result?.canChi && (
-                  <section className="card animate-in" style={{ padding: '14px 20px' }}>
-                    <CanChiInfoBar canChi={result.canChi} />
-                  </section>
-                )}
-
-                {/* Metadata */}
-                {result && (
-                  <section className="card animate-in" style={{ padding: 20 }}>
-                    <div className="section-title" style={{ marginBottom: 12 }}>
-                      Thông tin lần lập quẻ
-                    </div>
-                    <ResultMetadata result={result} />
-                  </section>
-                )}
-
-                {/* Plaintext Export */}
-                <section className="animate-in" style={{ marginTop: result ? 0 : 'auto' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    📋 Xuất kết quả
-                  </div>
-                  <PlainTextExportCard result={result} />
-                </section>
-              </>
+            {/* ─── STATE 3: Đã có kết quả ─── */}
+            {hasResult && (
+              <ResultSection
+                mode={mode}
+                result={result}
+                maiHoaResult={maiHoaResult}
+                onChangeMethod={handleChangeMethod}
+              />
             )}
           </div>
         </div>
