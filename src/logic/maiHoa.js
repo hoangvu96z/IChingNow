@@ -17,6 +17,7 @@
 
 import { Solar } from 'lunar-javascript';
 import { HEXAGRAMS } from '../data/hexagrams.js';
+import { getHexagramDescription } from '../data/hexagramDescriptions.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // I. BÁT QUÁI — dữ liệu quái đơn
@@ -137,7 +138,10 @@ function lookupQueByNumbers(thuongId, haId) {
   if (!entry) return null;
   // Lấy full object (binary, lower, upper, nameZh) từ HEXAGRAMS
   const full = HEXAGRAMS.find(h => h.id === entry.id);
-  return full ? { ...full, nameVi: entry.nameVi } : { id: entry.id, nameVi: entry.nameVi };
+  const description = getHexagramDescription(thuongId, haId) || null;
+  return full
+    ? { ...full, nameVi: entry.nameVi, description }
+    : { id: entry.id, nameVi: entry.nameVi, description };
 }
 
 /**

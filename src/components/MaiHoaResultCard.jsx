@@ -75,6 +75,80 @@ function HexCard({ label, labelColor, hexagram, lines, subtitle, badge }) {
   );
 }
 
+// ─── Panel mô tả chi tiết 1 quẻ (5 khía cạnh) ───────────────────────────────
+function DescriptionPanel({ hexagram, color }) {
+  if (!hexagram?.description) return null;
+  const d = hexagram.description;
+  const aspects = [
+    { key: 'tong_quat', label: 'Tổng quát' },
+    { key: 'tinh_cam',  label: 'Tình cảm' },
+    { key: 'gia_dao',   label: 'Gia đạo'  },
+    { key: 'cong_viec', label: 'Công việc' },
+    { key: 'suc_khoe',  label: 'Sức khỏe' },
+  ];
+  return (
+    <div style={{
+      padding: '14px 16px',
+      background: `${color || 'rgba(184,134,11,0.04)'}08`,
+      border: `1px solid ${color || 'rgba(184,134,11,0.2)'}`,
+      borderRadius: 10,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10,
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        paddingBottom: 8,
+        borderBottom: `1px solid ${color || 'rgba(184,134,11,0.2)'}`,
+      }}>
+        <div style={{
+          fontSize: '0.6875rem',
+          fontWeight: 700,
+          color: color || 'var(--color-gold)',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+        }}>
+          📖 Luận giải chi tiết
+        </div>
+        <div style={{
+          fontSize: '0.75rem',
+          color: 'var(--color-ink-muted)',
+          fontStyle: 'italic',
+        }}>
+          {hexagram.nameVi}
+        </div>
+      </div>
+      {aspects.map(({ key, label }) => (
+        d[key] && (
+          <div key={key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span style={{
+              flexShrink: 0,
+              minWidth: 78,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              color: color || 'var(--color-gold)',
+              paddingTop: 2,
+            }}>
+              {label}:
+            </span>
+            <span style={{
+              flex: 1,
+              fontSize: '0.8125rem',
+              lineHeight: 1.6,
+              color: 'var(--color-ink)',
+            }}>
+              {d[key]}
+            </span>
+          </div>
+        )
+      ))}
+    </div>
+  );
+}
+
 // ─── Mũi tên giữa các quẻ ─────────────────────────────────────────────────────
 function Arrow() {
   return (
@@ -246,7 +320,23 @@ export default function MaiHoaResultCard({ result }) {
         />
       </div>
 
+      {/* Mô tả chi tiết cho Quẻ Chủ (đầy đủ 5 khía cạnh) */}
+      <DescriptionPanel hexagram={primaryHexagram} color="var(--color-vermillion)" />
+
       <hr className="divider" />
+
+      {/* Mô tả Quẻ Hỗ (nếu có) */}
+      {queHo?.hexagram?.description && (
+        <>
+          <DescriptionPanel hexagram={queHo.hexagram} color="#7c5cbf" />
+          <hr className="divider" style={{ opacity: 0.4 }} />
+        </>
+      )}
+
+      {/* Mô tả Quẻ Biến (nếu có) */}
+      {changedHexagram?.description && (
+        <DescriptionPanel hexagram={changedHexagram} color="var(--color-jade)" />
+      )}
 
       {/* Chi tiết tính toán */}
       <div>

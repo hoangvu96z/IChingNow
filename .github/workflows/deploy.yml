@@ -35,6 +35,12 @@ jobs:
           # FTP root = /home/jkokiwsihosting/public_html → chỉ cần ./kinhdich/
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          # ⚠️ Hosting BẮT BUỘC dùng TLS (FTPS) — không nhận kết nối cleartext
+          protocol: ftps
+          # Cho phép cert self-signed (hosting thường dùng)
+          allow-self-signed: true
+          # Bắt buộc TLS ngay khi kết nối (chống downgrade attack)
+          explicit-utf8: true
           local-dir: ./dist/
           server-dir: ./kinhdich/
           # Xóa toàn bộ file cũ trên server trước khi upload
