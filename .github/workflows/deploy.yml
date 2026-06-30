@@ -27,27 +27,22 @@ jobs:
         run: npm run build
 
       - name: 🗑️ Xóa file cũ & Upload lên hosting
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0  # Latest: hỗ trợ FTPS tốt hơn
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           port: 21
+          # Server yêu cầu FTPS (FTP over TLS), không nhận plain FTP
+          protocol: ftps
+          # loose = chấp nhận self-signed cert (hosting thường dùng)
+          security: loose
           # FTP account: jkokiwsihosting_admin
           # FTP root = /home/jkokiwsihosting/public_html → chỉ cần ./kinhdich/
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          # ⚠️ Hosting BẮT BUỘC dùng TLS (FTPS) — không nhận kết nối cleartext
-          protocol: ftps
-          # 'loose' = chấp nhận self-signed cert (hosting thường dùng cert tự ký)
-          security: loose
-          # Timeout kết nối (giây)
-          timeout: 60
-          # Log chi tiết để debug nếu lỗi
-          log-level: verbose
           local-dir: ./dist/
           server-dir: ./kinhdich/
           # Xóa toàn bộ file cũ trên server trước khi upload
           dangerous-clean-slate: true
-          # Bỏ qua các file không cần thiết
           exclude: |
             **/.git*
             **/.git*/**
