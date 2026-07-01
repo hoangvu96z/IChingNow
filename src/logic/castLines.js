@@ -22,11 +22,56 @@ export function tossOneCoin() {
 }
 
 /**
- * Tung 3 đồng xu và tính kết quả
+ * Mô phỏng phương pháp Cỏ Thi (Yarrow Stalks) cổ xưa
+ * Xác suất phân chia chính xác:
+ * - Lão âm (6) [Âm động]: 1/16 (6.25%)
+ * - Thiếu dương (7) [Dương tĩnh]: 5/16 (31.25%)
+ * - Thiếu âm (8) [Âm tĩnh]: 7/16 (43.75%)
+ * - Lão dương (9) [Dương động]: 3/16 (18.75%)
+ */
+function castYarrowStalks() {
+  const r = Math.random();
+  if (r < 0.0625) {
+    return ['sap', 'sap', 'sap']; // Tổng 6 (Lão âm)
+  } else if (r < 0.375) {
+    return ['sap', 'sap', 'ngua']; // Tổng 7 (Thiếu dương)
+  } else if (r < 0.8125) {
+    return ['sap', 'ngua', 'ngua']; // Tổng 8 (Thiếu âm)
+  } else {
+    return ['ngua', 'ngua', 'ngua']; // Tổng 9 (Lão dương)
+  }
+}
+
+/**
+ * Phương pháp đồng xác suất (Equal Probability)
+ * Tỷ lệ: 25% cho mỗi trạng thái hào
+ */
+function castEqualProbability() {
+  const r = Math.random();
+  if (r < 0.25) {
+    return ['sap', 'sap', 'sap'];
+  } else if (r < 0.50) {
+    return ['sap', 'sap', 'ngua'];
+  } else if (r < 0.75) {
+    return ['sap', 'ngua', 'ngua'];
+  } else {
+    return ['ngua', 'ngua', 'ngua'];
+  }
+}
+
+/**
+ * Tung 3 đồng xu và tính kết quả theo thuật toán được chọn
  * @returns {{ coins: string[], total: number, yinYang: string, moving: boolean, type: string }}
  */
-export function castOneLine() {
-  const coins = [tossOneCoin(), tossOneCoin(), tossOneCoin()];
+export function castOneLine(algorithm = 'three-coin') {
+  let coins;
+  if (algorithm === 'yarrow-stalks') {
+    coins = castYarrowStalks();
+  } else if (algorithm === 'equal-prob') {
+    coins = castEqualProbability();
+  } else {
+    coins = [tossOneCoin(), tossOneCoin(), tossOneCoin()];
+  }
   return coinsToLine(coins);
 }
 
@@ -58,10 +103,10 @@ export function coinsToLine(coins) {
  * Gieo nhanh 6 hào
  * @returns {Array} mảng 6 hào từ hào 1 (dưới) đến hào 6 (trên)
  */
-export function castAllLines() {
+export function castAllLines(algorithm = 'three-coin') {
   return Array.from({ length: 6 }, (_, i) => ({
     index: i + 1,
-    ...castOneLine(),
+    ...castOneLine(algorithm),
   }));
 }
 

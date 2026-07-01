@@ -259,6 +259,45 @@ export function buildMaiHoaPlainText(result) {
   lines.push(drawHexAscii(result.changedLines));
   lines.push('');
   lines.push(SEP);
+  lines.push('');
+
+  // Tích hợp Bảng Lục Hào đi kèm
+  if (result.lucHaoResult && result.lucHaoResult.lines) {
+    lines.push('BẢNG LỤC HÀO ĐI KÈM (Tính theo giờ động tâm):');
+    lines.push('─'.repeat(78));
+    lines.push(padRight('Hào', 4) + padRight('T/Ứ', 5) + padRight('Lục Thân', 12) +
+               padRight('Can Chi', 12) + padRight('P.Thần', 14) + padRight('T.K', 5) +
+               padRight('Lục Thú', 14) + 'Vạch');
+    lines.push('─'.repeat(78));
+
+    const sortedLH = [...result.lucHaoResult.lines].sort((a, b) => b.index - a.index);
+    sortedLH.forEach(line => {
+      const haoLabel    = `H${line.index}`;
+      const theUng      = line.theUng || '';
+      const lucThan     = line.lucThan || '';
+      const canChi      = `${line.chi || '?'}-${line.nguHanhHao || '?'}`;
+      const phucThan    = line.phucThan ? line.phucThan.displayLabel || '' : '';
+      const kv          = line.isKhongVong ? 'K' : '';
+      const lucThu      = line.lucThu || '';
+      const yaoSymbol   = getYaoSymbol(line);
+
+      lines.push(
+        padRight(haoLabel, 4) +
+        padRight(theUng, 5) +
+        padRight(lucThan, 12) +
+        padRight(canChi, 12) +
+        padRight(phucThan, 14) +
+        padRight(kv, 5) +
+        padRight(lucThu, 14) +
+        yaoSymbol
+      );
+    });
+    lines.push('');
+    lines.push(`Cung quẻ: ${result.lucHaoResult.palaceName || '?'} (${result.lucHaoResult.palaceElement || '?'})`);
+    lines.push(`Thế hào : H${result.lucHaoResult.theHao || '?'}   Ứng hào: H${result.lucHaoResult.ungHao || '?'}`);
+    lines.push('');
+    lines.push(SEP);
+  }
 
   return lines.join('\n');
 }

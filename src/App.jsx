@@ -55,18 +55,21 @@ function CanChiInfoBar({ canChi }) {
 }
 
 function getDefaultForm() {
-  const now = new Date();
+  const _now = new Date();
+  // Lấy thời gian UTC+7 (Việt Nam)
+  const vnNow = new Date(_now.getTime() + (_now.getTimezoneOffset() * 60000) + (3600000 * 7));
   const pad = n => String(n).padStart(2, '0');
   return {
     question:      '',
     caster:        '',
-    castDate:      `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,
-    castTime:      `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    castDate:      `${vnNow.getFullYear()}-${pad(vnNow.getMonth()+1)}-${pad(vnNow.getDate())}`,
+    castTime:      `${pad(vnNow.getHours())}:${pad(vnNow.getMinutes())}`,
     useSolarTerm:  false,
     solarTermId:   '',
     solarTerm:     null,
     movingMindDate:'',
     movingMindTime:{ enabled: false, hourBranch: '' },
+    lucHaoAlgorithm: 'three-coin',
   };
 }
 
@@ -495,26 +498,14 @@ export default function App() {
               <div className="section-title" style={{ marginBottom: 16 }}>
                 Thông tin lập quẻ
               </div>
-              <CastingForm formData={formData} onChange={setFormData} />
+              <CastingForm
+                formData={formData}
+                onChange={setFormData}
+                showLucHaoOptions={hasPickedMethod && !mode.startsWith('mai-hoa')}
+              />
             </section>
 
-            {/* Nút "Đổi phương pháp" nếu đang ở state casting/result */}
-            {(hasPickedMethod || hasResult) && (
-              <button
-                onClick={handleChangeMethod}
-                className="btn-ghost"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  padding: '10px 16px',
-                  fontWeight: 600,
-                }}
-              >
-                ← Đổi phương pháp gieo
-              </button>
-            )}
+
 
             {/* Lịch sử gieo quẻ */}
             <HistoryList
@@ -549,6 +540,7 @@ export default function App() {
                   <QuickCastPanel
                     onResult={handleQuickResult}
                     disabled={!canCast}
+                    algorithm={formData.lucHaoAlgorithm}
                   />
                 ) : mode === 'manual-step' ? (
                   <ManualLineStepper
@@ -556,6 +548,7 @@ export default function App() {
                     onLineAdded={handleLineAdded}
                     onReset={handleReset}
                     disabled={!canCast}
+                    algorithm={formData.lucHaoAlgorithm}
                   />
                 ) : (
                   /* mode === 'mai-hoa-time' | 'mai-hoa-serial' */
@@ -591,6 +584,25 @@ export default function App() {
                 maiHoaResult={maiHoaResult}
                 onChangeMethod={handleChangeMethod}
               />
+            )}
+
+            {/* Nút "Đổi phương pháp" nếu đang ở state casting/result */}
+            {(hasPickedMethod || hasResult) && (
+              <button
+                onClick={handleChangeMethod}
+                className="btn-ghost"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: '10px 16px',
+                  fontWeight: 600,
+                  alignSelf: 'center',
+                }}
+              >
+                ← Đổi phương pháp gieo
+              </button>
             )}
           </div>
         </div>

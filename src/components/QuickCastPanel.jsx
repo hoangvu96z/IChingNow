@@ -4,7 +4,7 @@ import { castAllLines } from '../logic/castLines.js';
 /**
  * Panel gieo nhanh 6 hào — 1 nút CTA
  */
-export default function QuickCastPanel({ onResult, disabled }) {
+export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-coin' }) {
   const [isAnimating, setIsAnimating] = useState(false);
 
   async function handleCast() {
@@ -13,7 +13,7 @@ export default function QuickCastPanel({ onResult, disabled }) {
 
     // Delay nhỏ để có hiệu ứng
     await new Promise(r => setTimeout(r, 800));
-    const lines = castAllLines();
+    const lines = castAllLines(algorithm);
     setIsAnimating(false);
     onResult(lines);
   }
@@ -79,7 +79,11 @@ export default function QuickCastPanel({ onResult, disabled }) {
         maxWidth: 280,
         lineHeight: 1.5,
       }}>
-        Hệ thống sẽ mô phỏng tung 3 đồng xu × 6 lần theo phương pháp kinh điển
+        {algorithm === 'yarrow-stalks'
+          ? 'Hệ thống sẽ mô phỏng chia 49 cọng Cỏ Thi × 6 lần theo phương pháp cổ xưa của Chu Dịch.'
+          : algorithm === 'equal-prob'
+          ? 'Hệ thống sẽ gieo ngẫu nhiên 6 hào với cơ hội xuất hiện mỗi hào bằng nhau (25%).'
+          : 'Hệ thống sẽ mô phỏng tung 3 đồng xu × 6 lần theo phương pháp kinh điển.'}
       </p>
     </div>
   );

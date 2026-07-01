@@ -249,7 +249,7 @@ export function buildLucHaoResult({ formData, lines, mode }) {
 
   // ── Build createdAt ─────────────────────────────────────────────────────
   const createdAt = formData.castDate && formData.castTime
-    ? new Date(`${formData.castDate}T${formData.castTime}`).toISOString()
+    ? new Date(`${formData.castDate}T${formData.castTime}:00+07:00`).toISOString()
     : new Date().toISOString();
 
   return {

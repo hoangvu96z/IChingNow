@@ -10,7 +10,7 @@ const STEP_LABELS = ['Hào 1', 'Hào 2', 'Hào 3', 'Hào 4', 'Hào 5', 'Hào 6']
  * onLineAdded: callback(line)
  * onReset: callback
  */
-export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled }) {
+export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled, algorithm = 'three-coin' }) {
   const currentStep = completedLines.length; // 0..5
   const isDone      = completedLines.length === 6;
 
@@ -24,7 +24,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
     setIsAnimating(true);
     setLastLine(null);
     await new Promise(r => setTimeout(r, 700));
-    const line = { index: currentStep + 1, ...castOneLine() };
+    const line = { index: currentStep + 1, ...castOneLine(algorithm) };
     setLastLine(line);
     setIsAnimating(false);
     setTimeout(() => {
@@ -144,6 +144,9 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
             textAlign: 'center',
           }}>
             Đang gieo: Hào {currentStep + 1}
+            <div style={{ fontSize: '0.75rem', fontWeight: 400, marginTop: 2, color: 'var(--color-ink-muted)' }}>
+              (Phương pháp: {algorithm === 'yarrow-stalks' ? 'Cỏ Thi cổ xưa' : algorithm === 'equal-prob' ? 'Đồng xác suất (25%)' : '3 Đồng xu truyền thống'})
+            </div>
           </div>
 
           {!manualMode ? (

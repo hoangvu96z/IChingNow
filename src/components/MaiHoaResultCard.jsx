@@ -1,6 +1,7 @@
 import React from 'react';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import DescriptionPanel from './DescriptionPanel.jsx';
+import LucHaoTable from './LucHaoTable.jsx';
 
 // ─── Hexagram card (1 trong 3 quẻ) ───────────────────────────────────────────
 function HexCard({ label, labelColor, hexagram, lines, subtitle, badge }) {
@@ -263,6 +264,22 @@ export default function MaiHoaResultCard({ result }) {
       {/* Mô tả Quẻ Biến (nếu có) */}
       {changedHexagram?.description && (
         <DescriptionPanel hexagram={changedHexagram} color="var(--color-jade)" />
+      )}
+
+      {/* Bảng Lục Hào đi kèm (Nếu có) */}
+      {result.lucHaoResult && (
+        <>
+          <hr className="divider" />
+          <div>
+            <div style={{
+              fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-ink-muted)',
+              letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10,
+            }}>
+              📊 Bảng Lục Hào của quẻ
+            </div>
+            <LucHaoTable result={result.lucHaoResult} />
+          </div>
+        </>
       )}
 
       {/* Chi tiết tính toán */}

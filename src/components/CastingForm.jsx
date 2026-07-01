@@ -5,7 +5,7 @@ import { SOLAR_TERMS } from '../data/solarTerms.js';
 /**
  * Form nhập liệu: việc cần xem, ngày giờ, người lập, tiết khí, động tâm
  */
-export default function CastingForm({ formData, onChange }) {
+export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
   function set(key, value) {
     onChange({ ...formData, [key]: value });
   }
@@ -66,6 +66,22 @@ export default function CastingForm({ formData, onChange }) {
           />
         </div>
       </div>
+
+      {/* Thuật toán gieo quẻ Lục Hào (Chỉ hiển thị khi gieo Lục Hào) */}
+      {showLucHaoOptions && (
+        <div>
+          <label className="form-label">Thuật toán gieo Lục Hào</label>
+          <select
+            className="form-input"
+            value={formData.lucHaoAlgorithm || 'three-coin'}
+            onChange={e => set('lucHaoAlgorithm', e.target.value)}
+          >
+            <option value="three-coin">🪙 3 Đồng xu truyền thống (Cân bằng)</option>
+            <option value="yarrow-stalks">🌿 Phác thảo Cỏ Thi (Cổ xưa)</option>
+            <option value="equal-prob">⚖️ Đồng xác suất (25% mỗi loại)</option>
+          </select>
+        </div>
+      )}
 
       {/* Toggle tiết khí */}
       <label style={{
