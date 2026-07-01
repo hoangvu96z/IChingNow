@@ -175,19 +175,21 @@ function FormulaBox({ mode }) {
 
 // ─── Panel thời gian ──────────────────────────────────────────────────────────
 function TimeModePanel({ question, onResult, onReset }) {
-  const now   = new Date();
+  const _now = new Date();
+  const vnNow = new Date(_now.getTime() + (_now.getTimezoneOffset() * 60000) + (3600000 * 7));
   const pad   = n => String(n).padStart(2, '0');
-  const today = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const nowT  = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const today = `${vnNow.getFullYear()}-${pad(vnNow.getMonth()+1)}-${pad(vnNow.getDate())}`;
+  const nowT  = `${pad(vnNow.getHours())}:${pad(vnNow.getMinutes())}`;
 
   const [dateStr, setDateStr] = useState(today);
   const [timeStr, setTimeStr] = useState(nowT);
   const [error,   setError]   = useState('');
 
   function fillNow() {
-    const n = new Date();
-    setDateStr(`${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}`);
-    setTimeStr(`${pad(n.getHours())}:${pad(n.getMinutes())}`);
+    const d = new Date();
+    const vn = new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + (3600000 * 7));
+    setDateStr(`${vn.getFullYear()}-${pad(vn.getMonth()+1)}-${pad(vn.getDate())}`);
+    setTimeStr(`${pad(vn.getHours())}:${pad(vn.getMinutes())}`);
     onReset();
   }
 
@@ -223,7 +225,7 @@ function TimeModePanel({ question, onResult, onReset }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div>
           <label className="form-label">Ngày động tâm</label>
-          <input type="date" className="form-input" value={dateStr} max={today}
+          <input type="date" className="form-input" value={dateStr}
             onChange={e => { setDateStr(e.target.value); onReset(); }} />
         </div>
         <div>
@@ -231,6 +233,9 @@ function TimeModePanel({ question, onResult, onReset }) {
           <input type="time" className="form-input" value={timeStr}
             onChange={e => { setTimeStr(e.target.value); onReset(); }} />
         </div>
+      </div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginTop: '-8px', fontStyle: 'italic' }}>
+        * Lưu ý: Giờ động tâm được lấy mặc định theo giờ Việt Nam (UTC+7).
       </div>
 
       {/* Preview âm lịch */}

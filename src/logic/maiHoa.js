@@ -412,7 +412,11 @@ export function buildMaiHoaResult({ subMode, dateStr, timeStr, serial, question 
 
   // ── Bước 1: Tính Số Thượng / Số Hạ / Hào động ──
   if (subMode === 'time') {
-    const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : new Date().getHours();
+    const getVNHour = () => {
+      const d = new Date();
+      return new Date(d.getTime() + d.getTimezoneOffset() * 60000 + 3600000 * 7).getHours();
+    };
+    const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : getVNHour();
     lunarInfo  = getLunarInfo(dateStr, hour);
     if (!lunarInfo) return null;
     calc = getMaiHoaByTime(
