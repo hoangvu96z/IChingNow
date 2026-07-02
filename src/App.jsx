@@ -458,25 +458,46 @@ export default function App() {
             </div>
           </div>
 
-          {(result || maiHoaResult) && (
-            <button
-              onClick={handleFullReset}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <a 
+              href="https://vunph.id.vn/tarot/"
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 8,
-                color: 'rgba(255,255,255,0.8)',
-                padding: '8px 16px',
-                cursor: 'pointer',
+                color: 'rgba(255, 255, 255, 0.75)',
+                textDecoration: 'none',
                 fontSize: '0.875rem',
+                transition: 'color 0.2s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: '6px'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#f5d78e'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.75)'}
             >
-              🔄 Lập quẻ mới
-            </button>
-          )}
+              🃏 Xem Tarot
+            </a>
+
+            {(result || maiHoaResult) && (
+              <button
+                onClick={handleFullReset}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 8,
+                  color: 'rgba(255,255,255,0.8)',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                🔄 Lập quẻ mới
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
