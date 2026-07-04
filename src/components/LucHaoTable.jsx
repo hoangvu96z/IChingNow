@@ -1,14 +1,16 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Bảng Lục Hào chính — render cả quẻ chủ và quẻ biến song song
- * Layout giống ảnh tham chiếu (simkinhdich.com)
  */
 export default function LucHaoTable({ result }) {
+  const { t, language } = useLanguage();
+
   if (!result || !result.lines || result.lines.length < 6) {
     return (
       <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--color-ink-muted)', fontSize: '0.9rem' }}>
-        Chưa có dữ liệu quẻ
+        {t('result.no_data', 'Chưa có dữ liệu quẻ')}
       </div>
     );
   }
@@ -28,7 +30,6 @@ export default function LucHaoTable({ result }) {
           hexagram={result.primaryHexagram}
           palace={result.palaceName}
           queType={result.queType}
-          theHao={result.theHao}
           flex={hasChanged ? 1 : undefined}
         />
         {hasChanged && (
@@ -38,7 +39,6 @@ export default function LucHaoTable({ result }) {
               hexagram={result.changedHexagram}
               palace={result.changedLines ? findPalaceLabel(result.changedLines, result) : ''}
               isChanged
-              theHao={result.changedLines ? findTheHao(result.changedLines) : 6}
               flex={1}
             />
           </>
@@ -54,7 +54,6 @@ export default function LucHaoTable({ result }) {
             khongVong={result.khongVong || []}
             showLucThu={false}
             accentColor="var(--color-vermillion)"
-            label="Quẻ Chủ"
           />
         </div>
 
@@ -68,7 +67,6 @@ export default function LucHaoTable({ result }) {
                 khongVong={result.khongVong || []}
                 showLucThu={true}
                 accentColor="var(--color-jade)"
-                label="Quẻ Biến"
               />
             </div>
           </>
@@ -83,8 +81,17 @@ export default function LucHaoTable({ result }) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function HexNameHeader({ hexagram, palace, queType, isChanged, theHao, flex }) {
-  const queTypeLabel = QUE_TYPE_LABELS[queType] || '';
+function HexNameHeader({ hexagram, palace, queType, isChanged, flex }) {
+  const { t, language } = useLanguage();
+  
+  if (!hexagram) return null;
+  const hexName = language === 'en' ? t(`hex.name.${hexagram.id}`, hexagram.nameVi) : hexagram.nameVi;
+  
+  // Format palace element
+  const palaceNameTrans = t(`trigram.${palace}`, palace);
+  const queTypeTrans = queType ? t(`queType.${queType}`, queType) : '';
+  const palaceLabel = queTypeTrans ? `${palaceNameTrans} (${queTypeTrans})` : palaceNameTrans;
+
   return (
     <div style={{
       flex: flex || 1,
@@ -102,11 +109,11 @@ function HexNameHeader({ hexagram, palace, queType, isChanged, theHao, flex }) {
         letterSpacing: '0.04em',
         marginBottom: 2,
       }}>
-        {hexagram ? hexagram.nameVi.toUpperCase() : '—'}
+        {hexName.toUpperCase()}
       </div>
       {palace && (
         <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', marginBottom: 2 }}>
-          {queTypeLabel ? `${palace} (${queTypeLabel})` : palace}
+          {palaceLabel}
         </div>
       )}
     </div>
@@ -114,20 +121,49 @@ function HexNameHeader({ hexagram, palace, queType, isChanged, theHao, flex }) {
 }
 
 function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
+  const { t, language } = useLanguage();
+
+  const headers = [
+    t('result.col_yao', 'Vạch'),
+    t('result.col_the_ung', 'T/Ứ'),
+    t('result.col_luc_than', 'Lục Thân'),
+    t('result.col_can_chi', 'Can Chi'),
+    t('result.col_phuc_than', 'P.Thần'),
+    t('result.col_tuan_khong', 'T.K'),
+  ];
+  if (showLucThu) {
+    headers.push(t('result.col_luc_thu', 'Lục Thú'));
+  }
+
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem', tableLayout: 'fixed' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem', tableLayout: 'auto' }}>
       <thead>
         <tr style={{ borderBottom: '1.5px solid rgba(184,134,11,0.25)' }}>
-          {['Vạch', 'T/Ứ', 'Lục Thân', 'Can Chi', 'P.Thần', 'T.K'].map(h => (
-            <Th key={h}>{h}</Th>
+          {headers.map((h, i) => (
+            <Th key={i}>{h}</Th>
           ))}
-          {showLucThu && <Th>Lục Thú</Th>}
         </tr>
       </thead>
       <tbody>
         {lines.map((line, idx) => {
           const isKV = khongVong.includes(line.chi);
           const isMoving = line.moving;
+
+          // Localize terms
+          const theUngLabel = line.theUng === 'Thế' ? t('theUng.the', 'Thế') : line.theUng === 'Ứng' ? t('theUng.ung', 'Ứng') : '';
+          const lucThanLabel = line.lucThan ? t(`lucThan.${line.lucThan}`, line.lucThan) : '';
+          
+          const chiTrans = t(`branch.${line.chi}`, line.chi);
+          const elementTrans = t(`element.${line.nguHanhHao}`, line.nguHanhHao);
+          const canChiLabel = line.chi && line.nguHanhHao ? `${chiTrans}-${elementTrans}` : '—';
+          const canLabel = line.can ? t(`stem.${line.can}`, line.can) : '';
+
+          const phucThanLabel = line.phucThan ? t(`lucThan.${line.phucThan.lucThan}`, line.phucThan.lucThan) : '';
+          const ptChiTrans = line.phucThan ? t(`branch.${line.phucThan.chi}`, line.phucThan.chi) : '';
+          const ptElementTrans = line.phucThan ? t(`element.${line.phucThan.nguHanh}`, line.phucThan.nguHanh) : '';
+
+          const lucThuLabel = line.lucThu ? t(`lucThu.${line.lucThu}`, line.lucThu) : '—';
+
           return (
             <tr key={line.index} style={{
               borderBottom: '1px solid rgba(184,134,11,0.09)',
@@ -140,7 +176,7 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
 
               {/* Thế/Ứng */}
               <Td center>
-                {line.theUng && (
+                {theUngLabel && (
                   <span style={{
                     fontWeight: 700,
                     fontSize: '0.7rem',
@@ -149,7 +185,7 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
                     padding: '1px 5px',
                     borderRadius: 4,
                   }}>
-                    {line.theUng}
+                    {theUngLabel}
                   </span>
                 )}
               </Td>
@@ -160,21 +196,18 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
                   color: isMoving ? accentColor : 'var(--color-ink)',
                   fontWeight: isMoving ? 700 : 500,
                 }}>
-                  {line.lucThan || '—'}
+                  {lucThanLabel || '—'}
                 </span>
               </Td>
 
               {/* Can Chi + Ngũ Hành */}
               <Td>
                 <span style={{ color: isKV ? 'var(--color-ink-muted)' : 'var(--color-ink)' }}>
-                  {line.chi && line.nguHanhHao
-                    ? `${line.chi}-${line.nguHanhHao}`
-                    : '—'
-                  }
+                  {canChiLabel}
                 </span>
-                {line.can && (
+                {canLabel && (
                   <div style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)', marginTop: 1 }}>
-                    {line.can}
+                    {canLabel}
                   </div>
                 )}
               </Td>
@@ -183,8 +216,8 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
               <Td>
                 {line.phucThan && (
                   <div style={{ fontSize: '0.75rem' }}>
-                    <div style={{ color: '#7b6f3a', fontWeight: 600 }}>{line.phucThan.lucThan}</div>
-                    <div style={{ color: 'var(--color-ink-muted)' }}>{line.phucThan.chi}-{line.phucThan.nguHanh}</div>
+                    <div style={{ color: '#7b6f3a', fontWeight: 600 }}>{phucThanLabel}</div>
+                    <div style={{ color: 'var(--color-ink-muted)' }}>{ptChiTrans}-{ptElementTrans}</div>
                   </div>
                 )}
               </Td>
@@ -200,7 +233,7 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
                     borderRadius: 3,
                     padding: '1px 4px',
                   }}>
-                    K
+                    {language === 'en' ? 'V' : 'K'}
                   </span>
                 )}
               </Td>
@@ -209,7 +242,7 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
               {showLucThu && (
                 <Td>
                   <span style={{ fontSize: '0.75rem', color: getLucThuColor(line.lucThu) }}>
-                    {line.lucThu || '—'}
+                    {lucThuLabel}
                   </span>
                 </Td>
               )}
@@ -222,6 +255,17 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
 }
 
 function InfoFooter({ result }) {
+  const { t } = useLanguage();
+  
+  const palaceNameTrans = t(`trigram.${result.palaceName}`, result.palaceName);
+  const palaceElementTrans = t(`element.${result.palaceElement}`, result.palaceElement);
+  const queTypeTrans = t(`queType.${result.queType}`, result.queType);
+  const khongVongTrans = result.khongVong?.map(v => t(`branch.${v}`, v)).join(', ') || '';
+
+  const dayCanTrans = result.canChi ? t(`stem.${result.canChi.ngayCan}`, result.canChi.ngayCan) : '';
+  const dayChiTrans = result.canChi ? t(`branch.${result.canChi.ngayChi}`, result.canChi.ngayChi) : '';
+  const canNgayTrans = dayCanTrans && dayChiTrans ? `${dayCanTrans} ${dayChiTrans}` : '';
+
   return (
     <div style={{
       marginTop: 10,
@@ -234,15 +278,15 @@ function InfoFooter({ result }) {
       gap: '6px 20px',
       fontSize: '0.8125rem',
     }}>
-      <InfoItem label="Cung" value={`${result.palaceName} (${result.palaceElement})`} />
-      <InfoItem label="Loại quẻ" value={QUE_TYPE_LABELS[result.queType] || result.queType} />
-      <InfoItem label="Thế H" value={result.theHao} />
-      <InfoItem label="Ứng H" value={result.ungHao} />
+      <InfoItem label={t('info.palace', 'Cung')} value={`${palaceNameTrans} (${palaceElementTrans})`} />
+      <InfoItem label={t('info.que_type', 'Loại quẻ')} value={queTypeTrans} />
+      <InfoItem label={t('info.the_h', 'Thế H')} value={result.theHao} />
+      <InfoItem label={t('info.ung_h', 'Ứng H')} value={result.ungHao} />
       {result.khongVong?.length > 0 && (
-        <InfoItem label="Tuần Không" value={result.khongVong.join(', ')} color="#7b6f3a" />
+        <InfoItem label={t('info.tuan_khong', 'Tuần Không')} value={khongVongTrans} color="#7b6f3a" />
       )}
-      {result.canChi && (
-        <InfoItem label="Can Ngày" value={`${result.canChi.ngayCan} ${result.canChi.ngayChi}`} />
+      {canNgayTrans && (
+        <InfoItem label={t('info.can_ngay', 'Can Ngày')} value={canNgayTrans} />
       )}
     </div>
   );
@@ -304,17 +348,6 @@ function InfoItem({ label, value, color }) {
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 
-const QUE_TYPE_LABELS = {
-  'bat-thuan': 'Bát Thuần',
-  'nhat-the':  'Nhất Thế',
-  'nhi-the':   'Nhị Thế',
-  'tam-the':   'Tam Thế',
-  'tu-the':    'Tứ Thế',
-  'ngu-the':   'Ngũ Thế',
-  'du-hon':    'Du Hồn',
-  'quy-hon':   'Quy Hồn',
-};
-
 const LUC_THU_COLORS = {
   'Thanh Long': '#1a6b4a',
   'Chu Tước':   '#c0392b',
@@ -322,15 +355,17 @@ const LUC_THU_COLORS = {
   'Đằng Xà':    '#6A0DAD',
   'Bạch Hổ':    '#555',
   'Huyền Vũ':   '#1a4a6b',
+  
+  'Azure Dragon': '#1a6b4a',
+  'Vermilion Bird': '#c0392b',
+  'Curving Snake': '#8B6914',
+  'Soaring Serpent': '#6A0DAD',
+  'White Tiger': '#555',
+  'Black Tortoise': '#1a4a6b',
 };
 
 function getLucThuColor(name) {
   return LUC_THU_COLORS[name] || 'var(--color-ink-muted)';
-}
-
-function findTheHao(lines) {
-  // For changed hexagram: just return 6 as default or check palace
-  return lines?.[0]?.index || 6;
 }
 
 function findPalaceLabel(changedLines, result) {

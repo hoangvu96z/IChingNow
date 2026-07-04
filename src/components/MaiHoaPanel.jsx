@@ -1,13 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { buildMaiHoaResult, generateSerialSuggestions, getLunarInfo, getHourBranchInfo } from '../logic/maiHoa.js';
+import { buildMaiHoaResult, generateSerialSuggestions, getLunarInfo } from '../logic/maiHoa.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 // ─── Preview âm lịch + giờ địa chi ──────────────────────────────────────────
 function LunarPreview({ dateStr, timeStr }) {
+  const { t, language } = useLanguage();
   if (!dateStr) return null;
   const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : 0;
   const info = getLunarInfo(dateStr, hour);
   if (!info) return null;
   const { yearStemVi, yearChiName, yearChiNumber, monthNumber, dayNumber, hourBranchInfo, isLeapMonth } = info;
+
+  const stemTrans = t(`stem.${yearStemVi}`, yearStemVi);
+  const chiTrans = t(`branch.${yearChiName}`, yearChiName);
+  const hourBranchTrans = hourBranchInfo ? t(`branch.${hourBranchInfo.nameVi.replace('Giờ ', '')}`, hourBranchInfo.nameVi) : '';
 
   return (
     <div style={{
@@ -20,33 +26,33 @@ function LunarPreview({ dateStr, timeStr }) {
       lineHeight: 1.7,
     }}>
       <div style={{ fontWeight: 700, color: 'var(--color-gold)', marginBottom: 4, fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-        Âm lịch quy đổi
+        {t('maihoa.lunar_preview', 'Âm lịch quy đổi')}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
         <div>
-          <span style={{ color: 'var(--color-ink-muted)' }}>Năm: </span>
-          <strong style={{ color: 'var(--color-ink)' }}>{yearStemVi} {yearChiName}</strong>
-          <span style={{ color: 'var(--color-gold)', marginLeft: 4 }}>(số {yearChiNumber})</span>
+          <span style={{ color: 'var(--color-ink-muted)' }}>{t('maihoa.lunar_year', 'Năm')}: </span>
+          <strong style={{ color: 'var(--color-ink)' }}>{stemTrans} {chiTrans}</strong>
+          <span style={{ color: 'var(--color-gold)', marginLeft: 4 }}>(# {yearChiNumber})</span>
         </div>
         <div>
-          <span style={{ color: 'var(--color-ink-muted)' }}>Tháng: </span>
+          <span style={{ color: 'var(--color-ink-muted)' }}>{t('maihoa.lunar_month', 'Tháng')}: </span>
           <strong style={{ color: 'var(--color-ink)' }}>{monthNumber}</strong>
-          {isLeapMonth && <span style={{ color: 'var(--color-vermillion)', marginLeft: 4 }}>(Nhuận)</span>}
+          {isLeapMonth && <span style={{ color: 'var(--color-vermillion)', marginLeft: 4 }}>{t('maihoa.lunar_leap', '(Nhuận)')}</span>}
         </div>
         <div>
-          <span style={{ color: 'var(--color-ink-muted)' }}>Ngày: </span>
+          <span style={{ color: 'var(--color-ink-muted)' }}>{t('maihoa.lunar_day', 'Ngày')}: </span>
           <strong style={{ color: 'var(--color-ink)' }}>{dayNumber}</strong>
         </div>
         <div>
-          <span style={{ color: 'var(--color-ink-muted)' }}>Giờ: </span>
-          <strong style={{ color: 'var(--color-ink)' }}>{hourBranchInfo.nameVi}</strong>
-          <span style={{ color: 'var(--color-gold)', marginLeft: 4 }}>(số {hourBranchInfo.chiNumber})</span>
+          <span style={{ color: 'var(--color-ink-muted)' }}>{t('maihoa.lunar_hour', 'Giờ')}: </span>
+          <strong style={{ color: 'var(--color-ink)' }}>{hourBranchTrans}</strong>
+          <span style={{ color: 'var(--color-gold)', marginLeft: 4 }}>(# {hourBranchInfo?.chiNumber})</span>
         </div>
       </div>
       <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(184,134,11,0.15)', color: 'var(--color-ink-muted)', fontSize: '0.75rem' }}>
-        Số thượng = {yearChiNumber}+{monthNumber}+{dayNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber}</strong>
+        {language === 'en' ? 'Upper' : 'Số thượng'} = {yearChiNumber}+{monthNumber}+{dayNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber}</strong>
         &nbsp;&nbsp;
-        Số hạ = +{hourBranchInfo.chiNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber+hourBranchInfo.chiNumber}</strong>
+        {language === 'en' ? 'Lower' : 'Số hạ'} = +{hourBranchInfo?.chiNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber+hourBranchInfo?.chiNumber}</strong>
       </div>
     </div>
   );
@@ -54,6 +60,7 @@ function LunarPreview({ dateStr, timeStr }) {
 
 // ─── Serial digit preview ─────────────────────────────────────────────────────
 function SerialPreview({ serial }) {
+  const { t } = useLanguage();
   const cleaned = (serial || '').replace(/\D/g, '');
   if (cleaned.length < 2) return null;
   const mid    = Math.ceil(cleaned.length / 2);
@@ -74,7 +81,7 @@ function SerialPreview({ serial }) {
       lineHeight: 1.8,
     }}>
       <div style={{ fontWeight: 700, color: 'var(--color-gold)', marginBottom: 4, fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-        Phân tích số
+        {t('maihoa.serial_preview', 'Phân tích số')}
       </div>
       {/* Hiển thị 2 nửa */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontFamily: "'Source Code Pro', monospace", fontSize: '1.1rem', letterSpacing: '0.1em' }}>
@@ -85,15 +92,15 @@ function SerialPreview({ serial }) {
         </>}
       </div>
       <div style={{ color: 'var(--color-ink-muted)', fontSize: '0.8125rem' }}>
-        <span>Số thượng = {first.split('').join('+')} = </span>
+        <span>{t('maihoa.serial_upper', 'Số thượng')} = {first.split('').join('+')} = </span>
         <strong style={{ color: 'var(--color-vermillion)' }}>{sumFirst}</strong>
         {last && <>
           {'  ·  '}
-          <span>Số hạ = {last.split('').join('+')} = </span>
+          <span>{t('maihoa.serial_lower', 'Số hạ')} = {last.split('').join('+')} = </span>
           <strong style={{ color: 'var(--color-jade)' }}>{sumLast}</strong>
         </>}
         {'  ·  '}
-        <span>Số hào = </span>
+        <span>{t('maihoa.serial_line', 'Số hào')} = </span>
         <strong style={{ color: 'var(--color-gold)' }}>{sumAll}</strong>
       </div>
     </div>
@@ -102,15 +109,16 @@ function SerialPreview({ serial }) {
 
 // ─── Số gợi ý ngẫu nhiên ──────────────────────────────────────────────────────
 function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
+  const { t } = useLanguage();
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)' }}>Số gợi ý ngẫu nhiên</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContainer: 'space-between', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)' }}>{t('maihoa.serial_tip', 'Số gợi ý ngẫu nhiên')}</span>
         <button
           onClick={onRefresh}
           style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8125rem', color: 'var(--color-gold)', fontWeight: 600, padding: '2px 6px', borderRadius: 4 }}
         >
-          🔄 Làm mới
+          🔄 {t('history.clear_all', 'Làm mới').replace('Xóa tất cả', 'Làm mới').replace('Clear All', 'Refresh')}
         </button>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -144,6 +152,7 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
 
 // ─── Công thức giải thích ────────────────────────────────────────────────────
 function FormulaBox({ mode }) {
+  const { t, language } = useLanguage();
   const isTime = mode === 'time';
   return (
     <div style={{
@@ -155,19 +164,37 @@ function FormulaBox({ mode }) {
       color: 'var(--color-ink-muted)',
       lineHeight: 1.8,
     }}>
-      <div style={{ fontWeight: 700, color: 'var(--color-jade)', marginBottom: 3 }}>Công thức</div>
+      <div style={{ fontWeight: 700, color: 'var(--color-jade)', marginBottom: 3 }}>
+        {language === 'en' ? 'Formula' : 'Công thức'}
+      </div>
       {isTime ? (
-        <>
-          Thượng quái = (Năm + Tháng + Ngày) mod 8<br />
-          Hạ quái = (Năm + Tháng + Ngày + Giờ) mod 8<br />
-          Hào động = (Năm + Tháng + Ngày + Giờ) mod 6
-        </>
+        language === 'en' ? (
+          <>
+            Upper Trigram = (Year + Month + Day) mod 8<br />
+            Lower Trigram = (Year + Month + Day + Hour) mod 8<br />
+            Changing Line = (Year + Month + Day + Hour) mod 6
+          </>
+        ) : (
+          <>
+            Thượng quái = (Năm + Tháng + Ngày) mod 8<br />
+            Hạ quái = (Năm + Tháng + Ngày + Giờ) mod 8<br />
+            Hào động = (Năm + Tháng + Ngày + Giờ) mod 6
+          </>
+        )
       ) : (
-        <>
-          Thượng quái = Tổng nửa đầu mod 8<br />
-          Hạ quái = Tổng nửa sau mod 8<br />
-          Hào động = Tổng tất cả chữ số mod 6
-        </>
+        language === 'en' ? (
+          <>
+            Upper Trigram = Sum of first half mod 8<br />
+            Lower Trigram = Sum of second half mod 8<br />
+            Changing Line = Sum of all digits mod 6
+          </>
+        ) : (
+          <>
+            Thượng quái = Tổng nửa đầu mod 8<br />
+            Hạ quái = Tổng nửa sau mod 8<br />
+            Hào động = Tổng tất cả chữ số mod 6
+          </>
+        )
       )}
     </div>
   );
@@ -175,6 +202,7 @@ function FormulaBox({ mode }) {
 
 // ─── Panel thời gian ──────────────────────────────────────────────────────────
 function TimeModePanel({ question, onResult, onReset }) {
+  const { t } = useLanguage();
   const _now = new Date();
   const vnNow = new Date(_now.getTime() + (_now.getTimezoneOffset() * 60000) + (3600000 * 7));
   const pad   = n => String(n).padStart(2, '0');
@@ -195,9 +223,9 @@ function TimeModePanel({ question, onResult, onReset }) {
 
   function handleCast() {
     setError('');
-    if (!dateStr) { setError('Vui lòng chọn ngày.'); return; }
+    if (!dateStr) { setError(t('maihoa.error_select_date', 'Vui lòng chọn ngày.')); return; }
     const result = buildMaiHoaResult({ subMode: 'time', dateStr, timeStr, question });
-    if (!result) { setError('Không thể tính âm lịch. Hãy thử lại.'); return; }
+    if (!result) { setError(t('maihoa.error_lunar_calc', 'Không thể tính âm lịch. Hãy thử lại.')); return; }
     onResult(result);
   }
 
@@ -218,24 +246,24 @@ function TimeModePanel({ question, onResult, onReset }) {
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(184,134,11,0.2)'}
         onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, rgba(184,134,11,0.12), rgba(184,134,11,0.06))'}
       >
-        ⚡ Lấy ngày giờ hiện tại
+        {t('maihoa.date_btn', '📅 Chọn ngày giờ hiện tại')}
       </button>
 
       {/* Ngày + Giờ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div>
-          <label className="form-label">Ngày động tâm</label>
+          <label className="form-label">{t('form.moving_date_label', 'Ngày động tâm')}</label>
           <input type="date" className="form-input" value={dateStr}
             onChange={e => { setDateStr(e.target.value); onReset(); }} />
         </div>
         <div>
-          <label className="form-label">Giờ động tâm</label>
+          <label className="form-label">{t('form.moving_time_label', 'Giờ động tâm')}</label>
           <input type="time" className="form-input" value={timeStr}
             onChange={e => { setTimeStr(e.target.value); onReset(); }} />
         </div>
       </div>
       <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginTop: '-8px', fontStyle: 'italic' }}>
-        * Lưu ý: Giờ động tâm được lấy mặc định theo giờ Việt Nam (UTC+7).
+        {t('maihoa.timezone_note', '* Note: The time of intent is defaulted to Indochina Time (UTC+7).')}
       </div>
 
       {/* Preview âm lịch */}
@@ -253,6 +281,7 @@ function TimeModePanel({ question, onResult, onReset }) {
 
 // ─── Panel số seri ────────────────────────────────────────────────────────────
 function SerialModePanel({ question, onResult, onReset }) {
+  const { t } = useLanguage();
   const [serial,      setSerial]      = useState('');
   const [suggestions, setSuggestions] = useState(() => generateSerialSuggestions());
   const [error,       setError]       = useState('');
@@ -268,9 +297,9 @@ function SerialModePanel({ question, onResult, onReset }) {
   function handleCast() {
     setError('');
     const cleaned = serial.replace(/\D/g, '');
-    if (cleaned.length < 2) { setError('Vui lòng nhập ít nhất 2 chữ số.'); return; }
+    if (cleaned.length < 2) { setError(t('maihoa.serial_format_err', 'Vui lòng nhập ít nhất 2 chữ số.')); return; }
     const result = buildMaiHoaResult({ subMode: 'serial', serial: cleaned, question });
-    if (!result) { setError('Lỗi tính toán. Kiểm tra lại số nhập.'); return; }
+    if (!result) { setError(t('maihoa.error_serial_calc', 'Lỗi tính toán. Kiểm tra lại số nhập.')); return; }
     onResult(result);
   }
 
@@ -278,13 +307,13 @@ function SerialModePanel({ question, onResult, onReset }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
       <div>
-        <label className="form-label">Số lập quẻ (2–8 chữ số)</label>
+        <label className="form-label">{t('maihoa.input_serial', 'Số lập quẻ (2–8 chữ số)')}</label>
         <div style={{ position: 'relative' }}>
           <input
             type="text"
             inputMode="numeric"
             className="form-input"
-            placeholder="Nhập 2–8 chữ số (VD: 123456 hoặc 19452026)"
+            placeholder={t('maihoa.input_serial_placeholder', 'Nhập 2–8 chữ số (VD: 123456 hoặc 19452026)')}
             value={serial}
             maxLength={8}
             onChange={e => handleInput(e.target.value)}
@@ -319,9 +348,10 @@ function SerialModePanel({ question, onResult, onReset }) {
 
 // ─── Shared UI atoms ──────────────────────────────────────────────────────────
 function CastButton({ onClick, disabled }) {
+  const { t } = useLanguage();
   return (
     <button className="btn-primary btn-cta" onClick={onClick} disabled={disabled} style={{ marginTop: 4 }}>
-      🌸 Lập quẻ Mai Hoa
+      {t('maihoa.calc_btn', '🌸 Lập quẻ Mai Hoa')}
     </button>
   );
 }
@@ -333,9 +363,10 @@ function ErrorBox({ msg }) {
   );
 }
 function NeedQuestionHint() {
+  const { t } = useLanguage();
   return (
     <div style={{ padding: '8px 12px', background: 'rgba(192,57,43,0.08)', borderRadius: 6, fontSize: '0.8125rem', color: 'var(--color-vermillion)', border: '1px solid rgba(192,57,43,0.2)' }}>
-      ⚠ Hãy nhập việc cần xem trước khi lập quẻ
+      {t('panel.need_question_warning', '⚠ Hãy nhập việc cần xem trước khi lập quẻ')}
     </div>
   );
 }

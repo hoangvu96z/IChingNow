@@ -1,18 +1,41 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext.jsx';
+
+const BINARY_TO_QUAI_NUMBER = {
+  '111': 1, // Càn
+  '110': 2, // Đoài
+  '101': 3, // Ly
+  '100': 4, // Chấn
+  '011': 5, // Tốn
+  '010': 6, // Khảm
+  '001': 7, // Cấn
+  '000': 8, // Khôn
+};
 
 /**
  * Panel hiển thị 5 khía cạnh luận giải chi tiết của quẻ
  */
 export default function DescriptionPanel({ hexagram, color }) {
-  if (!hexagram?.description) return null;
-  const d = hexagram.description;
+  const { t, language, getHexDescription } = useLanguage();
+  
+  if (!hexagram) return null;
+
+  const upperId = BINARY_TO_QUAI_NUMBER[hexagram.upper];
+  const lowerId = BINARY_TO_QUAI_NUMBER[hexagram.lower];
+  const d = getHexDescription(upperId, lowerId);
+
+  if (!d) return null;
+
+  const hexName = language === 'en' ? t(`hex.name.${hexagram.id}`, hexagram.nameVi) : hexagram.nameVi;
+
   const aspects = [
-    { key: 'tong_quat', label: 'Tổng quát' },
-    { key: 'tinh_cam',  label: 'Tình cảm' },
-    { key: 'gia_dao',   label: 'Gia đạo'  },
-    { key: 'cong_viec', label: 'Công việc' },
-    { key: 'suc_khoe',  label: 'Sức khỏe' },
+    { key: 'tong_quat', label: t('desc.aspect_tong_quat', 'Tổng quát') },
+    { key: 'tinh_cam',  label: t('desc.aspect_tinh_cam', 'Tình cảm') },
+    { key: 'gia_dao',   label: t('desc.aspect_gia_dao', 'Gia đạo')  },
+    { key: 'cong_viec', label: t('desc.aspect_cong_viec', 'Công việc') },
+    { key: 'suc_khoe',  label: t('desc.aspect_suc_khoe', 'Sức khỏe') },
   ];
+
   return (
     <div style={{
       padding: '14px 16px',
@@ -38,14 +61,14 @@ export default function DescriptionPanel({ hexagram, color }) {
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
         }}>
-          📖 Luận giải cơ bản
+          📖 {t('desc.basic_title', 'Luận giải cơ bản')}
         </div>
         <div style={{
           fontSize: '0.75rem',
           color: 'var(--color-ink-muted)',
           fontStyle: 'italic',
         }}>
-          {hexagram.nameVi}
+          {hexName}
         </div>
       </div>
       {aspects.map(({ key, label }) => (
@@ -53,7 +76,7 @@ export default function DescriptionPanel({ hexagram, color }) {
           <div key={key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <span style={{
               flexShrink: 0,
-              minWidth: 78,
+              minWidth: 90,
               fontSize: '0.75rem',
               fontWeight: 700,
               color: color || 'var(--color-gold)',
@@ -82,7 +105,7 @@ export default function DescriptionPanel({ hexagram, color }) {
         fontStyle: 'italic',
         lineHeight: 1.4,
       }}>
-        💡 Đây là luận giải cơ bản. Để xem luận giải chi tiết hơn, bạn hãy sao chép phần <strong>"Xuất kết quả"</strong> (dạng Plaintext) ở phía dưới và gửi cho các trợ lý AI như ChatGPT hoặc Gemini.
+        {t('desc.ai_hint', '💡 Đây là luận giải cơ bản. Để xem luận giải chi tiết hơn, bạn hãy sao chép phần "Xuất kết quả" (dạng Plaintext) ở phía dưới và gửi cho các trợ lý AI như ChatGPT hoặc Gemini.')}
       </div>
     </div>
   );

@@ -1,10 +1,12 @@
 import React from 'react';
 import HexagramDisplay from './HexagramDisplay.jsx';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Card hiển thị quẻ chủ + quẻ biến cạnh nhau
  */
 export default function HexagramPreview({ result }) {
+  const { t } = useLanguage();
   const hasPrimary  = result?.primaryHexagram;
   const hasChanged  = result?.changedHexagram;
   const hasMoving   = result?.movingLines?.length > 0;
@@ -13,7 +15,7 @@ export default function HexagramPreview({ result }) {
     <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       {/* Quẻ chủ */}
       <HexCard
-        label="QUẺ CHỦ"
+        label={t('result.primary_hex', 'QUẺ CHỦ')}
         hexagram={hasPrimary}
         lines={result?.lines}
         accent="var(--color-vermillion)"
@@ -37,7 +39,7 @@ export default function HexagramPreview({ result }) {
       {/* Quẻ biến */}
       {hasMoving && (
         <HexCard
-          label="QUẺ BIẾN"
+          label={t('result.changed_hex', 'QUẺ BIẾN')}
           hexagram={hasChanged}
           lines={result?.lines ? buildChangedLines(result.lines) : []}
           accent="var(--color-jade)"
@@ -49,6 +51,11 @@ export default function HexagramPreview({ result }) {
 }
 
 function HexCard({ label, hexagram, lines, accent, isEmpty }) {
+  const { t, language } = useLanguage();
+  const hexName = hexagram 
+    ? (language === 'en' ? t(`hex.name.${hexagram.id}`, hexagram.nameVi) : hexagram.nameVi)
+    : '—';
+
   return (
     <div style={{
       flex: 1,
@@ -81,7 +88,7 @@ function HexCard({ label, hexagram, lines, accent, isEmpty }) {
           color: 'var(--color-ink-muted)',
           fontSize: '0.75rem',
         }}>
-          Chưa có
+          {t('result.no_data', 'Chưa có')}
         </div>
       ) : (
         <div style={{ width: 100 }}>
@@ -97,12 +104,12 @@ function HexCard({ label, hexagram, lines, accent, isEmpty }) {
         color: isEmpty ? 'var(--color-ink-muted)' : 'var(--color-ink)',
         lineHeight: 1.3,
       }}>
-        {hexagram ? hexagram.nameVi : '—'}
+        {hexName}
       </div>
 
       {hexagram && (
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>
-          Quẻ số {hexagram.id}
+          {t('result.hex_number', 'Quẻ số')} {hexagram.id}
         </div>
       )}
     </div>

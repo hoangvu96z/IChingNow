@@ -14,22 +14,50 @@ import HistoryList from './components/HistoryList.jsx';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
-
-
+import { useLanguage } from './context/LanguageContext.jsx';
+import { vi } from './data/translations/vi.js';
+import { en } from './data/translations/en.js';
 
 function CanChiInfoBar({ canChi }) {
+  const { t, language } = useLanguage();
   if (!canChi) return null;
+
+  const getCanChiLabel = (can, chi) => {
+    if (!can || !chi) return '';
+    return `${t(`stem.${can}`, can)} ${t(`branch.${chi}`, chi)}`;
+  };
+
   const items = [
-    { label: 'Giờ',   value: `${canChi.gioCan} ${canChi.gioChi}`   },
-    { label: 'Ngày',  value: `${canChi.ngayCan} ${canChi.ngayChi}` },
-    { label: 'Tháng', value: `${canChi.thangCan} ${canChi.thangChi}` },
-    { label: 'Năm',   value: `${canChi.namCan} ${canChi.namChi}`   },
-  ].filter(i => !i.value.includes('?'));
+    { label: t('canchi.bar_hour', 'Giờ'),   value: getCanChiLabel(canChi.gioCan, canChi.gioChi) },
+    { label: t('canchi.bar_day', 'Ngày'),  value: getCanChiLabel(canChi.ngayCan, canChi.ngayChi) },
+    { label: t('canchi.bar_month', 'Tháng'), value: getCanChiLabel(canChi.thangCan, canChi.thangChi) },
+    { label: t('canchi.bar_year', 'Năm'),   value: getCanChiLabel(canChi.namCan, canChi.namChi) },
+  ].filter(i => i.value && !i.value.includes('?'));
+
+  let lunarTrans = canChi.lunarDate || '';
+  if (language === 'en' && lunarTrans) {
+    lunarTrans = lunarTrans
+      .replace('Ngày', 'Day')
+      .replace('Tháng', 'Month')
+      .replace('Năm', 'Year')
+      .replace('tháng', 'month')
+      .replace('ngày', 'day')
+      .replace('năm', 'year')
+      .replace('(Nhuận)', '(Leap)');
+    // Translate Vietnamese stems/branches to English PinYin
+    Object.keys(vi).forEach(key => {
+      if (key.startsWith('stem.') || key.startsWith('branch.')) {
+        const viVal = vi[key];
+        const enVal = en[key];
+        lunarTrans = lunarTrans.replace(new RegExp(`\\b${viVal}\\b`, 'g'), enVal);
+      }
+    });
+  }
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 20px', alignItems: 'center' }}>
       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-gold)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        Can Chi
+        {t('canchi.bar_title', 'Can Chi')}
       </span>
       {items.map(({ label, value }) => (
         <span key={label} style={{ fontSize: '0.875rem' }}>
@@ -39,15 +67,15 @@ function CanChiInfoBar({ canChi }) {
       ))}
       {canChi.khongVong?.length > 0 && (
         <span style={{ fontSize: '0.8125rem', marginLeft: 4 }}>
-          <span style={{ color: 'var(--color-ink-muted)', marginRight: 3 }}>Tuần Không:</span>
+          <span style={{ color: 'var(--color-ink-muted)', marginRight: 3 }}>{t('canchi.bar_tuan_khong', 'Tuần Không')}:</span>
           <span style={{ fontWeight: 700, color: '#b8860b', fontFamily: "'Noto Serif', serif" }}>
-            {canChi.khongVong.join(', ')}
+            {canChi.khongVong.map(v => t(`branch.${v}`, v)).join(', ')}
           </span>
         </span>
       )}
-      {canChi.lunarDate && (
+      {lunarTrans && (
         <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginLeft: 'auto' }}>
-          Âm lịch: {canChi.lunarDate}
+          {t('canchi.bar_lunar', 'Âm lịch')}: {lunarTrans}
         </span>
       )}
     </div>
@@ -75,11 +103,12 @@ function getDefaultForm() {
 
 /** Card xuất kết quả cho Mai Hoa — giống PlainTextExportCard nhưng dùng buildMaiHoaPlainText */
 function MaiHoaExportCard({ result }) {
+  const { t, language } = useLanguage();
   const [copied,  setCopied]  = useState(false);
   const [copiedJ, setCopiedJ] = useState(false);
 
   const hasResult = !!result;
-  const text      = hasResult ? buildMaiHoaPlainText(result) : '';
+  const text      = hasResult ? buildMaiHoaPlainText(result, language) : '';
 
   async function handleCopyText() {
     if (!hasResult) return;
@@ -112,15 +141,15 @@ function MaiHoaExportCard({ result }) {
           <div className="terminal-dot" style={{ background: '#ffbd2e' }} />
           <div className="terminal-dot" style={{ background: '#27c93f' }} />
           <span style={{ marginLeft: 8, color: '#718096', fontSize: '0.8125rem', fontFamily: 'monospace' }}>
-            plaintext — mai hoa dịch số
+            {t('export.header', 'plaintext — kết quả lập quẻ')}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
-            { label: copied  ? '✓ Đã copy' : '⎘ Copy text', onClick: handleCopyText,  bg: copied  ? '#27c93f' : 'rgba(246,201,14,0.15)', color: copied  ? 'white' : 'var(--color-terminal-accent)' },
-            { label: '↓ .txt',                               onClick: handleDownloadTxt, bg: 'transparent', color: '#718096', border: '1px solid rgba(113,128,150,0.4)' },
-            { label: copiedJ ? '✓ JSON'    : '⎘ JSON',      onClick: handleCopyJson,   bg: copiedJ ? '#27c93f' : 'rgba(39,201,63,0.1)',   color: copiedJ ? 'white' : '#27c93f' },
-            { label: '↓ .json',                              onClick: handleDownloadJson, bg: 'transparent', color: '#27c93f', border: '1px solid rgba(39,201,63,0.3)' },
+            { label: copied  ? t('export.copied_text', '✓ Đã copy') : t('export.copy_text', '⎘ Copy text'), onClick: handleCopyText,  bg: copied  ? '#27c93f' : 'rgba(246,201,14,0.15)', color: copied  ? 'white' : 'var(--color-terminal-accent)' },
+            { label: t('export.download_txt', '↓ .txt'),                               onClick: handleDownloadTxt, bg: 'transparent', color: '#718096', border: '1px solid rgba(113,128,150,0.4)' },
+            { label: copiedJ ? t('export.copied_json', '✓ JSON')    : t('export.copy_json', '⎘ JSON'),      onClick: handleCopyJson,   bg: copiedJ ? '#27c93f' : 'rgba(39,201,63,0.1)',   color: copiedJ ? 'white' : '#27c93f' },
+            { label: t('export.download_json', '↓ .json'),                              onClick: handleDownloadJson, bg: 'transparent', color: '#27c93f', border: '1px solid rgba(39,201,63,0.3)' },
           ].map(({ label, onClick, bg, color, border }) => (
             <button key={label} onClick={onClick} disabled={!hasResult} style={{
               padding: '5px 12px', borderRadius: 6, border: border || 'none',
@@ -133,10 +162,10 @@ function MaiHoaExportCard({ result }) {
       </div>
       <div className="terminal-body">
         {hasResult ? (
-          <span style={{ color: 'var(--color-terminal-text)' }}>{text}</span>
+          <span style={{ color: 'var(--color-terminal-text)', whiteSpace: 'pre' }}>{text}</span>
         ) : (
-          <span style={{ color: '#4a5568', fontStyle: 'italic' }}>
-            {`// Chưa có kết quả.\n// Hãy lập quẻ Mai Hoa để xem kết quả ở đây.`}
+          <span style={{ color: '#4a5568', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+            {t('export.empty_result', '// Chưa có kết quả.\n// Hãy gieo quẻ để xem kết quả ở đây.')}
           </span>
         )}
       </div>
@@ -146,9 +175,8 @@ function MaiHoaExportCard({ result }) {
 
 /**
  * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
- * Tách riêng để App.jsx gọn gàng, dễ đọc flow 3 trạng thái.
  */
-function ResultSection({ mode, result, maiHoaResult, onChangeMethod }) {
+function ResultSection({ mode, result, maiHoaResult }) {
   if (mode.startsWith('mai-hoa')) {
     return <MaiHoaResultSection result={maiHoaResult} />;
   }
@@ -156,12 +184,13 @@ function ResultSection({ mode, result, maiHoaResult, onChangeMethod }) {
 }
 
 function CoinCastResultSection({ result }) {
+  const { t } = useLanguage();
   if (!result) return null;
   return (
     <>
       {/* Quẻ Preview */}
       <section className="card" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 16 }}>Kết quả quẻ</div>
+        <div className="section-title" style={{ marginBottom: 16 }}>{t('result.hex_title', 'Kết quả quẻ')}</div>
         <div className="animate-in">
           <HexagramPreview result={result} />
         </div>
@@ -169,14 +198,14 @@ function CoinCastResultSection({ result }) {
 
       {/* Bảng Lục Hào đầy đủ */}
       <section className="card animate-in" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>Bảng Lục Hào</div>
+        <div className="section-title" style={{ marginBottom: 12 }}>{t('result.hex_table', 'Bảng Lục Hào')}</div>
         <LucHaoTable result={result} />
       </section>
 
       {/* Luận giải cơ bản quẻ Lục Hào */}
-      {(result.primaryHexagram?.description || result.changedHexagram?.description) && (
+      {(result.primaryHexagram || result.changedHexagram) && (
         <section className="card animate-in" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="section-title">Luận giải cơ bản</div>
+          <div className="section-title">{t('result.basic_interpretation', 'Luận giải cơ bản')}</div>
           <DescriptionPanel hexagram={result.primaryHexagram} color="var(--color-vermillion)" />
           {result.changedHexagram && (
             <DescriptionPanel hexagram={result.changedHexagram} color="var(--color-jade)" />
@@ -193,14 +222,14 @@ function CoinCastResultSection({ result }) {
 
       {/* Metadata */}
       <section className="card animate-in" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>Thông tin lần lập quẻ</div>
+        <div className="section-title" style={{ marginBottom: 12 }}>{t('result.metadata_title', 'Thông tin lần lập quẻ')}</div>
         <ResultMetadata result={result} />
       </section>
 
       {/* Plaintext Export */}
       <section className="animate-in">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          📋 Xuất kết quả
+          {t('result.export_title', '📋 Xuất kết quả')}
         </div>
         <PlainTextExportCard result={result} />
       </section>
@@ -209,11 +238,23 @@ function CoinCastResultSection({ result }) {
 }
 
 function MaiHoaResultSection({ result }) {
+  const { t, language } = useLanguage();
   if (!result) return null;
+
+  const getSubModeLabel = () => {
+    if (result.subMode === 'time') {
+      return t('maihoa.time_title', 'Ngày giờ động tâm').replace('🕐 ', '');
+    } else {
+      return t('maihoa.serial_title', 'Số seri tiền').replace('💵 ', '');
+    }
+  };
+
   return (
     <>
       <section className="card" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 16 }}>🌸 Kết quả quẻ Mai Hoa</div>
+        <div className="section-title" style={{ marginBottom: 16 }}>
+          {t('maihoa.result_card_title', 'Kết quả quẻ Mai Hoa')}
+        </div>
         <div className="animate-in">
           <MaiHoaResultCard result={result} />
         </div>
@@ -221,24 +262,30 @@ function MaiHoaResultSection({ result }) {
 
       {/* Câu hỏi + thời gian */}
       <section className="card animate-in" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>Thông tin lần lập quẻ</div>
+        <div className="section-title" style={{ marginBottom: 12 }}>{t('result.metadata_title', 'Thông tin lần lập quẻ')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {result.question && (
             <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
-              <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Việc cần xem</span>
+              <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>
+                {t('meta.question', 'Việc cần xem')}
+              </span>
               <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>{result.question}</span>
             </div>
           )}
           <div style={{ display: 'flex', gap: 12, padding: '5px 0', borderBottom: '1px solid rgba(184,134,11,0.1)' }}>
-            <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Phương pháp</span>
+            <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>
+              {t('meta.method', 'Phương pháp')}
+            </span>
             <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
-              Mai Hoa — {result.subMode === 'time' ? 'Ngày giờ động tâm' : 'Theo số'}
+              {getSubModeLabel()}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 12, padding: '5px 0' }}>
-            <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>Thời gian lập</span>
+            <span style={{ minWidth: 110, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', flexShrink: 0 }}>
+              {t('meta.cast_time', 'Thời gian lập')}
+            </span>
             <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
-              {new Date(result.createdAt).toLocaleString('vi-VN')}
+              {language === 'en' ? new Date(result.createdAt).toLocaleString('en-US') : new Date(result.createdAt).toLocaleString('vi-VN')}
             </span>
           </div>
         </div>
@@ -247,7 +294,7 @@ function MaiHoaResultSection({ result }) {
       {/* Xuất kết quả Mai Hoa */}
       <section className="animate-in">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          📋 Xuất kết quả
+          {t('result.export_title', '📋 Xuất kết quả')}
         </div>
         <MaiHoaExportCard result={result} />
       </section>
@@ -256,6 +303,7 @@ function MaiHoaResultSection({ result }) {
 }
 
 export default function App() {
+  const { t, language, setLanguage } = useLanguage();
   const [formData,         setFormData]         = useState(getDefaultForm());
   const [mode,             setMode]             = useState('quick');
   const [lines,            setLines]            = useState([]);
@@ -347,10 +395,8 @@ export default function App() {
   };
 
   const handleClearHistory = () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử gieo quẻ không?')) {
-      setHistory([]);
-      localStorage.removeItem('iching_history');
-    }
+    setHistory([]);
+    localStorage.removeItem('iching_history');
   };
 
   // Mỗi khi lines thay đổi đủ 6, build result
@@ -453,7 +499,7 @@ export default function App() {
                 易 IChingNow
               </div>
               <div style={{ fontSize: '0.6875rem', color: 'rgba(245,215,142,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                Lập Quẻ Kinh Dịch
+                {t('app.subtitle', 'Lập Quẻ Kinh Dịch')}
               </div>
             </div>
           </div>
@@ -475,8 +521,30 @@ export default function App() {
               onMouseEnter={(e) => e.currentTarget.style.color = '#f5d78e'}
               onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.75)'}
             >
-              🃏 Xem Tarot
+              {t('nav.tarot', '🃏 Xem Tarot')}
             </a>
+
+            <button
+              onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 6,
+                color: 'white',
+                padding: '5px 12px',
+                cursor: 'pointer',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+            >
+              {language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}
+            </button>
 
             {(result || maiHoaResult) && (
               <button
@@ -494,7 +562,7 @@ export default function App() {
                   gap: 6,
                 }}
               >
-                🔄 Lập quẻ mới
+                {t('nav.new_hexagram', '🔄 Lập quẻ mới')}
               </button>
             )}
           </div>
@@ -517,7 +585,7 @@ export default function App() {
             {/* Form nhập liệu */}
             <section className="card" style={{ padding: 20 }}>
               <div className="section-title" style={{ marginBottom: 16 }}>
-                Thông tin lập quẻ
+                {t('form.title', 'Thông tin lập quẻ')}
               </div>
               <CastingForm
                 formData={formData}
@@ -525,8 +593,6 @@ export default function App() {
                 showLucHaoOptions={hasPickedMethod && !mode.startsWith('mai-hoa')}
               />
             </section>
-
-
 
             {/* Lịch sử gieo quẻ */}
             <HistoryList
@@ -551,10 +617,10 @@ export default function App() {
             {hasPickedMethod && !hasResult && (
               <section className="card animate-in" style={{ padding: 20 }}>
                 <div className="section-title" style={{ marginBottom: 12 }}>
-                  {mode === 'quick'          && '⚡ Gieo nhanh 6 hào'}
-                  {mode === 'manual-step'    && '🪙 Gieo từng hào'}
-                  {mode === 'mai-hoa-time'   && '🕐 Mai Hoa — Ngày giờ động tâm'}
-                  {mode === 'mai-hoa-serial' && '💵 Mai Hoa — Số seri tiền'}
+                  {mode === 'quick'          && `⚡ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.quick.title', 'Gieo nhanh')}`}
+                  {mode === 'manual-step'    && `🪙 ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.manual.title', 'Gieo từng hào')}`}
+                  {mode === 'mai-hoa-time'   && t('maihoa.time_title', '🕐 Mai Hoa — Ngày giờ động tâm')}
+                  {mode === 'mai-hoa-serial' && t('maihoa.serial_title', '💵 Mai Hoa — Số seri tiền')}
                 </div>
 
                 {mode === 'quick' ? (
@@ -591,7 +657,7 @@ export default function App() {
                     color: 'var(--color-vermillion)',
                     border: '1px solid rgba(192,57,43,0.2)',
                   }}>
-                    ⚠ Hãy nhập việc cần xem ở cột bên trái trước khi gieo quẻ
+                    {t('panel.need_question_warning', '⚠ Hãy nhập việc cần xem ở cột bên trái trước khi gieo quẻ')}
                   </div>
                 )}
               </section>
@@ -622,13 +688,12 @@ export default function App() {
                   alignSelf: 'center',
                 }}
               >
-                ← Đổi phương pháp gieo
+                {t('nav.change_method', '← Đổi phương pháp gieo')}
               </button>
             )}
           </div>
         </div>
       </main>
-
 
       {/* ===== FOOTER ===== */}
       <footer style={{
@@ -639,8 +704,7 @@ export default function App() {
         borderTop: '1px solid rgba(184,134,11,0.15)',
         marginTop: 24,
       }}>
-        <span style={{ fontFamily: "'Noto Serif', serif" }}>易</span> IChingNow — Công cụ lập quẻ Kinh Dịch &nbsp;·&nbsp;
-        Chỉ lập quẻ, không luận giải
+        {t('footer.text', '易 IChingNow — Công cụ lập quẻ Kinh Dịch  ·  Chỉ lập quẻ, không luận giải')}
       </footer>
 
       {/* Responsive grid styles */}

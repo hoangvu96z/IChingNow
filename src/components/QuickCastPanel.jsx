@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { castAllLines } from '../logic/castLines.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Panel gieo nhanh 6 hào — 1 nút CTA
  */
 export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-coin' }) {
+  const { t } = useLanguage();
   const [isAnimating, setIsAnimating] = useState(false);
 
   async function handleCast() {
@@ -58,16 +60,16 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
         {isAnimating ? (
           <>
             <SpinIcon />
-            Đang gieo...
+            {t('panel.casting', 'Đang gieo...')}
           </>
         ) : (
-          '🪙 Gieo nhanh 6 hào'
+          t('panel.cast_quick_btn', '🪙 Gieo nhanh 6 hào')
         )}
       </button>
 
       {disabled && (
         <p style={{ fontSize: '0.8125rem', color: 'var(--color-ink-muted)', textAlign: 'center', margin: 0 }}>
-          Vui lòng nhập việc cần xem trước
+          {t('panel.need_question_warning', 'Vui lòng nhập việc cần xem trước')}
         </p>
       )}
 
@@ -80,10 +82,10 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
         lineHeight: 1.5,
       }}>
         {algorithm === 'yarrow-stalks'
-          ? 'Hệ thống sẽ mô phỏng chia 49 cọng Cỏ Thi × 6 lần theo phương pháp cổ xưa của Chu Dịch.'
+          ? t('panel.alg_desc_yarrow', 'Hệ thống sẽ mô phỏng chia 49 cọng Cỏ Thi × 6 lần theo phương pháp cổ xưa của Chu Dịch.')
           : algorithm === 'equal-prob'
-          ? 'Hệ thống sẽ gieo ngẫu nhiên 6 hào với cơ hội xuất hiện mỗi hào bằng nhau (25%).'
-          : 'Hệ thống sẽ mô phỏng tung 3 đồng xu × 6 lần theo phương pháp kinh điển.'}
+          ? t('panel.alg_desc_equal', 'Hệ thống sẽ gieo ngẫu nhiên 6 hào với cơ hội xuất hiện mỗi hào bằng nhau (25%).')
+          : t('panel.alg_desc_three_coin', 'Hệ thống sẽ mô phỏng tung 3 đồng xu × 6 lần theo phương pháp kinh điển.')}
       </p>
     </div>
   );

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { castOneLine, coinsToLine, COIN_LABELS, LINE_TYPE_LABELS } from '../logic/castLines.js';
 import HexagramDisplay from './HexagramDisplay.jsx';
-
-const STEP_LABELS = ['Hào 1', 'Hào 2', 'Hào 3', 'Hào 4', 'Hào 5', 'Hào 6'];
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Stepper gieo từng hào 6 bước
@@ -11,6 +10,7 @@ const STEP_LABELS = ['Hào 1', 'Hào 2', 'Hào 3', 'Hào 4', 'Hào 5', 'Hào 6']
  * onReset: callback
  */
 export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled, algorithm = 'three-coin' }) {
+  const { t, language } = useLanguage();
   const currentStep = completedLines.length; // 0..5
   const isDone      = completedLines.length === 6;
 
@@ -47,9 +47,10 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
 
       {/* Stepper header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
-        {STEP_LABELS.map((label, idx) => {
+        {Array.from({ length: 6 }).map((_, idx) => {
           const done   = idx < completedLines.length;
           const active = idx === currentStep && !isDone;
+          const stepLabel = `${t('result.col_yao', 'Hào')} ${idx + 1}`;
           return (
             <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
               {/* Connector line */}
@@ -76,7 +77,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
                 fontWeight: active || done ? 700 : 400,
                 textAlign: 'center',
               }}>
-                {label}
+                {stepLabel}
               </span>
             </div>
           );
@@ -87,7 +88,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
       {completedLines.length > 0 && (
         <div style={{ padding: '10px 14px', background: 'rgba(26,107,74,0.06)', borderRadius: 8, border: '1px solid rgba(26,107,74,0.15)' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-jade)', fontWeight: 700, marginBottom: 6 }}>
-            Đã gieo ({completedLines.length}/6):
+            {t('stepper.cast_so_far', 'Đã gieo')} ({completedLines.length}/6):
           </div>
           <HexagramDisplay lines={completedLines.map((l, i) => ({ ...l, index: i+1 }))} size="sm" showIndex />
         </div>
@@ -109,11 +110,11 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
           </div>
           <div>
             <div style={{ fontWeight: 700, color: 'var(--color-vermillion)' }}>
-              Hào {lastLine.index}: {LINE_TYPE_LABELS[lastLine.type]}
+              {t('result.col_yao', 'Hào')} {lastLine.index}: {t('lineType.' + lastLine.type, LINE_TYPE_LABELS[lastLine.type])}
             </div>
             <div style={{ fontSize: '0.8125rem', color: 'var(--color-ink-muted)' }}>
-              {lastLine.coins?.map(c => COIN_LABELS[c]).join(' + ')} = {lastLine.total}
-              {lastLine.moving && ' — Hào động!'}
+              {lastLine.coins?.map(c => t('manual_input.' + (c === 'ngua' ? 'heads' : 'tails'), COIN_LABELS[c])).join(' + ')} = {lastLine.total}
+              {lastLine.moving && t('stepper.moving_line_alert', ' — Hào động!')}
             </div>
           </div>
         </div>
@@ -130,7 +131,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
           color: 'var(--color-vermillion)',
           textAlign: 'center',
         }}>
-          ⚠ Hãy nhập việc cần xem trước khi gieo quẻ
+          {t('panel.need_question_warning', '⚠ Hãy nhập việc cần xem trước khi gieo quẻ')}
         </div>
       )}
 
@@ -143,9 +144,9 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
             color: 'var(--color-ink-muted)',
             textAlign: 'center',
           }}>
-            Đang gieo: Hào {currentStep + 1}
+            {t('stepper.cast_step', 'Đang gieo: Hào')} {currentStep + 1}
             <div style={{ fontSize: '0.75rem', fontWeight: 400, marginTop: 2, color: 'var(--color-ink-muted)' }}>
-              (Phương pháp: {algorithm === 'yarrow-stalks' ? 'Cỏ Thi cổ xưa' : algorithm === 'equal-prob' ? 'Đồng xác suất (25%)' : '3 Đồng xu truyền thống'})
+              ({t('stepper.method_prefix', 'Phương pháp')}: {algorithm === 'yarrow-stalks' ? t('stepper.alg_yarrow', 'Cỏ Thi cổ xưa') : algorithm === 'equal-prob' ? t('stepper.alg_equal', 'Đồng xác suất (25%)') : t('stepper.alg_three_coin', '3 Đồng xu truyền thống')})
             </div>
           </div>
 
@@ -157,13 +158,13 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
                 className="btn-primary"
                 style={{ display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                {isAnimating ? '🪙 Đang tung...' : '🪙 Tung xu'}
+                {isAnimating ? t('stepper.toss_active', '🪙 Đang tung...') : t('stepper.toss_btn', '🪙 Tung xu')}
               </button>
               <button
                 className="btn-ghost"
                 onClick={() => setManualMode(true)}
               >
-                ✍ Nhập tay
+                {t('stepper.manual_btn', '✍ Nhập tay')}
               </button>
             </div>
           ) : (
@@ -179,9 +180,9 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
 
       {isDone && (
         <div className="animate-in" style={{ textAlign: 'center', padding: '12px 0' }}>
-          <div style={{ fontSize: '1.25rem', marginBottom: 8 }}>✅ Đã gieo đủ 6 hào!</div>
+          <div style={{ fontSize: '1.25rem', marginBottom: 8 }}>{t('stepper.done', '✅ Đã gieo đủ 6 hào!')}</div>
           <button className="btn-ghost" onClick={onReset} style={{ fontSize: '0.875rem' }}>
-            🔄 Gieo lại
+            {t('stepper.recast', '🔄 Gieo lại')}
           </button>
         </div>
       )}
@@ -190,7 +191,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
       {!isDone && completedLines.length > 0 && (
         <div style={{ textAlign: 'center' }}>
           <button className="btn-ghost" onClick={onReset} style={{ fontSize: '0.8125rem' }}>
-            ↺ Bắt đầu lại
+            {t('stepper.restart', '↺ Bắt đầu lại')}
           </button>
         </div>
       )}
@@ -199,6 +200,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
 }
 
 function ManualInput({ coins, onChange, onSubmit, onCancel }) {
+  const { t, language } = useLanguage();
   const options = ['ngua', 'sap'];
   function setCoin(i, v) {
     const next = [...coins];
@@ -209,12 +211,12 @@ function ManualInput({ coins, onChange, onSubmit, onCancel }) {
   return (
     <div style={{ padding: '14px 16px', background: 'rgba(184,134,11,0.07)', borderRadius: 8, border: '1px solid rgba(184,134,11,0.2)' }}>
       <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)', marginBottom: 10 }}>
-        Nhập kết quả 3 đồng xu:
+        {t('manual_input.title', 'Nhập kết quả 3 đồng xu:')}
       </div>
       <div style={{ display: 'flex', gap: 12, marginBottom: 12, justifyContent: 'center' }}>
         {coins.map((c, i) => (
           <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Xu {i+1}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>{t(`manual_input.coin${i+1}`)}</div>
             <div style={{ display: 'flex', gap: 4 }}>
               {options.map(opt => (
                 <button
@@ -237,12 +239,12 @@ function ManualInput({ coins, onChange, onSubmit, onCancel }) {
                     boxShadow: c === opt ? '0 0 0 3px rgba(184,134,11,0.3)' : 'none',
                   }}
                 >
-                  {opt === 'ngua' ? 'N' : 'S'}
+                  {opt === 'ngua' ? (language === 'en' ? 'H' : 'N') : (language === 'en' ? 'T' : 'S')}
                 </button>
               ))}
             </div>
             <div style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)' }}>
-              {c ? (c === 'ngua' ? 'Ngửa(3)' : 'Sấp(2)') : '—'}
+              {c ? (c === 'ngua' ? `${t('manual_input.heads')}(3)` : `${t('manual_input.tails')}(2)`) : '—'}
             </div>
           </div>
         ))}
@@ -254,10 +256,10 @@ function ManualInput({ coins, onChange, onSubmit, onCancel }) {
           onClick={onSubmit}
           disabled={coins.some(c => !c)}
         >
-          Xác nhận hào này
+          {t('manual_input.submit', 'Xác nhận hào này')}
         </button>
         <button className="btn-ghost" style={{ fontSize: '0.875rem' }} onClick={onCancel}>
-          Huỷ
+          {t('manual_input.cancel', 'Huỷ')}
         </button>
       </div>
     </div>

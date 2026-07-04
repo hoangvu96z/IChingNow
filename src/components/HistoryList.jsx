@@ -1,11 +1,34 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 export default function HistoryList({ history, onSelect, onClear, currentActiveData }) {
+  const { t, language } = useLanguage();
+
+  const formatHistoryTitle = (item) => {
+    const getHexName = (hex) => {
+      if (!hex) return '';
+      return language === 'en' ? t(`hex.name.${hex.id}`, hex.nameVi) : hex.nameVi;
+    };
+    
+    const data = item.data;
+    if (!data) return item.title;
+    const primaryName = getHexName(data.primaryHexagram);
+    const changedName = getHexName(data.changedHexagram);
+    
+    if (item.type === 'luc-hao') {
+      return `${primaryName}${changedName ? ' ➔ ' + changedName : ''}`;
+    } else {
+      const chuLabel = language === 'en' ? 'Primary' : 'Chủ';
+      const bienLabel = language === 'en' ? 'Changed' : 'Biến';
+      return `${primaryName} (${chuLabel}) ➔ ${changedName} (${bienLabel})`;
+    }
+  };
+
   if (!history || history.length === 0) {
     return (
       <section className="card" style={{ padding: 20 }}>
         <div className="section-title" style={{ marginBottom: 12 }}>
-          📜 Lịch sử gieo quẻ
+          {t('history.title', '📜 Lịch sử gieo quẻ')}
         </div>
         <div style={{
           textAlign: 'center',
@@ -14,7 +37,7 @@ export default function HistoryList({ history, onSelect, onClear, currentActiveD
           fontSize: '0.85rem',
           fontStyle: 'italic',
         }}>
-          Chưa có quẻ nào được lưu
+          {t('history.empty', 'Chưa có quẻ nào được lưu')}
         </div>
       </section>
     );
@@ -39,6 +62,12 @@ export default function HistoryList({ history, onSelect, onClear, currentActiveD
     return currentActiveData.createdAt === item.data.createdAt;
   };
 
+  const handleClear = () => {
+    if (window.confirm(t('history.confirm_clear', 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử gieo quẻ không?'))) {
+      onClear();
+    }
+  };
+
   return (
     <section className="card animate-in" style={{ padding: 20 }}>
       <div style={{
@@ -48,10 +77,10 @@ export default function HistoryList({ history, onSelect, onClear, currentActiveD
         marginBottom: 14,
       }}>
         <div className="section-title" style={{ margin: 0 }}>
-          📜 Lịch sử gieo quẻ
+          {t('history.title', '📜 Lịch sử gieo quẻ')}
         </div>
         <button
-          onClick={onClear}
+          onClick={handleClear}
           style={{
             background: 'transparent',
             border: 'none',
@@ -66,7 +95,7 @@ export default function HistoryList({ history, onSelect, onClear, currentActiveD
           onMouseEnter={(e) => e.target.style.background = 'rgba(192, 57, 43, 0.08)'}
           onMouseLeave={(e) => e.target.style.background = 'transparent'}
         >
-          Xóa tất cả
+          {t('history.clear_all', 'Xóa tất cả')}
         </button>
       </div>
 
@@ -129,7 +158,7 @@ export default function HistoryList({ history, onSelect, onClear, currentActiveD
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                 }}>
-                  {isLucHao ? '🪙 Lục Hào' : '🌸 Mai Hoa'}
+                  {isLucHao ? `🪙 ${t('history.luc_hao_badge', 'Lục Hào')}` : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
                 </span>
                 <span style={{
                   fontSize: '0.72rem',
@@ -147,7 +176,7 @@ export default function HistoryList({ history, onSelect, onClear, currentActiveD
                 color: 'var(--color-ink)',
                 fontFamily: "'Noto Serif', serif",
               }}>
-                {item.title}
+                {formatHistoryTitle(item)}
               </div>
 
               {/* Bottom row: Truncated question */}
@@ -160,7 +189,7 @@ export default function HistoryList({ history, onSelect, onClear, currentActiveD
                   textOverflow: 'ellipsis',
                   maxWidth: '100%',
                 }}>
-                  {item.question}
+                  {item.question === '(Không có câu hỏi)' ? t('history.no_question', '(No question)') : item.question}
                 </div>
               )}
             </div>

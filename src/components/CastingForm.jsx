@@ -1,11 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { HOUR_BRANCHES } from '../data/hourBranches.js';
 import { SOLAR_TERMS } from '../data/solarTerms.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Form nhập liệu: việc cần xem, ngày giờ, người lập, tiết khí, động tâm
  */
 export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
+  const { t, language } = useLanguage();
+
   function set(key, value) {
     onChange({ ...formData, [key]: value });
   }
@@ -22,11 +25,11 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
 
       {/* Việc cần xem */}
       <div>
-        <label className="form-label">Việc cần xem *</label>
+        <label className="form-label">{t('form.question_label', 'Việc cần xem *')}</label>
         <textarea
           className="form-input"
           rows={2}
-          placeholder="Ví dụ: Hỏi về công việc năm nay..."
+          placeholder={t('form.question_placeholder', 'Ví dụ: Hỏi về công việc năm nay...')}
           value={formData.question}
           onChange={e => set('question', e.target.value)}
           style={{ resize: 'vertical', minHeight: 60 }}
@@ -35,11 +38,11 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
 
       {/* Người lập */}
       <div>
-        <label className="form-label">Người lập quẻ</label>
+        <label className="form-label">{t('form.caster_label', 'Người lập quẻ')}</label>
         <input
           className="form-input"
           type="text"
-          placeholder="Họ tên (tuỳ chọn)"
+          placeholder={t('form.caster_placeholder', 'Họ tên (tuỳ chọn)')}
           value={formData.caster}
           onChange={e => set('caster', e.target.value)}
         />
@@ -48,7 +51,7 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
       {/* Ngày giờ lập quẻ */}
       <div style={{ display: 'flex', gap: 10 }}>
         <div style={{ flex: 2 }}>
-          <label className="form-label">Ngày lập quẻ</label>
+          <label className="form-label">{t('form.date_label', 'Ngày lập quẻ')}</label>
           <input
             className="form-input"
             type="date"
@@ -57,7 +60,7 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <label className="form-label">Giờ</label>
+          <label className="form-label">{t('form.time_label', 'Giờ')}</label>
           <input
             className="form-input"
             type="time"
@@ -70,15 +73,15 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
       {/* Thuật toán gieo quẻ Lục Hào (Chỉ hiển thị khi gieo Lục Hào) */}
       {showLucHaoOptions && (
         <div>
-          <label className="form-label">Thuật toán gieo Lục Hào</label>
+          <label className="form-label">{t('form.algorithm_label', 'Thuật toán gieo Lục Hào')}</label>
           <select
             className="form-input"
             value={formData.lucHaoAlgorithm || 'three-coin'}
             onChange={e => set('lucHaoAlgorithm', e.target.value)}
           >
-            <option value="three-coin">🪙 3 Đồng xu truyền thống (Cân bằng)</option>
-            <option value="yarrow-stalks">🌿 Phác thảo Cỏ Thi (Cổ xưa)</option>
-            <option value="equal-prob">⚖️ Đồng xác suất (25% mỗi loại)</option>
+            <option value="three-coin">{t('form.alg_three_coin', '🪙 3 Đồng xu truyền thống (Cân bằng)')}</option>
+            <option value="yarrow-stalks">{t('form.alg_yarrow', '🌿 Phác thảo Cỏ Thi (Cổ xưa)')}</option>
+            <option value="equal-prob">{t('form.alg_equal', '⚖️ Đồng xác suất (25% mỗi loại)')}</option>
           </select>
         </div>
       )}
@@ -96,13 +99,13 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
           onChange={v => set('useSolarTerm', v)}
         />
         <span style={{ fontSize: '0.9rem', color: 'var(--color-ink-muted)' }}>
-          Dùng lịch tiết khí
+          {t('form.solar_term_toggle', 'Dùng lịch tiết khí')}
         </span>
       </label>
 
       {formData.useSolarTerm && (
         <div style={{ paddingLeft: 0 }}>
-          <label className="form-label">Tiết khí</label>
+          <label className="form-label">{t('form.solar_term_toggle', 'Tiết khí')}</label>
           <select
             className="form-input"
             value={formData.solarTermId || ''}
@@ -111,10 +114,13 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
               onChange({ ...formData, solarTermId: e.target.value, solarTerm: st });
             }}
           >
-            <option value="">— Chọn tiết khí —</option>
-            {SOLAR_TERMS.map(t => (
-              <option key={t.id} value={t.id}>{t.nameVi}</option>
-            ))}
+            <option value="">{t('form.solar_term_select', '— Chọn tiết khí —')}</option>
+            {SOLAR_TERMS.map(tData => {
+              const name = language === 'en' ? tData.nameEn || tData.nameVi : tData.nameVi;
+              return (
+                <option key={tData.id} value={tData.id}>{name}</option>
+              );
+            })}
           </select>
         </div>
       )}
@@ -123,7 +129,7 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
 
       {/* Ngày động tâm */}
       <div>
-        <label className="form-label">Ngày động tâm</label>
+        <label className="form-label">{t('form.moving_date_label', 'Ngày động tâm')}</label>
         <input
           className="form-input"
           type="date"
@@ -139,7 +145,7 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
             checked={formData.movingMindTime?.enabled}
             onChange={v => setMovingTime('enabled', v)}
           />
-          <span className="form-label" style={{ margin: 0 }}>Giờ động tâm</span>
+          <span className="form-label" style={{ margin: 0 }}>{t('form.moving_time_label', 'Giờ động tâm')}</span>
         </label>
 
         {formData.movingMindTime?.enabled && (
@@ -148,10 +154,14 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
             value={formData.movingMindTime?.hourBranch || ''}
             onChange={e => setMovingTime('hourBranch', e.target.value)}
           >
-            <option value="">— Chọn giờ —</option>
-            {HOUR_BRANCHES.map(h => (
-              <option key={h.value} value={h.label}>{h.label}</option>
-            ))}
+            <option value="">{t('form.moving_time_select', '— Chọn giờ —')}</option>
+            {HOUR_BRANCHES.map(h => {
+              const branchName = h.label.replace('Giờ ', '');
+              const localizedLabel = `${t('common.hour_prefix', 'Giờ')} ${t(`branch.${branchName}`, branchName)}`;
+              return (
+                <option key={h.value} value={h.label}>{localizedLabel}</option>
+              );
+            })}
           </select>
         )}
       </div>

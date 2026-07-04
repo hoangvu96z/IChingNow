@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Màn hình chọn phương pháp gieo quẻ — thay thế cho panel kết quả rỗng.
@@ -6,24 +7,22 @@ import React from 'react';
  * 4 card được nhóm theo 2 dòng:
  *   LỤC HÀO  → Gieo nhanh      | Gieo từng hào
  *   MAI HOA   → Ngày giờ động tâm | Số seri tiền
- *
- * Props:
- *   - onPick(mode): callback khi user chọn 1 card
- *   - questionEmpty (bool): disable các card nếu chưa nhập "việc cần xem"
  */
 export default function MethodPicker({ onPick, questionEmpty = false }) {
+  const { t } = useLanguage();
+
   const groups = [
     {
-      label: 'LỤC HÀO',
-      subtitle: 'Phương pháp kinh điển — gieo 3 đồng xu × 6 lần',
+      label: t('picker.luc_hao', 'LỤC HÀO'),
+      subtitle: t('picker.luc_hao_sub', 'Phương pháp kinh điển — gieo 3 đồng xu × 6 lần'),
       accent: 'vermillion',
       methods: [
         {
           mode:  'quick',
           icon:  '⚡',
-          title: 'Gieo nhanh',
-          desc:  'Hệ thống tự mô phỏng 6 hào trong 1 lần bấm',
-          meta:  '1 lần — 6 hào',
+          title: t('method.quick.title', 'Gieo nhanh'),
+          desc:  t('method.quick.desc', 'Hệ thống tự mô phỏng 6 hào trong 1 lần bấm'),
+          meta:  t('method.quick.meta', '1 lần — 6 hào'),
           gradient: 'linear-gradient(135deg, rgba(192,57,43,0.08), rgba(192,57,43,0.02))',
           border:    'rgba(192,57,43,0.25)',
           hoverBg:   'linear-gradient(135deg, rgba(192,57,43,0.18), rgba(192,57,43,0.05))',
@@ -32,9 +31,9 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
         {
           mode:  'manual-step',
           icon:  '🪙',
-          title: 'Gieo từng hào',
-          desc:  'Bấm từng bước — tự gieo thật theo nhịp 6 hào',
-          meta:  '6 bước thủ công',
+          title: t('method.manual.title', 'Gieo từng hào'),
+          desc:  t('method.manual.desc', 'Bấm từng bước — tự gieo thật theo nhịp 6 hào'),
+          meta:  t('method.manual.meta', '6 bước thủ công'),
           gradient: 'linear-gradient(135deg, rgba(184,134,11,0.10), rgba(184,134,11,0.02))',
           border:    'rgba(184,134,11,0.30)',
           hoverBg:   'linear-gradient(135deg, rgba(184,134,11,0.22), rgba(184,134,11,0.05))',
@@ -43,16 +42,16 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
       ],
     },
     {
-      label: 'MAI HOA',
-      subtitle: 'Phương pháp Kỳ Môn — tính quẻ theo số hoặc thời điểm',
+      label: t('picker.mai_hoa', 'MAI HOA'),
+      subtitle: t('picker.mai_hoa_sub', 'Phương pháp Kỳ Môn — tính quẻ theo số hoặc thời điểm'),
       accent: 'jade',
       methods: [
         {
           mode:  'mai-hoa-time',
           icon:  '🕐',
-          title: 'Ngày giờ động tâm',
-          desc:  'Dùng thời điểm động tâm để tính thượng hạ quái + hào động',
-          meta:  'Theo Âm lịch',
+          title: t('method.mai_hoa_time.title', 'Ngày giờ động tâm'),
+          desc:  t('method.mai_hoa_time.desc', 'Dùng thời điểm động tâm để tính thượng hạ quái + hào động'),
+          meta:  t('method.mai_hoa_time.meta', 'Theo Âm lịch'),
           gradient: 'linear-gradient(135deg, rgba(26,107,74,0.10), rgba(26,107,74,0.02))',
           border:    'rgba(26,107,74,0.30)',
           hoverBg:   'linear-gradient(135deg, rgba(26,107,74,0.22), rgba(26,107,74,0.05))',
@@ -61,9 +60,9 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
         {
           mode:  'mai-hoa-serial',
           icon:  '💵',
-          title: 'Số seri tiền',
-          desc:  'Lấy 2–8 chữ số bất kỳ (số seri, biển số, v.v.) làm đầu vào',
-          meta:  '2–8 chữ số',
+          title: t('method.mai_hoa_serial.title', 'Số seri tiền'),
+          desc:  t('method.mai_hoa_serial.desc', 'Lấy 2–8 chữ số bất kỳ (số seri, biển số, v.v.) làm đầu vào'),
+          meta:  t('method.mai_hoa_serial.meta', '2–8 chữ số'),
           gradient: 'linear-gradient(135deg, rgba(184,134,11,0.10), rgba(184,134,11,0.02))',
           border:    'rgba(184,134,11,0.30)',
           hoverBg:   'linear-gradient(135deg, rgba(184,134,11,0.22), rgba(184,134,11,0.05))',
@@ -88,7 +87,7 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
           letterSpacing: '0.04em',
           marginBottom: 4,
         }}>
-          Chọn phương pháp gieo quẻ
+          {t('picker.title', 'Chọn phương pháp gieo quẻ')}
         </div>
         <div style={{
           fontSize: '0.8125rem',
@@ -96,8 +95,8 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
           lineHeight: 1.5,
         }}>
           {questionEmpty
-            ? <>Vui lòng nhập <strong style={{ color: 'var(--color-vermillion)' }}>việc cần xem</strong> ở bên trái trước khi chọn.</>
-            : <>Chọn 1 trong 4 cách lập quẻ bên dưới để bắt đầu.</>}
+            ? <>{t('picker.desc_empty', 'Vui lòng nhập việc cần xem ở bên trái trước khi chọn.')}</>
+            : <>{t('picker.desc_ready', 'Chọn 1 trong 4 cách lập quẻ bên dưới để bắt đầu.')}</>}
         </div>
       </div>
 
@@ -159,14 +158,14 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
         lineHeight: 1.6,
         textAlign: 'center',
       }}>
-        💡 Mỗi phương pháp cho ra <strong style={{ color: 'var(--color-gold)' }}>quẻ chủ + quẻ biến</strong> nếu có hào động.
-        Bạn có thể đổi phương pháp sau khi gieo xong.
+        {t('picker.hint', '💡 Mỗi phương pháp cho ra quẻ chủ + quẻ biến nếu có hào động. Bạn có thể đổi phương pháp sau khi gieo xong.')}
       </div>
     </div>
   );
 }
 
 function MethodCard({ method, disabled, onClick }) {
+  const { t } = useLanguage();
   const [hovered, setHovered] = React.useState(false);
 
   return (
@@ -247,7 +246,7 @@ function MethodCard({ method, disabled, onClick }) {
         color: hovered && !disabled ? method.hoverBorder : 'var(--color-ink-muted)',
         transition: 'color 0.2s',
       }}>
-        {disabled ? '🔒 Cần nhập việc cần xem' : (hovered ? 'Bấm để chọn →' : 'Bấm để chọn')}
+        {disabled ? t('picker.need_question', '🔒 Cần nhập việc cần xem') : (hovered ? t('picker.select_action', 'Bấm để chọn →') : t('picker.select_default', 'Bấm để chọn'))}
       </div>
     </button>
   );

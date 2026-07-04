@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { buildPlainTextResult } from '../logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from '../logic/clipboard.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Card plaintext – nền tối, monospace, nút copy + download
  */
 export default function PlainTextExportCard({ result }) {
+  const { t, language } = useLanguage();
   const [copied, setCopied]   = useState(false);
   const [copiedJ, setCopiedJ] = useState(false);
 
   const hasResult = !!result;
-  const text = hasResult ? buildPlainTextResult(result) : '';
+  const text = hasResult ? buildPlainTextResult(result, language) : '';
 
   async function handleCopyText() {
     if (!hasResult) return;
@@ -47,7 +49,7 @@ export default function PlainTextExportCard({ result }) {
           <div className="terminal-dot" style={{ background: '#ffbd2e' }} />
           <div className="terminal-dot" style={{ background: '#27c93f' }} />
           <span style={{ marginLeft: 8, color: '#718096', fontSize: '0.8125rem', fontFamily: 'monospace' }}>
-            plaintext — kết quả lập quẻ
+            {t('export.header', 'plaintext — kết quả lập quẻ')}
           </span>
         </div>
 
@@ -72,7 +74,7 @@ export default function PlainTextExportCard({ result }) {
               gap: 5,
             }}
           >
-            {copied ? '✓ Đã copy' : '⎘ Copy text'}
+            {copied ? t('export.copied_text', '✓ Đã copy') : t('export.copy_text', '⎘ Copy text')}
           </button>
 
           <button
@@ -90,7 +92,7 @@ export default function PlainTextExportCard({ result }) {
               fontFamily: 'monospace',
             }}
           >
-            ↓ .txt
+            {t('export.download_txt', '↓ .txt')}
           </button>
 
           <button
@@ -110,7 +112,7 @@ export default function PlainTextExportCard({ result }) {
               fontFamily: 'monospace',
             }}
           >
-            {copiedJ ? '✓ JSON' : '⎘ JSON'}
+            {copiedJ ? t('export.copied_json', '✓ JSON') : t('export.copy_json', '⎘ JSON')}
           </button>
 
           <button
@@ -128,7 +130,7 @@ export default function PlainTextExportCard({ result }) {
               fontFamily: 'monospace',
             }}
           >
-            ↓ .json
+            {t('export.download_json', '↓ .json')}
           </button>
         </div>
       </div>
@@ -138,8 +140,8 @@ export default function PlainTextExportCard({ result }) {
         {hasResult ? (
           <span style={{ color: 'var(--color-terminal-text)' }}>{text}</span>
         ) : (
-          <span style={{ color: '#4a5568', fontStyle: 'italic' }}>
-            {`// Chưa có kết quả.\n// Hãy gieo quẻ để xem kết quả ở đây.`}
+          <span style={{ color: '#4a5568', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+            {t('export.empty_result', '// Chưa có kết quả.\n// Hãy gieo quẻ để xem kết quả ở đây.')}
           </span>
         )}
       </div>
