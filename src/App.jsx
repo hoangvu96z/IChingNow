@@ -467,15 +467,8 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: 'var(--color-paper)', fontFamily: "'Be Vietnam Pro', sans-serif" }}>
 
       {/* ===== HEADER ===== */}
-      <header style={{
-        background: 'linear-gradient(135deg, #1a0a06 0%, #3d1a10 50%, #1a0a06 100%)',
-        padding: '0 24px',
-        boxShadow: '0 2px 20px rgba(0,0,0,0.3)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-      }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
+      <header className="app-header-iching">
+        <div className="header-container-iching">
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             {/* Trigram icon */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -504,7 +497,7 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div className="header-actions-iching">
             <a 
               href="https://vunph.id.vn/tarot/"
               target="_blank"
