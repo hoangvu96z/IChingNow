@@ -517,3 +517,84 @@ body {
     width: 100%;
   }
 }
+
+/* ===== RESPONSIVE HEXAGRAM ROWS FOR MOBILE ===== */
+.responsive-hexagrams-container {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.arrow-desktop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 36px;
+  color: var(--color-gold);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.arrow-mobile {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gold);
+  font-size: 1.25rem;
+  width: 100%;
+  margin: 4px 0;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .responsive-hexagrams-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .arrow-desktop {
+    display: none !important;
+  }
+  .arrow-mobile {
+    display: flex !important;
+  }
+}
+
+/* ===== RESPONSIVE METHOD PICKER ===== */
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .method-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== RESPONSIVE ASPECT ITEMS FOR MOBILE ===== */
+.aspect-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.aspect-label {
+  flex-shrink: 0;
+  min-width: 90px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding-top: 2px;
+}
+
+@media (max-width: 480px) {
+  .aspect-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .aspect-label {
+    min-width: auto;
+  }
+}
+

@@ -86,13 +86,10 @@ function HexCard({ label, labelColor, hexagram, lines, subtitle, badge }) {
 // ─── Mũi tên giữa các quẻ ─────────────────────────────────────────────────────
 function Arrow() {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      paddingTop: 36,
-      color: 'var(--color-gold)',
-      fontSize: '1.25rem',
-      flexShrink: 0,
-    }}>→</div>
+    <>
+      <div className="arrow-desktop">→</div>
+      <div className="arrow-mobile">↓</div>
+    </>
   );
 }
 
@@ -234,7 +231,7 @@ export default function MaiHoaResultCard({ result }) {
       </div>
 
       {/* 3 quẻ ngang hàng */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="responsive-hexagrams-container">
 
         {/* Quẻ Chủ */}
         <div style={{ flex: 1, minWidth: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>

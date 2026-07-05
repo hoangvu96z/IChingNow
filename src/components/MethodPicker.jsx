@@ -129,11 +129,7 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
           </div>
 
           {/* 2-card grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 12,
-          }}>
+          <div className="method-grid">
             {group.methods.map(m => (
               <MethodCard
                 key={m.mode}

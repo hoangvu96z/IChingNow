@@ -23,7 +23,7 @@ export default function LucHaoTable({ result }) {
     : [];
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
       {/* Tên quẻ */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderBottom: '2px solid rgba(184,134,11,0.25)' }}>
         <HexNameHeader
@@ -46,31 +46,33 @@ export default function LucHaoTable({ result }) {
       </div>
 
       {/* Bảng hào chính */}
-      <div style={{ display: 'flex', gap: 1 }}>
-        {/* Quẻ chủ */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <HaoTableSection
-            lines={sortedPrimary}
-            khongVong={result.khongVong || []}
-            showLucThu={false}
-            accentColor="var(--color-vermillion)"
-          />
-        </div>
+      <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch', marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 1, minWidth: hasChanged ? 480 : 'auto' }}>
+          {/* Quẻ chủ */}
+          <div style={{ flex: 1, minWidth: hasChanged ? 230 : 0 }}>
+            <HaoTableSection
+              lines={sortedPrimary}
+              khongVong={result.khongVong || []}
+              showLucThu={false}
+              accentColor="var(--color-vermillion)"
+            />
+          </div>
 
-        {hasChanged && (
-          <>
-            <div style={{ width: 1, background: 'rgba(184,134,11,0.15)', flexShrink: 0 }} />
-            {/* Quẻ biến */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <HaoTableSection
-                lines={sortedChanged}
-                khongVong={result.khongVong || []}
-                showLucThu={true}
-                accentColor="var(--color-jade)"
-              />
-            </div>
-          </>
-        )}
+          {hasChanged && (
+            <>
+              <div style={{ width: 1, background: 'rgba(184,134,11,0.15)', flexShrink: 0 }} />
+              {/* Quẻ biến */}
+              <div style={{ flex: 1, minWidth: 230 }}>
+                <HaoTableSection
+                  lines={sortedChanged}
+                  khongVong={result.khongVong || []}
+                  showLucThu={true}
+                  accentColor="var(--color-jade)"
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Thông tin Thế/Ứng và Không Vong */}

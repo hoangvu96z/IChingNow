@@ -162,7 +162,7 @@ function MaiHoaExportCard({ result }) {
       </div>
       <div className="terminal-body">
         {hasResult ? (
-          <span style={{ color: 'var(--color-terminal-text)', whiteSpace: 'pre' }}>{text}</span>
+          <span style={{ color: 'var(--color-terminal-text)', whiteSpace: 'pre-wrap' }}>{text}</span>
         ) : (
           <span style={{ color: '#4a5568', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
             {t('export.empty_result', '// Chưa có kết quả.\n// Hãy gieo quẻ để xem kết quả ở đây.')}
@@ -573,7 +573,7 @@ export default function App() {
           className="main-grid"
         >
           {/* ===== LEFT COLUMN ===== */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
             {/* Form nhập liệu */}
             <section className="card" style={{ padding: 20 }}>
@@ -597,7 +597,7 @@ export default function App() {
           </div>
 
           {/* ===== RIGHT COLUMN ===== */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
             {/* ─── STATE 1: Chưa chọn phương pháp → MethodPicker ─── */}
             {!hasPickedMethod && !hasResult && (

@@ -73,15 +73,13 @@ export default function DescriptionPanel({ hexagram, color }) {
       </div>
       {aspects.map(({ key, label }) => (
         d[key] && (
-          <div key={key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <span style={{
-              flexShrink: 0,
-              minWidth: 90,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              color: color || 'var(--color-gold)',
-              paddingTop: 2,
-            }}>
+          <div key={key} className="aspect-row">
+            <span
+              className="aspect-label"
+              style={{
+                color: color || 'var(--color-gold)',
+              }}
+            >
               {label}:
             </span>
             <span style={{

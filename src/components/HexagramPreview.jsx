@@ -12,7 +12,7 @@ export default function HexagramPreview({ result }) {
   const hasMoving   = result?.movingLines?.length > 0;
 
   return (
-    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+    <div className="responsive-hexagrams-container" style={{ gap: 16 }}>
       {/* Quẻ chủ */}
       <HexCard
         label={t('result.primary_hex', 'QUẺ CHỦ')}
@@ -24,16 +24,10 @@ export default function HexagramPreview({ result }) {
 
       {/* Mũi tên biến */}
       {hasMoving && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingTop: 40,
-          color: 'var(--color-gold)',
-          fontSize: '1.5rem',
-        }}>
-          →
-        </div>
+        <>
+          <div className="arrow-desktop" style={{ paddingTop: 40, fontSize: '1.5rem' }}>→</div>
+          <div className="arrow-mobile" style={{ fontSize: '1.5rem' }}>↓</div>
+        </>
       )}
 
       {/* Quẻ biến */}

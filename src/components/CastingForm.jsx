@@ -158,8 +158,12 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
             {HOUR_BRANCHES.map(h => {
               const branchName = h.label.replace('Giờ ', '');
               const localizedLabel = `${t('common.hour_prefix', 'Giờ')} ${t(`branch.${branchName}`, branchName)}`;
+              const startStr = String(h.hours[0]).padStart(2, '0') + ':00';
+              const endStr = String((h.hours[1] + 1) % 24).padStart(2, '0') + ':00';
               return (
-                <option key={h.value} value={h.label}>{localizedLabel}</option>
+                <option key={h.value} value={h.label}>
+                  {localizedLabel} ({startStr} - {endStr})
+                </option>
               );
             })}
           </select>
