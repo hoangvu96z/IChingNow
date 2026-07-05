@@ -17,6 +17,10 @@ import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js
 import { useLanguage } from './context/LanguageContext.jsx';
 import { vi } from './data/translations/vi.js';
 import { en } from './data/translations/en.js';
+import { useAuth } from './context/AuthContext.jsx';
+import AuthModal from './components/AuthModal.jsx';
+import PaymentModal from './components/PaymentModal.jsx';
+import AIInterpretation from './components/AIInterpretation.jsx';
 
 function CanChiInfoBar({ canChi }) {
   const { t, language } = useLanguage();
@@ -176,14 +180,14 @@ function MaiHoaExportCard({ result }) {
 /**
  * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
  */
-function ResultSection({ mode, result, maiHoaResult }) {
+function ResultSection({ mode, result, maiHoaResult, onAuthClick, onPaymentClick }) {
   if (mode.startsWith('mai-hoa')) {
-    return <MaiHoaResultSection result={maiHoaResult} />;
+    return <MaiHoaResultSection result={maiHoaResult} onAuthClick={onAuthClick} onPaymentClick={onPaymentClick} />;
   }
-  return <CoinCastResultSection result={result} />;
+  return <CoinCastResultSection result={result} onAuthClick={onAuthClick} onPaymentClick={onPaymentClick} />;
 }
 
-function CoinCastResultSection({ result }) {
+function CoinCastResultSection({ result, onAuthClick, onPaymentClick }) {
   const { t } = useLanguage();
   if (!result) return null;
   return (
@@ -213,6 +217,14 @@ function CoinCastResultSection({ result }) {
         </section>
       )}
 
+      {/* AI Interpretation Section */}
+      <AIInterpretation
+        result={result}
+        mode={result.mode || 'quick'}
+        onAuthClick={onAuthClick}
+        onPaymentClick={onPaymentClick}
+      />
+
       {/* Can Chi Info */}
       {result.canChi && (
         <section className="card animate-in" style={{ padding: '14px 20px' }}>
@@ -237,7 +249,7 @@ function CoinCastResultSection({ result }) {
   );
 }
 
-function MaiHoaResultSection({ result }) {
+function MaiHoaResultSection({ result, onAuthClick, onPaymentClick }) {
   const { t, language } = useLanguage();
   if (!result) return null;
 
@@ -259,6 +271,14 @@ function MaiHoaResultSection({ result }) {
           <MaiHoaResultCard result={result} />
         </div>
       </section>
+
+      {/* AI Interpretation Section */}
+      <AIInterpretation
+        result={result}
+        mode={result.mode || 'mai-hoa-time'}
+        onAuthClick={onAuthClick}
+        onPaymentClick={onPaymentClick}
+      />
 
       {/* Câu hỏi + thời gian */}
       <section className="card animate-in" style={{ padding: 20 }}>
@@ -304,12 +324,15 @@ function MaiHoaResultSection({ result }) {
 
 export default function App() {
   const { t, language, setLanguage } = useLanguage();
+  const { user, logout } = useAuth();
   const [formData,         setFormData]         = useState(getDefaultForm());
   const [mode,             setMode]             = useState('quick');
   const [lines,            setLines]            = useState([]);
   const [result,           setResult]           = useState(null);
   const [maiHoaResult,     setMaiHoaResult]     = useState(null);
   const [hasPickedMethod,  setHasPickedMethod]  = useState(false);
+  const [isAuthOpen,       setIsAuthOpen]       = useState(false);
+  const [isPaymentOpen,    setIsPaymentOpen]    = useState(false);
 
   // Lịch sử gieo quẻ
   const [history, setHistory] = useState(() => {
@@ -539,6 +562,59 @@ export default function App() {
               {language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}
             </button>
 
+            {user ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <span style={{ fontSize: '0.8125rem', color: '#f5d78e', fontWeight: 600 }}>
+                    👤 {user.username}
+                  </span>
+                  <span 
+                    onClick={() => setIsPaymentOpen(true)}
+                    style={{ fontSize: '0.72rem', color: 'rgba(245,215,142,0.8)', cursor: 'pointer', display: 'flex', gap: 2, alignItems: 'center' }}
+                    onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                    onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                  >
+                    🪙 {user.tokens} Tokens (Nạp thêm)
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  style={{
+                    background: 'rgba(192, 57, 43, 0.15)',
+                    border: '1px solid rgba(192, 57, 43, 0.3)',
+                    borderRadius: 6,
+                    color: '#ff8a80',
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthOpen(true)}
+                style={{
+                  background: 'var(--color-vermillion)',
+                  border: 'none',
+                  borderRadius: 6,
+                  color: 'white',
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  boxShadow: '0 2px 6px rgba(192, 57, 43, 0.4)',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                🔑 Đăng ký / Đăng nhập
+              </button>
+            )}
+
             {(result || maiHoaResult) && (
               <button
                 onClick={handleFullReset}
@@ -662,7 +738,8 @@ export default function App() {
                 mode={mode}
                 result={result}
                 maiHoaResult={maiHoaResult}
-                onChangeMethod={handleChangeMethod}
+                onAuthClick={() => setIsAuthOpen(true)}
+                onPaymentClick={() => setIsPaymentOpen(true)}
               />
             )}
 
@@ -708,6 +785,10 @@ export default function App() {
           }
         }
       `}</style>
+
+      {/* Auth & Payment Modals */}
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <PaymentModal isOpen={isPaymentOpen} onClose={() => setIsPaymentOpen(false)} />
     </div>
   );
 }
