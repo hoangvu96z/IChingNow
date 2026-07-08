@@ -11,8 +11,9 @@ import MaiHoaPanel from './components/MaiHoaPanel.jsx';
 import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
 import DescriptionPanel from './components/DescriptionPanel.jsx';
 import HistoryList from './components/HistoryList.jsx';
+import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
 import { buildResult } from './logic/buildHexagram.js';
-import { buildMaiHoaPlainText } from './logic/buildPlainText.js';
+import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
 import { useLanguage } from './context/LanguageContext.jsx';
 import { vi } from './data/translations/vi.js';
@@ -184,8 +185,10 @@ function ResultSection({ mode, result, maiHoaResult }) {
 }
 
 function CoinCastResultSection({ result }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   if (!result) return null;
+  const plainText = buildPlainTextResult(result, language);
+
   return (
     <>
       {/* Quẻ Preview */}
@@ -233,6 +236,9 @@ function CoinCastResultSection({ result }) {
         </div>
         <PlainTextExportCard result={result} />
       </section>
+
+      {/* Luận giải bằng AI */}
+      <AiInterpretationPanel result={result} mode="coin" plainTextResult={plainText} />
     </>
   );
 }
@@ -240,6 +246,7 @@ function CoinCastResultSection({ result }) {
 function MaiHoaResultSection({ result }) {
   const { t, language } = useLanguage();
   if (!result) return null;
+  const plainText = buildMaiHoaPlainText(result, language);
 
   const getSubModeLabel = () => {
     if (result.subMode === 'time') {
@@ -298,6 +305,9 @@ function MaiHoaResultSection({ result }) {
         </div>
         <MaiHoaExportCard result={result} />
       </section>
+
+      {/* Luận giải bằng AI */}
+      <AiInterpretationPanel result={result} mode={result.subMode} plainTextResult={plainText} />
     </>
   );
 }
