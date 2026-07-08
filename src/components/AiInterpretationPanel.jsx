@@ -112,7 +112,8 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
             } else if (path.includes('/tarot')) {
               base = '/tarot/';
             }
-            callEndpoint = base + 'api-vps';
+            const suffix = callEndpoint.replace('http://43.128.116.69:20128', '');
+            callEndpoint = base + 'api-vps' + suffix;
           }
 
           const response = await fetch(`${callEndpoint}/chat/completions`, {
