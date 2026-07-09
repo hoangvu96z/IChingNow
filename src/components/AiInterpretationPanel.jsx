@@ -10,7 +10,7 @@ const PREDEFINED_MODELS = [
 export default function AiInterpretationPanel({ result, mode, plainTextResult }) {
   const { t } = useLanguage();
   const [settings, setSettings] = useState({
-    endpoint: 'http://43.128.116.69:20128/v1',
+    endpoint: 'http://43.128.116.69/v1',
     apiKey: 'sk-6256f9bca9142176-megsyu-c0e57c8f',
     model: 'oc/deepseek-v4-flash-free',
   });
@@ -101,9 +101,19 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
           );
 
           let callEndpoint = settings.endpoint.replace(/\/$/, '');
-          if (callEndpoint.startsWith('http://43.128.116.69:20128') && 
-              (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            callEndpoint = callEndpoint.replace('http://43.128.116.69:20128', '/api-vps');
+          // On production HTTPS or localhost dev: route through same-origin proxy to bypass mixed content
+          const isHttp = callEndpoint.startsWith('http://');
+          const isSecureCtx = window.location.protocol === 'https:' ||
+              window.location.hostname === 'localhost' ||
+              window.location.hostname === '127.0.0.1';
+          if (isHttp && isSecureCtx) {
+            const path = window.location.pathname;
+            let base = '/';
+            if (path.startsWith('/kinhdich')) base = '/kinhdich/';
+            else if (path.startsWith('/tarot')) base = '/tarot/';
+            // Strip http://host from endpoint and prepend proxy path
+            const suffix = callEndpoint.replace(/^http:\/\/[^/]+/, '');
+            callEndpoint = base + 'api-vps' + suffix;
           }
 
           const response = await fetch(`${callEndpoint}/chat/completions`, {

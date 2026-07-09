@@ -9,9 +9,14 @@ export default defineConfig({
   server: {
     proxy: {
       '/api-vps': {
-        target: 'http://43.128.116.69:20128',
+        target: 'http://43.128.116.69',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-vps/, '')
+      },
+      '/kinhdich/api-vps': {
+        target: 'http://43.128.116.69',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/kinhdich\/api-vps/, '')
       }
     }
   }
