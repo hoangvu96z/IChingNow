@@ -12,11 +12,6 @@ export default defineConfig({
         target: 'http://43.128.116.69:20128',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-vps/, '')
-      },
-      '/kinhdich/api-vps': {
-        target: 'http://43.128.116.69:20128',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/kinhdich\/api-vps/, '')
       }
     }
   }
