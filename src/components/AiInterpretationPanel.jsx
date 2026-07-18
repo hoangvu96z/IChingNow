@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
 const PREDEFINED_MODELS = [
-  { value: 'oc/deepseek-v4-flash-free', label: 'oc/deepseek-v4-flash-free (DeepSeek V4)' },
-  { value: 'mmf/mimo-auto', label: 'mmf/mimo-auto (Mimo Auto)' },
-  { value: 'oc/hy3-free', label: 'oc/hy3-free (HY3)' }
+  { value: 'combo1', label: 'combo1 (Combo)' },
+  { value: 'openrouter/tencent/hy3:free', label: 'openrouter/tencent/hy3:free (HY3)' },
+  { value: 'openrouter/openai/gpt-oss-20b:free', label: 'openrouter/openai/gpt-oss-20b:free (GPT OSS 20B)' },
+  { value: 'openrouter/poolside/laguna-xs-2.1:free', label: 'openrouter/poolside/laguna-xs-2.1:free (Laguna XS)' },
+  { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'openrouter/google/gemma-4-26b-a4b-it:free (Gemma 4)' }
 ];
 
 export default function AiInterpretationPanel({ result, mode, plainTextResult }) {
   const { t } = useLanguage();
   const [settings, setSettings] = useState({
-    endpoint: 'http://43.128.116.69/v1',
-    apiKey: 'sk-6256f9bca9142176-megsyu-c0e57c8f',
-    model: 'oc/deepseek-v4-flash-free',
+    endpoint: 'http://43.128.116.69:20128/v1',
+    apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739',
+    model: 'combo1',
   });
   const [showSettings, setShowSettings] = useState(false);
   const [formSettings, setFormSettings] = useState({
@@ -20,30 +22,102 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult })
     apiKey: '',
     model: ''
   });
-  const [modelType, setModelType] = useState('oc/deepseek-v4-flash-free');
+  const [modelType, setModelType] = useState('combo1');
   const [interpretation, setInterpretation] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [statusText, setStatusText] = useState('');
 
+  const [modelsList, setModelsList] = useState(PREDEFINED_MODELS);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [modelsError, setModelsError] = useState('');
+
+  const getResolvedEndpoint = (endpoint) => {
+    if (!endpoint) return '';
+    let callEndpoint = endpoint.replace(/\/$/, '');
+    const isHttp = callEndpoint.startsWith('http://');
+    const isSecureCtx = window.location.protocol === 'https:' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1';
+    if (isHttp && isSecureCtx) {
+      const path = window.location.pathname;
+      let base = '/';
+      if (path.startsWith('/kinhdich')) base = '/kinhdich/';
+      else if (path.startsWith('/tarot')) base = '/tarot/';
+      const suffix = callEndpoint.replace(/^http:\/\/[^/]+/, '');
+      callEndpoint = base + 'api-vps' + suffix;
+    }
+    return callEndpoint;
+  };
+
+  const fetchModels = async (currentSettings) => {
+    if (!currentSettings.endpoint) return;
+    setLoadingModels(true);
+    setModelsError('');
+    try {
+      const resolvedEndpoint = getResolvedEndpoint(currentSettings.endpoint);
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      if (currentSettings.apiKey) {
+        headers['Authorization'] = `Bearer ${currentSettings.apiKey}`;
+      }
+      const response = await fetch(`${resolvedEndpoint}/models`, {
+        method: 'GET',
+        headers
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      if (data && Array.isArray(data.data)) {
+        const fetched = data.data.map(m => {
+          let label = m.id;
+          if (m.owned_by) {
+            label += ` (${m.owned_by === 'combo' ? 'Combo' : m.owned_by})`;
+          }
+          return {
+            value: m.id,
+            label: label
+          };
+        });
+        setModelsList(fetched);
+      } else {
+        throw new Error('Định dạng dữ liệu không đúng');
+      }
+    } catch (err) {
+      console.warn('Error fetching models:', err);
+      setModelsError('Không thể lấy danh sách model: ' + err.message);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
   // Load settings
   useEffect(() => {
+    let activeSettings = {
+      endpoint: 'http://43.128.116.69:20128/v1',
+      apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739',
+      model: 'combo1',
+    };
     try {
       const saved = localStorage.getItem('iching_ai_settings');
       if (saved) {
-        setSettings(JSON.parse(saved));
+        activeSettings = { ...activeSettings, ...JSON.parse(saved) };
+        setSettings(activeSettings);
       }
     } catch (e) {}
+    fetchModels(activeSettings);
   }, []);
 
   // Sync settings to form when settings modal opens
   useEffect(() => {
     if (showSettings) {
       setFormSettings(settings);
-      const isPredefined = PREDEFINED_MODELS.some(m => m.value === settings.model);
+      const isPredefined = modelsList.some(m => m.value === settings.model);
       setModelType(isPredefined ? settings.model : 'custom');
     }
-  }, [showSettings, settings]);
+  }, [showSettings, settings, modelsList]);
 
   // Save settings
   const handleSaveSettings = (e) => {
@@ -51,6 +125,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult })
     setSettings(formSettings);
     localStorage.setItem('iching_ai_settings', JSON.stringify(formSettings));
     setShowSettings(false);
+    fetchModels(formSettings);
   };
 
   const handleInterpret = async () => {
@@ -85,8 +160,8 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
 
       const fallbackModels = Array.from(new Set([
         settings.model,
-        'mmf/mimo-auto',
-        'oc/hy3-free'
+        'combo1',
+        'openrouter/tencent/hy3:free'
       ])).filter(Boolean);
 
       let lastError = null;
@@ -100,21 +175,7 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
               : `Mô hình ${fallbackModels[i - 1]} gặp sự cố, đang thử ${currentModel}...`
           );
 
-          let callEndpoint = settings.endpoint.replace(/\/$/, '');
-          // On production HTTPS or localhost dev: route through same-origin proxy to bypass mixed content
-          const isHttp = callEndpoint.startsWith('http://');
-          const isSecureCtx = window.location.protocol === 'https:' ||
-              window.location.hostname === 'localhost' ||
-              window.location.hostname === '127.0.0.1';
-          if (isHttp && isSecureCtx) {
-            const path = window.location.pathname;
-            let base = '/';
-            if (path.startsWith('/kinhdich')) base = '/kinhdich/';
-            else if (path.startsWith('/tarot')) base = '/tarot/';
-            // Strip http://host from endpoint and prepend proxy path
-            const suffix = callEndpoint.replace(/^http:\/\/[^/]+/, '');
-            callEndpoint = base + 'api-vps' + suffix;
-          }
+          const callEndpoint = getResolvedEndpoint(settings.endpoint);
 
           const response = await fetch(`${callEndpoint}/chat/completions`, {
             method: 'POST',
@@ -283,8 +344,8 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
               type="text"
               className="form-input"
               style={{ padding: '6px 10px', fontSize: '0.8125rem' }}
-              value={settings.endpoint}
-              onChange={e => setSettings({ ...settings, endpoint: e.target.value })}
+              value={formSettings.endpoint}
+              onChange={e => setFormSettings({ ...formSettings, endpoint: e.target.value })}
               required
             />
           </div>
@@ -295,14 +356,18 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
               type="password"
               className="form-input"
               style={{ padding: '6px 10px', fontSize: '0.8125rem' }}
-              value={settings.apiKey}
-              onChange={e => setSettings({ ...settings, apiKey: e.target.value })}
+              value={formSettings.apiKey}
+              onChange={e => setFormSettings({ ...formSettings, apiKey: e.target.value })}
               placeholder="Nhập API Key nếu có"
             />
           </div>
 
           <div>
-            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>Chọn Model *</label>
+            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+              <span>Chọn Model *</span>
+              {loadingModels && <span style={{ fontSize: '0.6875rem', color: 'var(--color-ink-muted)' }}>⏳ Đang tải...</span>}
+              {modelsError && <span style={{ fontSize: '0.6875rem', color: 'var(--color-vermillion)' }} title={modelsError}>⚠️ Lỗi tải model</span>}
+            </label>
             <select
               className="form-input"
               style={{ padding: '6px 10px', fontSize: '0.8125rem', height: 34, background: '#fff', border: '1px solid var(--color-ink-muted)' }}
@@ -315,7 +380,7 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
                 }
               }}
             >
-              {PREDEFINED_MODELS.map(m => (
+              {modelsList.map(m => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
               <option value="custom">Tùy chỉnh...</option>
@@ -331,7 +396,7 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
                 style={{ padding: '6px 10px', fontSize: '0.8125rem' }}
                 value={formSettings.model}
                 onChange={e => setFormSettings({ ...formSettings, model: e.target.value })}
-                placeholder="Nhập tên model (ví dụ: oc/deepseek-v4-flash-free)"
+                placeholder="Nhập tên model (ví dụ: combo1)"
                 required
               />
             </div>
