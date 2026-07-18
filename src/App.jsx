@@ -12,6 +12,7 @@ import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
 import DescriptionPanel from './components/DescriptionPanel.jsx';
 import HistoryList from './components/HistoryList.jsx';
 import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
+import AuthUserBadge from './components/AuthUserBadge.jsx';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -548,6 +549,8 @@ export default function App() {
             >
               {language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}
             </button>
+
+            <AuthUserBadge />
 
             {(result || maiHoaResult) && (
               <button
