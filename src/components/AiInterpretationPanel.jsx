@@ -3,10 +3,10 @@ import { useLanguage } from '../context/LanguageContext.jsx';
 
 const PREDEFINED_MODELS = [
   { value: 'combo1', label: 'combo1 (Combo)' },
-  { value: 'openrouter/tencent/hy3:free', label: 'openrouter/tencent/hy3:free (HY3)' },
-  { value: 'openrouter/openai/gpt-oss-20b:free', label: 'openrouter/openai/gpt-oss-20b:free (GPT OSS 20B)' },
-  { value: 'openrouter/poolside/laguna-xs-2.1:free', label: 'openrouter/poolside/laguna-xs-2.1:free (Laguna XS)' },
-  { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'openrouter/google/gemma-4-26b-a4b-it:free (Gemma 4)' }
+  { value: 'openrouter/tencent/hy3:free', label: 'hy3:free' },
+  { value: 'openrouter/openai/gpt-oss-20b:free', label: 'gpt-oss-20b:free' },
+  { value: 'openrouter/poolside/laguna-xs-2.1:free', label: 'laguna-xs-2.1:free' },
+  { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'gemma-4-26b-a4b-it:free' }
 ];
 
 export default function AiInterpretationPanel({ result, mode, plainTextResult }) {
@@ -72,10 +72,8 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult })
       const data = await response.json();
       if (data && Array.isArray(data.data)) {
         const fetched = data.data.map(m => {
-          let label = m.id;
-          if (m.owned_by) {
-            label += ` (${m.owned_by === 'combo' ? 'Combo' : m.owned_by})`;
-          }
+          const simpleName = m.id.split('/').pop();
+          const label = m.owned_by === 'combo' ? `${simpleName} (Combo)` : simpleName;
           return {
             value: m.id,
             label: label
@@ -95,18 +93,24 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult })
 
   // Load settings
   useEffect(() => {
-    let activeSettings = {
+    const defaultSettings = {
       endpoint: 'http://43.128.116.69:20128/v1',
       apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739',
       model: 'combo1',
     };
+    let activeSettings = { ...defaultSettings };
     try {
       const saved = localStorage.getItem('iching_ai_settings');
       if (saved) {
-        activeSettings = { ...activeSettings, ...JSON.parse(saved) };
-        setSettings(activeSettings);
+        const parsed = JSON.parse(saved);
+        activeSettings = {
+          ...activeSettings,
+          endpoint: parsed.endpoint || activeSettings.endpoint,
+          model: parsed.model || activeSettings.model
+        };
       }
     } catch (e) {}
+    setSettings(activeSettings);
     fetchModels(activeSettings);
   }, []);
 
@@ -122,10 +126,18 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult })
   // Save settings
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    setSettings(formSettings);
-    localStorage.setItem('iching_ai_settings', JSON.stringify(formSettings));
+    const newSettings = {
+      endpoint: formSettings.endpoint,
+      apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739', // Enforced default
+      model: formSettings.model
+    };
+    setSettings(newSettings);
+    localStorage.setItem('iching_ai_settings', JSON.stringify({
+      endpoint: newSettings.endpoint,
+      model: newSettings.model
+    }));
     setShowSettings(false);
-    fetchModels(formSettings);
+    fetchModels(newSettings);
   };
 
   const handleInterpret = async () => {
@@ -350,17 +362,7 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
             />
           </div>
 
-          <div>
-            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>API Key (Tùy chọn)</label>
-            <input
-              type="password"
-              className="form-input"
-              style={{ padding: '6px 10px', fontSize: '0.8125rem' }}
-              value={formSettings.apiKey}
-              onChange={e => setFormSettings({ ...formSettings, apiKey: e.target.value })}
-              placeholder="Nhập API Key nếu có"
-            />
-          </div>
+
 
           <div>
             <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
