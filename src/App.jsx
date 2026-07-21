@@ -472,8 +472,7 @@ export default function App() {
         subtitle={t('app.subtitle', 'Lập Quẻ Kinh Dịch')}
         navItems={[
           {
-            icon: '🃏',
-            label: t('nav.tarot', 'Xem Tarot'),
+            label: t('nav.tarot', '🃏 Xem Tarot'),
             href: 'https://vunph.id.vn/tarot/',
             external: true,
           },
