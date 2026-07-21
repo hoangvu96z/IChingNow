@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from './context/AuthContext.jsx';
+import { useReadingsApi } from './hooks/useReadingsApi.js';
 import CastingForm from './components/CastingForm.jsx';
 import MethodPicker from './components/MethodPicker.jsx';
 import QuickCastPanel from './components/QuickCastPanel.jsx';
@@ -322,59 +324,36 @@ export default function App() {
   const [maiHoaResult,     setMaiHoaResult]     = useState(null);
   const [hasPickedMethod,  setHasPickedMethod]  = useState(false);
 
-  // Lịch sử gieo quẻ
-  const [history, setHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('iching_history');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
+  // ─── Auth + Readings API ──────────────────────────────────────────────────
+  const { isAuthenticated } = useAuth();
+  const {
+    history,
+    historyLoaded,
+    loadHistory,
+    saveReading,
+    clearHistory: handleClearHistory,
+  } = useReadingsApi(isAuthenticated);
+
+  // Tải lịch sử khi mount hoặc khi auth state thay đổi
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory, isAuthenticated]);
 
   const hasResult = !!(result || maiHoaResult);
 
   // Tự động lưu Lục Hào vào lịch sử
   useEffect(() => {
     if (result) {
-      saveToHistory(result, 'luc-hao');
+      saveReading(result, 'luc-hao');
     }
   }, [result]);
 
   // Tự động lưu Mai Hoa vào lịch sử
   useEffect(() => {
     if (maiHoaResult) {
-      saveToHistory(maiHoaResult, 'mai-hoa');
+      saveReading(maiHoaResult, 'mai-hoa');
     }
   }, [maiHoaResult]);
-
-  const saveToHistory = (newResult, type) => {
-    if (!newResult) return;
-
-    setHistory(prev => {
-      // Tránh trùng lặp nếu quẻ đã tồn tại trong lịch sử (check bằng createdAt)
-      const exists = prev.some(item => item.data.createdAt === newResult.createdAt);
-      if (exists) return prev;
-
-      const title = type === 'luc-hao'
-        ? `${newResult.primaryHexagram?.nameVi}${newResult.changedHexagram ? ' ➔ ' + newResult.changedHexagram.nameVi : ''}`
-        : `${newResult.primaryHexagram?.nameVi} (Chủ) ➔ ${newResult.changedHexagram?.nameVi} (Biến)`;
-
-      const newItem = {
-        id: Date.now().toString(),
-        timestamp: newResult.createdAt || new Date().toISOString(),
-        question: newResult.question || '(Không có câu hỏi)',
-        type,
-        title,
-        mode: newResult.mode || (type === 'mai-hoa' ? `mai-hoa-${newResult.subMode}` : 'quick'),
-        data: newResult
-      };
-
-      const updated = [newItem, ...prev].slice(0, 10);
-      localStorage.setItem('iching_history', JSON.stringify(updated));
-      return updated;
-    });
-  };
 
   const handleSelectHistoryItem = (item) => {
     if (item.type === 'luc-hao') {
@@ -405,10 +384,7 @@ export default function App() {
     }
   };
 
-  const handleClearHistory = () => {
-    setHistory([]);
-    localStorage.removeItem('iching_history');
-  };
+  // handleClearHistory đã được cung cấp từ useReadingsApi hook ở trên
 
   // Mỗi khi lines thay đổi đủ 6, build result
   function computeResult(newLines, currentMode) {
