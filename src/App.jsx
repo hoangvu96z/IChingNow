@@ -14,7 +14,7 @@ import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
 import DescriptionPanel from './components/DescriptionPanel.jsx';
 import HistoryList from './components/HistoryList.jsx';
 import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
-import AuthUserBadge from './components/AuthUserBadge.jsx';
+import AppHeader from './components/AppHeader.jsx';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -454,102 +454,57 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: 'var(--color-paper)', fontFamily: "'Be Vietnam Pro', sans-serif" }}>
 
       {/* ===== HEADER ===== */}
-      <header className="app-header-iching">
-        <div className="header-container-iching">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Trigram icon */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {[true, false, true].map((yang, i) => (
-                yang
-                  ? <div key={i} style={{ width: 28, height: 5, background: '#d4a017', borderRadius: 2 }} />
-                  : <div key={i} style={{ display: 'flex', gap: 5 }}>
-                      <div style={{ width: 11, height: 5, background: '#d4a017', borderRadius: 2 }} />
-                      <div style={{ width: 11, height: 5, background: '#d4a017', borderRadius: 2 }} />
-                    </div>
-              ))}
-            </div>
-            <div>
-              <div style={{
-                fontFamily: "'Noto Serif', serif",
-                fontSize: '1.375rem',
-                fontWeight: 700,
-                color: '#f5d78e',
-                letterSpacing: '0.06em',
-              }}>
-                易 IChingNow
-              </div>
-              <div style={{ fontSize: '0.6875rem', color: 'rgba(245,215,142,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                {t('app.subtitle', 'Lập Quẻ Kinh Dịch')}
-              </div>
-            </div>
+      <AppHeader
+        theme="iching"
+        logo={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {[true, false, true].map((yang, i) => (
+              yang
+                ? <div key={i} style={{ width: 22, height: 4, background: '#d4a017', borderRadius: 2 }} />
+                : <div key={i} style={{ display: 'flex', gap: 4 }}>
+                    <div style={{ width: 9, height: 4, background: '#d4a017', borderRadius: 2 }} />
+                    <div style={{ width: 9, height: 4, background: '#d4a017', borderRadius: 2 }} />
+                  </div>
+            ))}
           </div>
-
-          <div className="header-actions-iching">
-            <a 
-              href="https://vunph.id.vn/tarot/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: 'rgba(255, 255, 255, 0.75)',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                transition: 'color 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#f5d78e'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.75)'}
-            >
-              {t('nav.tarot', '🃏 Xem Tarot')}
-            </a>
-
+        }
+        title="易 IChingNow"
+        subtitle={t('app.subtitle', 'Lập Quẻ Kinh Dịch')}
+        navItems={[
+          {
+            icon: '🃏',
+            label: t('nav.tarot', 'Xem Tarot'),
+            href: 'https://vunph.id.vn/tarot/',
+            external: true,
+          },
+        ]}
+        onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+        languageLabel={language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}
+        primaryAction={
+          (result || maiHoaResult) ? (
             <button
-              onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+              onClick={handleFullReset}
               style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 6,
-                color: 'white',
-                padding: '5px 12px',
+                background: 'rgba(212,160,23,0.12)',
+                border: '1px solid rgba(212,160,23,0.4)',
+                borderRadius: 8,
+                color: '#f5d78e',
+                padding: '7px 14px',
                 cursor: 'pointer',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
+                fontSize: '0.875rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 5,
-                transition: 'all 0.2s',
+                gap: 6,
+                whiteSpace: 'nowrap',
+                width: '100%',
+                justifyContent: 'center',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
             >
-              {language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}
+              {t('nav.new_hexagram', '🔄 Lập quẻ mới')}
             </button>
-
-            <AuthUserBadge />
-
-            {(result || maiHoaResult) && (
-              <button
-                onClick={handleFullReset}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: 8,
-                  color: 'rgba(255,255,255,0.8)',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                {t('nav.new_hexagram', '🔄 Lập quẻ mới')}
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+          ) : null
+        }
+      />
 
       {/* ===== MAIN LAYOUT ===== */}
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
