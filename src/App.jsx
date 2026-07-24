@@ -510,137 +510,124 @@ export default function App() {
 
       {/* ===== MAIN LAYOUT ===== */}
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 420px) minmax(0, 1fr)',
-          gap: 24,
-          alignItems: 'start',
-        }}
-          className="main-grid"
-        >
-          {/* ===== LEFT COLUMN ===== */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          
+          {/* 1. Form nhập liệu (Ở TRÊN CÙNG / GIỮA) */}
+          <section className="card" style={{ padding: 24 }}>
+            <div className="section-title" style={{ marginBottom: 16 }}>
+              {t('form.title', 'Thông tin lập quẻ')}
+            </div>
+            <CastingForm
+              formData={formData}
+              onChange={setFormData}
+              showLucHaoOptions={hasPickedMethod && !mode.startsWith('mai-hoa')}
+            />
+          </section>
 
-            {/* Form nhập liệu */}
-            <section className="card" style={{ padding: 20 }}>
-              <div className="section-title" style={{ marginBottom: 16 }}>
-                {t('form.title', 'Thông tin lập quẻ')}
-              </div>
-              <CastingForm
-                formData={formData}
-                onChange={setFormData}
-                showLucHaoOptions={hasPickedMethod && !mode.startsWith('mai-hoa')}
-              />
+          {/* 2. Chọn phương pháp / Bảng gieo / Kết quả */}
+          {/* ─── STATE 1: Chưa chọn phương pháp → MethodPicker ─── */}
+          {!hasPickedMethod && !hasResult && (
+            <section className="card" style={{ padding: 24 }}>
+              <MethodPicker onPick={handleMethodPick} questionEmpty={!canCast} />
             </section>
+          )}
 
-            {/* Lịch sử gieo quẻ */}
-            <HistoryList
-              history={history}
-              onSelect={handleSelectHistoryItem}
-              onOpenManageModal={() => setIsManageModalOpen(true)}
-              currentActiveData={result || maiHoaResult}
-            />
+          {/* ─── STATE 2: Đã chọn phương pháp nhưng chưa gieo → Casting Panel ─── */}
+          {hasPickedMethod && !hasResult && (
+            <section className="card animate-in" style={{ padding: 24 }}>
+              <div className="section-title" style={{ marginBottom: 12 }}>
+                {mode === 'quick'          && `⚡ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.quick.title', 'Gieo nhanh')}`}
+                {mode === 'manual-step'    && `🪙 ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.manual.title', 'Gieo từng hào')}`}
+                {mode === 'mai-hoa-time'   && t('maihoa.time_title', '🕐 Mai Hoa — Ngày giờ động tâm')}
+                {mode === 'mai-hoa-serial' && t('maihoa.serial_title', '💵 Mai Hoa — Số seri tiền')}
+              </div>
 
-            {/* Modal Quản lý lịch sử */}
-            <HistoryManagementModal
-              isOpen={isManageModalOpen}
-              onClose={() => setIsManageModalOpen(false)}
-              history={history}
-              onSelect={handleSelectHistoryItem}
-              onDeleteMultiple={deleteMultipleReadings}
-              onClearAll={handleClearHistory}
-            />
-          </div>
+              {mode === 'quick' ? (
+                <QuickCastPanel
+                  onResult={handleQuickResult}
+                  disabled={!canCast}
+                  algorithm={formData.lucHaoAlgorithm}
+                />
+              ) : mode === 'manual-step' ? (
+                <ManualLineStepper
+                  completedLines={lines}
+                  onLineAdded={handleLineAdded}
+                  onReset={handleReset}
+                  disabled={!canCast}
+                  algorithm={formData.lucHaoAlgorithm}
+                />
+              ) : (
+                /* mode === 'mai-hoa-time' | 'mai-hoa-serial' */
+                <MaiHoaPanel
+                  mode={mode}
+                  question={formData.question}
+                  onResult={setMaiHoaResult}
+                  onReset={handleMaiHoaReset}
+                />
+              )}
 
-          {/* ===== RIGHT COLUMN ===== */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-
-            {/* ─── STATE 1: Chưa chọn phương pháp → MethodPicker ─── */}
-            {!hasPickedMethod && !hasResult && (
-              <section className="card" style={{ padding: 24 }}>
-                <MethodPicker onPick={handleMethodPick} questionEmpty={!canCast} />
-              </section>
-            )}
-
-            {/* ─── STATE 2: Đã chọn phương pháp nhưng chưa gieo → Casting Panel ─── */}
-            {hasPickedMethod && !hasResult && (
-              <section className="card animate-in" style={{ padding: 20 }}>
-                <div className="section-title" style={{ marginBottom: 12 }}>
-                  {mode === 'quick'          && `⚡ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.quick.title', 'Gieo nhanh')}`}
-                  {mode === 'manual-step'    && `🪙 ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.manual.title', 'Gieo từng hào')}`}
-                  {mode === 'mai-hoa-time'   && t('maihoa.time_title', '🕐 Mai Hoa — Ngày giờ động tâm')}
-                  {mode === 'mai-hoa-serial' && t('maihoa.serial_title', '💵 Mai Hoa — Số seri tiền')}
+              {!canCast && !mode.startsWith('mai-hoa') && (
+                <div style={{
+                  marginTop: 10,
+                  padding: '8px 12px',
+                  background: 'rgba(192,57,43,0.08)',
+                  borderRadius: 6,
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-vermillion)',
+                  border: '1px solid rgba(192,57,43,0.2)',
+                }}>
+                  {t('panel.need_question_warning', '⚠ Hãy nhập việc cần xem ở bên trên trước khi gieo quẻ')}
                 </div>
+              )}
+            </section>
+          )}
 
-                {mode === 'quick' ? (
-                  <QuickCastPanel
-                    onResult={handleQuickResult}
-                    disabled={!canCast}
-                    algorithm={formData.lucHaoAlgorithm}
-                  />
-                ) : mode === 'manual-step' ? (
-                  <ManualLineStepper
-                    completedLines={lines}
-                    onLineAdded={handleLineAdded}
-                    onReset={handleReset}
-                    disabled={!canCast}
-                    algorithm={formData.lucHaoAlgorithm}
-                  />
-                ) : (
-                  /* mode === 'mai-hoa-time' | 'mai-hoa-serial' */
-                  <MaiHoaPanel
-                    mode={mode}
-                    question={formData.question}
-                    onResult={setMaiHoaResult}
-                    onReset={handleMaiHoaReset}
-                  />
-                )}
+          {/* ─── STATE 3: Đã có kết quả ─── */}
+          {hasResult && (
+            <ResultSection
+              mode={mode}
+              result={result}
+              maiHoaResult={maiHoaResult}
+              onChangeMethod={handleChangeMethod}
+            />
+          )}
 
-                {!canCast && !mode.startsWith('mai-hoa') && (
-                  <div style={{
-                    marginTop: 10,
-                    padding: '8px 12px',
-                    background: 'rgba(192,57,43,0.08)',
-                    borderRadius: 6,
-                    fontSize: '0.8125rem',
-                    color: 'var(--color-vermillion)',
-                    border: '1px solid rgba(192,57,43,0.2)',
-                  }}>
-                    {t('panel.need_question_warning', '⚠ Hãy nhập việc cần xem ở cột bên trái trước khi gieo quẻ')}
-                  </div>
-                )}
-              </section>
-            )}
+          {/* Nút "Đổi phương pháp" nếu đang ở state casting/result */}
+          {(hasPickedMethod || hasResult) && (
+            <button
+              onClick={handleChangeMethod}
+              className="btn-ghost"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '10px 16px',
+                fontWeight: 600,
+                alignSelf: 'center',
+              }}
+            >
+              {t('nav.change_method', '← Đổi phương pháp gieo')}
+            </button>
+          )}
 
-            {/* ─── STATE 3: Đã có kết quả ─── */}
-            {hasResult && (
-              <ResultSection
-                mode={mode}
-                result={result}
-                maiHoaResult={maiHoaResult}
-                onChangeMethod={handleChangeMethod}
-              />
-            )}
+          {/* 3. Lịch sử gieo quẻ (Ở CUỐI CÙNG) */}
+          <HistoryList
+            history={history}
+            onSelect={handleSelectHistoryItem}
+            onOpenManageModal={() => setIsManageModalOpen(true)}
+            currentActiveData={result || maiHoaResult}
+          />
 
-            {/* Nút "Đổi phương pháp" nếu đang ở state casting/result */}
-            {(hasPickedMethod || hasResult) && (
-              <button
-                onClick={handleChangeMethod}
-                className="btn-ghost"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  padding: '10px 16px',
-                  fontWeight: 600,
-                  alignSelf: 'center',
-                }}
-              >
-                {t('nav.change_method', '← Đổi phương pháp gieo')}
-              </button>
-            )}
-          </div>
+          {/* Modal Quản lý lịch sử */}
+          <HistoryManagementModal
+            isOpen={isManageModalOpen}
+            onClose={() => setIsManageModalOpen(false)}
+            history={history}
+            onSelect={handleSelectHistoryItem}
+            onDeleteMultiple={deleteMultipleReadings}
+            onClearAll={handleClearHistory}
+          />
         </div>
       </main>
 

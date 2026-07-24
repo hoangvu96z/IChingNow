@@ -27,7 +27,7 @@ export const vi = {
   
   // Method Picker
   'picker.title': 'Chọn phương pháp gieo quẻ',
-  'picker.desc_empty': 'Vui lòng nhập việc cần xem ở bên trái trước khi chọn.',
+  'picker.desc_empty': 'Vui lòng nhập việc cần xem ở bên trên trước khi chọn.',
   'picker.desc_ready': 'Chọn 1 trong 4 cách lập quẻ bên dưới để bắt đầu.',
   'picker.luc_hao': 'LỤC HÀO',
   'picker.luc_hao_sub': 'Phương pháp kinh điển — gieo 3 đồng xu × 6 lần',
@@ -58,7 +58,7 @@ export const vi = {
   'panel.mai_hoa_serial_title': '💵 Mai Hoa — Số seri tiền',
   'panel.casting': 'Đang gieo...',
   'panel.cast_quick_btn': '🪙 Gieo nhanh 6 hào',
-  'panel.need_question_warning': '⚠ Hãy nhập việc cần xem ở cột bên trái trước khi gieo quẻ',
+  'panel.need_question_warning': '⚠ Hãy nhập việc cần xem ở bên trên trước khi gieo quẻ',
   'panel.alg_desc_yarrow': 'Hệ thống sẽ mô phỏng chia 49 cọng Cỏ Thi × 6 lần theo phương pháp cổ xưa của Chu Dịch.',
   'panel.alg_desc_equal': 'Hệ thống sẽ gieo ngẫu nhiên 6 hào với cơ hội xuất hiện mỗi hào bằng nhau (25%).',
   'panel.alg_desc_three_coin': 'Hệ thống sẽ mô phỏng tung 3 đồng xu × 6 lần theo phương pháp kinh điển.',
