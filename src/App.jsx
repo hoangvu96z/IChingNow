@@ -13,6 +13,7 @@ import MaiHoaPanel from './components/MaiHoaPanel.jsx';
 import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
 import DescriptionPanel from './components/DescriptionPanel.jsx';
 import HistoryList from './components/HistoryList.jsx';
+import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import { buildResult } from './logic/buildHexagram.js';
@@ -323,6 +324,7 @@ export default function App() {
   const [result,           setResult]           = useState(null);
   const [maiHoaResult,     setMaiHoaResult]     = useState(null);
   const [hasPickedMethod,  setHasPickedMethod]  = useState(false);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
   // ─── Auth + Readings API ──────────────────────────────────────────────────
   const { isAuthenticated } = useAuth();
@@ -331,6 +333,7 @@ export default function App() {
     historyLoaded,
     loadHistory,
     saveReading,
+    deleteMultipleReadings,
     clearHistory: handleClearHistory,
   } = useReadingsApi(isAuthenticated);
 
@@ -534,8 +537,18 @@ export default function App() {
             <HistoryList
               history={history}
               onSelect={handleSelectHistoryItem}
-              onClear={handleClearHistory}
+              onOpenManageModal={() => setIsManageModalOpen(true)}
               currentActiveData={result || maiHoaResult}
+            />
+
+            {/* Modal Quản lý lịch sử */}
+            <HistoryManagementModal
+              isOpen={isManageModalOpen}
+              onClose={() => setIsManageModalOpen(false)}
+              history={history}
+              onSelect={handleSelectHistoryItem}
+              onDeleteMultiple={deleteMultipleReadings}
+              onClearAll={handleClearHistory}
             />
           </div>
 

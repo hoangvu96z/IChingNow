@@ -24,13 +24,7 @@ export function useReadingsApi(isAuthenticated) {
   // ─── Load lịch sử ──────────────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
     if (!isAuthenticated) {
-      // Fallback: đọc từ localStorage khi chưa login
-      try {
-        const saved = localStorage.getItem('iching_history');
-        setHistory(saved ? JSON.parse(saved) : []);
-      } catch {
-        setHistory([]);
-      }
+      setHistory([]);
       setHistoryLoaded(true);
       return;
     }
@@ -43,7 +37,6 @@ export function useReadingsApi(isAuthenticated) {
       if (!res.ok) throw new Error('Failed to load readings');
       const data = await res.json();
 
-      // Map API format → format cũ của App.jsx (giữ tương thích)
       const mapped = (data.readings || []).map((r) => ({
         id: r.id,
         timestamp: r.createdAt,
@@ -63,9 +56,9 @@ export function useReadingsApi(isAuthenticated) {
     }
   }, [isAuthenticated]);
 
-  // ─── Lưu 1 reading mới ─────────────────────────────────────────────────────
+  // ─── Lưu 1 reading mới (Chỉ lưu khi đã đăng nhập) ──────────────────────────
   const saveReading = useCallback(async (newResult, type) => {
-    if (!newResult) return;
+    if (!newResult || !isAuthenticated) return;
 
     const title =
       type === 'luc-hao'
@@ -82,19 +75,6 @@ export function useReadingsApi(isAuthenticated) {
       data: newResult,
     };
 
-    if (!isAuthenticated) {
-      // Lưu localStorage khi chưa login
-      setHistory((prev) => {
-        const exists = prev.some((item) => item.data.createdAt === newResult.createdAt);
-        if (exists) return prev;
-        const updated = [newItem, ...prev].slice(0, 10);
-        localStorage.setItem('iching_history', JSON.stringify(updated));
-        return updated;
-      });
-      return;
-    }
-
-    // Gọi API khi đã login
     try {
       const res = await fetch(`${SSO_BASE}/readings`, {
         method: 'POST',
@@ -142,13 +122,30 @@ export function useReadingsApi(isAuthenticated) {
       }
     }
 
-    setHistory((prev) => {
-      const updated = prev.filter((h) => h.id !== item.id);
-      if (!isAuthenticated) {
-        localStorage.setItem('iching_history', JSON.stringify(updated));
-      }
-      return updated;
-    });
+    setHistory((prev) => prev.filter((h) => h.id !== item.id));
+  }, [isAuthenticated]);
+
+  // ─── Xoá nhiều readings ───────────────────────────────────────────────────
+  const deleteMultipleReadings = useCallback(async (itemsToDelete) => {
+    if (!itemsToDelete || itemsToDelete.length === 0) return;
+
+    const idsToDelete = new Set(itemsToDelete.map((i) => i.id));
+
+    if (isAuthenticated) {
+      await Promise.allSettled(
+        itemsToDelete.map((item) => {
+          const remoteId = item._remoteId || item.id;
+          if (!remoteId) return Promise.resolve();
+          return fetch(`${SSO_BASE}/readings/${remoteId}`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+            credentials: 'include',
+          });
+        })
+      );
+    }
+
+    setHistory((prev) => prev.filter((h) => !idsToDelete.has(h.id)));
   }, [isAuthenticated]);
 
   // ─── Xoá toàn bộ ───────────────────────────────────────────────────────────
@@ -163,8 +160,6 @@ export function useReadingsApi(isAuthenticated) {
       } catch (err) {
         console.error('clearHistory error:', err);
       }
-    } else {
-      localStorage.removeItem('iching_history');
     }
     setHistory([]);
   }, [isAuthenticated]);
@@ -176,6 +171,7 @@ export function useReadingsApi(isAuthenticated) {
     loadHistory,
     saveReading,
     deleteReading,
+    deleteMultipleReadings,
     clearHistory,
   };
 }
