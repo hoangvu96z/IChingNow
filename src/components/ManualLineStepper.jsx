@@ -84,15 +84,33 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
         })}
       </div>
 
-      {/* Đã gieo — preview mini */}
-      {completedLines.length > 0 && (
-        <div style={{ padding: '10px 14px', background: 'rgba(26,107,74,0.06)', borderRadius: 8, border: '1px solid rgba(26,107,74,0.15)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-jade)', fontWeight: 700, marginBottom: 6 }}>
+      {/* Tiến trình 6 vạch quẻ (Căn giữa gọn gàng) */}
+      <div style={{
+        padding: '16px 20px',
+        background: 'rgba(26,107,74,0.04)',
+        borderRadius: 12,
+        border: '1px solid rgba(26,107,74,0.18)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        maxWidth: 380,
+        margin: '0 auto',
+        width: '100%',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 240, marginBottom: 8 }}>
+          <span style={{ fontSize: '0.8125rem', color: 'var(--color-jade)', fontWeight: 700 }}>
             {t('stepper.cast_so_far', 'Đã gieo')} ({completedLines.length}/6):
-          </div>
-          <HexagramDisplay lines={completedLines.map((l, i) => ({ ...l, index: i+1 }))} size="sm" showIndex />
+          </span>
+          {completedLines.length > 0 && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', fontWeight: 500 }}>
+              Vạch {completedLines.length}: {t('lineType.' + completedLines[completedLines.length - 1]?.type, LINE_TYPE_LABELS[completedLines[completedLines.length - 1]?.type])}
+            </span>
+          )}
         </div>
-      )}
+        <div style={{ width: '100%', maxWidth: 240 }}>
+          <HexagramDisplay lines={completedLines.map((l, i) => ({ ...l, index: l.index || i+1 }))} size="md" showIndex />
+        </div>
+      </div>
 
       {/* Kết quả hào vừa tung */}
       {lastLine && (

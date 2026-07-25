@@ -10,23 +10,21 @@ import React from 'react';
  *   - Hào Âm động (moving yin)  : 2 vạch KHÔNG đổi màu + vòng tròn ● đỏ ở khe giữa
  *   → Luôn phân biệt rõ Dương (liền) và Âm (đứt), chỉ dấu ● báo hào động
  */
-export default function HexagramDisplay({ lines, size = 'md', showIndex = false }) {
-  if (!lines || lines.length < 6) {
-    return (
-      <div className={`hexagram-display ${size}`} style={{ padding: '12px 0' }}>
-        {[...Array(6)].map((_, i) => (
-          <PlaceholderLine key={i} />
-        ))}
-      </div>
-    );
-  }
-
-  const sorted = [...lines].sort((a, b) => b.index - a.index); // hào 6 trên cùng
+export default function HexagramDisplay({ lines = [], size = 'md', showIndex = false }) {
+  // Construct 6 lines (from Hào 6 at top down to Hào 1 at bottom)
+  const fullLines = [6, 5, 4, 3, 2, 1].map(index => {
+    const existing = lines.find(l => l.index === index);
+    return existing || { index, isPlaceholder: true };
+  });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: size === 'sm' ? 4 : 6, padding: '8px 0' }}>
-      {sorted.map((line) => (
-        <HexLine key={line.index} line={line} size={size} showIndex={showIndex} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: size === 'sm' ? 5 : size === 'lg' ? 10 : 7, padding: '6px 0' }}>
+      {fullLines.map((line) => (
+        line.isPlaceholder ? (
+          <PlaceholderLine key={line.index} size={size} showIndex={showIndex} index={line.index} />
+        ) : (
+          <HexLine key={line.index} line={line} size={size} showIndex={showIndex} />
+        )
       ))}
     </div>
   );
@@ -99,10 +97,27 @@ function HexLine({ line, size, showIndex }) {
   );
 }
 
-function PlaceholderLine() {
+function PlaceholderLine({ size = 'md', showIndex = false, index }) {
+  const h = size === 'sm' ? 5 : size === 'lg' ? 10 : 7;
   return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center', opacity: 0.2 }}>
-      <div style={{ height: 7, background: 'var(--color-ink)', borderRadius: 2, flex: 1 }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.35 }}>
+      {showIndex && (
+        <span style={{
+          fontSize: 10, color: 'var(--color-ink-muted)',
+          width: 14, textAlign: 'right', flexShrink: 0, fontWeight: 500,
+        }}>
+          {index}
+        </span>
+      )}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+        <div style={{
+          height: h,
+          background: 'rgba(184, 134, 11, 0.12)',
+          border: '1px dashed rgba(184, 134, 11, 0.35)',
+          borderRadius: 2,
+          flex: 1,
+        }} />
+      </div>
     </div>
   );
 }

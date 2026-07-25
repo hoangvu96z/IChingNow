@@ -136,15 +136,28 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult })
       endpoint: newSettings.endpoint,
       model: newSettings.model
     }));
-    setShowSettings(false);
     fetchModels(newSettings);
   };
+
+  // ─── AI Follow-up Q&A State ───────────────────────────────────────────────
+  const [followUps, setFollowUps] = useState([]); // [{ question: '', answer: '' }]
+  const [userQuestion, setUserQuestion] = useState('');
+  const [askingFollowUp, setAskingFollowUp] = useState(false);
+  const [followUpError, setFollowUpError] = useState('');
+  const [currentFollowUpAnswer, setCurrentFollowUpAnswer] = useState('');
+
+  const charCount = userQuestion.length;
+  const isCharCountValid = charCount > 0 && charCount <= 2048;
 
   const handleInterpret = async () => {
     if (!result) return;
     setLoading(true);
     setError('');
     setInterpretation('');
+    setFollowUps([]);
+    setUserQuestion('');
+    setFollowUpError('');
+    setCurrentFollowUpAnswer('');
     setStatusText(t('ai.connecting', 'Đang kết nối đến server AI...'));
 
     try {
@@ -251,7 +264,6 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
         } catch (err) {
           console.warn(`Model ${currentModel} failed:`, err);
           lastError = err;
-          // Clear any partial response so we don't end up with mixed texts
           setInterpretation('');
         }
       }
@@ -265,6 +277,134 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
     } finally {
       setLoading(false);
       setStatusText('');
+    }
+  };
+
+  // Handler cho câu hỏi thêm tới AI (Memory 100% ngữ cảnh quẻ + lịch sử trò chuyện)
+  const handleSendFollowUp = async (e) => {
+    if (e) e.preventDefault();
+    if (!userQuestion.trim() || askingFollowUp || followUps.length >= 5 || !isCharCountValid) return;
+
+    const questionToSend = userQuestion.trim();
+    setAskingFollowUp(true);
+    setFollowUpError('');
+    setCurrentFollowUpAnswer('');
+
+    try {
+      const sysPrompt = `Bạn là một chuyên gia Kinh Dịch (I Ching) uyên bác, thấu đáo.
+Người dùng đang hỏi thêm một câu hỏi cụ thể dựa trên quẻ dịch và thông tin đã luận giải trước đó.
+Yêu cầu quan trọng khi trả lời câu hỏi thêm:
+1. Trả lời NGẮN GỌN, súc tích, đi thẳng vào trọng tâm câu hỏi của người dùng. KHÔNG dông dài, KHÔNG lặp lại phần giới thiệu hay thông tin quẻ ban đầu.
+2. Phân tích ngắn gọn dựa trên tượng quẻ, hào động hoặc thể dụng liên quan trực tiếp tới thắc mắc này.
+3. Đưa ra kết luận hoặc lời khuyên cụ thể, ngắn gọn, dễ hiểu. Luôn trả lời bằng tiếng Việt.`;
+
+      const question = result?.question || '';
+      const caster = result?.caster || '';
+      const castDate = result?.castDate || '';
+      const castTime = result?.castTime || '';
+
+      const initialUserPrompt = `Hãy luận giải quẻ dịch sau cho tôi:
+- Việc cần xem: "${question}"
+- Người lập quẻ: ${caster || 'Ẩn danh'}
+- Thời gian lập: ${castDate} ${castTime}
+- Thông tin quẻ chi tiết:
+${plainTextResult}`;
+
+      // Xây dựng chuỗi hội thoại giữ đầy đủ bộ nhớ (Memory)
+      const messages = [
+        { role: 'system', content: sysPrompt },
+        { role: 'user', content: initialUserPrompt },
+        { role: 'assistant', content: interpretation }
+      ];
+
+      followUps.forEach(item => {
+        messages.push({ role: 'user', content: item.question });
+        messages.push({ role: 'assistant', content: item.answer });
+      });
+
+      messages.push({ role: 'user', content: questionToSend });
+
+      const fallbackModels = Array.from(new Set([
+        settings.model,
+        'combo1',
+        'openrouter/tencent/hy3:free'
+      ])).filter(Boolean);
+
+      let lastErr = null;
+      let finalAns = '';
+
+      for (let i = 0; i < fallbackModels.length; i++) {
+        const currentModel = fallbackModels[i];
+        try {
+          const callEndpoint = getResolvedEndpoint(settings.endpoint);
+          const response = await fetch(`${callEndpoint}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(settings.apiKey ? { 'Authorization': `Bearer ${settings.apiKey}` } : {})
+            },
+            body: JSON.stringify({
+              model: currentModel,
+              messages,
+              stream: true
+            })
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(errText || `HTTP error ${response.status}`);
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let done = false;
+          let buffer = '';
+
+          while (!done) {
+            const { value, done: readerDone } = await reader.read();
+            done = readerDone;
+            if (value) {
+              buffer += decoder.decode(value, { stream: true });
+              let boundary = buffer.indexOf('\n');
+              while (boundary !== -1) {
+                const line = buffer.slice(0, boundary).trim();
+                buffer = buffer.slice(boundary + 1);
+                boundary = buffer.indexOf('\n');
+
+                if (line.startsWith('data: ')) {
+                  const jsonStr = line.slice(6).trim();
+                  if (jsonStr === '[DONE]') {
+                    done = true;
+                    break;
+                  }
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const chunkText = parsed.choices?.[0]?.delta?.content || '';
+                    finalAns += chunkText;
+                    setCurrentFollowUpAnswer(finalAns);
+                  } catch (err) {}
+                }
+              }
+            }
+          }
+
+          setFollowUps(prev => [...prev, { question: questionToSend, answer: finalAns }]);
+          setUserQuestion('');
+          setCurrentFollowUpAnswer('');
+          return;
+        } catch (err) {
+          console.warn(`Follow-up model ${currentModel} failed:`, err);
+          lastErr = err;
+          setCurrentFollowUpAnswer('');
+        }
+      }
+
+      if (lastErr) throw lastErr;
+    } catch (err) {
+      console.error(err);
+      setFollowUpError(err.message || 'Lỗi khi kết nối AI để trả lời câu hỏi.');
+    } finally {
+      setAskingFollowUp(false);
     }
   };
 
@@ -361,8 +501,6 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
               required
             />
           </div>
-
-
 
           <div>
             <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
@@ -469,12 +607,138 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
         </div>
       )}
 
-      {/* Final Interpretation Result */}
+      {/* Final Interpretation Result & Interactive Q&A */}
       {!loading && interpretation && (
-        <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 8, padding: 20, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
             <div dangerouslySetInnerHTML={{ __html: parseMarkdown(interpretation) }} />
           </div>
+
+          {/* Interactive Follow-up Q&A Section */}
+          <div style={{ marginTop: 12, paddingTop: 16, borderTop: '1px dashed rgba(184,134,11,0.25)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>💬</span> {t('ai.followup_title', 'Hỏi thêm AI về quẻ này')}
+              </h4>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 10px', borderRadius: 12, background: followUps.length >= 5 ? 'rgba(192,57,43,0.1)' : 'rgba(184,134,11,0.1)', color: followUps.length >= 5 ? 'var(--color-vermillion)' : 'var(--color-gold)' }}>
+                {followUps.length}/5 câu hỏi
+              </span>
+            </div>
+
+            {/* Chat History */}
+            {followUps.map((item, idx) => (
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(184,134,11,0.03)', border: '1px solid rgba(184,134,11,0.15)', borderRadius: 10, padding: 14 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', padding: '2px 8px', borderRadius: 6, flexShrink: 0 }}>
+                    Hỏi #{idx + 1}
+                  </span>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-ink)', marginTop: 2 }}>
+                    {item.question}
+                  </div>
+                </div>
+                <div style={{ paddingLeft: 12, borderLeft: '3px solid var(--color-gold)', marginTop: 4 }}>
+                  <div dangerouslySetInnerHTML={{ __html: parseMarkdown(item.answer) }} />
+                </div>
+              </div>
+            ))}
+
+            {/* Current Streaming Answer */}
+            {askingFollowUp && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(184,134,11,0.04)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 10, padding: 14 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div className="spinner" style={{ width: 16, height: 16, border: '2px solid rgba(184,134,11,0.2)', borderTop: '2px solid var(--color-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-gold)' }}>AI đang suy nghĩ lời giải đáp...</span>
+                </div>
+                {currentFollowUpAnswer && (
+                  <div style={{ paddingLeft: 12, borderLeft: '3px solid var(--color-gold)', marginTop: 4 }}>
+                    <div dangerouslySetInnerHTML={{ __html: parseMarkdown(currentFollowUpAnswer) }} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Follow-up Error */}
+            {followUpError && (
+              <div style={{ padding: 10, background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: 8, color: 'var(--color-vermillion)', fontSize: '0.8125rem' }}>
+                ⚠️ {followUpError}
+              </div>
+            )}
+
+            {/* Question Input Form */}
+            {followUps.length < 5 ? (
+              <form onSubmit={handleSendFollowUp} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                <div>
+                  <textarea
+                    rows={3}
+                    value={userQuestion}
+                    onChange={(e) => setUserQuestion(e.target.value)}
+                    placeholder={t('ai.followup_placeholder', 'Nhập câu hỏi thêm của bạn về quẻ dịch này (ví dụ: Vận trình tháng sau thế nào? Tình cảm có tiến triển gì không?)...')}
+                    disabled={askingFollowUp}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: `1px solid ${charCount > 2048 ? 'var(--color-vermillion)' : 'rgba(184,134,11,0.3)'}`,
+                      background: 'var(--color-paper, #fbf9f4)',
+                      fontSize: '0.875rem',
+                      fontFamily: "'Be Vietnam Pro', sans-serif",
+                      resize: 'vertical',
+                      outline: 'none',
+                      color: 'var(--color-ink)',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <div style={{
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center',
+                    marginTop: 4,
+                    fontSize: '0.75rem',
+                  }}>
+                    <span style={{ color: charCount > 2048 ? 'var(--color-vermillion)' : 'var(--color-ink-muted)', fontWeight: charCount > 2048 ? 700 : 400 }}>
+                      {charCount > 2048 ? `⚠️ Đã vượt quá số ký tự quy định (${charCount}/2048 ký tự)` : `${charCount} / 2048 ký tự`}
+                    </span>
+                    <span style={{ color: 'var(--color-ink-muted)' }}>
+                      Còn lại {5 - followUps.length} lượt hỏi
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="submit"
+                    disabled={askingFollowUp || !userQuestion.trim() || !isCharCountValid}
+                    className="btn-primary"
+                    style={{
+                      padding: '8px 18px',
+                      fontSize: '0.85rem',
+                      opacity: (askingFollowUp || !userQuestion.trim() || !isCharCountValid) ? 0.5 : 1,
+                      cursor: (askingFollowUp || !userQuestion.trim() || !isCharCountValid) ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {askingFollowUp ? '⏳ Đang gửi...' : '💬 Gửi câu hỏi'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                padding: '12px 16px',
+                background: 'rgba(184,134,11,0.08)',
+                borderRadius: 8,
+                fontSize: '0.8125rem',
+                color: 'var(--color-ink-muted)',
+                fontWeight: 500,
+                border: '1px solid rgba(184,134,11,0.2)',
+              }}>
+                ℹ️ Bạn đã sử dụng tối đa 5 câu hỏi thêm cho lượt luận giải quẻ này.
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleInterpret}
             className="btn-ghost"
@@ -484,10 +748,11 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
               display: 'flex',
               alignItems: 'center',
               gap: 5,
-              padding: '6px 12px'
+              padding: '6px 12px',
+              marginTop: 4,
             }}
           >
-            🔄 {t('ai.re_interpret', 'Yêu cầu AI luận giải lại')}
+            🔄 {t('ai.re_interpret', 'Yêu cầu AI luận giải lại từ đầu')}
           </button>
         </div>
       )}

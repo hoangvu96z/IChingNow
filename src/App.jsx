@@ -6,7 +6,7 @@ import MethodPicker from './components/MethodPicker.jsx';
 import QuickCastPanel from './components/QuickCastPanel.jsx';
 import ManualLineStepper from './components/ManualLineStepper.jsx';
 import HexagramPreview from './components/HexagramPreview.jsx';
-import LucHaoTable from './components/LucHaoTable.jsx';
+import LucHaoCombinedTabCard from './components/LucHaoCombinedTabCard.jsx';
 import ResultMetadata from './components/ResultMetadata.jsx';
 import PlainTextExportCard from './components/PlainTextExportCard.jsx';
 import MaiHoaPanel from './components/MaiHoaPanel.jsx';
@@ -109,6 +109,7 @@ function getDefaultForm() {
 /** Card xuất kết quả cho Mai Hoa — giống PlainTextExportCard nhưng dùng buildMaiHoaPlainText */
 function MaiHoaExportCard({ result }) {
   const { t, language } = useLanguage();
+  const { isAuthenticated, login } = useAuth();
   const [copied,  setCopied]  = useState(false);
   const [copiedJ, setCopiedJ] = useState(false);
 
@@ -136,6 +137,55 @@ function MaiHoaExportCard({ result }) {
     if (!hasResult) return;
     const ts = new Date().toISOString().slice(0, 10);
     downloadJson(result, `mai-hoa-${ts}.json`);
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div
+        style={{
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px dashed rgba(184, 134, 11, 0.3)',
+          borderRadius: 12,
+          padding: '24px 16px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 8,
+        }}
+      >
+        <span style={{ fontSize: '1.8rem' }}>🔒</span>
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.88rem',
+            color: 'var(--color-ink-muted, #718096)',
+            lineHeight: 1.5,
+            maxWidth: 640,
+          }}
+        >
+          {t('export.guest_notice', 'Bạn cần đăng nhập để sử dụng tính năng xuất kết quả quẻ Kinh Dịch.')}
+        </p>
+        <button
+          type="button"
+          onClick={login}
+          style={{
+            padding: '8px 20px',
+            background: 'linear-gradient(135deg, #7c5cfc, #a78bfa)',
+            border: 'none',
+            borderRadius: 10,
+            color: '#ffffff',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(124,92,252,0.4)',
+          }}
+        >
+          🔑 {t('auth.login_now', 'Đăng nhập ngay')}
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -181,14 +231,14 @@ function MaiHoaExportCard({ result }) {
 /**
  * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
  */
-function ResultSection({ mode, result, maiHoaResult }) {
+function ResultSection({ mode, result, maiHoaResult, onChangeMethod }) {
   if (mode.startsWith('mai-hoa')) {
-    return <MaiHoaResultSection result={maiHoaResult} />;
+    return <MaiHoaResultSection result={maiHoaResult} onChangeMethod={onChangeMethod} />;
   }
-  return <CoinCastResultSection result={result} />;
+  return <CoinCastResultSection result={result} onChangeMethod={onChangeMethod} />;
 }
 
-function CoinCastResultSection({ result }) {
+function CoinCastResultSection({ result, onChangeMethod }) {
   const { t, language } = useLanguage();
   if (!result) return null;
   const plainText = buildPlainTextResult(result, language);
@@ -203,22 +253,8 @@ function CoinCastResultSection({ result }) {
         </div>
       </section>
 
-      {/* Bảng Lục Hào đầy đủ */}
-      <section className="card animate-in" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>{t('result.hex_table', 'Bảng Lục Hào')}</div>
-        <LucHaoTable result={result} />
-      </section>
-
-      {/* Luận giải cơ bản quẻ Lục Hào */}
-      {(result.primaryHexagram || result.changedHexagram) && (
-        <section className="card animate-in" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="section-title">{t('result.basic_interpretation', 'Luận giải cơ bản')}</div>
-          <DescriptionPanel hexagram={result.primaryHexagram} color="var(--color-vermillion)" />
-          {result.changedHexagram && (
-            <DescriptionPanel hexagram={result.changedHexagram} color="var(--color-jade)" />
-          )}
-        </section>
-      )}
+      {/* Combined Tabbed Section: Bảng Lục Hào & Luận Giải Cơ Bản (2 Tabs, Default: Bảng Lục Hào) */}
+      <LucHaoCombinedTabCard result={result} />
 
       {/* Can Chi Info */}
       {result.canChi && (
@@ -233,6 +269,37 @@ function CoinCastResultSection({ result }) {
         <ResultMetadata result={result} />
       </section>
 
+      {/* Nút Đổi phương pháp gieo (Nằm ngay dưới Thông tin lần lập quẻ) */}
+      {onChangeMethod && (
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '0 0 10px' }}>
+          <button
+            type="button"
+            onClick={onChangeMethod}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '10px 24px',
+              borderRadius: 24,
+              background: 'rgba(184, 134, 11, 0.12)',
+              border: '1.5px solid var(--color-gold, #b8860b)',
+              color: 'var(--color-gold, #b8860b)',
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(184, 134, 11, 0.15)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {t('nav.change_method', '← Đổi phương pháp gieo')}
+          </button>
+        </div>
+      )}
+
+      {/* Luận giải bằng AI (Ưu tiên đưa lên trên xuất kết quả) */}
+      <AiInterpretationPanel result={result} mode="coin" plainTextResult={plainText} />
+
       {/* Plaintext Export */}
       <section className="animate-in">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -240,14 +307,11 @@ function CoinCastResultSection({ result }) {
         </div>
         <PlainTextExportCard result={result} />
       </section>
-
-      {/* Luận giải bằng AI */}
-      <AiInterpretationPanel result={result} mode="coin" plainTextResult={plainText} />
     </>
   );
 }
 
-function MaiHoaResultSection({ result }) {
+function MaiHoaResultSection({ result, onChangeMethod }) {
   const { t, language } = useLanguage();
   if (!result) return null;
   const plainText = buildMaiHoaPlainText(result, language);
@@ -302,6 +366,37 @@ function MaiHoaResultSection({ result }) {
         </div>
       </section>
 
+      {/* Nút Đổi phương pháp gieo (Nằm ngay dưới Thông tin lần lập quẻ) */}
+      {onChangeMethod && (
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '0 0 10px' }}>
+          <button
+            type="button"
+            onClick={onChangeMethod}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '10px 24px',
+              borderRadius: 24,
+              background: 'rgba(184, 134, 11, 0.12)',
+              border: '1.5px solid var(--color-gold, #b8860b)',
+              color: 'var(--color-gold, #b8860b)',
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(184, 134, 11, 0.15)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {t('nav.change_method', '← Đổi phương pháp gieo')}
+          </button>
+        </div>
+      )}
+
+      {/* Luận giải bằng AI (Ưu tiên đưa lên trên xuất kết quả) */}
+      <AiInterpretationPanel result={result} mode={result.subMode} plainTextResult={plainText} />
+
       {/* Xuất kết quả Mai Hoa */}
       <section className="animate-in">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -309,9 +404,6 @@ function MaiHoaResultSection({ result }) {
         </div>
         <MaiHoaExportCard result={result} />
       </section>
-
-      {/* Luận giải bằng AI */}
-      <AiInterpretationPanel result={result} mode={result.subMode} plainTextResult={plainText} />
     </>
   );
 }
@@ -592,23 +684,32 @@ export default function App() {
             />
           )}
 
-          {/* Nút "Đổi phương pháp" nếu đang ở state casting/result */}
-          {(hasPickedMethod || hasResult) && (
-            <button
-              onClick={handleChangeMethod}
-              className="btn-ghost"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                padding: '10px 16px',
-                fontWeight: 600,
-                alignSelf: 'center',
-              }}
-            >
-              {t('nav.change_method', '← Đổi phương pháp gieo')}
-            </button>
+          {/* Nút "Đổi phương pháp" nếu đang ở state casting trước khi có kết quả */}
+          {hasPickedMethod && !hasResult && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={handleChangeMethod}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  padding: '10px 24px',
+                  borderRadius: 24,
+                  background: 'rgba(184, 134, 11, 0.12)',
+                  border: '1.5px solid var(--color-gold, #b8860b)',
+                  color: 'var(--color-gold, #b8860b)',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(184, 134, 11, 0.15)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {t('nav.change_method', '← Đổi phương pháp gieo')}
+              </button>
+            </div>
           )}
 
           {/* 3. Lịch sử gieo quẻ (Ở CUỐI CÙNG) */}
