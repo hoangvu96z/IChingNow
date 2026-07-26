@@ -58,7 +58,7 @@ export function useReadingsApi(isAuthenticated) {
 
   // ─── Lưu 1 reading mới (Chỉ lưu khi đã đăng nhập) ──────────────────────────
   const saveReading = useCallback(async (newResult, type) => {
-    if (!newResult || !isAuthenticated) return;
+    if (!newResult || !isAuthenticated) return null;
 
     const title =
       type === 'luc-hao'
@@ -101,8 +101,11 @@ export function useReadingsApi(isAuthenticated) {
         if (exists) return prev;
         return [mappedItem, ...prev];
       });
+      // Return để caller có thể lấy ID
+      return mappedItem;
     } catch (err) {
       console.error('saveReading error:', err);
+      return null;
     }
   }, [isAuthenticated]);
 
@@ -164,6 +167,32 @@ export function useReadingsApi(isAuthenticated) {
     setHistory([]);
   }, [isAuthenticated]);
 
+  // ─── Cập nhật data của 1 reading (dùng để lưu AI conversation) ─────────────
+  const updateReadingData = useCallback(async (readingId, partialData) => {
+    if (!isAuthenticated || !readingId) return;
+    try {
+      const res = await fetch(`${SSO_BASE}/readings/${readingId}`, {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ data: partialData }),
+      });
+      if (!res.ok) throw new Error('Failed to update reading data');
+      const responseData = await res.json();
+      // Cập nhật local state để đồng bộ
+      setHistory((prev) =>
+        prev.map((item) =>
+          item.id === readingId
+            ? { ...item, data: { ...item.data, ...partialData } }
+            : item
+        )
+      );
+      return responseData.reading;
+    } catch (err) {
+      console.error('updateReadingData error:', err);
+    }
+  }, [isAuthenticated]);
+
   return {
     history,
     setHistory,
@@ -173,5 +202,6 @@ export function useReadingsApi(isAuthenticated) {
     deleteReading,
     deleteMultipleReadings,
     clearHistory,
+    updateReadingData,
   };
 }

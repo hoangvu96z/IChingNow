@@ -298,7 +298,7 @@ function CoinCastResultSection({ result, onChangeMethod }) {
       )}
 
       {/* Luận giải bằng AI (Ưu tiên đưa lên trên xuất kết quả) */}
-      <AiInterpretationPanel result={result} mode="coin" plainTextResult={plainText} />
+      <AiInterpretationPanel result={result} mode="coin" plainTextResult={plainText} readingId={activeReadingId} onSaveAiConversation={updateReadingData} />
 
       {/* Plaintext Export */}
       <section className="animate-in">
@@ -395,7 +395,7 @@ function MaiHoaResultSection({ result, onChangeMethod }) {
       )}
 
       {/* Luận giải bằng AI (Ưu tiên đưa lên trên xuất kết quả) */}
-      <AiInterpretationPanel result={result} mode={result.subMode} plainTextResult={plainText} />
+      <AiInterpretationPanel result={result} mode={result.subMode} plainTextResult={plainText} readingId={activeReadingId} onSaveAiConversation={updateReadingData} />
 
       {/* Xuất kết quả Mai Hoa */}
       <section className="animate-in">
@@ -427,7 +427,11 @@ export default function App() {
     saveReading,
     deleteMultipleReadings,
     clearHistory: handleClearHistory,
+    updateReadingData,
   } = useReadingsApi(isAuthenticated);
+
+  // Track reading ID đang active (để lưu AI conversation)
+  const [activeReadingId, setActiveReadingId] = useState(null);
 
   // Tải lịch sử khi mount hoặc khi auth state thay đổi
   useEffect(() => {
@@ -439,14 +443,20 @@ export default function App() {
   // Tự động lưu Lục Hào vào lịch sử
   useEffect(() => {
     if (result) {
-      saveReading(result, 'luc-hao');
+      saveReading(result, 'luc-hao').then((saved) => {
+        if (saved?.id) setActiveReadingId(saved.id);
+      }).catch(() => {});
+    } else {
+      setActiveReadingId(null);
     }
   }, [result]);
 
   // Tự động lưu Mai Hoa vào lịch sử
   useEffect(() => {
     if (maiHoaResult) {
-      saveReading(maiHoaResult, 'mai-hoa');
+      saveReading(maiHoaResult, 'mai-hoa').then((saved) => {
+        if (saved?.id) setActiveReadingId(saved.id);
+      }).catch(() => {});
     }
   }, [maiHoaResult]);
 
@@ -460,6 +470,8 @@ export default function App() {
     }
     setMode(item.mode);
     setHasPickedMethod(true);
+    // Track reading ID khi load từ history
+    setActiveReadingId(item._remoteId || item.id || null);
 
     // Phục hồi lại dữ liệu form
     if (item.data) {

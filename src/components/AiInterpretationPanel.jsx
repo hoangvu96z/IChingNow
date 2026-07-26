@@ -9,7 +9,7 @@ const PREDEFINED_MODELS = [
   { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'gemma-4-26b-a4b-it:free' }
 ];
 
-export default function AiInterpretationPanel({ result, mode, plainTextResult }) {
+export default function AiInterpretationPanel({ result, mode, plainTextResult, readingId, onSaveAiConversation }) {
   const { t } = useLanguage();
   const [settings, setSettings] = useState({
     endpoint: 'http://43.128.116.69:20128/v1',
@@ -149,6 +149,25 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult })
   const charCount = userQuestion.length;
   const isCharCountValid = charCount > 0 && charCount <= 2048;
 
+  // Restore AI conversation khi load từ history
+  useEffect(() => {
+    if (result?.aiConversation) {
+      const conv = result.aiConversation;
+      if (conv.initialInterpretation) {
+        setInterpretation(conv.initialInterpretation);
+      }
+      if (Array.isArray(conv.followUps) && conv.followUps.length > 0) {
+        setFollowUps(conv.followUps);
+      }
+    } else {
+      // Reset khi có result mới không có conversation
+      setInterpretation('');
+      setFollowUps([]);
+      setUserQuestion('');
+      setError('');
+    }
+  }, [result?.createdAt]);
+
   const handleInterpret = async () => {
     if (!result) return;
     setLoading(true);
@@ -259,7 +278,8 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
             }
           }
           
-          // Successful run, exit loop
+          // Successful run, exit loop — persist interpretation lên server
+          persistInitialInterpretation(resultText);
           return;
         } catch (err) {
           console.warn(`Model ${currentModel} failed:`, err);
@@ -278,6 +298,19 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
       setLoading(false);
       setStatusText('');
     }
+  };
+
+  // Persist initial interpretation sau khi AI trả lời xong
+  const persistInitialInterpretation = (interpretationText) => {
+    if (!onSaveAiConversation || !interpretationText) return;
+    onSaveAiConversation(readingId, {
+      aiConversation: {
+        ...(result?.aiConversation || {}),
+        initialInterpretation: interpretationText,
+        initialTimestamp: new Date().toISOString(),
+        followUps: result?.aiConversation?.followUps || [],
+      }
+    });
   };
 
   // Handler cho câu hỏi thêm tới AI (Memory 100% ngữ cảnh quẻ + lịch sử trò chuyện)
@@ -388,9 +421,29 @@ ${plainTextResult}`;
             }
           }
 
-          setFollowUps(prev => [...prev, { question: questionToSend, answer: finalAns }]);
+          const newFollowUp = {
+            id: Date.now().toString(),
+            question: questionToSend,
+            answer: finalAns,
+            questionTimestamp: new Date(Date.now() - finalAns.length * 5).toISOString(), // approximate
+            answerTimestamp: new Date().toISOString(),
+          };
+          const updatedFollowUps = [...followUps, newFollowUp];
+          setFollowUps(updatedFollowUps);
           setUserQuestion('');
           setCurrentFollowUpAnswer('');
+
+          // Persist follow-up lên server
+          if (onSaveAiConversation && readingId) {
+            onSaveAiConversation(readingId, {
+              aiConversation: {
+                ...(result?.aiConversation || {}),
+                initialInterpretation: interpretation,
+                initialTimestamp: result?.aiConversation?.initialTimestamp || new Date().toISOString(),
+                followUps: updatedFollowUps,
+              }
+            });
+          }
           return;
         } catch (err) {
           console.warn(`Follow-up model ${currentModel} failed:`, err);
