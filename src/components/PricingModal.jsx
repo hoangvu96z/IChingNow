@@ -203,10 +203,16 @@ export default function PricingModal({
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{ fontSize: '2.2rem', marginBottom: '6px' }}>☯️</div>
           <h2 style={{ color: '#f5d78e', fontSize: '1.5rem', fontWeight: 800, margin: 0, fontFamily: "'Noto Serif', serif" }}>
-            {isEn ? 'Upgrade Your I Ching Plan' : 'Nâng Cấp Gói Luận Giải Kinh Dịch'}
+            {currentPlan === 'admin'
+              ? (isEn ? 'Admin Account' : 'Tài Khoản Admin')
+              : isOverride || currentPlan === 'premium'
+              ? (isEn ? 'Your Service Plan' : 'Gói Dịch Vụ Của Bạn')
+              : (isEn ? 'Upgrade Your I Ching Plan' : 'Nâng Cấp Gói Luận Giải Kinh Dịch')}
           </h2>
           <p style={{ color: '#d4b886', fontSize: '0.9rem', marginTop: '8px' }}>
-            {isEn ? 'Choose the best plan for deeper I Ching AI wisdom.' : 'Chọn gói phù hợp để trải nghiệm luận giải Kinh Dịch AI sâu sắc hơn.'}
+            {isOverride
+              ? (isEn ? 'You are currently using free full features granted by Admin.' : 'Bạn đang được Admin kích hoạt đặc quyền dùng miễn phí toàn bộ tính năng cao cấp!')
+              : (isEn ? 'Choose the best plan for deeper I Ching AI wisdom.' : 'Chọn gói phù hợp để trải nghiệm luận giải Kinh Dịch AI sâu sắc hơn.')}
           </p>
           {expiresAt && (
             <div style={{ color: '#a3a3a3', fontSize: '0.8rem', marginTop: '4px' }}>
@@ -222,12 +228,12 @@ export default function PricingModal({
             background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(16, 185, 129, 0.25))',
             border: '1px solid rgba(99, 102, 241, 0.5)',
             borderRadius: '14px', padding: '14px 18px', marginBottom: '20px',
-            textAlign: 'center', color: '#a5b4fc', fontSize: '0.88rem', fontWeight: 600,
+            textAlign: 'center', color: '#a5b4fc', fontSize: '0.88rem', fontWeight: 700,
             lineHeight: 1.5,
           }}>
             🎁 {isEn
-              ? 'Admin Special Offer: You are currently granted full access to trial features!'
-              : 'Đặc quyền trải nghiệm: Bạn đang được Admin mở tặng quyền dùng thử gói tính năng cao cấp!'}
+              ? 'Admin Special Privileges Active: You are using premium AI features 100% FREE without needing to purchase any plan!'
+              : '🎁 Đang bật Đặc quyền Admin: Bạn đang được dùng MIỄN PHÍ 100% toàn bộ tính năng cao cấp mà KHÔNG CẦN mua bất kỳ gói nào!'}
           </div>
         )}
 
@@ -351,26 +357,28 @@ export default function PricingModal({
                 </ul>
 
                 <button
-                  disabled={isCurrent}
+                  disabled={isCurrent || isOverride || currentPlan === 'admin'}
                   onClick={() => alert(isEn ? 'Please contact Admin to upgrade your plan!' : 'Liên hệ admin để nâng cấp gói!')}
                   style={{
                     width: '100%',
                     padding: '10px',
                     borderRadius: '10px',
                     border: 'none',
-                    background: isCurrent
+                    background: (isCurrent || isOverride || currentPlan === 'admin')
                       ? 'rgba(255,255,255,0.1)'
                       : plan.highlight
                       ? 'linear-gradient(135deg, #b8860b, #d97706)'
                       : 'rgba(255,255,255,0.12)',
-                    color: isCurrent ? '#a3a3a3' : '#fff',
+                    color: (isCurrent || isOverride || currentPlan === 'admin') ? '#a3a3a3' : '#fff',
                     fontWeight: 700,
                     fontSize: '0.85rem',
-                    cursor: isCurrent ? 'default' : 'pointer',
+                    cursor: (isCurrent || isOverride || currentPlan === 'admin') ? 'default' : 'pointer',
                   }}
                 >
                   {isCurrent
                     ? (isEn ? 'Current Plan' : 'Gói hiện tại')
+                    : isOverride || currentPlan === 'admin'
+                    ? (isEn ? 'Granted by Admin' : 'Được tặng bởi Admin')
                     : (isEn ? `Upgrade ${plan.label}` : `Nâng cấp ${plan.label}`)}
                 </button>
               </div>
