@@ -779,16 +779,13 @@ ${plainTextResult}`;
                   />
                   <div style={{
                     display: 'flex',
-                    justify: 'space-between',
+                    justifyContent: 'flex-start',
                     alignItems: 'center',
                     marginTop: 4,
                     fontSize: '0.75rem',
                   }}>
                     <span style={{ color: charCount > 2048 ? 'var(--color-vermillion)' : 'var(--color-ink-muted)', fontWeight: charCount > 2048 ? 700 : 400 }}>
                       {charCount > 2048 ? `⚠️ Đã vượt quá số ký tự quy định (${charCount}/2048 ký tự)` : `${charCount} / 2048 ký tự`}
-                    </span>
-                    <span style={{ color: 'var(--color-ink-muted)' }}>
-                      Còn lại {5 - followUps.length} lượt hỏi
                     </span>
                   </div>
                 </div>
