@@ -207,9 +207,8 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       const castTime = result.castTime || '';
 
       const userPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nPlease format your analysis using Markdown with the following structure:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải theo cấu trúc sau (viết bằng Markdown):\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trả lời trực tiếp vào câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
-
+        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nPlease format your analysis using Markdown with the following structure:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.\n5. **Suggested Follow-up Questions**: Provide exactly 3 short, insightful follow-up questions the user can ask next about this reading, formatted as:\n- 💡 Q1: [Question 1]\n- 💡 Q2: [Question 2]\n- 💡 Q3: [Question 3]`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải theo cấu trúc sau (viết bằng Markdown):\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trả lời trực tiếp vào câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.\n5. **Gợi ý 3 câu hỏi tiếp theo**: Đưa ra đúng 3 câu hỏi đào sâu ngắn gọn, súc tích mà người dùng nên hỏi tiếp về quẻ này, định dạng chính xác theo mẫu:\n- 💡 Q1: [Câu hỏi 1]\n- 💡 Q2: [Câu hỏi 2]\n- 💡 Q3: [Câu hỏi 3]`;
 
       const fallbackModels = Array.from(new Set([
         settings.model,
@@ -218,13 +217,14 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       ])).filter(Boolean);
 
       let lastError = null;
+      let fullText = '';
 
       for (let i = 0; i < fallbackModels.length; i++) {
         const currentModel = fallbackModels[i];
         try {
           setStatusText(
             i === 0 
-              ? t('ai.generating', 'AI đang luận giải quẻ...')
+              ? (isEn ? 'AI is interpreting the hexagram...' : 'AI đang chiêm nghiệm quẻ dịch...')
               : `Mô hình ${fallbackModels[i - 1]} gặp sự cố, đang thử ${currentModel}...`
           );
 
@@ -255,7 +255,6 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
           const decoder = new TextDecoder('utf-8');
           let done = false;
           let buffer = '';
-          let resultText = '';
 
           while (!done) {
             const { value, done: readerDone } = await reader.read();
@@ -277,22 +276,28 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
                   try {
                     const parsed = JSON.parse(jsonStr);
                     const chunkText = parsed.choices?.[0]?.delta?.content || '';
-                    resultText += chunkText;
-                    setInterpretation(resultText);
-                  } catch (err) {
-                    // Keep buffer processing
-                  }
+                    fullText += chunkText;
+                    setInterpretation(fullText);
+                  } catch (err) {}
                 }
               }
             }
           }
           
-          // Successful run, exit loop — persist interpretation lên server
-          persistInitialInterpretation(resultText);
+          if (onSaveAiConversation && readingId) {
+            onSaveAiConversation(readingId, {
+              aiConversation: {
+                initialInterpretation: fullText,
+                initialTimestamp: new Date().toISOString(),
+                followUps: [],
+              }
+            });
+          }
           return;
         } catch (err) {
           console.warn(`Model ${currentModel} failed:`, err);
           lastError = err;
+          fullText = '';
           setInterpretation('');
         }
       }
@@ -309,23 +314,66 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     }
   };
 
-  // Persist initial interpretation sau khi AI trả lời xong
-  const persistInitialInterpretation = (interpretationText) => {
-    if (!onSaveAiConversation || !interpretationText) return;
-    onSaveAiConversation(readingId, {
-      aiConversation: {
-        ...(result?.aiConversation || {}),
-        initialInterpretation: interpretationText,
-        initialTimestamp: new Date().toISOString(),
-        followUps: result?.aiConversation?.followUps || [],
+  const extractAiSuggestedQuestions = (text, qTopic, isEnglish) => {
+    const list = [];
+    if (text) {
+      const matches = text.match(/(?:-|\*|\d+\.)?\s*💡\s*(?:Q\d+:?)?\s*([^\n\r]+)/gi);
+      if (matches && matches.length >= 1) {
+        matches.forEach(m => {
+          const cleaned = m
+            .replace(/(?:-|\*|\d+\.)?\s*💡\s*(?:Q\d+:?)?\s*/i, '')
+            .replace(/^[-*0-9.:\s]+/, '')
+            .trim();
+          if (cleaned && cleaned.length > 5 && !list.includes(cleaned)) {
+            list.push(cleaned);
+          }
+        });
       }
-    });
+    }
+
+    if (list.length >= 3) return list.slice(0, 3);
+
+    const topic = (qTopic || '').toLowerCase();
+    if (topic.includes('tình') || topic.includes('yêu') || topic.includes('love') || topic.includes('relationship') || topic.includes('kết hôn')) {
+      return isEnglish ? [
+        'How will the feelings between us evolve in the near future?',
+        'What should I change in myself for a more harmonious relationship?',
+        'Are there any hidden misunderstandings affecting us right now?'
+      ] : [
+        'Tình cảm giữa hai bên sẽ tiến triển như thế nào trong thời gian tới?',
+        'Tôi nên thay đổi điều gì ở bản thân để mối quan hệ được hòa hợp hơn?',
+        'Có những hiểu lầm hay trở ngại ngầm nào đang ảnh hưởng đến hai người không?'
+      ];
+    }
+    if (topic.includes('việc') || topic.includes('công') || topic.includes('tiền') || topic.includes('career') || topic.includes('job') || topic.includes('money')) {
+      return isEnglish ? [
+        'When is the most favorable time to execute this work/plan?',
+        'Which key opportunity should I focus on to optimize my career/finance?',
+        'What precautions should I take regarding partners or current environment?'
+      ] : [
+        'Thời điểm nào là thuận lợi nhất để tôi triển khai công việc này?',
+        'Tôi nên tập trung vào cơ hội nào để tối ưu hóa tài chính/sự nghiệp?',
+        'Cần lưu ý điều gì về đối tác hoặc môi trường xung quanh lúc này?'
+      ];
+    }
+    return isEnglish ? [
+      'What is the most concrete advice for me to achieve the best outcome?',
+      'What major risks or mistakes should I carefully avoid right now?',
+      'How will events unfold over the next 1 to 3 months?'
+    ] : [
+      'Lời khuyên cụ thể nhất cho tôi để đạt kết quả tốt nhất trong tình huống này là gì?',
+      'Những nguy cơ hay sai lầm nào tôi cần đặc biệt phòng tránh vào lúc này?',
+      'Diễn biến trong 1 đến 3 tháng tới sẽ thay đổi ra sao theo chiều hướng nào?'
+    ];
   };
 
+  const suggestedQuestions = getSuggestedQuestions();
+
   // Handler cho câu hỏi thêm tới AI (Memory 100% ngữ cảnh quẻ + lịch sử trò chuyện)
-  const handleSendFollowUp = async (e) => {
+  const handleSendFollowUp = async (e, textOverride = null) => {
     if (e) e.preventDefault();
-    if (!userQuestion.trim() || askingFollowUp || followUps.length >= 5 || !isCharCountValid) return;
+    const questionToSend = (textOverride || userQuestion).trim();
+    if (!questionToSend || askingFollowUp || followUps.length >= 5) return;
 
     // Check quota before calling AI
     const quotaResult = await consumeQuota();
@@ -334,7 +382,6 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       return;
     }
 
-    const questionToSend = userQuestion.trim();
     setAskingFollowUp(true);
     setFollowUpError('');
     setCurrentFollowUpAnswer('');
@@ -747,7 +794,46 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
             {/* Question Input Form */}
             {followUps.length < 5 ? (
-              <form onSubmit={handleSendFollowUp} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+              <form onSubmit={handleSendFollowUp} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                {/* 3 Suggested Questions Pill Buttons */}
+                {!askingFollowUp && (
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-gold)', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>💡</span> {isEn ? 'Suggested follow-up questions (Click to ask AI immediately):' : 'Gợi ý câu hỏi thêm (Bấm vào để hỏi AI ngay):'}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {suggestedQuestions.map((qText, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          disabled={askingFollowUp}
+                          onClick={() => handleSendFollowUp(null, qText)}
+                          style={{
+                            background: 'rgba(184,134,11,0.06)',
+                            border: '1px solid rgba(184,134,11,0.25)',
+                            borderRadius: 10,
+                            padding: '8px 14px',
+                            fontSize: '0.825rem',
+                            color: 'var(--color-ink)',
+                            cursor: askingFollowUp ? 'not-allowed' : 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            fontFamily: 'inherit',
+                          }}
+                          onMouseEnter={e => { if (!askingFollowUp) e.currentTarget.style.background = 'rgba(184,134,11,0.15)'; }}
+                          onMouseLeave={e => { if (!askingFollowUp) e.currentTarget.style.background = 'rgba(184,134,11,0.06)'; }}
+                        >
+                          <span style={{ fontSize: '0.9rem', color: 'var(--color-gold)' }}>❓</span>
+                          <span style={{ flex: 1 }}>{qText}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <textarea
                     rows={3}
