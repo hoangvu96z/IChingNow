@@ -155,7 +155,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
   // ─── Quota & Plan ─────────────────────────────────────────────────────────
   const { isAuthenticated } = useAuth();
-  const { canAsk, remaining, plan, canBonus, consumeQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
+  const { canAsk, remaining, plan, canBonus, expiresAt, daysRemaining, isExpiringSoon, isOverride, consumeQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
   const [showPricing, setShowPricing] = useState(false);
 
   // Restore AI conversation khi load từ history
@@ -527,6 +527,10 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       onClose={() => setShowPricing(false)}
       currentPlan={plan}
       canBonus={canBonus}
+      expiresAt={expiresAt}
+      daysRemaining={daysRemaining}
+      isExpiringSoon={isExpiringSoon}
+      isOverride={isOverride}
       onRequestBonus={requestBonus}
       onApplyCoupon={applyCoupon}
     />
