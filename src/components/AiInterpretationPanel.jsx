@@ -13,7 +13,8 @@ const PREDEFINED_MODELS = [
 ];
 
 export default function AiInterpretationPanel({ result, mode, plainTextResult, readingId, onSaveAiConversation }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [settings, setSettings] = useState({
     endpoint: 'http://43.128.116.69:20128/v1',
     apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739',
