@@ -824,24 +824,10 @@ ${plainTextResult}`;
               </div>
             )}
           </div>
-
-          <button
-            onClick={handleInterpret}
-            className="btn-ghost"
-            style={{
-              fontSize: '0.8125rem',
-              alignSelf: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '6px 12px',
-              marginTop: 4,
-            }}
-          >
-            🔄 {t('ai.re_interpret', 'Yêu cầu AI luận giải lại từ đầu')}
-          </button>
         </div>
       )}
+
+
 
       {/* Styling spin anim */}
       <style>{`
