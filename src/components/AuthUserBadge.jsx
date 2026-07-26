@@ -1,16 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 
-/**
- * AuthUserBadge — hiển thị avatar + tên user hoặc nút "Đăng nhập"
- * Dùng trong header của IChingNow
- */
+const SSO_BASE = import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click';
+
 export default function AuthUserBadge() {
   const { user, isLoading, isAuthenticated, login, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown khi click ra ngoài
   useEffect(() => {
     const handleClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -34,6 +31,7 @@ export default function AuthUserBadge() {
   if (!isAuthenticated) {
     return (
       <button
+        id="sso-login-btn"
         onClick={login}
         style={{
           padding: '6px 14px',
@@ -60,6 +58,7 @@ export default function AuthUserBadge() {
   return (
     <div ref={dropdownRef} style={{ position: 'relative' }}>
       <button
+        id="sso-user-badge"
         onClick={() => setOpen(v => !v)}
         style={{
           display: 'flex',
@@ -77,7 +76,6 @@ export default function AuthUserBadge() {
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
         onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
       >
-        {/* Avatar */}
         <div style={{
           width: 28, height: 28, borderRadius: '50%',
           background: 'linear-gradient(135deg, #7c5cfc, #a78bfa)',
@@ -91,18 +89,15 @@ export default function AuthUserBadge() {
           }
         </div>
 
-        {/* Name */}
         <span style={{ color: '#ffffff', fontSize: '0.8rem', fontWeight: 600, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user.displayName || user.email?.split('@')[0]}
         </span>
 
-        {/* Chevron */}
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.7, color: '#ffffff', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }}>
           <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
-      {/* Dropdown menu */}
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0,
@@ -111,18 +106,40 @@ export default function AuthUserBadge() {
           borderRadius: 12, padding: 8, minWidth: 180,
           boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
           zIndex: 1000,
-          animation: 'fadeInDown 0.15s ease',
         }}>
           <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 6 }}>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.displayName || 'Người dùng'}
+              {user.displayName || 'Người dùng'} {user.role === 'admin' && <span style={{ fontSize: '0.65rem', background: '#7c5cfc', color: '#fff', padding: '2px 6px', borderRadius: 4, marginLeft: 4 }}>ADMIN</span>}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#888899', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user.email}
             </div>
           </div>
 
+          {user.role === 'admin' && (
+            <a
+              href={`${SSO_BASE}/ui/admin`}
+              style={{
+                width: '100%', padding: '8px 12px',
+                background: 'rgba(124, 92, 252, 0.15)',
+                border: '1px solid rgba(124, 92, 252, 0.3)',
+                borderRadius: 8,
+                color: '#a48eff', fontSize: '0.85rem', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+                textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8,
+                textDecoration: 'none', marginBottom: 6,
+                transition: 'background 0.15s',
+                boxSizing: 'border-box',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(124, 92, 252, 0.3)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(124, 92, 252, 0.15)'}
+            >
+              🛡️ Trang Quản trị Admin
+            </a>
+          )}
+
           <button
+            id="sso-logout-btn"
             onClick={() => { setOpen(false); logout(); }}
             style={{
               width: '100%', padding: '8px 12px',
