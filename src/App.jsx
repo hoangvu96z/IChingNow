@@ -231,14 +231,14 @@ function MaiHoaExportCard({ result }) {
 /**
  * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
  */
-function ResultSection({ mode, result, maiHoaResult, onChangeMethod }) {
+function ResultSection({ mode, result, maiHoaResult, onChangeMethod, activeReadingId, updateReadingData }) {
   if (mode.startsWith('mai-hoa')) {
-    return <MaiHoaResultSection result={maiHoaResult} onChangeMethod={onChangeMethod} />;
+    return <MaiHoaResultSection result={maiHoaResult} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />;
   }
-  return <CoinCastResultSection result={result} onChangeMethod={onChangeMethod} />;
+  return <CoinCastResultSection result={result} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />;
 }
 
-function CoinCastResultSection({ result, onChangeMethod }) {
+function CoinCastResultSection({ result, onChangeMethod, activeReadingId, updateReadingData }) {
   const { t, language } = useLanguage();
   if (!result) return null;
   const plainText = buildPlainTextResult(result, language);
@@ -311,7 +311,7 @@ function CoinCastResultSection({ result, onChangeMethod }) {
   );
 }
 
-function MaiHoaResultSection({ result, onChangeMethod }) {
+function MaiHoaResultSection({ result, onChangeMethod, activeReadingId, updateReadingData }) {
   const { t, language } = useLanguage();
   if (!result) return null;
   const plainText = buildMaiHoaPlainText(result, language);
@@ -693,6 +693,8 @@ export default function App() {
               result={result}
               maiHoaResult={maiHoaResult}
               onChangeMethod={handleChangeMethod}
+              activeReadingId={activeReadingId}
+              updateReadingData={updateReadingData}
             />
           )}
 
