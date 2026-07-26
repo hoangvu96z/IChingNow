@@ -207,8 +207,8 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       const castTime = result.castTime || '';
 
       const userPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nPlease format your analysis using Markdown with the following structure:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.\n5. **Suggested Follow-up Questions**: Provide exactly 3 short, insightful follow-up questions the user can ask next about this reading, formatted as:\n- 💡 Q1: [Question 1]\n- 💡 Q2: [Question 2]\n- 💡 Q3: [Question 3]`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải theo cấu trúc sau (viết bằng Markdown):\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trả lời trực tiếp vào câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.\n5. **Gợi ý 3 câu hỏi tiếp theo**: Đưa ra đúng 3 câu hỏi đào sâu ngắn gọn, súc tích mà người dùng nên hỏi tiếp về quẻ này, định dạng chính xác theo mẫu:\n- 💡 Q1: [Câu hỏi 1]\n- 💡 Q2: [Câu hỏi 2]\n- 💡 Q3: [Câu hỏi 3]`;
+        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nPlease format your analysis using Markdown with the following structure:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.\n\nCRITICAL REQUIREMENT AT THE END:\nAt the very end of your response, output exact delimiter line "---SUGGESTED_QUESTIONS---" followed by 3 concise follow-up questions relevant to this reading:\n---SUGGESTED_QUESTIONS---\n1. [Question 1]\n2. [Question 2]\n3. [Question 3]`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải theo cấu trúc sau (viết bằng Markdown):\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.\n\nYÊU CẦU BẮT BUỘC Ở CUỐI BÀI:\nỞ cuối cùng bài viết, hãy xuất đúng dòng phân cách "---SUGGESTED_QUESTIONS---" theo sau là 3 câu hỏi đào sâu ngắn gọn dành riêng cho quẻ này:\n---SUGGESTED_QUESTIONS---\n1. [Câu hỏi 1]\n2. [Câu hỏi 2]\n3. [Câu hỏi 3]`;
 
       const fallbackModels = Array.from(new Set([
         settings.model,
@@ -314,60 +314,42 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     }
   };
 
-  const extractAiSuggestedQuestions = (text, qTopic, isEnglish) => {
-    const list = [];
-    if (text) {
-      const matches = text.match(/(?:-|\*|\d+\.)?\s*💡\s*(?:Q\d+:?)?\s*([^\n\r]+)/gi);
-      if (matches && matches.length >= 1) {
-        matches.forEach(m => {
-          const cleaned = m
-            .replace(/(?:-|\*|\d+\.)?\s*💡\s*(?:Q\d+:?)?\s*/i, '')
-            .replace(/^[-*0-9.:\s]+/, '')
-            .trim();
-          if (cleaned && cleaned.length > 5 && !list.includes(cleaned)) {
-            list.push(cleaned);
-          }
-        });
+  const parseInterpretationAndQuestions = (fullText) => {
+    if (!fullText) return { cleanText: '', questions: [] };
+
+    let cleanText = fullText;
+    let questionsPart = '';
+
+    const delimiterIndex = fullText.indexOf('---SUGGESTED_QUESTIONS---');
+    if (delimiterIndex !== -1) {
+      cleanText = fullText.slice(0, delimiterIndex).trim();
+      questionsPart = fullText.slice(delimiterIndex + '---SUGGESTED_QUESTIONS---'.length).trim();
+    } else {
+      const altMatch = fullText.match(/(?:\n|^)(?:###?\s*💡?\s*(?:Gợi ý|Suggested)\s*(?:3\s*)?(?:câu hỏi|Follow-up)[^\n]*)([\s\S]*)$/i);
+      if (altMatch && altMatch.index !== undefined) {
+        cleanText = fullText.slice(0, altMatch.index).trim();
+        questionsPart = altMatch[1].trim();
       }
     }
 
-    if (list.length >= 3) return list.slice(0, 3);
+    const questions = [];
+    if (questionsPart) {
+      const lines = questionsPart.split('\n');
+      lines.forEach(line => {
+        const cleaned = line
+          .replace(/^(?:---SUGGESTED_QUESTIONS---|###?\s*💡?\s*|\d+\.|\*|-|Q\d+:?)\s*/gi, '')
+          .replace(/^[-*0-9.:\s]+/, '')
+          .trim();
+        if (cleaned && cleaned.length > 5 && !cleaned.toLowerCase().includes('gợi ý 3 câu hỏi') && !cleaned.toLowerCase().includes('suggested follow-up')) {
+          questions.push(cleaned);
+        }
+      });
+    }
 
-    const topic = (qTopic || '').toLowerCase();
-    if (topic.includes('tình') || topic.includes('yêu') || topic.includes('love') || topic.includes('relationship') || topic.includes('kết hôn')) {
-      return isEnglish ? [
-        'How will the feelings between us evolve in the near future?',
-        'What should I change in myself for a more harmonious relationship?',
-        'Are there any hidden misunderstandings affecting us right now?'
-      ] : [
-        'Tình cảm giữa hai bên sẽ tiến triển như thế nào trong thời gian tới?',
-        'Tôi nên thay đổi điều gì ở bản thân để mối quan hệ được hòa hợp hơn?',
-        'Có những hiểu lầm hay trở ngại ngầm nào đang ảnh hưởng đến hai người không?'
-      ];
-    }
-    if (topic.includes('việc') || topic.includes('công') || topic.includes('tiền') || topic.includes('career') || topic.includes('job') || topic.includes('money')) {
-      return isEnglish ? [
-        'When is the most favorable time to execute this work/plan?',
-        'Which key opportunity should I focus on to optimize my career/finance?',
-        'What precautions should I take regarding partners or current environment?'
-      ] : [
-        'Thời điểm nào là thuận lợi nhất để tôi triển khai công việc này?',
-        'Tôi nên tập trung vào cơ hội nào để tối ưu hóa tài chính/sự nghiệp?',
-        'Cần lưu ý điều gì về đối tác hoặc môi trường xung quanh lúc này?'
-      ];
-    }
-    return isEnglish ? [
-      'What is the most concrete advice for me to achieve the best outcome?',
-      'What major risks or mistakes should I carefully avoid right now?',
-      'How will events unfold over the next 1 to 3 months?'
-    ] : [
-      'Lời khuyên cụ thể nhất cho tôi để đạt kết quả tốt nhất trong tình huống này là gì?',
-      'Những nguy cơ hay sai lầm nào tôi cần đặc biệt phòng tránh vào lúc này?',
-      'Diễn biến trong 1 đến 3 tháng tới sẽ thay đổi ra sao theo chiều hướng nào?'
-    ];
+    return { cleanText, questions: questions.slice(0, 3) };
   };
 
-  const suggestedQuestions = getSuggestedQuestions();
+  const { cleanText: displayInterpretation, questions: aiSuggestedQuestions } = parseInterpretationAndQuestions(interpretation);
 
   // Handler cho câu hỏi thêm tới AI (Memory 100% ngữ cảnh quẻ + lịch sử trò chuyện)
   const handleSendFollowUp = async (e, textOverride = null) => {
@@ -739,7 +721,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       {!loading && interpretation && (
         <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 8, padding: 20, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-            <div dangerouslySetInnerHTML={{ __html: parseMarkdown(interpretation) }} />
+            <div dangerouslySetInnerHTML={{ __html: parseMarkdown(displayInterpretation) }} />
           </div>
 
           {/* Interactive Follow-up Q&A Section */}
@@ -795,14 +777,14 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
             {/* Question Input Form */}
             {followUps.length < 5 ? (
               <form onSubmit={handleSendFollowUp} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-                {/* 3 Suggested Questions Pill Buttons */}
-                {!askingFollowUp && (
+                {/* 3 AI Suggested Questions Pill Buttons */}
+                {!askingFollowUp && aiSuggestedQuestions.length > 0 && (
                   <div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--color-gold)', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>💡</span> {isEn ? 'Suggested follow-up questions (Click to ask AI immediately):' : 'Gợi ý câu hỏi thêm (Bấm vào để hỏi AI ngay):'}
+                      <span>💡</span> {isEn ? 'AI Suggested follow-up questions (Click to ask AI immediately):' : 'AI gợi ý câu hỏi thêm (Bấm vào để hỏi AI ngay):'}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {suggestedQuestions.map((qText, idx) => (
+                      {aiSuggestedQuestions.map((qText, idx) => (
                         <button
                           key={idx}
                           type="button"
