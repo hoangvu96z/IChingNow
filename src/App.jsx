@@ -440,9 +440,9 @@ export default function App() {
 
   const hasResult = !!(result || maiHoaResult);
 
-  // Tự động lưu Lục Hào vào lịch sử
+  // Tự động lưu Lục Hào vào lịch sử (Chỉ khi quẻ mới được lập, chưa có activeReadingId)
   useEffect(() => {
-    if (result) {
+    if (result && !activeReadingId) {
       saveReading(result, 'luc-hao').then((saved) => {
         if (saved?.id) {
           setActiveReadingId(saved.id);
@@ -451,14 +451,12 @@ export default function App() {
           window.history.pushState({ id: saved.id }, '', url.toString());
         }
       }).catch(() => {});
-    } else {
-      setActiveReadingId(null);
     }
-  }, [result]);
+  }, [result, activeReadingId, saveReading]);
 
-  // Tự động lưu Mai Hoa vào lịch sử
+  // Tự động lưu Mai Hoa vào lịch sử (Chỉ khi quẻ mới được lập, chưa có activeReadingId)
   useEffect(() => {
-    if (maiHoaResult) {
+    if (maiHoaResult && !activeReadingId) {
       saveReading(maiHoaResult, 'mai-hoa').then((saved) => {
         if (saved?.id) {
           setActiveReadingId(saved.id);
@@ -468,7 +466,7 @@ export default function App() {
         }
       }).catch(() => {});
     }
-  }, [maiHoaResult]);
+  }, [maiHoaResult, activeReadingId, saveReading]);
 
   const handleSelectHistoryItem = useCallback((item) => {
     if (!item) return;
@@ -543,12 +541,14 @@ export default function App() {
 
   // Quick cast callback
   function handleQuickResult(newLines) {
+    setActiveReadingId(null);
     setLines(newLines);
     computeResult(newLines, 'quick');
   }
 
   // Manual step: one line added
   function handleLineAdded(line) {
+    if (lines.length === 0) setActiveReadingId(null);
     const next = [...lines, line];
     setLines(next);
     computeResult(next, 'manual-step');
@@ -556,6 +556,7 @@ export default function App() {
 
   // Reset (chỉ xoá lines + result, giữ mode để user gieo lại)
   function handleReset() {
+    setActiveReadingId(null);
     setLines([]);
     setResult(null);
   }
@@ -701,7 +702,10 @@ export default function App() {
                 <MaiHoaPanel
                   mode={mode}
                   question={formData.question}
-                  onResult={setMaiHoaResult}
+                  onResult={(res) => {
+                    setActiveReadingId(null);
+                    setMaiHoaResult(res);
+                  }}
                   onReset={handleMaiHoaReset}
                 />
               )}
