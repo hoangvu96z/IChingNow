@@ -731,6 +731,11 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
         <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 8, padding: 20, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
             <div dangerouslySetInnerHTML={{ __html: parseMarkdown(displayInterpretation) }} />
+            {result?.aiConversation?.initialTimestamp && (
+              <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: 10, fontFamily: 'monospace', opacity: 0.7 }}>
+                🕐 {new Date(result.aiConversation.initialTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+            )}
           </div>
 
           {/* Interactive Follow-up Q&A Section */}
@@ -745,34 +750,71 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
             </div>
 
             {/* Chat History */}
-            {followUps.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(184,134,11,0.03)', border: '1px solid rgba(184,134,11,0.15)', borderRadius: 10, padding: 14 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', padding: '2px 8px', borderRadius: 6, flexShrink: 0 }}>
-                    Hỏi #{idx + 1}
-                  </span>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-ink)', marginTop: 2 }}>
-                    {item.question}
+            {followUps.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {followUps.map((item, idx) => (
+                  <div key={item.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {/* Question bubble (Right aligned) */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <div style={{
+                        maxWidth: '80%',
+                        background: 'rgba(184,134,11,0.12)',
+                        border: '1px solid rgba(184,134,11,0.3)',
+                        borderRadius: '12px 12px 4px 12px',
+                        padding: '10px 14px',
+                      }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-ink)' }}>
+                          {item.question}
+                        </div>
+                        {item.questionTimestamp && (
+                          <div style={{ fontSize: '0.68rem', color: 'var(--color-gold)', marginTop: 4, textAlign: 'right', fontFamily: 'monospace' }}>
+                            🕐 {new Date(item.questionTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Answer bubble (Left aligned) */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                      <div style={{
+                        maxWidth: '85%',
+                        background: 'rgba(255,255,255,0.6)',
+                        border: '1px solid rgba(184,134,11,0.18)',
+                        borderRadius: '4px 12px 12px 12px',
+                        padding: '12px 16px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                      }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--color-ink)', lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: parseMarkdown(item.answer) }} />
+                        {item.answerTimestamp && (
+                          <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: 6, fontFamily: 'monospace' }}>
+                            🕐 {new Date(item.answerTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ paddingLeft: 12, borderLeft: '3px solid var(--color-gold)', marginTop: 4 }}>
-                  <div dangerouslySetInnerHTML={{ __html: parseMarkdown(item.answer) }} />
-                </div>
+                ))}
               </div>
-            ))}
+            )}
 
             {/* Current Streaming Answer */}
             {askingFollowUp && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(184,134,11,0.04)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 10, padding: 14 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <div className="spinner" style={{ width: 16, height: 16, border: '2px solid rgba(184,134,11,0.2)', borderTop: '2px solid var(--color-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-gold)' }}>AI đang suy nghĩ lời giải đáp...</span>
-                </div>
-                {currentFollowUpAnswer && (
-                  <div style={{ paddingLeft: 12, borderLeft: '3px solid var(--color-gold)', marginTop: 4 }}>
-                    <div dangerouslySetInnerHTML={{ __html: parseMarkdown(currentFollowUpAnswer) }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{
+                  maxWidth: '85%',
+                  background: 'rgba(255,255,255,0.6)',
+                  border: '1px solid rgba(184,134,11,0.2)',
+                  borderRadius: '4px 12px 12px 12px',
+                  padding: '12px 16px',
+                }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: currentFollowUpAnswer ? 8 : 0 }}>
+                    <div className="spinner" style={{ width: 14, height: 14, border: '2px solid rgba(184,134,11,0.2)', borderTop: '2px solid var(--color-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-gold)' }}>AI đang suy nghĩ lời giải đáp...</span>
                   </div>
-                )}
+                  {currentFollowUpAnswer && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-ink)', lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: parseMarkdown(currentFollowUpAnswer) }} />
+                  )}
+                </div>
               </div>
             )}
 
