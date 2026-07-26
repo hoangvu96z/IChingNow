@@ -196,27 +196,19 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     setStatusText(t('ai.connecting', 'Đang kết nối đến server AI...'));
 
     try {
-      const sysPrompt = `Bạn là một chuyên gia Kinh Dịch (I Ching) uyên bác, am hiểu sâu sắc về triết học phương Đông, tượng quẻ, quẻ chủ, quẻ biến, thể dụng và ý nghĩa các hào động.
-Hãy đưa ra lời luận giải chi tiết, thực tế, dễ hiểu và đưa ra lời khuyên hành động cụ thể cho người hỏi.
-Không dùng ngôn từ quá học thuật xa rời thực tế, hãy giải nghĩa một cách thân cận, có chiều sâu và hướng thiện. Luôn trả lời bằng tiếng Việt.`;
+      const sysPrompt = isEn
+        ? `You are a deeply wise I Ching (Kinh Dịch) scholar with profound knowledge of Eastern philosophy, hexagram imagery, primary and changed hexagrams, Ti-Yong (Thể-Dụng), and moving lines. Provide a detailed, practical, empathetic, and actionable interpretation for the user. Always respond in English.`
+        : `Bạn là một chuyên gia Kinh Dịch (I Ching) uyên bác, am hiểu sâu sắc về triết học phương Đông, tượng quẻ, quẻ chủ, quẻ biến, thể dụng và ý nghĩa các hào động. Hãy đưa ra lời luận giải chi tiết, thực tế, dễ hiểu và đưa ra lời khuyên hành động cụ thể cho người hỏi. Luôn trả lời bằng tiếng Việt.`;
 
       const question = result.question || '';
       const caster = result.caster || '';
       const castDate = result.castDate || '';
       const castTime = result.castTime || '';
 
-      const userPrompt = `Hãy luận giải quẻ dịch sau cho tôi:
-- Việc cần xem: "${question}"
-- Người lập quẻ: ${caster || 'Ẩn danh'}
-- Thời gian lập: ${castDate} ${castTime}
-- Thông tin quẻ chi tiết:
-${plainTextResult}
+      const userPrompt = isEn
+        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nPlease format your analysis using Markdown with the following structure:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải theo cấu trúc sau (viết bằng Markdown):\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trả lời trực tiếp vào câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
 
-Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
-1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.
-2. **Luận giải chi tiết cho câu hỏi**: Trả lời trực tiếp vào câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.
-3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.
-4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
 
       const fallbackModels = Array.from(new Set([
         settings.model,
@@ -347,24 +339,19 @@ Hãy luận giải theo cấu trúc sau (viết bằng Markdown):
     setCurrentFollowUpAnswer('');
 
     try {
-      const sysPrompt = `Bạn là một chuyên gia Kinh Dịch (I Ching) uyên bác, thấu đáo.
-Người dùng đang hỏi thêm một câu hỏi cụ thể dựa trên quẻ dịch và thông tin đã luận giải trước đó.
-Yêu cầu quan trọng khi trả lời câu hỏi thêm:
-1. Trả lời NGẮN GỌN, súc tích, đi thẳng vào trọng tâm câu hỏi của người dùng. KHÔNG dông dài, KHÔNG lặp lại phần giới thiệu hay thông tin quẻ ban đầu.
-2. Phân tích ngắn gọn dựa trên tượng quẻ, hào động hoặc thể dụng liên quan trực tiếp tới thắc mắc này.
-3. Đưa ra kết luận hoặc lời khuyên cụ thể, ngắn gọn, dễ hiểu. Luôn trả lời bằng tiếng Việt.`;
+      const sysPrompt = isEn
+        ? `You are an expert I Ching (Kinh Dịch) scholar. The user is asking a follow-up question based on their hexagram reading and previous interpretation.\nRequirements:\n1. Answer CONCISELY and directly address the user's question. Do NOT repeat introductory information or hexagram setup.\n2. Briefly analyze based on hexagram imagery, moving lines, or Ti-Yong energy.\n3. Conclude with clear, practical advice. Always respond in English.`
+        : `Bạn là một chuyên gia Kinh Dịch (I Ching) uyên bác, thấu đáo. Người dùng đang hỏi thêm một câu hỏi cụ thể dựa trên quẻ dịch và thông tin đã luận giải trước đó.\nYêu cầu quan trọng khi trả lời câu hỏi thêm:\n1. Trả lời NGẮN GỌN, súc tích, đi thẳng vào trọng tâm câu hỏi của người dùng. KHÔNG dông dài, KHÔNG lặp lại phần giới thiệu hay thông tin quẻ ban đầu.\n2. Phân tích ngắn gọn dựa trên tượng quẻ, hào động hoặc thể dụng liên quan trực tiếp tới thắc mắc này.\n3. Đưa ra kết luận hoặc lời khuyên cụ thể, ngắn gọn, dễ hiểu. Luôn trả lời bằng tiếng Việt.`;
 
       const question = result?.question || '';
       const caster = result?.caster || '';
       const castDate = result?.castDate || '';
       const castTime = result?.castTime || '';
 
-      const initialUserPrompt = `Hãy luận giải quẻ dịch sau cho tôi:
-- Việc cần xem: "${question}"
-- Người lập quẻ: ${caster || 'Ẩn danh'}
-- Thời gian lập: ${castDate} ${castTime}
-- Thông tin quẻ chi tiết:
-${plainTextResult}`;
+      const initialUserPrompt = isEn
+        ? `Please interpret the following I Ching hexagram reading:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Hexagram details:\n${plainTextResult}`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}`;
+
 
       // Xây dựng chuỗi hội thoại giữ đầy đủ bộ nhớ (Memory)
       const messages = [
