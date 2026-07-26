@@ -512,18 +512,23 @@ export default function App() {
     }, 100);
   }, []);
 
-  // Tự động load quẻ khi có ?id=xxx trên URL
+  const hasAutoLoadedUrlRef = useRef(false);
+
+  // Tự động load quẻ khi có ?id=xxx trên URL (chỉ chạy 1 lần khi khởi tạo)
   useEffect(() => {
-    if (!history || history.length === 0) return;
+    if (!historyLoaded || !history || history.length === 0) return;
+    if (hasAutoLoadedUrlRef.current) return;
+
     const params = new URLSearchParams(window.location.search);
     const urlId = params.get('id');
     if (urlId) {
       const found = history.find(h => String(h.id) === String(urlId) || String(h._remoteId) === String(urlId));
       if (found) {
+        hasAutoLoadedUrlRef.current = true;
         handleSelectHistoryItem(found);
       }
     }
-  }, [history, handleSelectHistoryItem]);
+  }, [historyLoaded, history, handleSelectHistoryItem]);
 
   // handleClearHistory đã được cung cấp từ useReadingsApi hook ở trên
 
