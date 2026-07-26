@@ -186,7 +186,20 @@ export default function PricingModal({
           boxShadow: '0 25px 60px -10px rgba(0,0,0,0.7), 0 0 30px rgba(184, 134, 11, 0.15)',
         }}
       >
-        {/* Header */}
+        {/* Admin Unlimited Access Notice Banner */}
+        {currentPlan === 'admin' && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.25), rgba(184, 134, 11, 0.25))',
+            border: '1px solid rgba(184, 134, 11, 0.6)',
+            borderRadius: '14px', padding: '14px 18px', marginBottom: '20px',
+            textAlign: 'center', color: '#f5d78e', fontSize: '0.92rem', fontWeight: 800,
+            lineHeight: 1.5,
+          }}>
+            👑 {isEn
+              ? 'Admin Account: You have permanent unlimited access to all AI reading features!'
+              : 'Tài khoản Admin: Bạn có quyền truy cập không giới hạn vĩnh viễn tất cả các tính năng AI!'}
+          </div>
+        )}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{ fontSize: '2.2rem', marginBottom: '6px' }}>☯️</div>
           <h2 style={{ color: '#f5d78e', fontSize: '1.5rem', fontWeight: 800, margin: 0, fontFamily: "'Noto Serif', serif" }}>
