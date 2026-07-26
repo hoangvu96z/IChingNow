@@ -320,28 +320,37 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     let cleanText = fullText;
     let questionsPart = '';
 
-    const delimiterIndex = fullText.indexOf('---SUGGESTED_QUESTIONS---');
-    if (delimiterIndex !== -1) {
-      cleanText = fullText.slice(0, delimiterIndex).trim();
-      questionsPart = fullText.slice(delimiterIndex + '---SUGGESTED_QUESTIONS---'.length).trim();
-    } else {
-      const altMatch = fullText.match(/(?:\n|^)(?:###?\s*💡?\s*(?:Gợi ý|Suggested)\s*(?:3\s*)?(?:câu hỏi|Follow-up)[^\n]*)([\s\S]*)$/i);
-      if (altMatch && altMatch.index !== undefined) {
-        cleanText = fullText.slice(0, altMatch.index).trim();
-        questionsPart = altMatch[1].trim();
-      }
+    const regexHeader = /(?:---SUGGESTED_QUESTIONS---|###?\s*💡?\s*Gợi ý\s*(?:3\s*)?câu hỏi|###?\s*💡?\s*Suggested\s*(?:3\s*)?Follow-up|💡\s*Gợi ý\s*(?:3\s*)?câu hỏi|💡\s*Suggested\s*(?:3\s*)?Follow-up)/i;
+    const match = fullText.match(regexHeader);
+
+    if (match && match.index !== undefined) {
+      cleanText = fullText.slice(0, match.index).trim();
+      cleanText = cleanText.replace(/---\s*$/, '').trim();
+      questionsPart = fullText.slice(match.index).trim();
     }
 
     const questions = [];
     if (questionsPart) {
       const lines = questionsPart.split('\n');
       lines.forEach(line => {
-        const cleaned = line
-          .replace(/^(?:---SUGGESTED_QUESTIONS---|###?\s*💡?\s*|\d+\.|\*|-|Q\d+:?)\s*/gi, '')
-          .replace(/^[-*0-9.:\s]+/, '')
+        let cleaned = line.trim();
+        if (/gợi ý|suggested|follow-up|câu hỏi tiếp theo/i.test(cleaned) && !/Q\d|câu hỏi \d|\?/i.test(cleaned)) {
+          return;
+        }
+
+        cleaned = cleaned
+          .replace(/^(?:---SUGGESTED_QUESTIONS---|###?\s*|💡\s*|\d+\.|\*|-)*\s*/gi, '')
+          .replace(/^(?:\*\*)?Q\d+:?\s*/gi, '')
+          .replace(/^\*\*/, '')
+          .replace(/\*\*$/, '')
+          .replace(/^["'“`]+|["'”`]+$/g, '')
+          .replace(/\*\*+/g, '')
           .trim();
-        if (cleaned && cleaned.length > 5 && !cleaned.toLowerCase().includes('gợi ý 3 câu hỏi') && !cleaned.toLowerCase().includes('suggested follow-up')) {
-          questions.push(cleaned);
+
+        if (cleaned && cleaned.length > 8) {
+          if (!questions.includes(cleaned)) {
+            questions.push(cleaned);
+          }
         }
       });
     }
