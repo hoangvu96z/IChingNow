@@ -444,7 +444,12 @@ export default function App() {
   useEffect(() => {
     if (result) {
       saveReading(result, 'luc-hao').then((saved) => {
-        if (saved?.id) setActiveReadingId(saved.id);
+        if (saved?.id) {
+          setActiveReadingId(saved.id);
+          const url = new URL(window.location.href);
+          url.searchParams.set('id', saved.id);
+          window.history.pushState({ id: saved.id }, '', url.toString());
+        }
       }).catch(() => {});
     } else {
       setActiveReadingId(null);
@@ -455,12 +460,19 @@ export default function App() {
   useEffect(() => {
     if (maiHoaResult) {
       saveReading(maiHoaResult, 'mai-hoa').then((saved) => {
-        if (saved?.id) setActiveReadingId(saved.id);
+        if (saved?.id) {
+          setActiveReadingId(saved.id);
+          const url = new URL(window.location.href);
+          url.searchParams.set('id', saved.id);
+          window.history.pushState({ id: saved.id }, '', url.toString());
+        }
       }).catch(() => {});
     }
   }, [maiHoaResult]);
 
-  const handleSelectHistoryItem = (item) => {
+  const handleSelectHistoryItem = useCallback((item) => {
+    if (!item) return;
+
     if (item.type === 'luc-hao') {
       setResult(item.data);
       setMaiHoaResult(null);
@@ -470,8 +482,15 @@ export default function App() {
     }
     setMode(item.mode);
     setHasPickedMethod(true);
-    // Track reading ID khi load từ history
-    setActiveReadingId(item._remoteId || item.id || null);
+    
+    const targetId = item._remoteId || item.id || null;
+    setActiveReadingId(targetId);
+
+    if (targetId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('id', targetId);
+      window.history.pushState({ id: targetId }, '', url.toString());
+    }
 
     // Phục hồi lại dữ liệu form
     if (item.data) {
@@ -489,7 +508,24 @@ export default function App() {
         movingMindTime: item.data.movingMindTime || { enabled: false, hourBranch: '' },
       });
     }
-  };
+
+    setTimeout(() => {
+      window.scrollTo({ top: 380, behavior: 'smooth' });
+    }, 100);
+  }, []);
+
+  // Tự động load quẻ khi có ?id=xxx trên URL
+  useEffect(() => {
+    if (!history || history.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlId = params.get('id');
+    if (urlId) {
+      const found = history.find(h => String(h.id) === String(urlId) || String(h._remoteId) === String(urlId));
+      if (found) {
+        handleSelectHistoryItem(found);
+      }
+    }
+  }, [history, handleSelectHistoryItem]);
 
   // handleClearHistory đã được cung cấp từ useReadingsApi hook ở trên
 
