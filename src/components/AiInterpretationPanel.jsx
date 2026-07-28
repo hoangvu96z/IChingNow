@@ -366,13 +366,6 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     const questionToSend = (textOverride || userQuestion).trim();
     if (!questionToSend || askingFollowUp || followUps.length >= 5) return;
 
-    // Check quota before calling AI
-    const quotaResult = await consumeQuota();
-    if (!quotaResult.ok) {
-      setShowPricing(true);
-      return;
-    }
-
     setAskingFollowUp(true);
     setFollowUpError('');
     setCurrentFollowUpAnswer('');
