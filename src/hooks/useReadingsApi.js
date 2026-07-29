@@ -17,7 +17,7 @@ function authHeaders() {
 /**
  * Hook quản lý lịch sử gieo quẻ qua API với Mã Hóa Client-Side (Zero-Knowledge E2EE)
  */
-export function useReadingsApi(isAuthenticated) {
+export function useReadingsApi(isAuthenticated, userId = 'default_user') {
   const [history, setHistory] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
@@ -25,16 +25,18 @@ export function useReadingsApi(isAuthenticated) {
   const decryptReadingObject = async (r) => {
     let question = r.question;
     if (question && typeof question === 'string' && question.startsWith('enc_v1::')) {
-      question = await decryptData(question);
+      const dec = await decryptData(question, userId);
+      question = dec || r.title || '(Lần lập quẻ)';
     }
 
     let dataObj = r.data || {};
     if (dataObj.question && typeof dataObj.question === 'string' && dataObj.question.startsWith('enc_v1::')) {
-      dataObj = { ...dataObj, question: await decryptData(dataObj.question) };
+      const dec = await decryptData(dataObj.question, userId);
+      dataObj = { ...dataObj, question: dec || r.title || '(Lần lập quẻ)' };
     }
     if (dataObj.aiConversation) {
       if (typeof dataObj.aiConversation === 'string' && dataObj.aiConversation.startsWith('enc_v1::')) {
-        const decryptedAi = await decryptData(dataObj.aiConversation);
+        const decryptedAi = await decryptData(dataObj.aiConversation, userId);
         dataObj = { ...dataObj, aiConversation: decryptedAi };
       }
     }
@@ -75,14 +77,14 @@ export function useReadingsApi(isAuthenticated) {
     } finally {
       setHistoryLoaded(true);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userId]);
 
   // ─── Lưu 1 reading mới với mã hóa AES-GCM ──────────────────────────────────
   const saveReading = useCallback(async (newResult, type) => {
     if (!newResult || !isAuthenticated) return null;
 
     const plainQuestion = newResult.question || null;
-    const encryptedQuestion = plainQuestion ? await encryptData(plainQuestion) : null;
+    const encryptedQuestion = plainQuestion ? await encryptData(plainQuestion, userId) : null;
 
     const dataToSave = {
       ...newResult,
@@ -90,7 +92,7 @@ export function useReadingsApi(isAuthenticated) {
     };
 
     if (newResult.aiConversation) {
-      dataToSave.aiConversation = await encryptData(newResult.aiConversation);
+      dataToSave.aiConversation = await encryptData(newResult.aiConversation, userId);
     }
 
     const title =
@@ -139,7 +141,7 @@ export function useReadingsApi(isAuthenticated) {
       console.error('saveReading error:', err);
       return null;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userId]);
 
   // ─── Xoá 1 reading ─────────────────────────────────────────────────────────
   const deleteReading = useCallback(async (item) => {
@@ -205,7 +207,7 @@ export function useReadingsApi(isAuthenticated) {
 
     const dataToPatch = { ...partialData };
     if (partialData.aiConversation) {
-      dataToPatch.aiConversation = await encryptData(partialData.aiConversation);
+      dataToPatch.aiConversation = await encryptData(partialData.aiConversation, userId);
     }
 
     try {

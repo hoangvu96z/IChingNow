@@ -419,7 +419,7 @@ export default function App() {
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
   // ─── Auth + Readings API ──────────────────────────────────────────────────
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const {
     history,
     historyLoaded,
@@ -428,7 +428,7 @@ export default function App() {
     deleteMultipleReadings,
     clearHistory: handleClearHistory,
     updateReadingData,
-  } = useReadingsApi(isAuthenticated);
+  } = useReadingsApi(isAuthenticated, user?.id);
 
   // Track reading ID đang active (để lưu AI conversation)
   const [activeReadingId, setActiveReadingId] = useState(null);
