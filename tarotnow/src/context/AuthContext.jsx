@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 // Dev: VITE_SSO_URL trống → dùng relative path qua vite proxy (/sso/*)
 // Prod: VITE_SSO_URL=https://sso.vunph.click → gọi thẳng tới SSO server
@@ -6,9 +6,98 @@ const SSO_BASE = import.meta.env.VITE_SSO_URL || '';
 
 const AuthContext = createContext(null);
 
+// ─── Toast component cho thông báo hết phiên ─────────────────────────────────
+function SessionExpiredToast({ visible, onClose, onLogin }) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      // Trigger enter animation
+      requestAnimationFrame(() => setShow(true));
+    } else {
+      setShow(false);
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: '24px',
+        left: '50%',
+        transform: `translateX(-50%) translateY(${show ? '0' : '-120%'})`,
+        zIndex: 99999,
+        background: 'linear-gradient(135deg, #1e1e2e 0%, #2d2040 100%)',
+        border: '1px solid rgba(255, 170, 80, 0.4)',
+        borderRadius: '16px',
+        padding: '16px 24px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,170,80,0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+        maxWidth: '440px',
+        width: 'calc(100vw - 32px)',
+        transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}
+    >
+      <span style={{ fontSize: '24px', flexShrink: 0 }}>⏳</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: '#ffd6a5', fontWeight: 600, fontSize: '14px', marginBottom: '2px' }}>
+          Phiên đăng nhập đã hết hạn
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+          Vui lòng đăng nhập lại để tiếp tục sử dụng.
+        </div>
+      </div>
+      <button
+        onClick={onLogin}
+        style={{
+          background: 'linear-gradient(135deg, #ff9a56 0%, #ff6b6b 100%)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '10px',
+          padding: '8px 16px',
+          fontSize: '13px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+          transition: 'opacity 0.2s',
+        }}
+        onMouseEnter={(e) => (e.target.style.opacity = '0.85')}
+        onMouseLeave={(e) => (e.target.style.opacity = '1')}
+      >
+        Đăng nhập
+      </button>
+      <button
+        onClick={onClose}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'rgba(255,255,255,0.4)',
+          fontSize: '18px',
+          cursor: 'pointer',
+          padding: '4px',
+          lineHeight: 1,
+          flexShrink: 0,
+        }}
+        aria-label="Đóng"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  // Track nếu user đã từng đăng nhập thành công (để phân biệt với lần đầu vào app)
+  const hadToken = useRef(!!localStorage.getItem('sso_token'));
 
   const fetchUser = useCallback(async () => {
     try {
@@ -25,6 +114,9 @@ export function AuthProvider({ children }) {
         window.history.replaceState({}, document.title, newUrl);
         // Xóa flag logout vì user đang đăng nhập lại
         localStorage.removeItem('sso_logged_out');
+        hadToken.current = true;
+        // Ẩn toast nếu đang hiện
+        setSessionExpired(false);
       }
 
       // 2. Đọc token từ localStorage
@@ -46,14 +138,31 @@ export function AuthProvider({ children }) {
         // Xóa flag logout khi xác thực thành công
         localStorage.removeItem('sso_logged_out');
         setUser(data.user);
+        hadToken.current = true;
+        setSessionExpired(false);
         if (data.token) {
           localStorage.setItem('sso_token', data.token);
         }
       } else {
+        // User null → kiểm tra xem trước đó có token không (= token hết hạn)
+        const wasLoggedIn = hadToken.current || !!storedToken;
         localStorage.removeItem('sso_token');
         setUser(null);
+
+        if (wasLoggedIn) {
+          // Chỉ hiện toast khi user đã từng đăng nhập → token hết hạn
+          setSessionExpired(true);
+          hadToken.current = false;
+        }
       }
     } catch {
+      // Lỗi network hoặc server → nếu có token cũ thì coi như expired
+      const storedToken = localStorage.getItem('sso_token');
+      if (storedToken || hadToken.current) {
+        localStorage.removeItem('sso_token');
+        setSessionExpired(true);
+        hadToken.current = false;
+      }
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -73,6 +182,7 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('sso_token');
             localStorage.setItem('sso_logged_out', '1');
             setUser(null);
+            hadToken.current = false;
             return;
           }
         } catch {}
@@ -101,6 +211,8 @@ export function AuthProvider({ children }) {
   }, [fetchUser]);
 
   const login = () => {
+    // Ẩn toast khi user chủ động đăng nhập
+    setSessionExpired(false);
     // Điều hướng sang trang đăng nhập SSO kèm theo URL trả về (redirect)
     const url = new URL(window.location.href);
     url.searchParams.delete('sso_token');
@@ -128,6 +240,9 @@ export function AuthProvider({ children }) {
       localStorage.setItem('sso_logged_out', '1');
       localStorage.setItem('vInfiSSO-state', JSON.stringify({ type: 'logout', t: Date.now() }));
       setUser(null);
+      hadToken.current = false;
+      // Không hiện toast khi user chủ động logout
+      setSessionExpired(false);
     }
   };
 
@@ -143,6 +258,11 @@ export function AuthProvider({ children }) {
       }}
     >
       {children}
+      <SessionExpiredToast
+        visible={sessionExpired}
+        onClose={() => setSessionExpired(false)}
+        onLogin={login}
+      />
     </AuthContext.Provider>
   );
 }
@@ -152,3 +272,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
   return ctx;
 }
+
