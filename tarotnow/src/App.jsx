@@ -1,0 +1,1009 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from './context/AuthContext.jsx';
+import { useReadingsApi } from './hooks/useReadingsApi.js';
+import {
+  drawTarotCards,
+  SPREADS,
+  CONTEXTS,
+  getCardMeaning,
+  analyzeSpreadPatterns,
+  composeSpreadSummary
+} from './utils/tarotLogic';
+import Card3D from './components/Card3D';
+import DeckPile from './components/DeckPile';
+import WeightControls from './components/WeightControls';
+import PromptExporter from './components/PromptExporter';
+import ManualPickMode from './components/ManualPickMode';
+import AiInterpretationPanel from './components/AiInterpretationPanel';
+import AppHeader from './components/AppHeader.jsx';
+import HistoryManagementModal from './components/HistoryManagementModal.jsx';
+import { useLanguage } from './context/LanguageContext';
+
+export default function App() {
+  const [tarotCards, setTarotCards] = useState([]);
+  const [activeMode, setActiveMode] = useState('random'); // 'random' | 'manual'
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Core settings state
+  const [question, setQuestion] = useState('');
+  const [drawCount, setDrawCount] = useState(3);
+  const [reversedEnabled, setReversedEnabled] = useState(true);
+  const [reversedRate, setReversedRate] = useState(0.5);
+  const [weights, setWeights] = useState({
+    major: 20,
+    cups: 20,
+    pentacles: 20,
+    swords: 20,
+    wands: 20
+  });
+  const [interpretationContext, setInterpretationContext] = useState('general');
+
+  // Runtime draw state
+  const [drawnCards, setDrawnCards] = useState([]);
+  const [currentDrawnQuestion, setCurrentDrawnQuestion] = useState('');
+  const [isShuffling, setIsShuffling] = useState(false);
+  const [activeSpread, setActiveSpread] = useState('past-present-future');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedModalCard, setSelectedModalCard] = useState(null);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+
+  // ─── Auth + Readings API ──────────────────────────────────────────────────
+  const { isAuthenticated, user, login } = useAuth();
+  const {
+    history,
+    setHistory,
+    historyLoaded,
+    loadHistory,
+    saveReading,
+    deleteMultipleReadings,
+    clearHistory,
+    updateReadingData,
+  } = useReadingsApi(isAuthenticated, user?.id);
+
+  // Track active reading ID for AI conversation persistence
+  const [activeReadingId, setActiveReadingId] = useState(null);
+  const [savedConversation, setSavedConversation] = useState(null);
+
+  const handleSelectHistoryItem = useCallback((item) => {
+    if (!item) return;
+
+    const restoredQuestion = item.question || item.data?.question || '';
+    setQuestion(restoredQuestion);
+    setCurrentDrawnQuestion(restoredQuestion);
+
+    const restoredSpread = item.spread || item.data?.activeSpread || item.spreadId || '1-card';
+    setActiveSpread(restoredSpread);
+
+    let cardsList = [];
+    if (Array.isArray(item.data?.drawnCards) && item.data.drawnCards.length > 0) {
+      cardsList = item.data.drawnCards;
+    } else if (Array.isArray(item.cards) && item.cards.length > 0) {
+      cardsList = item.cards.map((cHist, idx) => {
+        const fullCard = tarotCards.find((tc) => tc.id === cHist.id);
+        return fullCard
+          ? {
+              ...fullCard,
+              orientation: cHist.orientation || 'upright',
+              drawPosition: idx + 1,
+            }
+          : cHist;
+      });
+    }
+
+    setDrawnCards(cardsList);
+    const targetId = item._remoteId || item.id || null;
+    setActiveReadingId(targetId);
+    setSavedConversation(item.data?.aiConversation || null);
+
+    if (targetId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('id', targetId);
+      window.history.pushState({ id: targetId }, '', url.toString());
+    }
+
+    if (String(restoredSpread).startsWith('manual')) {
+      setActiveMode('manual');
+    } else {
+      setActiveMode('random');
+    }
+
+    setTimeout(() => {
+      window.scrollTo({ top: 380, behavior: 'smooth' });
+    }, 100);
+  }, [tarotCards]);
+
+  // Tải lịch sử khi mount hoặc khi auth state thay đổi
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory, isAuthenticated]);
+
+  const hasAutoLoadedUrlRef = useRef(false);
+
+  // Auto-load quẻ/trải bài từ URL search param ?id=xxx khi history sẵn sàng (chỉ chạy 1 lần khi khởi tạo)
+  useEffect(() => {
+    if (!historyLoaded || !history || history.length === 0) return;
+    if (hasAutoLoadedUrlRef.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlId = params.get('id');
+    if (urlId) {
+      const found = history.find(h => String(h.id) === String(urlId) || String(h._remoteId) === String(urlId));
+      if (found) {
+        hasAutoLoadedUrlRef.current = true;
+        handleSelectHistoryItem(found);
+      }
+    }
+  }, [historyLoaded, history, handleSelectHistoryItem]);
+
+  // Validation messages
+  const [validationError, setValidationError] = useState('');
+
+  const { t, language, setLanguage } = useLanguage();
+
+  // 1. Fetch card metadata database on mount and language switch
+  useEffect(() => {
+    const filename = language === 'en' ? 'cards_en.json' : 'cards.json';
+    setLoading(true);
+    fetch(import.meta.env.BASE_URL + 'data/' + filename)
+      .then(res => {
+        if (!res.ok) throw new Error("Could not load cards.json");
+        return res.json();
+      })
+      .then(data => {
+        setTarotCards(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError(language === 'en' 
+          ? "Error loading Tarot data. Please check assets path." 
+          : "Lỗi nạp dữ liệu Tarot. Vui lòng kiểm tra lại đường dẫn assets."
+        );
+        setLoading(false);
+      });
+  }, [language]);
+
+  // 1b. Automatically translate drawn cards when card deck shifts language
+  useEffect(() => {
+    if (drawnCards.length > 0 && tarotCards.length > 0) {
+      setDrawnCards(prev => prev.map(oldCard => {
+        const newCard = tarotCards.find(c => c.id === oldCard.id);
+        if (newCard) {
+          return {
+            ...newCard,
+            orientation: oldCard.orientation,
+            drawPosition: oldCard.drawPosition
+          };
+        }
+        return oldCard;
+      }));
+    }
+  }, [tarotCards]);
+
+  // 1c. Automatically translate active modal card
+  useEffect(() => {
+    if (selectedModalCard && tarotCards.length > 0) {
+      const newCard = tarotCards.find(c => c.id === selectedModalCard.id);
+      if (newCard) {
+        setSelectedModalCard({
+          ...newCard,
+          orientation: selectedModalCard.orientation
+        });
+      }
+    }
+  }, [tarotCards]);
+
+  // History persistence now handled by useReadingsApi hook (API or localStorage)
+
+  // Adjust preset configurations
+  const handleSpreadPresetChange = (presetId) => {
+    setActiveSpread(presetId);
+    const preset = SPREADS.find(s => s.id === presetId);
+    if (preset && preset.id !== 'custom') {
+      setDrawCount(preset.count);
+    }
+  };
+
+  // Perform shuffle animation
+  const handleShuffle = () => {
+    setIsShuffling(true);
+    // Clear current draw while shuffling to show card stack
+    setDrawnCards([]);
+    setTimeout(() => {
+      setIsShuffling(false);
+    }, 1200);
+  };
+
+  // Draw cards
+  const handleDraw = () => {
+    setValidationError('');
+
+    // Input validations
+    if (!question.trim()) {
+      setValidationError(t('form.draw_error_empty', 'Vui lòng nhập câu hỏi của bạn trước khi rút bài!'));
+      return;
+    }
+    if (question.trim().length < 5) {
+      setValidationError(t('form.draw_error_short', 'Câu hỏi quá ngắn (tối thiểu 5 ký tự) để AI có thể luận giải ý nghĩa!'));
+      return;
+    }
+
+    const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+    if (totalWeight <= 0) {
+      setValidationError(t('form.draw_error_weight', 'Tổng trọng số các nhóm phải lớn hơn 0!'));
+      return;
+    }
+
+    if (drawCount > tarotCards.length) {
+      setValidationError(
+        t('form.draw_error_limit', 'Số lá cần rút ({drawCount}) vượt quá số lá có sẵn trong bộ bài ({totalCards})!')
+          .replace('{drawCount}', drawCount)
+          .replace('{totalCards}', tarotCards.length)
+      );
+      return;
+    }
+
+    // Trigger visual deal animation
+    setIsDrawing(true);
+    setDrawnCards([]);
+
+    try {
+      const results = drawTarotCards(
+        tarotCards,
+        drawCount,
+        weights,
+        reversedEnabled,
+        reversedRate
+      );
+
+      // Save drawn question
+      setCurrentDrawnQuestion(question);
+
+      // Stagger drawing completion
+      setTimeout(() => {
+        setDrawnCards(results);
+        setIsDrawing(false);
+
+        // Add to history via API (or localStorage if not logged in)
+        const locale = language === 'en' ? 'en-US' : 'vi-VN';
+        const spreadName = SPREADS.find(s => s.id === activeSpread)?.name || 'Tùy chỉnh';
+        const newHistoryItem = {
+          id: Date.now().toString(),
+          timestamp: new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) + ' - ' + new Date().toLocaleDateString(locale),
+          question: question,
+          spreadId: activeSpread,
+          spread: activeSpread,
+          spreadName,
+          title: `${spreadName}${question ? ' - ' + question : ''}`,
+          cards: results.map(c => ({
+            id: c.id,
+            name: c.name,
+            orientation: c.orientation
+          }))
+        };
+        saveReading(newHistoryItem).then(saved => {
+          if (saved?.id) {
+            setActiveReadingId(saved.id);
+            const url = new URL(window.location.href);
+            url.searchParams.set('id', saved.id);
+            window.history.pushState({ id: saved.id }, '', url.toString());
+          }
+        }).catch(() => {});
+      }, 500);
+
+    } catch (err) {
+      setValidationError(err.message);
+      setIsDrawing(false);
+    }
+  };
+
+  // Randomize weight percentages for fun
+  const handleRandomizeWeights = () => {
+    const randomized = {
+      major: Math.floor(Math.random() * 50),
+      cups: Math.floor(Math.random() * 50),
+      pentacles: Math.floor(Math.random() * 50),
+      swords: Math.floor(Math.random() * 50),
+      wands: Math.floor(Math.random() * 50)
+    };
+    setWeights(randomized);
+  };
+
+  const handleClearHistory = () => {
+    setHistory([]);
+  };
+
+  const handleResetApp = () => {
+    setQuestion('');
+    setDrawnCards([]);
+    setCurrentDrawnQuestion('');
+    setValidationError('');
+    setActiveSpread('past-present-future');
+    setDrawCount(3);
+    setWeights({
+      major: 20,
+      cups: 20,
+      pentacles: 20,
+      swords: 20,
+      wands: 20
+    });
+    setInterpretationContext('general');
+  };
+
+  const activeSpreadObj = SPREADS.find(s => s.id === activeSpread);
+  const spreadPositions = activeSpreadObj?.positions?.map((pos, idx) => 
+    t('spread.pos.' + activeSpread + '.' + idx, pos)
+  ) || [];
+
+  const summaryObj = composeSpreadSummary(drawnCards, activeSpread, interpretationContext, language, question);
+  const formattedSummaryText = summaryObj ? (
+    language === 'en' ? `
+[WHAT THE SPREAD WANTS TO SAY]
+${summaryObj.intro}
+
+[STORY OF EACH CARD BY POSITION]
+${summaryObj.positions.map(p => `- ${p.position} (${p.card.name} - ${p.card.orientation === 'reversed' ? 'Reversed' : 'Upright'}):\n  -> ${p.humanMeaning}\n  -> ${p.impact}`).join('\n\n')}
+
+[CORE MESSAGE]
+${summaryObj.coreMessage}
+
+[PRACTICAL ADVICE]
+${summaryObj.advice}
+`.trim() : `
+[ĐIỀU TRẢI BÀI ĐANG MUỐN NÓI]
+${summaryObj.intro}
+
+[CÂU CHUYỆN CỦA TỪNG LÁ THEO VỊ TRÍ]
+${summaryObj.positions.map(p => `- ${p.position} (${p.card.name} - ${p.card.orientation === 'reversed' ? 'Ngược' : 'Xuôi'}):\n  -> ${p.humanMeaning}\n  -> ${p.impact}`).join('\n\n')}
+
+[THÔNG ĐIỆP CHÍNH]
+${summaryObj.coreMessage}
+
+[LỜI KHUYÊN THỰC TẾ]
+${summaryObj.advice}
+`.trim()
+  ) : "";
+
+  if (loading) {
+    return (
+      <div className="app-loader-container" style={{ textAlign: 'center', marginTop: '100px' }}>
+        <h2 style={{ fontFamily: 'Cinzel', color: '#e5c158' }}>
+          {language === 'en' ? 'Aligning celestial energies...' : 'Đang nạp năng lượng vũ trụ...'}
+        </h2>
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="app-error-container" style={{ textAlign: 'center', marginTop: '100px', padding: '20px' }}>
+        <h2 style={{ color: '#eb5e55' }}>
+          {language === 'en' ? 'Cosmic Interruption' : 'Cảnh báo từ Vũ Trụ'}
+        </h2>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Twinkling star field */}
+      <div className="stars-background"></div>
+      <div className="nebula-glow"></div>
+      <div className="nebula-glow-right"></div>
+
+      {/* ===== HEADER ===== */}
+      <AppHeader
+        theme="tarot"
+        logo={
+          <div style={{
+            width: 20,
+            height: 32,
+            border: '2px solid #e5c158',
+            borderRadius: 4,
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 8px rgba(229, 193, 88, 0.4)'
+          }}>
+            <span style={{ fontSize: '10px', color: '#e5c158', marginTop: '-2px' }}>★</span>
+          </div>
+        }
+        title="TarotNow"
+        subtitle={t('app.subtitle', 'Trải Bài Tarot & Luận Giải AI')}
+        navItems={[
+          {
+            label: t('nav.iching_link', '☯️ Lập quẻ Dịch'),
+            href: '/kinhdich/',
+          },
+        ]}
+        onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+        languageLabel={language === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
+        primaryAction={
+          drawnCards.length > 0 ? (
+            <button
+              onClick={handleResetApp}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(229,193,88,0.3)',
+                borderRadius: 8,
+                color: 'rgba(255,255,255,0.9)',
+                padding: '7px 14px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: "'Inter', sans-serif",
+                transition: 'background 0.2s, border-color 0.2s',
+                whiteSpace: 'nowrap',
+                width: '100%',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(229, 193, 88, 0.1)';
+                e.currentTarget.style.borderColor = '#e5c158';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                e.currentTarget.style.borderColor = 'rgba(229,193,88,0.3)';
+              }}
+            >
+              {t('nav.new_cast', '🔄 Trải bài mới')}
+            </button>
+          ) : null
+        }
+      />
+
+      <main className="panels-container">
+        {/* Left Side: Setup & Settings */}
+        <section className="left-panel-stack" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+          {/* ── Mode Switcher ── */}
+          <div className="mode-switcher">
+            <button
+              className={`mode-switcher-btn${activeMode === 'random' ? ' active' : ''}`}
+              onClick={() => setActiveMode('random')}
+            >
+              🎴 {language === 'en' ? 'Random Draw' : 'Rút Ngẫu Nhiên'}
+            </button>
+            <button
+              className={`mode-switcher-btn${activeMode === 'manual' ? ' active' : ''}`}
+              onClick={() => setActiveMode('manual')}
+            >
+              🖐 {language === 'en' ? 'Manual Pick' : 'Chọn Tay'}
+            </button>
+          </div>
+
+          {/* ── Manual Pick Mode (parallel) ── */}
+          {activeMode === 'manual' && (
+            <ManualPickMode 
+              tarotCards={tarotCards} 
+              weights={weights} 
+              setWeights={setWeights}
+              activeReadingId={activeReadingId}
+              onSaveAiConversation={updateReadingData}
+              onSaveReading={(item) => {
+                saveReading(item).then(saved => {
+                  if (saved?.id) setActiveReadingId(saved.id);
+                }).catch(() => {});
+              }}
+            />
+          )}
+
+          {/* ── Random Draw Mode ── */}
+          {activeMode === 'random' && (
+          <div style={{ display: 'contents' }}>
+
+          <div className="setup-panel glass-panel">
+            {/* Question Textarea */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="question-input">
+                {t('form.question_label', 'Nhập câu hỏi của bạn *')}
+              </label>
+              <textarea
+                id="question-input"
+                className="custom-textarea"
+                placeholder={t('form.question_placeholder', 'Ví dụ: Công việc sắp tới trong 3 tháng tới của tôi sẽ có biến chuyển như thế nào?')}
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                disabled={isDrawing || isShuffling}
+              />
+            </div>
+
+            {/* Presets, Card Count and Interpretation Context */}
+            <div className="settings-grid-3">
+              <div className="settings-col">
+                <label className="form-label">{t('form.spread_label', 'Chọn Trải Bài (Spread)')}</label>
+                <select
+                  className="custom-select"
+                  value={activeSpread}
+                  onChange={(e) => handleSpreadPresetChange(e.target.value)}
+                  disabled={isDrawing || isShuffling}
+                >
+                  {SPREADS.map(s => (
+                    <option key={s.id} value={s.id}>{t('spread.name.' + s.id, s.name)}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="settings-col">
+                <label className="form-label">{t('form.draw_count_label', 'Số lá cần rút')}</label>
+                {activeSpread === 'custom' ? (
+                  <select
+                    className="custom-select"
+                    value={drawCount}
+                    onChange={(e) => setDrawCount(parseInt(e.target.value))}
+                    disabled={isDrawing || isShuffling}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                      <option key={n} value={n}>{n} {language === 'en' ? 'Cards' : 'Lá'}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="custom-select" style={{ opacity: 0.7, background: 'rgba(255,255,255,0.05)', cursor: 'not-allowed' }}>
+                    {drawCount} {language === 'en' ? 'Cards (Fixed)' : 'Lá (Cố định)'}
+                  </div>
+                )}
+              </div>
+
+              <div className="settings-col">
+                <label className="form-label">{t('form.perspective_label', 'Góc nhìn giải nghĩa')}</label>
+                <select
+                  className="custom-select"
+                  value={interpretationContext}
+                  onChange={(e) => setInterpretationContext(e.target.value)}
+                  disabled={isDrawing || isShuffling}
+                >
+                  {CONTEXTS.map(c => (
+                    <option key={c.id} value={c.id}>{t('context.' + c.id, c.name)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Reversed Options */}
+            <div className="settings-grid" style={{ alignItems: 'center' }}>
+              <div className="settings-col">
+                <label className="form-label">{t('form.reversed_mode', 'Chế độ lá ngược')}</label>
+                <div className="toggle-wrapper">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={reversedEnabled}
+                      onChange={(e) => setReversedEnabled(e.target.checked)}
+                      disabled={isDrawing || isShuffling}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="toggle-label-text">
+                    {reversedEnabled 
+                      ? (language === 'en' ? 'Enabled' : 'Đang bật') 
+                      : (language === 'en' ? 'Disabled' : 'Đang tắt')}
+                  </span>
+                </div>
+              </div>
+
+              {reversedEnabled && (
+                <div className="settings-col">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>{t('form.reversed_rate', 'Tỷ lệ lá ngược')}</label>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{Math.round(reversedRate * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={reversedRate}
+                    onChange={(e) => setReversedRate(parseFloat(e.target.value))}
+                    className="custom-range-slider"
+                    style={{
+                      '--track-fill': `${reversedRate * 100}%`,
+                      '--thumb-color': 'var(--gold-color)'
+                    }}
+                    disabled={isDrawing || isShuffling}
+                  />
+                </div>
+              )}
+            </div>
+
+            {validationError && (
+              <div className="error-alert">
+                {validationError}
+              </div>
+            )}
+
+            {/* Primary Action Button */}
+            <div className="action-area">
+              <button
+                type="button"
+                className="draw-trigger-btn"
+                onClick={handleDraw}
+                disabled={isDrawing || isShuffling || !question.trim()}
+              >
+                {isDrawing ? t('form.drawing_btn', 'Đang rút bài...') : t('form.draw_btn', 'RÚT BÀI TAROT')}
+              </button>
+
+              <button
+                type="button"
+                className="reset-weights-btn"
+                style={{ borderRadius: '20px', padding: '6px 20px' }}
+                onClick={handleResetApp}
+              >
+                {t('form.reset_btn', 'Đặt lại cài đặt')}
+              </button>
+            </div>
+
+          </div>
+
+          {/* Cards Result Grid Display */}
+          {(drawnCards.length > 0 || isDrawing) && (
+            <div className="draw-results-section glass-panel">
+              <div className="results-header-container">
+                <h2 className="results-title">{t('result.title', 'Kết Quả Rút Bài')}</h2>
+                {currentDrawnQuestion && (
+                  <p className="results-question-text">{t('result.question_prefix', 'Hỏi')}: "{currentDrawnQuestion}"</p>
+                )}
+              </div>
+
+              {isDrawing ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <p style={{ fontFamily: 'Cinzel', color: 'var(--gold-color)' }}>{t('result.loading_energy', 'Đang liên kết năng lượng...')}</p>
+                  <div className="spinner" style={{ margin: '20px auto 0' }}></div>
+                </div>
+              ) : (
+                <div className="cards-grid">
+                  {drawnCards.map((c, idx) => (
+                    <Card3D
+                      key={c.id}
+                      card={c}
+                      index={idx}
+                      revealDelay={idx * 200}
+                      onCardClick={setSelectedModalCard}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Basic Interpretation Section */}
+          {drawnCards.length > 0 && !isDrawing && summaryObj && (
+            <div className="interpretation-section glass-panel" style={{ marginTop: '32px' }}>
+              <h2 className="results-title" style={{ fontSize: '20px', borderBottom: '1px solid rgba(229,193,88,0.2)', paddingBottom: '12px', marginBottom: '20px', textAlign: 'left' }}>
+                {t('result.interpretation_title', '🔮 Luận giải cơ bản (Interpretation Overview)')}
+              </h2>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+                <span className="card-orientation-badge upright" style={{ background: 'rgba(229,193,88,0.12)', color: '#e5c158', border: '1px solid rgba(229,193,88,0.25)', fontSize: '12px' }}>
+                  {t('result.perspective_prefix', 'Góc nhìn')}: {t('context.' + summaryObj.context, CONTEXTS.find(c => c.id === summaryObj.context)?.name)}
+                </span>
+                {analyzeSpreadPatterns(drawnCards, language)?.tone.map((tVal, idx) => (
+                  <span key={idx} className="card-orientation-badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px' }}>
+                    {tVal}
+                  </span>
+                ))}
+              </div>
+
+              {/* 1. Điều trải bài đang muốn nói */}
+              <div className="summary-box" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(212,175,55,0.15)', padding: '18px', borderRadius: '8px', marginBottom: '24px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#e5c158', fontSize: '14px', textTransform: 'uppercase', fontFamily: "var(--font-heading)", letterSpacing: '0.5px' }}>
+                  {language === 'en' ? '🔮 What the spread wants to say' : '🔮 Điều trải bài đang muốn nói'}
+                </h4>
+                <p style={{ margin: 0, fontSize: '14px', color: '#dfdbf0', lineHeight: '1.6' }}>
+                  {summaryObj.intro}
+                </p>
+              </div>
+
+              {/* 2. Câu chuyện của từng lá theo vị trí */}
+              <h4 style={{ margin: '24px 0 16px 0', color: '#e5c158', fontSize: '14px', textTransform: 'uppercase', fontFamily: "var(--font-heading)", letterSpacing: '0.5px' }}>
+                {language === 'en' ? '🎴 Story of each card by position' : '🎴 Câu chuyện của từng lá theo vị trí'}
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+                {summaryObj.positions.map((p, idx) => {
+                  const isRev = p.card.orientation === 'reversed';
+                  return (
+                    <div key={idx} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', borderBottom: idx < summaryObj.positions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '16px' }}>
+                      <img
+                        src={import.meta.env.BASE_URL + p.card.image.replace(/^\//, '')}
+                        alt={p.card.name}
+                        style={{ width: '48px', height: '80px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(229,193,88,0.2)', flexShrink: 0, transform: isRev ? 'rotate(180deg)' : 'none' }}
+                      />
+                      <div style={{ flexGrow: 1 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '600', color: '#fff', fontSize: '14px' }}>{p.card.name}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--gold-color)' }}>({p.position})</span>
+                          <span className={`card-orientation-badge ${p.card.orientation}`} style={{ fontSize: '9px', padding: '1px 6px' }}>
+                            {isRev ? t('result.mini_reversed', 'Ngược') : t('result.mini_upright', 'Xuôi')}
+                          </span>
+                        </div>
+                        <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                          {p.humanMeaning}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: '1.4' }}>
+                          👉 {p.impact}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 3. Thông điệp chính */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                <h5 style={{ margin: '0 0 6px 0', color: '#e5c158', fontSize: '13px', fontFamily: "var(--font-heading)", textTransform: 'uppercase' }}>
+                  🌟 {language === 'en' ? 'Core Message' : 'Thông điệp chính'}
+                </h5>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                  {summaryObj.coreMessage}
+                </p>
+              </div>
+
+              {/* 4. Lời khuyên thực tế */}
+              <div style={{ background: 'rgba(229,193,88,0.04)', border: '1px solid rgba(229,193,88,0.15)', padding: '16px', borderRadius: '8px' }}>
+                <h5 style={{ margin: '0 0 6px 0', color: '#e5c158', fontSize: '13px', fontFamily: "var(--font-heading)", textTransform: 'uppercase' }}>
+                  ⚡ {language === 'en' ? 'Practical Advice' : 'Lời khuyên Thực tế'}
+                </h5>
+                <p style={{ margin: 0, fontSize: '13px', color: '#f3e5ab', lineHeight: '1.5', fontWeight: '500' }}>
+                  {summaryObj.advice}
+                </p>
+              </div>
+
+            </div>
+          )}
+
+          {/* AI Panel & Export Prompt Panel */}
+          {drawnCards.length > 0 && !isDrawing && (
+            <>
+              <AiInterpretationPanel
+                question={currentDrawnQuestion}
+                drawnCards={drawnCards}
+                spreadName={t('spread.name.' + activeSpread, SPREADS.find(s => s.id === activeSpread)?.name || 'Tùy chỉnh')}
+                spreadPositions={spreadPositions}
+                interpretationContext={t('context.' + interpretationContext, CONTEXTS.find(c => c.id === interpretationContext)?.name)}
+                interpretationSummary={formattedSummaryText}
+                getCardMeaning={getCardMeaning}
+                readingId={activeReadingId}
+                onSaveAiConversation={updateReadingData}
+                savedConversation={savedConversation}
+              />
+              <PromptExporter
+                question={currentDrawnQuestion}
+                drawnCards={drawnCards}
+                spreadName={t('spread.name.' + activeSpread, SPREADS.find(s => s.id === activeSpread)?.name || 'Tùy chỉnh')}
+                spreadPositions={spreadPositions}
+                interpretationContext={t('context.' + interpretationContext, CONTEXTS.find(c => c.id === interpretationContext)?.name)}
+                interpretationSummary={formattedSummaryText}
+                getCardMeaning={getCardMeaning}
+              />
+            </>
+          )}
+
+          </div>
+          )}
+
+        </section>
+
+        {/* Secondary Panels Below Draw Stage (Deck Pile, Weight Controls & History) */}
+        {/* ── Full-Width Session History ── */}
+        <section style={{ width: '100%', maxWidth: '1280px', margin: '28px auto 0' }}>
+          <div className="glass-panel history-panel" style={{ width: '100%' }}>
+            <div className="card-header-flex" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '14px', alignItems: 'center' }}>
+              <h3 className="settings-title" style={{ margin: 0 }}>
+                {t('history.title', 'Lịch sử trải bài')}
+                {isAuthenticated && history.length > 0 && ` (${history.length})`}
+              </h3>
+              {isAuthenticated && history.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsManageModalOpen(true)}
+                  style={{
+                    background: 'rgba(229, 193, 88, 0.1)',
+                    border: '1px solid rgba(229, 193, 88, 0.3)',
+                    borderRadius: 6,
+                    color: '#e5c158',
+                    padding: '4px 10px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  ⚙️ {t('history.manage_btn', 'Quản lý lịch sử')}
+                </button>
+              )}
+            </div>
+
+            {!isAuthenticated ? (
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px dashed rgba(229, 193, 88, 0.25)',
+                  borderRadius: 10,
+                  padding: '20px 16px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <span style={{ fontSize: '1.5rem' }}>🔒</span>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '0.85rem',
+                    color: 'rgba(255, 255, 255, 0.65)',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {t(
+                    'history.guest_notice',
+                    'Bạn cần phải đăng nhập để sử dụng tính năng lưu và quản lý lịch sử trải bài.'
+                  )}
+                </p>
+                <button
+                  onClick={login}
+                  style={{
+                    padding: '6px 16px',
+                    background: 'linear-gradient(135deg, #7c5cfc, #a78bfa)',
+                    border: 'none',
+                    borderRadius: 8,
+                    color: '#ffffff',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(124,92,252,0.3)',
+                  }}
+                >
+                  🔑 {t('auth.login_now', 'Đăng nhập ngay')}
+                </button>
+              </div>
+            ) : history.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', margin: '20px 0' }}>
+                {t('history.empty', 'Chưa có trải bài nào được ghi lại.')}
+              </p>
+            ) : (
+              <div className="history-list">
+                {history.slice(0, 5).map((item) => {
+                  const histSpreadName = item.spreadId 
+                    ? t('spread.name.' + item.spreadId, item.spreadName) 
+                    : (item.spreadName === 'Tùy chỉnh' || item.spreadName === 'Custom' ? t('history.custom', 'Tùy chỉnh') : item.spreadName);
+                  return (
+                    <div 
+                      key={item.id} 
+                      className="history-item" 
+                      onClick={() => handleSelectHistoryItem(item)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="history-meta">
+                        <span>{histSpreadName}</span>
+                        <span>{item.timestamp}</span>
+                      </div>
+                      <p className="history-question">"{item.question}"</p>
+                      <div className="history-cards-line">
+                        {item.cards.map((cHist, idx) => {
+                          const card = tarotCards.find(tc => tc.id === cHist.id);
+                          const cardNameTrans = card ? card.name : cHist.name;
+                          return (
+                            <span
+                              key={idx}
+                              className={`history-card-mini-badge ${cHist.orientation === 'reversed' ? 'reversed' : ''}`}
+                            >
+                              {cardNameTrans} {cHist.orientation === 'reversed' ? '↓' : '↑'}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {history.length > 5 && (
+                  <button
+                    onClick={() => setIsManageModalOpen(true)}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: '1px dashed rgba(229, 193, 88, 0.3)',
+                      borderRadius: 8,
+                      padding: '8px',
+                      color: '#e5c158',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      marginTop: 6,
+                    }}
+                  >
+                    {t('history.view_more', `Xem tất cả ${history.length} lần trải bài ➔`)}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* History Management Modal */}
+          <HistoryManagementModal
+            isOpen={isManageModalOpen}
+            onClose={() => setIsManageModalOpen(false)}
+            history={history}
+            tarotCards={tarotCards}
+            onSelect={handleSelectHistoryItem}
+            onDeleteMultiple={deleteMultipleReadings}
+            onClearAll={clearHistory}
+          />
+
+        </section>
+      </main>
+
+      {/* Card Detail Modal */}
+      {selectedModalCard && (
+        <div className="card-modal-overlay" onClick={() => setSelectedModalCard(null)}>
+          <div className="card-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setSelectedModalCard(null)}>×</button>
+
+            <div className="modal-left-col">
+              <div className="modal-card-wrapper">
+                <img
+                  src={import.meta.env.BASE_URL + selectedModalCard.image.replace(/^\//, '')}
+                  alt={selectedModalCard.name}
+                  className={`modal-card-image ${selectedModalCard.orientation === 'reversed' ? 'reversed' : ''}`}
+                />
+              </div>
+            </div>
+
+            <div className="modal-right-col">
+              <span className="modal-type">{selectedModalCard.arcana} Arcana {selectedModalCard.suit ? `• ${selectedModalCard.suit}` : ''}</span>
+              <h2 className="modal-title">{selectedModalCard.name}</h2>
+
+              <div className="modal-section">
+                <h4 className="modal-section-title">{t('modal.status_label', 'Trạng thái hiện tại')}</h4>
+                <span className={`card-orientation-badge ${selectedModalCard.orientation}`}>
+                  {selectedModalCard.orientation === 'reversed' 
+                    ? t('modal.orientation_reversed', 'Lá Ngược (Reversed)') 
+                    : t('modal.orientation_upright', 'Lá Xuôi (Upright)')}
+                </span>
+              </div>
+
+              <div className="modal-section">
+                <h4 className="modal-section-title">{t('modal.keywords_label', 'Từ khóa của lá bài')}</h4>
+                <div className="modal-keywords-flex">
+                  {selectedModalCard.orientation === 'reversed'
+                    ? selectedModalCard.reversedKeywords.map((kw, i) => (
+                      <span key={i} className="modal-kw-badge">{kw}</span>
+                    ))
+                    : selectedModalCard.uprightKeywords.map((kw, i) => (
+                      <span key={i} className="modal-kw-badge">{kw}</span>
+                    ))
+                  }
+                </div>
+              </div>
+
+              <div className="modal-section">
+                <h4 className="modal-section-title">{t('modal.details_title', 'Chi tiết bộ bài')}</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
+                  {t('modal.details_desc', 'Lá bài thứ {number} thuộc nhóm {arcana} Arcana. Rider-Waite-Smith Tarot Deck chuẩn 78 lá.')
+                    .replace('{number}', selectedModalCard.number)
+                    .replace('{arcana}', selectedModalCard.arcana)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="app-footer">
+        <p>
+          {t('footer.text', 'Tarot & AI Oracle App. Made with ❤️. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.')}
+        </p>
+      </footer>
+    </>
+  );
+}

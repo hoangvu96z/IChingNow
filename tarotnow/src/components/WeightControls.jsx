@@ -1,0 +1,170 @@
+import React from 'react';
+import { useLanguage } from '../context/LanguageContext.jsx';
+
+/**
+ * WeightControls Component
+ * Manages slider and numerical inputs for category weights with presets.
+ */
+export default function WeightControls({ weights, onChange, onPresetSelect }) {
+  const { t } = useLanguage();
+
+  const categories = [
+    { key: 'major', label: t('category.major', 'Major Arcana (Ẩn Chính)'), color: '#d4af37' },
+    { key: 'cups', label: t('category.cups', 'Cups (Cốc - Cảm xúc)'), color: '#4a90e2' },
+    { key: 'pentacles', label: t('category.pentacles', 'Pentacles (Tiền - Vật chất)'), color: '#2ecc71' },
+    { key: 'swords', label: t('category.swords', 'Swords (Kiếm - Trí tuệ)'), color: '#9b59b6' },
+    { key: 'wands', label: t('category.wands', 'Wands (Gậy - Hành động)'), color: '#e67e22' }
+  ];
+
+  const presets = [
+    { 
+      id: 'default',
+      name: t('preset.default', 'Mặc định (Đều)'), 
+      values: { major: 20, cups: 20, pentacles: 20, swords: 20, wands: 20 } 
+    },
+    { 
+      id: 'major_only',
+      name: t('preset.major_only', 'Chỉ Ẩn Chính (Major)'), 
+      values: { major: 100, cups: 0, pentacles: 0, swords: 0, wands: 0 } 
+    },
+    { 
+      id: 'minor_only',
+      name: t('preset.minor_only', 'Chỉ Ẩn Phụ (Minor)'), 
+      values: { major: 0, cups: 25, pentacles: 25, swords: 25, wands: 25 } 
+    },
+    { 
+      id: 'major_focus',
+      name: t('preset.major_focus', 'Thiên về Ẩn Chính'), 
+      values: { major: 50, cups: 12.5, pentacles: 12.5, swords: 12.5, wands: 12.5 } 
+    },
+    { 
+      id: 'cups_focus',
+      name: t('preset.cups_focus', 'Thiên về Cảm xúc (Cups)'), 
+      values: { major: 15, cups: 55, pentacles: 10, swords: 10, wands: 10 } 
+    },
+    { 
+      id: 'pentacles_focus',
+      name: t('preset.pentacles_focus', 'Thiên về Vật chất (Pentacles)'), 
+      values: { major: 15, cups: 10, pentacles: 55, swords: 10, wands: 10 } 
+    }
+  ];
+
+  const handleSliderChange = (key, val) => {
+    onChange({
+      ...weights,
+      [key]: parseFloat(val)
+    });
+  };
+
+  const handleRandomizeWeights = () => {
+    const keys = ['major', 'cups', 'pentacles', 'swords', 'wands'];
+    const newW = {};
+    keys.forEach(k => {
+      newW[k] = Math.floor(Math.random() * 80) + 10;
+    });
+    onChange(newW);
+  };
+
+  const handleResetWeights = () => {
+    onChange({ major: 20, cups: 20, pentacles: 20, swords: 20, wands: 20 });
+  };
+
+  // Calculate percentages for visual feedback
+  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  const getPercent = (val) => {
+    if (total === 0) return 0;
+    return Math.round((val / total) * 100);
+  };
+
+  return (
+    <div className="weight-settings-card">
+      <div className="card-header-flex">
+        <h3 className="settings-title">{t('weights.title', 'Cài đặt trọng số nhóm bài')}</h3>
+        <button 
+          type="button" 
+          className="reset-weights-btn"
+          onClick={handleResetWeights}
+        >
+          🔄 {t('weights.reset_btn', 'Đặt lại đều')}
+        </button>
+      </div>
+      <p className="settings-subtitle">{t('weights.subtitle', 'Điều chỉnh xác suất rút bài cho từng Arcana/Suit')}</p>
+
+      {/* Preset Badges */}
+      <div className="presets-container">
+        {presets.map((preset, idx) => (
+          <button
+            key={idx}
+            type="button"
+            className="preset-badge-btn"
+            onClick={() => onPresetSelect(preset.values)}
+          >
+            {preset.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Sliders list */}
+      <div className="weight-sliders-list">
+        {categories.map(({ key, label, color }) => {
+          const val = weights[key];
+          const pct = getPercent(val);
+
+          return (
+            <div key={key} className="slider-item">
+              <div className="slider-meta">
+                <span className="slider-label" style={{ '--accent-color': color }}>
+                  <span className="color-dot" style={{ backgroundColor: color }}></span>
+                  {label}
+                </span>
+                <span className="slider-value">
+                  {val} ({pct}%)
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={val}
+                onChange={(e) => handleSliderChange(key, e.target.value)}
+                className="custom-range-slider"
+                style={{ '--track-fill': `${val}%`, '--thumb-color': color }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Randomize Weights Button */}
+      <div style={{ marginTop: 16 }}>
+        <button
+          type="button"
+          className="preset-badge-btn"
+          style={{
+            width: '100%',
+            padding: '10px 16px',
+            borderRadius: 12,
+            border: '1px solid rgba(229, 193, 88, 0.4)',
+            background: 'rgba(229, 193, 88, 0.12)',
+            color: '#e5c158',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            textAlign: 'center',
+            transition: 'all 0.2s',
+          }}
+          onClick={handleRandomizeWeights}
+        >
+          🎲 {t('weights.random_btn', 'Trộn Trọng Số Ngẫu Nhiên')}
+        </button>
+      </div>
+
+      {total === 0 && (
+        <div className="error-alert">
+          {t('weights.warning_zero', 'Cảnh báo: Tổng trọng số bằng 0! Hãy điều chỉnh ít nhất một nhóm để tiếp tục rút bài.')}
+        </div>
+      )}
+    </div>
+  );
+}

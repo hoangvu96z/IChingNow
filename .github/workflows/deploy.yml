@@ -1,13 +1,37 @@
-name: 🚀 Deploy IChingNow
+name: 🚀 Deploy Apps
 
 on:
   push:
     branches:
-      - main   # Tự động deploy khi push lên branch main
+      - main
 
 jobs:
-  deploy:
-    name: Build & Deploy via FTP
+  # ─── Detect which app(s) changed ───
+  changes:
+    name: 🔍 Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      iching: ${{ steps.filter.outputs.iching }}
+      tarot: ${{ steps.filter.outputs.tarot }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔎 Check changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            iching:
+              - 'iching/**'
+            tarot:
+              - 'tarotnow/**'
+
+  # ─── Deploy IChing ───
+  deploy-iching:
+    name: 🔮 Deploy IChing
+    needs: changes
+    if: needs.changes.outputs.iching == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -19,31 +43,73 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: iching/package-lock.json
 
       - name: 📦 Install dependencies
         run: npm install
+        working-directory: iching
 
       - name: 🔨 Build
         run: npm run build
+        working-directory: iching
 
       - name: 🗑️ Xóa file cũ & Upload lên hosting
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           port: 21
-          # Server yêu cầu FTPS (FTP over TLS), không nhận plain FTP
           protocol: ftps
-          # loose = chấp nhận self-signed cert (hosting thường dùng)
           security: loose
-          # FTP account: jkokiwsihosting_admin
-          # FTP root = /home/jkokiwsihosting/public_html → chỉ cần ./kinhdich/
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/
+          local-dir: ./iching/dist/
           server-dir: ./kinhdich/
-          # Xóa toàn bộ file cũ trên server trước khi upload
           dangerous-clean-slate: true
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
+
+  # ─── Deploy TarotNow ───
+  deploy-tarot:
+    name: 🃏 Deploy TarotNow
+    needs: changes
+    if: needs.changes.outputs.tarot == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tarotnow/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm install
+        working-directory: tarotnow
+
+      - name: 🔨 Build
+        run: npm run build
+        working-directory: tarotnow
+
+      - name: 🗑️ Xóa file cũ & Upload lên hosting
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          port: 21
+          protocol: ftps
+          security: loose
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./tarotnow/dist/
+          server-dir: ./tarot/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/Cards-jpg/**
