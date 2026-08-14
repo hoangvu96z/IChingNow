@@ -294,6 +294,17 @@ body {
   100% { transform: rotateY(720deg) scale(1); }
 }
 
+/* ===== 3D COIN ENHANCEMENTS ===== */
+.ancient-coin-3d-wrapper {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.ancient-coin-3d-wrapper:hover {
+  filter: drop-shadow(0 6px 16px rgba(184, 134, 11, 0.4));
+}
+
 .coin {
   width: 56px;
   height: 56px;
