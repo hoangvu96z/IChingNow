@@ -3,12 +3,13 @@ import { castAllLines, castOneLine, COIN_LABELS, LINE_TYPE_LABELS } from '../log
 import { useLanguage } from '../context/LanguageContext.jsx';
 import AncientCoin3D from './AncientCoin3D.jsx';
 import HexagramDisplay from './HexagramDisplay.jsx';
+import MindfulnessModal from './MindfulnessModal.jsx';
 import { soundEngine } from '../utils/soundEffects.js';
 
 /**
- * QuickCastPanel — Gieo Nhanh 6 Hào với 3D Coins và Âm Thanh Đồng Tiền Phong Thủy
+ * QuickCastPanel — Gieo Nhanh 6 Hào với 3D Coins, Âm Thanh Đồng Tiền, và Chế Độ Tịnh Tâm 10s
  */
-export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-coin' }) {
+export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-coin', question = '' }) {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
 
@@ -19,6 +20,17 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
   const [currentCoins, setCurrentCoins] = useState(['ngua', 'ngua', 'ngua']);
   const [isTossing, setIsTossing] = useState(false);
   const [soundOn, setSoundOn] = useState(soundEngine.isSoundEnabled());
+
+  // Mindfulness 10s state (persisted to localStorage)
+  const [showMindfulnessModal, setShowMindfulnessModal] = useState(false);
+  const [mindfulnessOn, setMindfulnessOn] = useState(() => {
+    try {
+      const saved = localStorage.getItem('iching_mindfulness_enabled');
+      return saved === null ? true : saved === 'true';
+    } catch (e) {
+      return true;
+    }
+  });
 
   const isCastingRef = useRef(false);
 
@@ -31,6 +43,45 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
   function handleToggleSound() {
     const nextState = soundEngine.toggleSound();
     setSoundOn(nextState);
+  }
+
+  function handleToggleMindfulness() {
+    const next = !mindfulnessOn;
+    setMindfulnessOn(next);
+    try {
+      localStorage.setItem('iching_mindfulness_enabled', String(next));
+    } catch (e) {}
+  }
+
+  // Pre-cast trigger (check if mindfulness is enabled first)
+  function handleInitiateCast() {
+    if (isCasting || disabled) return;
+
+    // Check localStorage in case changed
+    let isMindful = mindfulnessOn;
+    try {
+      const saved = localStorage.getItem('iching_mindfulness_enabled');
+      if (saved !== null) isMindful = saved === 'true';
+    } catch (e) {}
+
+    if (isMindful) {
+      setShowMindfulnessModal(true);
+    } else {
+      executeCast();
+    }
+  }
+
+  function handleMindfulnessComplete() {
+    setShowMindfulnessModal(false);
+    executeCast();
+  }
+
+  function executeCast() {
+    if (castMode === 'sequential') {
+      handleSequentialCast();
+    } else {
+      handleInstantCast();
+    }
   }
 
   // ─── Gieo 6 hào tự động tuần tự với Animation & Âm thanh từng hào ───
@@ -112,6 +163,15 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
   const latestLine = accumulatedLines.length > 0 ? accumulatedLines[accumulatedLines.length - 1] : null;
 
   return (
+    <>
+    {/* 10s Mindfulness Modal */}
+    <MindfulnessModal
+      isOpen={showMindfulnessModal}
+      question={question}
+      onComplete={handleMindfulnessComplete}
+      onClose={() => setShowMindfulnessModal(false)}
+    />
+
     <div style={{
       display: 'flex',
       flexDirection: 'column',
@@ -128,41 +188,68 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
         borderRadius: '20px',
         border: '1.5px solid rgba(184,134,11,0.3)',
         boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.04), 0 8px 24px rgba(44,24,16,0.08)',
-        padding: '24px 20px',
+        padding: '20px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         position: 'relative'
       }}>
-        {/* Top controls: Mute/Unmute & Mode selector */}
+        {/* Top controls: Mute/Unmute, Mindfulness Toggle & Mode selector */}
         <div style={{
           width: '100%',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 8,
           marginBottom: 16
         }}>
-          {/* Sound Toggle */}
-          <button
-            type="button"
-            onClick={handleToggleSound}
-            className="btn-ghost"
-            style={{
-              padding: '4px 10px',
-              fontSize: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              borderRadius: 20,
-              background: soundOn ? 'rgba(26,107,74,0.1)' : 'rgba(44,24,16,0.06)',
-              color: soundOn ? 'var(--color-jade)' : 'var(--color-ink-muted)',
-              border: `1px solid ${soundOn ? 'rgba(26,107,74,0.3)' : 'rgba(44,24,16,0.15)'}`
-            }}
-            title={soundOn ? (isEn ? 'Sound on' : 'Đang bật âm thanh') : (isEn ? 'Muted' : 'Đã tắt âm thanh')}
-          >
-            <span>{soundOn ? '🔊' : '🔇'}</span>
-            <span>{soundOn ? (isEn ? 'Sound on' : 'Âm thanh bật') : (isEn ? 'Muted' : 'Tắt tiếng')}</span>
-          </button>
+          {/* Left: Sound & Mindfulness toggles */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Sound Toggle */}
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className="btn-ghost"
+              style={{
+                padding: '4px 9px',
+                fontSize: '0.72rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                borderRadius: 20,
+                background: soundOn ? 'rgba(26,107,74,0.1)' : 'rgba(44,24,16,0.06)',
+                color: soundOn ? 'var(--color-jade)' : 'var(--color-ink-muted)',
+                border: `1px solid ${soundOn ? 'rgba(26,107,74,0.3)' : 'rgba(44,24,16,0.15)'}`
+              }}
+              title={soundOn ? (isEn ? 'Sound on' : 'Đang bật âm thanh') : (isEn ? 'Muted' : 'Đã tắt âm thanh')}
+            >
+              <span>{soundOn ? '🔊' : '🔇'}</span>
+            </button>
+
+            {/* Mindfulness Toggle */}
+            <button
+              type="button"
+              onClick={handleToggleMindfulness}
+              className="btn-ghost"
+              style={{
+                padding: '4px 10px',
+                fontSize: '0.72rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                borderRadius: 20,
+                background: mindfulnessOn ? 'rgba(184,134,11,0.12)' : 'rgba(44,24,16,0.06)',
+                color: mindfulnessOn ? 'var(--color-gold)' : 'var(--color-ink-muted)',
+                border: `1px solid ${mindfulnessOn ? 'rgba(184,134,11,0.35)' : 'rgba(44,24,16,0.15)'}`,
+                fontWeight: mindfulnessOn ? 700 : 500
+              }}
+              title={mindfulnessOn ? (isEn ? '10s Mindful countdown enabled' : 'Đang bật tịnh tâm 10s') : (isEn ? 'Mindfulness skipped' : 'Đã tắt tịnh tâm')}
+            >
+              <span>🧘</span>
+              <span>{mindfulnessOn ? (isEn ? 'Mindful 10s: ON' : 'Tịnh tâm 10s: Bật') : (isEn ? 'Mindful 10s: OFF' : 'Tịnh tâm: Tắt')}</span>
+            </button>
+          </div>
 
           {/* Cast Mode Selector */}
           <div style={{
@@ -299,7 +386,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
 
       {/* Main CTA Button */}
       <button
-        onClick={castMode === 'sequential' ? handleSequentialCast : handleInstantCast}
+        onClick={handleInitiateCast}
         disabled={isCasting || disabled}
         className="btn-primary btn-cta"
         style={{
@@ -347,6 +434,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
           : t('panel.alg_desc_three_coin', 'Hệ thống sẽ mô phỏng tung 3 đồng xu 3D × 6 lần theo phương pháp kinh điển.')}
       </p>
     </div>
+    </>
   );
 }
 

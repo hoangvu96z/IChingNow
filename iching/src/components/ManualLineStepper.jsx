@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { castOneLine, coinsToLine, COIN_LABELS, LINE_TYPE_LABELS } from '../logic/castLines.js';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import AncientCoin3D from './AncientCoin3D.jsx';
+import MindfulnessModal from './MindfulnessModal.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { soundEngine } from '../utils/soundEffects.js';
 
@@ -9,9 +10,9 @@ const YAO_NAMES_VI = ['Hào Sơ (1)', 'Hào Nhị (2)', 'Hào Tam (3)', 'Hào T�
 const YAO_NAMES_EN = ['1st Line (Initial)', '2nd Line', '3rd Line', '4th Line', '5th Line (Ruler)', '6th Line (Top)'];
 
 /**
- * Stepper gieo từng hào 6 bước với 3D Coins và Âm thanh đồng tiền
+ * Stepper gieo từng hào 6 bước với 3D Coins, Âm thanh đồng tiền, và Chế độ Tịnh Tâm 10s
  */
-export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled, algorithm = 'three-coin' }) {
+export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled, algorithm = 'three-coin', question = '' }) {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
   const currentStep = completedLines.length; // 0..5
@@ -24,12 +25,53 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
   const [lastLine, setLastLine]         = useState(null);
   const [soundOn, setSoundOn]           = useState(soundEngine.isSoundEnabled());
 
+  // Mindfulness 10s state
+  const [showMindfulnessModal, setShowMindfulnessModal] = useState(false);
+  const [mindfulnessOn, setMindfulnessOn] = useState(() => {
+    try {
+      const saved = localStorage.getItem('iching_mindfulness_enabled');
+      return saved === null ? true : saved === 'true';
+    } catch (e) {
+      return true;
+    }
+  });
+
   function handleToggleSound() {
     const next = soundEngine.toggleSound();
     setSoundOn(next);
   }
 
-  async function handleToss() {
+  function handleToggleMindfulness() {
+    const next = !mindfulnessOn;
+    setMindfulnessOn(next);
+    try {
+      localStorage.setItem('iching_mindfulness_enabled', String(next));
+    } catch (e) {}
+  }
+
+  function handleInitiateToss() {
+    if (isTossing || isDone || disabled) return;
+
+    // Only prompt mindfulness on the very first line (Hào 1)
+    let isMindful = mindfulnessOn;
+    try {
+      const saved = localStorage.getItem('iching_mindfulness_enabled');
+      if (saved !== null) isMindful = saved === 'true';
+    } catch (e) {}
+
+    if (isMindful && currentStep === 0) {
+      setShowMindfulnessModal(true);
+    } else {
+      executeToss();
+    }
+  }
+
+  function handleMindfulnessComplete() {
+    setShowMindfulnessModal(false);
+    executeToss();
+  }
+
+  async function executeToss() {
     if (isTossing || isDone || disabled) return;
     setIsTossing(true);
     setLastLine(null);
@@ -88,6 +130,15 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
   const yaoNames = isEn ? YAO_NAMES_EN : YAO_NAMES_VI;
 
   return (
+    <>
+    {/* 10s Mindfulness Modal */}
+    <MindfulnessModal
+      isOpen={showMindfulnessModal}
+      question={question}
+      onComplete={handleMindfulnessComplete}
+      onClose={() => setShowMindfulnessModal(false)}
+    />
+
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
 
       {/* ─── Stepper 6 Hào ─── */}
@@ -145,33 +196,60 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
           alignItems: 'center',
           position: 'relative'
         }}>
-          {/* Header trong đĩa: Sound toggle & chế độ */}
+          {/* Header trong đĩa: Sound toggle, Mindfulness & Hào label */}
           <div style={{
             width: '100%',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 8,
             marginBottom: 12
           }}>
-            <button
-              type="button"
-              onClick={handleToggleSound}
-              className="btn-ghost"
-              style={{
-                padding: '3px 9px',
-                fontSize: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                borderRadius: 16,
-                background: soundOn ? 'rgba(26,107,74,0.1)' : 'rgba(44,24,16,0.06)',
-                color: soundOn ? 'var(--color-jade)' : 'var(--color-ink-muted)',
-                border: `1px solid ${soundOn ? 'rgba(26,107,74,0.3)' : 'rgba(44,24,16,0.15)'}`
-              }}
-            >
-              <span>{soundOn ? '🔊' : '🔇'}</span>
-              <span>{soundOn ? (isEn ? 'Sound on' : 'Bật tiếng') : (isEn ? 'Muted' : 'Tắt tiếng')}</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Sound Toggle */}
+              <button
+                type="button"
+                onClick={handleToggleSound}
+                className="btn-ghost"
+                style={{
+                  padding: '3px 9px',
+                  fontSize: '0.72rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderRadius: 16,
+                  background: soundOn ? 'rgba(26,107,74,0.1)' : 'rgba(44,24,16,0.06)',
+                  color: soundOn ? 'var(--color-jade)' : 'var(--color-ink-muted)',
+                  border: `1px solid ${soundOn ? 'rgba(26,107,74,0.3)' : 'rgba(44,24,16,0.15)'}`
+                }}
+              >
+                <span>{soundOn ? '🔊' : '🔇'}</span>
+              </button>
+
+              {/* Mindfulness Toggle */}
+              <button
+                type="button"
+                onClick={handleToggleMindfulness}
+                className="btn-ghost"
+                style={{
+                  padding: '3px 9px',
+                  fontSize: '0.72rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderRadius: 16,
+                  background: mindfulnessOn ? 'rgba(184,134,11,0.12)' : 'rgba(44,24,16,0.06)',
+                  color: mindfulnessOn ? 'var(--color-gold)' : 'var(--color-ink-muted)',
+                  border: `1px solid ${mindfulnessOn ? 'rgba(184,134,11,0.35)' : 'rgba(44,24,16,0.15)'}`,
+                  fontWeight: mindfulnessOn ? 700 : 500
+                }}
+                title={mindfulnessOn ? (isEn ? '10s Mindful countdown enabled' : 'Đang bật tịnh tâm 10s') : (isEn ? 'Mindfulness skipped' : 'Đã tắt tịnh tâm')}
+              >
+                <span>🧘</span>
+                <span>{mindfulnessOn ? (isEn ? 'Mindful 10s: ON' : 'Tịnh tâm 10s: Bật') : (isEn ? 'Mindful 10s: OFF' : 'Tịnh tâm: Tắt')}</span>
+              </button>
+            </div>
 
             <div style={{
               fontSize: '0.8rem',
@@ -328,7 +406,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
           {!manualMode ? (
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
-                onClick={handleToss}
+                onClick={handleInitiateToss}
                 disabled={isTossing}
                 className="btn-primary btn-cta"
                 style={{
@@ -399,5 +477,6 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
         </div>
       )}
     </div>
+    </>
   );
 }

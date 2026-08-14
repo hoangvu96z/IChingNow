@@ -169,6 +169,38 @@ class SoundEngine {
   }
 
   /**
+   * Gentle, soothing Singing Bowl / Zen Bell chime for the 10-second mindfulness focus
+   */
+  playMeditationBell() {
+    if (!this.enabled) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const harmonics = [
+      { f: 528, a: 0.22, d: 3.5 }, // 528Hz Solfeggio frequency (Love & clarity)
+      { f: 1056, a: 0.12, d: 2.5 },
+      { f: 1584, a: 0.06, d: 1.8 }
+    ];
+
+    harmonics.forEach(({ f, a, d }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, now);
+
+      gain.gain.setValueAtTime(a, now);
+      gain.gain.exponentialRampToValueAtTime(0.00001, now + d);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + d + 0.1);
+    });
+  }
+
+  /**
    * Resonant Tibetan Singing Bowl / Temple Gong chime when full hexagram is complete
    */
   playHexagramComplete() {
@@ -201,3 +233,4 @@ class SoundEngine {
 }
 
 export const soundEngine = new SoundEngine();
+

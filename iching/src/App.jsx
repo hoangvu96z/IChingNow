@@ -693,6 +693,7 @@ export default function App() {
                   onResult={handleQuickResult}
                   disabled={!canCast}
                   algorithm={formData.lucHaoAlgorithm}
+                  question={formData.question}
                 />
               ) : mode === 'manual-step' ? (
                 <ManualLineStepper
@@ -701,6 +702,7 @@ export default function App() {
                   onReset={handleReset}
                   disabled={!canCast}
                   algorithm={formData.lucHaoAlgorithm}
+                  question={formData.question}
                 />
               ) : (
                 /* mode === 'mai-hoa-time' | 'mai-hoa-serial' */
