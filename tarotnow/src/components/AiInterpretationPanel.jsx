@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { usePlan } from '../hooks/usePlan.js';
 import PricingModal from './PricingModal.jsx';
@@ -11,6 +11,236 @@ const PREDEFINED_MODELS = [
   { value: 'openrouter/poolside/laguna-xs-2.1:free', label: 'laguna-xs-2.1:free' },
   { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'gemma-4-26b-a4b-it:free' }
 ];
+
+// ─── Danh sách lời động viên / nhắc nhở vui nhộn & huyền bí theo chủ đề Tarot ───
+const TAROT_WAIT_QUOTES = {
+  vi: [
+    { icon: '🔮', title: 'Kết nối Trực giác', desc: 'Đang lắng nghe trực giác và kết nối năng lượng sâu thẳm của các lá bài...' },
+    { icon: '🎴', title: 'Thông điệp Ẩn số', desc: 'Các lá bài đang thì thầm, đan cài những bức tranh định mệnh sống động...' },
+    { icon: '✨', title: 'Tín hiệu Vũ trụ', desc: 'Vũ trụ đang gửi tín hiệu, chuẩn bị đón nhận thông điệp sáng tỏ nhất nhé...' },
+    { icon: '🪐', title: 'Hành tinh thuận hành', desc: 'Sao Thủy không hề nghịch hành, kiên nhẫn một tẹo là thông điệp xuất lộ ngay!' },
+    { icon: '☕', title: 'Thanh lọc Năng lượng', desc: 'Thả lỏng vai, thở nhẹ một nhịp để đón nhận nguồn năng lượng thuần khiết...' },
+    { icon: '🌟', title: 'Chiếu rọi Ánh sáng', desc: 'The Star và The Sun đang lan tỏa ánh sáng may mắn vào trải bài này...' },
+    { icon: '🎯', title: 'Sắp hoàn tất rồi!', desc: 'Chỉ còn vài giây nữa, toàn bộ bức tranh sẽ hiển thị rạng ngời và tròn vẹn ngay đây!' }
+  ],
+  en: [
+    { icon: '🔮', title: 'Intuitive Connection', desc: 'Tuning into cosmic frequencies and channeling your cards...' },
+    { icon: '🎴', title: 'Unfolding Archetypes', desc: 'The archetypes are whispering, weaving their deep divine narrative...' },
+    { icon: '✨', title: 'Cosmic Transmission', desc: 'The Universe is broadcasting clarity and wisdom for your question...' },
+    { icon: '🪐', title: 'Planetary Harmony', desc: 'No Mercury retrograde here, divine magic takes just a moment to brew!' },
+    { icon: '☕', title: 'Mindful Aura', desc: 'Take a gentle breath and relax your aura while the cards reveal...' },
+    { icon: '🌟', title: 'Celestial Blessings', desc: 'Channeling the radiant blessings of The Star and The Sun...' },
+    { icon: '🎯', title: 'Almost Complete!', desc: 'Synthesizing your full, crystal-clear reading right now...' }
+  ]
+};
+
+// ─── Component Animation Đợi Luận Giải Tarot Vũ Trụ ───
+function TarotWaitingAnimation({ isEn, retryInfo, elapsedSeconds }) {
+  const quotes = isEn ? TAROT_WAIT_QUOTES.en : TAROT_WAIT_QUOTES.vi;
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setQuoteIndex((prev) => (prev + 1) % quotes.length);
+        setFade(true);
+      }, 300);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [quotes.length]);
+
+  const currentQuote = quotes[quoteIndex] || quotes[0];
+
+  return (
+    <div style={{
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '30px 16px',
+      background: 'linear-gradient(180deg, rgba(28,23,46,0.85) 0%, rgba(13,10,25,0.95) 100%)',
+      borderRadius: '16px',
+      border: '1px solid rgba(229,193,88,0.25)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 0 20px rgba(167,139,250,0.06)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Background celestial glow */}
+      <div style={{
+        position: 'absolute',
+        top: '20%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 180,
+        height: 180,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)',
+        pointerEvents: 'none'
+      }} />
+
+      {/* Floating Glowing Tarot Card Visual */}
+      <div style={{ position: 'relative', width: 80, height: 110, marginBottom: 20 }}>
+        {/* Mystic Orbit Halo */}
+        <div style={{
+          position: 'absolute',
+          top: -12,
+          left: -12,
+          right: -12,
+          bottom: -12,
+          borderRadius: '50%',
+          border: '1px dashed rgba(229,193,88,0.4)',
+          animation: 'spin 14s linear infinite'
+        }}>
+          <span style={{ position: 'absolute', top: -6, left: '45%', fontSize: '0.8rem' }}>✨</span>
+          <span style={{ position: 'absolute', bottom: -6, left: '45%', fontSize: '0.8rem' }}>🌙</span>
+          <span style={{ position: 'absolute', left: -6, top: '45%', fontSize: '0.8rem' }}>⭐</span>
+          <span style={{ position: 'absolute', right: -6, top: '45%', fontSize: '0.8rem' }}>🔮</span>
+        </div>
+
+        {/* 3D Holographic Card */}
+        <div style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: 10,
+          background: 'linear-gradient(135deg, #2d1b4e 0%, #150f28 100%)',
+          border: '1.5px solid rgba(229,193,88,0.6)',
+          boxShadow: '0 0 24px rgba(229,193,88,0.3), 0 8px 16px rgba(0,0,0,0.5)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'cardHover 3s ease-in-out infinite',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {/* Card inner border */}
+          <div style={{
+            position: 'absolute',
+            inset: 4,
+            border: '1px solid rgba(229,193,88,0.25)',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <span style={{
+              fontSize: '2rem',
+              animation: 'starPulse 2s ease-in-out infinite',
+              filter: 'drop-shadow(0 0 8px rgba(229,193,88,0.8))'
+            }}>
+              🎴
+            </span>
+          </div>
+
+          {/* Shimmer sweep */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: '-100%',
+            width: '60%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
+            transform: 'skewX(-25deg)',
+            animation: 'cardShimmer 2.4s infinite'
+          }} />
+        </div>
+      </div>
+
+      {/* Rotating Quote Card */}
+      <div style={{
+        maxWidth: 500,
+        textAlign: 'center',
+        opacity: fade ? 1 : 0,
+        transform: fade ? 'translateY(0)' : 'translateY(6px)',
+        transition: 'opacity 0.3s ease, transform 0.3s ease',
+        minHeight: 64,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4
+      }}>
+        <div style={{
+          fontSize: '0.95rem',
+          fontWeight: 700,
+          color: '#e5c158',
+          fontFamily: 'var(--font-heading, serif)',
+          letterSpacing: '0.5px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6
+        }}>
+          <span>{currentQuote.icon}</span>
+          <span>{currentQuote.title}</span>
+        </div>
+        <div style={{
+          fontSize: '0.84rem',
+          color: '#dfdbf0',
+          lineHeight: 1.5,
+          fontStyle: 'italic',
+          padding: '0 12px'
+        }}>
+          "{currentQuote.desc}"
+        </div>
+      </div>
+
+      {/* Auto Retry indicator if triggered */}
+      {retryInfo && (
+        <div style={{
+          marginTop: 12,
+          padding: '4px 12px',
+          borderRadius: 20,
+          background: 'rgba(235,94,85,0.12)',
+          border: '1px solid rgba(235,94,85,0.3)',
+          color: '#eb5e55',
+          fontSize: '0.78rem',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          animation: 'fadeIn 0.3s ease'
+        }}>
+          <span>🔄</span>
+          <span>{retryInfo}</span>
+        </div>
+      )}
+
+      {/* Progress Bar & Timer */}
+      <div style={{ width: '80%', maxWidth: 360, marginTop: 16 }}>
+        <div style={{
+          height: 4,
+          background: 'rgba(255,255,255,0.08)',
+          borderRadius: 4,
+          overflow: 'hidden',
+          position: 'relative'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            width: '40%',
+            background: 'linear-gradient(90deg, #a78bfa, #e5c158)',
+            borderRadius: 4,
+            animation: 'shimmerSlide 1.8s ease-in-out infinite'
+          }} />
+        </div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: 6,
+          fontSize: '0.72rem',
+          color: 'var(--text-muted, #a69fbf)',
+          fontWeight: 500
+        }}>
+          <span>{isEn ? 'Synthesizing complete reading...' : 'Đang kết tinh trọn vẹn thông điệp...'}</span>
+          <span>{elapsedSeconds}s</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AiInterpretationPanel({ 
   question, 
@@ -41,7 +271,8 @@ export default function AiInterpretationPanel({
   const [interpretation, setInterpretation] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [statusText, setStatusText] = useState('');
+  const [retryStatus, setRetryStatus] = useState('');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const [modelsList, setModelsList] = useState(PREDEFINED_MODELS);
   const [loadingModels, setLoadingModels] = useState(false);
@@ -52,7 +283,8 @@ export default function AiInterpretationPanel({
   const [userQuestion, setUserQuestion] = useState('');
   const [askingFollowUp, setAskingFollowUp] = useState(false);
   const [followUpError, setFollowUpError] = useState('');
-  const [currentFollowUpAnswer, setCurrentFollowUpAnswer] = useState('');
+  const [followUpRetryStatus, setFollowUpRetryStatus] = useState('');
+  const [followUpElapsed, setFollowUpElapsed] = useState(0);
 
   const charCount = userQuestion.length;
   const isCharCountValid = charCount > 0 && charCount <= 2048;
@@ -63,6 +295,33 @@ export default function AiInterpretationPanel({
   const { isAuthenticated } = useAuth();
   const { canAsk, remaining, plan, canBonus, expiresAt, daysRemaining, isExpiringSoon, isOverride, consumeQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
   const [showPricing, setShowPricing] = useState(false);
+
+  // Timer cho loading state
+  useEffect(() => {
+    let timer = null;
+    if (loading) {
+      setElapsedSeconds(0);
+      timer = setInterval(() => {
+        setElapsedSeconds(s => s + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [loading]);
+
+  useEffect(() => {
+    let timer = null;
+    if (askingFollowUp) {
+      setFollowUpElapsed(0);
+      timer = setInterval(() => {
+        setFollowUpElapsed(s => s + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [askingFollowUp]);
 
   // Restore conversation từ savedConversation prop (khi load từ history)
   useEffect(() => {
@@ -250,47 +509,35 @@ export default function AiInterpretationPanel({
     return `${sysRole}\n\n${qLabel}\n"${question}"\n\n${dLabel}\n${cardsSection}\n${interpretationSummary ? `\n${sLabel}\n${interpretationSummary}\n` : ''}\n${gLabel}\n${instruction}\n\n${rLabel}\n${rBullets}`;
   };
 
-  const handleInterpret = async () => {
-    if (!drawnCards || drawnCards.length === 0) return;
+  // ─── HÀM GỌI AI CHỐNG MẤT KẾT NỐI VÀ TỰ ĐỘNG RETRY ───
+  const fetchAiWithRetry = async (messages, onStatusUpdate) => {
+    const fallbackModels = Array.from(new Set([
+      settings.model,
+      'combo1',
+      'openrouter/tencent/hy3:free'
+    ])).filter(Boolean);
 
-    // Check quota before calling AI
-    const quotaResult = await consumeQuota();
-    if (!quotaResult.ok) {
-      setShowPricing(true);
-      return;
-    }
+    const callEndpoint = getResolvedEndpoint(settings.endpoint);
+    const MAX_RETRIES_PER_MODEL = 2;
+    let lastError = null;
 
-    setLoading(true);
-    setError('');
-    setInterpretation('');
-    setStatusText(isEn ? 'Connecting to AI Server...' : 'Đang kết nối đến server AI...');
+    for (let modelIdx = 0; modelIdx < fallbackModels.length; modelIdx++) {
+      const currentModel = fallbackModels[modelIdx];
 
-    try {
-      const sysPrompt = isEn
-        ? `You are a professional Tarot reader, highly knowledgeable in Rider-Waite-Smith symbolism, Jungian archetypes, and holistic life guidance. Please interpret the drawn cards deeply, empathetically, and constructively. Help the user reflect on their situations instead of making superstitious predictions. Always respond in English.`
-        : `Bạn là một nhà giải nghĩa Tarot chuyên nghiệp, am hiểu sâu sắc về biểu tượng học Rider-Waite-Smith, các hình mẫu tâm lý học Jung và hướng dẫn cuộc sống toàn diện. Hãy giải nghĩa các lá bài đã rút một cách sâu sắc, thấu cảm và mang tính xây dựng. Giúp người dùng suy ngẫm về hoàn cảnh thay vì đưa ra các phán đoán mang tính bói toán mê tín. Luôn trả lời bằng tiếng Việt.`;
-
-
-      const userPrompt = getPromptText();
-
-      const fallbackModels = Array.from(new Set([
-        settings.model,
-        'combo1',
-        'openrouter/tencent/hy3:free'
-      ])).filter(Boolean);
-
-      let lastError = null;
-
-      for (let i = 0; i < fallbackModels.length; i++) {
-        const currentModel = fallbackModels[i];
+      for (let attempt = 1; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
         try {
-          setStatusText(
-            i === 0 
-              ? (isEn ? 'AI is reading the cards...' : 'AI đang chiêm nghiệm các lá bài...')
-              : `Mô hình ${fallbackModels[i - 1]} gặp sự cố, đang thử ${currentModel}...`
-          );
+          if (modelIdx > 0 || attempt > 1) {
+            const retryMsg = isEn
+              ? `Reconnecting with ${currentModel} (Attempt ${attempt}/${MAX_RETRIES_PER_MODEL})...`
+              : `Đang kết nối lại với ${currentModel} (Lần ${attempt}/${MAX_RETRIES_PER_MODEL})...`;
+            if (onStatusUpdate) onStatusUpdate(retryMsg);
+            await new Promise(r => setTimeout(r, 1200 * attempt));
+          } else {
+            if (onStatusUpdate) onStatusUpdate('');
+          }
 
-          const callEndpoint = getResolvedEndpoint(settings.endpoint);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
 
           const response = await fetch(`${callEndpoint}/chat/completions`, {
             method: 'POST',
@@ -300,24 +547,25 @@ export default function AiInterpretationPanel({
             },
             body: JSON.stringify({
               model: currentModel,
-              messages: [
-                { role: 'system', content: sysPrompt },
-                { role: 'user', content: userPrompt }
-              ],
+              messages,
               stream: true
-            })
+            }),
+            signal: controller.signal
           });
+
+          clearTimeout(timeoutId);
 
           if (!response.ok) {
             const errText = await response.text();
-            throw new Error(errText || `HTTP error ${response.status}`);
+            throw new Error(errText || `HTTP ${response.status}`);
           }
 
+          // Đọc toàn bộ stream vào bộ đệm, KHÔNG render từng từ dở dang
           const reader = response.body.getReader();
           const decoder = new TextDecoder('utf-8');
           let done = false;
           let buffer = '';
-          let resultText = '';
+          let accumulatedText = '';
 
           while (!done) {
             const { value, done: readerDone } = await reader.read();
@@ -339,44 +587,79 @@ export default function AiInterpretationPanel({
                   try {
                     const parsed = JSON.parse(jsonStr);
                     const chunkText = parsed.choices?.[0]?.delta?.content || '';
-                    resultText += chunkText;
-                    setInterpretation(resultText);
-                  } catch (err) {
-                    // Keep buffer processing
-                  }
+                    accumulatedText += chunkText;
+                  } catch (e) {}
                 }
               }
             }
           }
-          
-          // Successful run, exit loop
-          if (onSaveAiConversation && readingId && resultText) {
-            onSaveAiConversation(readingId, {
-              aiConversation: {
-                initialInterpretation: resultText,
-                initialTimestamp: new Date().toISOString(),
-                followUps: [],
-              }
-            });
+
+          if (!accumulatedText || accumulatedText.trim().length < 40) {
+            throw new Error('Dữ liệu Tarot trả về bị ngắt quãng hoặc không hoàn chỉnh');
           }
-          return;
+
+          return accumulatedText.trim();
         } catch (err) {
-          console.warn(`Model ${currentModel} failed:`, err);
+          console.warn(`[AI Request] Model ${currentModel} attempt ${attempt} failed:`, err);
           lastError = err;
-          // Clear any partial response so we don't end up with mixed texts
-          setInterpretation('');
         }
       }
+    }
 
-      if (lastError) {
-        throw lastError;
+    throw lastError || new Error('Không thể kết nối đến server AI sau nhiều lần thử.');
+  };
+
+  const handleInterpret = async () => {
+    if (!drawnCards || drawnCards.length === 0) return;
+
+    // Check quota before calling AI
+    const quotaResult = await consumeQuota();
+    if (!quotaResult.ok) {
+      setShowPricing(true);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setRetryStatus('');
+    setInterpretation('');
+
+    try {
+      const sysPrompt = isEn
+        ? `You are a professional Tarot reader, highly knowledgeable in Rider-Waite-Smith symbolism, Jungian archetypes, and holistic life guidance. Please interpret the drawn cards deeply, empathetically, and constructively. Help the user reflect on their situations instead of making superstitious predictions. Always respond in English.`
+        : `Bạn là một nhà giải nghĩa Tarot chuyên nghiệp, am hiểu sâu sắc về biểu tượng học Rider-Waite-Smith, các hình mẫu tâm lý học Jung và hướng dẫn cuộc sống toàn diện. Hãy giải nghĩa các lá bài đã rút một cách sâu sắc, thấu cảm và mang tính xây dựng. Giúp người dùng suy ngẫm về hoàn cảnh thay vì đưa ra các phán đoán mang tính bói toán mê tín. Luôn trả lời bằng tiếng Việt.`;
+
+      const userPrompt = getPromptText();
+
+      const messages = [
+        { role: 'system', content: sysPrompt },
+        { role: 'user', content: userPrompt }
+      ];
+
+      // Gọi AI với cơ chế retry tự động và gom kết quả toàn vẹn
+      const fullText = await fetchAiWithRetry(messages, (status) => {
+        setRetryStatus(status);
+      });
+
+      // Render 1 lần trọn vẹn
+      setInterpretation(fullText);
+
+      // Successful run, persist
+      if (onSaveAiConversation && readingId && fullText) {
+        onSaveAiConversation(readingId, {
+          aiConversation: {
+            initialInterpretation: fullText,
+            initialTimestamp: new Date().toISOString(),
+            followUps: [],
+          }
+        });
       }
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Error occurred while calling the AI server API.');
+      setError(err.message || (isEn ? 'Error occurred while calling the AI server API.' : 'Lỗi khi gọi API của server AI. Vui lòng bấm thử lại.'));
     } finally {
       setLoading(false);
-      setStatusText('');
+      setRetryStatus('');
     }
   };
 
@@ -444,7 +727,7 @@ export default function AiInterpretationPanel({
 
     setAskingFollowUp(true);
     setFollowUpError('');
-    setCurrentFollowUpAnswer('');
+    setFollowUpRetryStatus('');
 
     try {
       const sysPrompt = isEn
@@ -459,7 +742,6 @@ export default function AiInterpretationPanel({
         { role: 'assistant', content: interpretation }
       ];
 
-
       followUps.forEach(item => {
         messages.push({ role: 'user', content: item.question });
         messages.push({ role: 'assistant', content: item.answer });
@@ -467,92 +749,38 @@ export default function AiInterpretationPanel({
 
       messages.push({ role: 'user', content: questionToSend });
 
-      const fallbackModels = Array.from(new Set([settings.model, 'combo1', 'openrouter/tencent/hy3:free'])).filter(Boolean);
-      let lastErr = null;
-      let finalAns = '';
+      // Gọi AI với cơ chế retry tự động
+      const finalAns = await fetchAiWithRetry(messages, (status) => {
+        setFollowUpRetryStatus(status);
+      });
 
-      for (let i = 0; i < fallbackModels.length; i++) {
-        const currentModel = fallbackModels[i];
-        try {
-          const callEndpoint = getResolvedEndpoint(settings.endpoint);
-          const response = await fetch(`${callEndpoint}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(settings.apiKey ? { 'Authorization': `Bearer ${settings.apiKey}` } : {})
-            },
-            body: JSON.stringify({ model: currentModel, messages, stream: true })
-          });
+      const newFollowUp = {
+        id: Date.now().toString(),
+        question: questionToSend,
+        answer: finalAns,
+        questionTimestamp: new Date().toISOString(),
+        answerTimestamp: new Date().toISOString(),
+      };
+      const updatedFollowUps = [...followUps, newFollowUp];
+      setFollowUps(updatedFollowUps);
+      setUserQuestion('');
 
-          if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(errText || `HTTP error ${response.status}`);
+      // Persist follow-up lên server
+      if (onSaveAiConversation && readingId) {
+        onSaveAiConversation(readingId, {
+          aiConversation: {
+            initialInterpretation: interpretation,
+            initialTimestamp: savedConversation?.initialTimestamp || new Date().toISOString(),
+            followUps: updatedFollowUps,
           }
-
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder('utf-8');
-          let done = false;
-          let buffer = '';
-
-          while (!done) {
-            const { value, done: readerDone } = await reader.read();
-            done = readerDone;
-            if (value) {
-              buffer += decoder.decode(value, { stream: true });
-              let boundary = buffer.indexOf('\n');
-              while (boundary !== -1) {
-                const line = buffer.slice(0, boundary).trim();
-                buffer = buffer.slice(boundary + 1);
-                boundary = buffer.indexOf('\n');
-                if (line.startsWith('data: ')) {
-                  const jsonStr = line.slice(6).trim();
-                  if (jsonStr === '[DONE]') { done = true; break; }
-                  try {
-                    const parsed = JSON.parse(jsonStr);
-                    finalAns += parsed.choices?.[0]?.delta?.content || '';
-                    setCurrentFollowUpAnswer(finalAns);
-                  } catch (err) {}
-                }
-              }
-            }
-          }
-
-          const newFollowUp = {
-            id: Date.now().toString(),
-            question: questionToSend,
-            answer: finalAns,
-            questionTimestamp: new Date(Date.now() - Math.max(finalAns.length * 5, 1000)).toISOString(),
-            answerTimestamp: new Date().toISOString(),
-          };
-          const updatedFollowUps = [...followUps, newFollowUp];
-          setFollowUps(updatedFollowUps);
-          setUserQuestion('');
-          setCurrentFollowUpAnswer('');
-
-          // Persist follow-up lên server
-          if (onSaveAiConversation && readingId) {
-            onSaveAiConversation(readingId, {
-              aiConversation: {
-                initialInterpretation: interpretation,
-                initialTimestamp: savedConversation?.initialTimestamp || new Date().toISOString(),
-                followUps: updatedFollowUps,
-              }
-            });
-          }
-          return;
-        } catch (err) {
-          console.warn(`Follow-up model ${currentModel} failed:`, err);
-          lastErr = err;
-          setCurrentFollowUpAnswer('');
-        }
+        });
       }
-
-      if (lastErr) throw lastErr;
     } catch (err) {
       console.error(err);
-      setFollowUpError(err.message || 'Lỗi khi kết nối AI để trả lời câu hỏi.');
+      setFollowUpError(err.message || (isEn ? 'Error connecting to AI. Please try again.' : 'Lỗi khi kết nối AI để trả lời câu hỏi. Vui lòng bấm gửi lại.'));
     } finally {
       setAskingFollowUp(false);
+      setFollowUpRetryStatus('');
     }
   };
 
@@ -746,7 +974,7 @@ export default function AiInterpretationPanel({
         </div>
       )}
 
-      {/* Action and Interpretation */}
+      {/* Action and Initial Button */}
       {!interpretation && !loading && (
         <div style={{ textAlign: 'center', padding: '10px 0' }}>
           <button
@@ -768,44 +996,34 @@ export default function AiInterpretationPanel({
         </div>
       )}
 
-      {/* Loading state */}
+      {/* Loading state: Cosmic floating card + Rotating quotes + Timer */}
       {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '20px 0' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            border: '3px solid rgba(229,193,88,0.1)',
-            borderTop: '3px solid var(--gold-color)',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }} />
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>
-            {statusText}
-          </span>
-          {interpretation && (
-            <div style={{ width: '100%', textAlign: 'left', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(229,193,88,0.15)', borderRadius: '8px', padding: '16px', marginTop: '12px' }}>
-              <div dangerouslySetInnerHTML={{ __html: parseMarkdown(interpretation) }} />
-            </div>
-          )}
-        </div>
+        <TarotWaitingAnimation
+          isEn={isEn}
+          retryInfo={retryStatus}
+          elapsedSeconds={elapsedSeconds}
+        />
       )}
 
       {/* Error state */}
       {error && (
-        <div style={{ padding: '12px', background: 'rgba(235,94,85,0.08)', border: '1px solid rgba(235,94,85,0.2)', borderRadius: '8px', color: '#eb5e55', fontSize: '13px' }}>
-          <strong>Lỗi:</strong> {error}
-          <div style={{ marginTop: '8px' }}>
-            <button onClick={handleInterpret} className="copy-main-btn" style={{ padding: '4px 10px', fontSize: '12px', width: 'auto' }}>
-              Thử lại
+        <div style={{ padding: '14px', background: 'rgba(235,94,85,0.08)', border: '1px solid rgba(235,94,85,0.25)', borderRadius: '10px', color: '#eb5e55', fontSize: '13px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, marginBottom: 4 }}>
+            <span>⚠️</span> {isEn ? 'Connection issue:' : 'Chưa hoàn tất luận giải:'}
+          </div>
+          <div style={{ opacity: 0.9, lineHeight: 1.5 }}>{error}</div>
+          <div style={{ marginTop: '10px' }}>
+            <button onClick={handleInterpret} className="copy-main-btn" style={{ padding: '6px 14px', fontSize: '12px', width: 'auto' }}>
+              🔄 {isEn ? 'Try Again' : 'Thử lại ngay'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Final Interpretation Result */}
+      {/* Final Interpretation Result (Rendered All At Once) */}
       {!loading && interpretation && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(229,193,88,0.15)', borderRadius: '8px', padding: '20px' }}>
+          <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(229,193,88,0.18)', borderRadius: '10px', padding: '22px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
             <div dangerouslySetInnerHTML={{ __html: parseMarkdown(displayInterpretation) }} />
           </div>
 
@@ -852,12 +1070,26 @@ export default function AiInterpretationPanel({
               </div>
             )}
 
-            {/* Streaming current answer */}
-            {askingFollowUp && currentFollowUpAnswer && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <div style={{ maxWidth: '85%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px 12px 12px 12px', padding: '10px 14px' }}>
-                  <div style={{ fontSize: '0.82rem', color: '#dfdbf0', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{currentFollowUpAnswer}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'rgba(229,193,88,0.5)', marginTop: 3 }}>⏳ Đang trả lời...</div>
+            {/* Waiting box when asking follow-up */}
+            {askingFollowUp && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+                background: 'rgba(167,139,250,0.08)',
+                border: '1px dashed rgba(167,139,250,0.3)',
+                borderRadius: '10px',
+                animation: 'fadeIn 0.3s ease'
+              }}>
+                <div className="spinner" style={{ width: 16, height: 16, border: '2px solid rgba(229,193,88,0.2)', borderTop: '2px solid var(--gold-color, #e5c158)', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#e5c158' }}>
+                    {isEn ? 'AI is focusing on your Tarot question...' : 'AI đang thấu cảm và chuẩn bị câu trả lời hoàn chỉnh...'}
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #a69fbf)' }}>
+                    {followUpRetryStatus || (isEn ? `Synthesizing guidance (${followUpElapsed}s)...` : `Đang kết nối năng lượng lá bài (${followUpElapsed}s)...`)}
+                  </span>
                 </div>
               </div>
             )}
@@ -945,7 +1177,7 @@ export default function AiInterpretationPanel({
                       display: 'inline-flex', alignItems: 'center', gap: 6,
                     }}
                   >
-                    {askingFollowUp ? '⏳ Đang gửi...' : '💬 Gửi câu hỏi'}
+                    {askingFollowUp ? '⏳ Đang xử lý...' : '💬 Gửi câu hỏi'}
                   </button>
                 </div>
               </form>
@@ -958,16 +1190,35 @@ export default function AiInterpretationPanel({
         </div>
       )}
 
-
-
-      {/* Styling spin anim */}
+      {/* Global CSS animations for cosmic waiting */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        @keyframes cardHover {
+          0%, 100% { transform: translateY(0) rotate(-1deg); }
+          50% { transform: translateY(-8px) rotate(1.5deg); }
+        }
+        @keyframes starPulse {
+          0%, 100% { transform: scale(1); opacity: 0.85; }
+          50% { transform: scale(1.15); opacity: 1; }
+        }
+        @keyframes cardShimmer {
+          0% { left: -100%; }
+          100% { left: 200%; }
+        }
+        @keyframes shimmerSlide {
+          0% { left: -40%; }
+          100% { left: 100%; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
     </>
   );
 }
+
