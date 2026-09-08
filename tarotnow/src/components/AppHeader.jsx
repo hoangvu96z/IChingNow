@@ -8,6 +8,7 @@ import AuthUserBadge from './AuthUserBadge.jsx';
  *   logo: JSX node
  *   title: string
  *   subtitle: string
+ *   onLogoClick: fn
  *   navItems: Array<{ label, href, onClick, icon }>  — items shown in nav / drawer
  *   actions: JSX node  — primary action buttons (always shown desktop; in drawer mobile)
  *   onLanguageToggle: fn
@@ -18,6 +19,7 @@ export default function AppHeader({
   logo,
   title,
   subtitle,
+  onLogoClick,
   navItems = [],
   primaryAction,   // JSX — e.g. "Lập quẻ mới" button
   onLanguageToggle,
@@ -59,7 +61,7 @@ export default function AppHeader({
         drawerBg: '#1a0a06',
       }
     : {
-        bg: 'linear-gradient(135deg, #0f0622 0%, #1a0a38 50%, #0f0622 100%)',
+        bg: 'linear-gradient(135deg, #0f0622 0%, #1a1a38 50%, #0f0622 100%)',
         accent: '#e5c158',
         accentSoft: 'rgba(229,193,88,0.12)',
         text: 'rgba(255,255,255,0.85)',
@@ -113,8 +115,33 @@ export default function AppHeader({
           justifyContent: 'space-between',
           height: 56,
         }}>
-          {/* ── Logo ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* ── Logo / Brand ── */}
+          <div
+            onClick={() => {
+              if (onLogoClick) {
+                setDrawerOpen(false);
+                onLogoClick();
+              }
+            }}
+            role={onLogoClick ? "button" : undefined}
+            tabIndex={onLogoClick ? 0 : undefined}
+            onKeyDown={onLogoClick ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setDrawerOpen(false);
+                onLogoClick();
+              }
+            } : undefined}
+            className={onLogoClick ? "app-header-brand" : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              cursor: onLogoClick ? 'pointer' : 'default',
+              userSelect: 'none',
+            }}
+            title={title}
+          >
             {logo}
             <div>
               <div style={{
@@ -276,6 +303,15 @@ export default function AppHeader({
 
       {/* ── Responsive CSS ── */}
       <style>{`
+        .app-header-brand {
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .app-header-brand:hover {
+          opacity: 0.85;
+        }
+        .app-header-brand:active {
+          transform: scale(0.98);
+        }
         .app-header-desktop-nav { display: flex !important; }
         .app-header-hamburger { display: none !important; }
         .app-header-drawer { display: flex !important; }

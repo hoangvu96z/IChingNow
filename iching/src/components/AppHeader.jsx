@@ -8,6 +8,7 @@ import AuthUserBadge from './AuthUserBadge.jsx';
  *   logo: JSX node
  *   title: string
  *   subtitle: string
+ *   onLogoClick: fn
  *   navItems: Array<{ label, href, onClick, icon }>  — items shown in nav / drawer
  *   actions: JSX node  — primary action buttons (always shown desktop; in drawer mobile)
  *   onLanguageToggle: fn
@@ -18,8 +19,9 @@ export default function AppHeader({
   logo,
   title,
   subtitle,
+  onLogoClick,
   navItems = [],
-  primaryAction,   // JSX — e.g. "Lập quẻ mới" button
+  primaryAction,
   onLanguageToggle,
   languageLabel,
 }) {
@@ -59,7 +61,7 @@ export default function AppHeader({
         drawerBg: '#1a0a06',
       }
     : {
-        bg: 'linear-gradient(135deg, #0f0622 0%, #1a0a38 50%, #0f0622 100%)',
+        bg: 'linear-gradient(135deg, #0f0622 0%, #1a1a38 50%, #0f0622 100%)',
         accent: '#e5c158',
         accentSoft: 'rgba(229,193,88,0.12)',
         text: 'rgba(255,255,255,0.85)',
@@ -113,8 +115,33 @@ export default function AppHeader({
           justifyContent: 'space-between',
           height: 56,
         }}>
-          {/* ── Logo ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* ── Logo / Brand ── */}
+          <div
+            onClick={() => {
+              if (onLogoClick) {
+                setDrawerOpen(false);
+                onLogoClick();
+              }
+            }}
+            role={onLogoClick ? "button" : undefined}
+            tabIndex={onLogoClick ? 0 : undefined}
+            onKeyDown={onLogoClick ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setDrawerOpen(false);
+                onLogoClick();
+              }
+            } : undefined}
+            className={onLogoClick ? "app-header-brand" : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              cursor: onLogoClick ? 'pointer' : 'default',
+              userSelect: 'none',
+            }}
+            title={title}
+          >
             {logo}
             <div>
               <div style={{
@@ -138,54 +165,107 @@ export default function AppHeader({
           <div className="app-header-desktop-nav" style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 20,
+            gap: 12,
           }}>
             {navItems.map((item, i) => (
               item.href
-                ? <a key={i} href={item.href} target={item.external ? '_blank' : undefined}
+                ? <a
+                    key={i}
+                    href={item.href}
+                    target={item.external ? '_blank' : undefined}
                     rel={item.external ? 'noopener noreferrer' : undefined}
-                    style={{ color: colors.textMuted, textDecoration: 'none', fontSize: '0.875rem', transition: 'color 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.color = colors.accent}
-                    onMouseLeave={e => e.currentTarget.style.color = colors.textMuted}
+                    style={{
+                      color: colors.text,
+                      textDecoration: 'none',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      border: `1px solid ${colors.border}`,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = colors.accent;
+                      e.currentTarget.style.borderColor = colors.accent;
+                      e.currentTarget.style.background = colors.accentSoft;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = colors.text;
+                      e.currentTarget.style.borderColor = colors.border;
+                      e.currentTarget.style.background = 'transparent';
+                    }}
                   >{item.icon} {item.label}</a>
-                : <button key={i} onClick={item.onClick}
-                    style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: '0.875rem', transition: 'color 0.2s', padding: '4px 0' }}
-                    onMouseEnter={e => e.currentTarget.style.color = colors.accent}
-                    onMouseLeave={e => e.currentTarget.style.color = colors.textMuted}
+                : <button
+                    key={i}
+                    onClick={item.onClick}
+                    style={{
+                      background: 'none',
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: 6,
+                      color: colors.text,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      padding: '6px 12px',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = colors.accent;
+                      e.currentTarget.style.borderColor = colors.accent;
+                      e.currentTarget.style.background = colors.accentSoft;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = colors.text;
+                      e.currentTarget.style.borderColor = colors.border;
+                      e.currentTarget.style.background = 'transparent';
+                    }}
                   >{item.icon} {item.label}</button>
             ))}
 
-            {/* Language toggle */}
             {onLanguageToggle && (
-              <button onClick={onLanguageToggle} style={{
-                background: colors.accentSoft,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 6,
-                color: colors.accent,
-                padding: '5px 10px',
-                cursor: 'pointer',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = `rgba(${isIching ? '212,160,23' : '229,193,88'},0.25)`}
-              onMouseLeave={e => e.currentTarget.style.background = colors.accentSoft}
+              <button
+                onClick={onLanguageToggle}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 6,
+                  color: colors.textMuted,
+                  cursor: 'pointer',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  padding: '6px 10px',
+                  transition: 'all 0.2s',
+                  fontFamily: 'monospace',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = colors.accent;
+                  e.currentTarget.style.borderColor = colors.accent;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = colors.textMuted;
+                  e.currentTarget.style.borderColor = colors.border;
+                }}
               >{languageLabel}</button>
             )}
 
             <AuthUserBadge />
 
-            {primaryAction && <div>{primaryAction}</div>}
+            {primaryAction}
           </div>
 
-          {/* ── Hamburger (Mobile only) ── */}
+          {/* ── Hamburger (Mobile) ── */}
           <button
             className="app-header-hamburger"
             style={hamburgerStyle}
-            onClick={() => setDrawerOpen(v => !v)}
-            aria-label="Menu"
-            onMouseEnter={e => e.currentTarget.style.background = colors.accentSoft}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            onClick={() => setDrawerOpen(o => !o)}
+            aria-label="Toggle navigation"
+            aria-expanded={drawerOpen}
           >
             <span style={barStyle(drawerOpen, 0)} />
             <span style={barStyle(drawerOpen, 1)} />
@@ -194,7 +274,7 @@ export default function AppHeader({
         </div>
       </header>
 
-      {/* ── Mobile Drawer Overlay ── */}
+      {/* ── Backdrop (Mobile) ── */}
       {drawerOpen && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 199,
@@ -223,12 +303,10 @@ export default function AppHeader({
           gap: 16,
         }}
       >
-        {/* User badge */}
         <div style={{ paddingBottom: 12, borderBottom: `1px solid ${colors.border}` }}>
           <AuthUserBadge mobileInline />
         </div>
 
-        {/* Nav links */}
         {navItems.map((item, i) => (
           item.href
             ? <a key={i} href={item.href} target={item.external ? '_blank' : undefined}
@@ -251,7 +329,6 @@ export default function AppHeader({
               >{item.icon} {item.label}</button>
         ))}
 
-        {/* Language toggle */}
         {onLanguageToggle && (
           <button onClick={() => { onLanguageToggle(); setDrawerOpen(false); }} style={{
             background: colors.accentSoft,
@@ -266,7 +343,6 @@ export default function AppHeader({
           }}>{languageLabel}</button>
         )}
 
-        {/* Primary action */}
         {primaryAction && (
           <div onClick={() => setDrawerOpen(false)}>
             {primaryAction}
@@ -276,6 +352,15 @@ export default function AppHeader({
 
       {/* ── Responsive CSS ── */}
       <style>{`
+        .app-header-brand {
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .app-header-brand:hover {
+          opacity: 0.85;
+        }
+        .app-header-brand:active {
+          transform: scale(0.98);
+        }
         .app-header-desktop-nav { display: flex !important; }
         .app-header-hamburger { display: none !important; }
         .app-header-drawer { display: flex !important; }

@@ -315,6 +315,7 @@ export default function App() {
   };
 
   const handleResetApp = () => {
+    setActiveMode('random');
     setQuestion('');
     setDrawnCards([]);
     setCurrentDrawnQuestion('');
@@ -329,6 +330,16 @@ export default function App() {
       wands: 20
     });
     setInterpretationContext('general');
+    setIsShuffling(false);
+    setIsDrawing(false);
+    setSelectedModalCard(null);
+    setIsManageModalOpen(false);
+    setActiveReadingId(null);
+    setSavedConversation(null);
+    if (window.location.search) {
+      window.history.pushState({}, '', window.location.pathname);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const activeSpreadObj = SPREADS.find(s => s.id === activeSpread);
@@ -397,6 +408,7 @@ ${summaryObj.advice}
       {/* ===== HEADER ===== */}
       <AppHeader
         theme="tarot"
+        onLogoClick={handleResetApp}
         logo={
           <div style={{
             width: 20,

@@ -588,13 +588,20 @@ export default function App() {
     setHasPickedMethod(false);
   }
 
-  // Lập quẻ mới hoàn toàn: clear cả form lẫn state
+  // Lập quẻ mới hoàn toàn: clear cả form lẫn state, quay về trang chủ
   function handleFullReset() {
     setFormData(getDefaultForm());
     setLines([]);
     setResult(null);
     setMaiHoaResult(null);
     setHasPickedMethod(false);
+    setMode('quick');
+    setActiveReadingId(null);
+    setIsManageModalOpen(false);
+    if (window.location.search) {
+      window.history.pushState({}, '', window.location.pathname);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const canCast = formData.question.trim().length > 0;
@@ -605,6 +612,7 @@ export default function App() {
       {/* ===== HEADER ===== */}
       <AppHeader
         theme="iching"
+        onLogoClick={handleFullReset}
         logo={
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {[true, false, true].map((yang, i) => (
