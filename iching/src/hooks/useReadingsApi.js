@@ -5,7 +5,11 @@ const SSO_BASE = import.meta.env.VITE_SSO_URL || '';
 const APP = 'iching';
 
 function getToken() {
-  return localStorage.getItem('sso_token');
+  try {
+    return localStorage.getItem('sso_token');
+  } catch {
+    return null;
+  }
 }
 
 function authHeaders() {

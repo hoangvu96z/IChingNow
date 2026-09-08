@@ -3,8 +3,12 @@ import { useState, useCallback, useEffect } from 'react';
 const SSO_BASE = import.meta.env.VITE_SSO_URL || '';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('sso_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  try {
+    const token = localStorage.getItem('sso_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
 }
 
 export function usePlan(isAuthenticated) {

@@ -387,11 +387,12 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739', // Enforced default
       model: formSettings.model
     };
-    setSettings(newSettings);
-    localStorage.setItem('iching_ai_settings', JSON.stringify({
-      endpoint: newSettings.endpoint,
-      model: newSettings.model
-    }));
+    try {
+      localStorage.setItem('iching_ai_settings', JSON.stringify({
+        endpoint: newSettings.endpoint,
+        model: newSettings.model
+      }));
+    } catch {}
     setShowSettings(false);
     fetchModels(newSettings);
   };

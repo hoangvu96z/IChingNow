@@ -92,12 +92,25 @@ function SessionExpiredToast({ visible, onClose, onLogin }) {
   );
 }
 
+// Safe localStorage wrapper để chống crash khi chạy trên Private Browsing chặn storage
+const safeStorage = {
+  getItem: (key) => {
+    try { return localStorage.getItem(key); } catch { return null; }
+  },
+  setItem: (key, val) => {
+    try { localStorage.setItem(key, val); } catch {}
+  },
+  removeItem: (key) => {
+    try { localStorage.removeItem(key); } catch {}
+  }
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   // Track nếu user đã từng đăng nhập thành công (để phân biệt với lần đầu vào app)
-  const hadToken = useRef(!!localStorage.getItem('sso_token'));
+  const hadToken = useRef(!!safeStorage.getItem('sso_token'));
 
   const fetchUser = useCallback(async () => {
     try {
@@ -106,21 +119,21 @@ export function AuthProvider({ children }) {
       const tokenFromUrl = urlParams.get('sso_token');
 
       if (tokenFromUrl) {
-        localStorage.setItem('sso_token', tokenFromUrl);
+        safeStorage.setItem('sso_token', tokenFromUrl);
         // Xóa sso_token khỏi thanh địa chỉ URL mà không reload trang
         urlParams.delete('sso_token');
         const newSearch = urlParams.toString();
         const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
         window.history.replaceState({}, document.title, newUrl);
         // Xóa flag logout vì user đang đăng nhập lại
-        localStorage.removeItem('sso_logged_out');
+        safeStorage.removeItem('sso_logged_out');
         hadToken.current = true;
         // Ẩn toast nếu đang hiện
         setSessionExpired(false);
       }
 
       // 2. Đọc token từ localStorage
-      const storedToken = localStorage.getItem('sso_token');
+      const storedToken = safeStorage.getItem('sso_token');
       const headers = {};
       if (storedToken) {
         headers['Authorization'] = `Bearer ${storedToken}`;
@@ -136,17 +149,17 @@ export function AuthProvider({ children }) {
 
       if (data.user) {
         // Xóa flag logout khi xác thực thành công
-        localStorage.removeItem('sso_logged_out');
+        safeStorage.removeItem('sso_logged_out');
         setUser(data.user);
         hadToken.current = true;
         setSessionExpired(false);
         if (data.token) {
-          localStorage.setItem('sso_token', data.token);
+          safeStorage.setItem('sso_token', data.token);
         }
       } else {
         // User null → kiểm tra xem trước đó có token không (= token hết hạn)
         const wasLoggedIn = hadToken.current || !!storedToken;
-        localStorage.removeItem('sso_token');
+        safeStorage.removeItem('sso_token');
         setUser(null);
 
         if (wasLoggedIn) {
@@ -157,9 +170,9 @@ export function AuthProvider({ children }) {
       }
     } catch {
       // Lỗi network hoặc server → nếu có token cũ thì coi như expired
-      const storedToken = localStorage.getItem('sso_token');
+      const storedToken = safeStorage.getItem('sso_token');
       if (storedToken || hadToken.current) {
-        localStorage.removeItem('sso_token');
+        safeStorage.removeItem('sso_token');
         setSessionExpired(true);
         hadToken.current = false;
       }
@@ -179,8 +192,8 @@ export function AuthProvider({ children }) {
           const payload = JSON.parse(e.newValue);
           if (payload?.type === 'logout') {
             // Tab khác đã logout → xóa local state, không gọi lại /sso/me
-            localStorage.removeItem('sso_token');
-            localStorage.setItem('sso_logged_out', '1');
+            safeStorage.removeItem('sso_token');
+            safeStorage.setItem('sso_logged_out', '1');
             setUser(null);
             hadToken.current = false;
             return;
@@ -192,9 +205,9 @@ export function AuthProvider({ children }) {
 
     // Khi tab lấy lại focus, kiểm tra lại session (nhưng không re-auth nếu đã logout)
     const handleFocus = () => {
-      const loggedOut = localStorage.getItem('sso_logged_out');
+      const loggedOut = safeStorage.getItem('sso_logged_out');
       if (loggedOut) {
-        localStorage.removeItem('sso_token');
+        safeStorage.removeItem('sso_token');
         setUser(null);
         return;
       }
@@ -222,7 +235,7 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      const storedToken = localStorage.getItem('sso_token');
+      const storedToken = safeStorage.getItem('sso_token');
       const headers = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
 
       // Call SSO logout API to invalidate server-side session/cookie (xóa ALL sessions của user)
@@ -235,10 +248,10 @@ export function AuthProvider({ children }) {
       console.error('Logout API failed', e);
     } finally {
       // Always clear local state regardless of API result
-      localStorage.removeItem('sso_token');
+      safeStorage.removeItem('sso_token');
       // Đặt flag để ngăn tự đăng nhập lại khi SSO page reload
-      localStorage.setItem('sso_logged_out', '1');
-      localStorage.setItem('vInfiSSO-state', JSON.stringify({ type: 'logout', t: Date.now() }));
+      safeStorage.setItem('sso_logged_out', '1');
+      safeStorage.setItem('vInfiSSO-state', JSON.stringify({ type: 'logout', t: Date.now() }));
       setUser(null);
       hadToken.current = false;
       // Không hiện toast khi user chủ động logout
