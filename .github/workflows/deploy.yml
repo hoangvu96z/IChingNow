@@ -13,6 +13,7 @@ jobs:
     outputs:
       iching: ${{ steps.filter.outputs.iching }}
       tarot: ${{ steps.filter.outputs.tarot }}
+      tuvi: ${{ steps.filter.outputs.tuvi }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -26,6 +27,8 @@ jobs:
               - 'iching/**'
             tarot:
               - 'tarotnow/**'
+            tuvi:
+              - 'tuvinow/**'
 
   # ─── Deploy IChing ───
   deploy-iching:
@@ -113,3 +116,47 @@ jobs:
             **/.git*/**
             **/node_modules/**
             **/Cards-jpg/**
+
+  # ─── Deploy TuViNow ───
+  deploy-tuvi:
+    name: 🌟 Deploy TuViNow
+    needs: changes
+    if: needs.changes.outputs.tuvi == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tuvinow/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm install
+        working-directory: tuvinow
+
+      - name: 🔨 Build
+        run: npm run build
+        working-directory: tuvinow
+
+      - name: 🗑️ Xóa file cũ & Upload lên hosting
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          port: 21
+          protocol: ftps
+          security: loose
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./tuvinow/dist/
+          server-dir: ./tuvi/
+          dangerous-clean-slate: true
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+

@@ -5,12 +5,16 @@
   "scripts": {
     "dev:iching": "npm run dev --prefix iching",
     "dev:tarot": "npm run dev --prefix tarotnow",
+    "dev:tuvi": "npm run dev --prefix tuvinow",
     "build:iching": "npm run build --prefix iching",
     "build:tarot": "npm run build --prefix tarotnow",
+    "build:tuvi": "npm run build --prefix tuvinow",
     "install:iching": "npm install --prefix iching",
     "install:tarot": "npm install --prefix tarotnow",
-    "install:all": "npm install --prefix iching && npm install --prefix tarotnow",
+    "install:tuvi": "npm install --prefix tuvinow",
+    "install:all": "npm install --prefix iching && npm install --prefix tarotnow && npm install --prefix tuvinow",
     "lint:iching": "npm run lint --prefix iching",
-    "lint:tarot": "npm run lint --prefix tarotnow"
+    "lint:tarot": "npm run lint --prefix tarotnow",
+    "lint:tuvi": "npm run lint --prefix tuvinow"
   }
 }
