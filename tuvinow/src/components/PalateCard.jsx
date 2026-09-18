@@ -84,11 +84,11 @@ export default function PalateCard({ palace }) {
           );
         })}
 
-        {/* Tứ Hóa inline */}
+        {/* Tứ Hóa badges */}
         {hoaStars.length > 0 && (
-          <div className="phu-tinh" style={{ marginTop: 1 }}>
+          <div className="hoa-badge-container">
             {hoaStars.map((h, i) => (
-              <span key={i} className={getHoaClass(h)} style={{ marginRight: 4 }}>
+              <span key={i} className={`hoa-pill ${getHoaClass(h)}`}>
                 {HOA_SYMBOLS[h] || h}
               </span>
             ))}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import { anLaSoTuVi } from './utils/tuViEngine';
 import BirthInputForm from './components/BirthInputForm.jsx';
@@ -42,6 +42,19 @@ function StarParticles() {
 export default function App() {
   const { isAuthenticated, user, login, logout } = useAuth();
   
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('tuvinow_theme') || 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('tuvinow_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
+
   const [chartResult, setChartResult] = useState(null);
   const [inputData, setInputData] = useState(null);
   const [showForm, setShowForm] = useState(true);
@@ -93,6 +106,24 @@ export default function App() {
               ✦ Lập lá số mới
             </button>
           )}
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={theme === 'light' ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
+            aria-label="Toggle theme"
+            type="button"
+            id="theme-toggle-btn"
+          >
+            <span className={`theme-toggle-icon ${theme === 'dark' ? 'active' : ''}`}>
+              {theme === 'light' ? '☀️' : '🌙'}
+            </span>
+            <div className="theme-toggle-track">
+              <div className="theme-toggle-thumb" />
+            </div>
+            <span className="theme-toggle-label">
+              {theme === 'light' ? 'Sáng' : 'Tối'}
+            </span>
+          </button>
           <AuthUserBadge />
         </div>
       </header>

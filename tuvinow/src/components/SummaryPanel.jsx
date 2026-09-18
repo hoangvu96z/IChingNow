@@ -83,9 +83,9 @@ export default function SummaryPanel({ result, inputData }) {
         <div className="summary-item">
           <div className="summary-item-label">Tuần Không / Triệt Không</div>
           <div className="summary-item-value">
-            <span style={{ color: '#64b5f6' }}>Tuần: {tuanCung.join(', ')}</span>
+            <span className="summary-badge-tuan">Tuần: {tuanCung.join(', ')}</span>
             {' · '}
-            <span style={{ color: '#ef5350' }}>Triệt: {trietCung.join(', ')}</span>
+            <span className="summary-badge-triet">Triệt: {trietCung.join(', ')}</span>
           </div>
         </div>
       </div>
