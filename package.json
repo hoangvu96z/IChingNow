@@ -9,6 +9,7 @@
     "build:iching": "npm run build --prefix iching",
     "build:tarot": "npm run build --prefix tarotnow",
     "build:tuvi": "npm run build --prefix tuvinow",
+    "build:all": "npm run build --prefix iching && npm run build --prefix tarotnow && npm run build --prefix tuvinow",
     "install:iching": "npm install --prefix iching",
     "install:tarot": "npm install --prefix tarotnow",
     "install:tuvi": "npm install --prefix tuvinow",

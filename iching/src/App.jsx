@@ -16,6 +16,8 @@ import HistoryList from './components/HistoryList.jsx';
 import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
 import AppHeader from './components/AppHeader.jsx';
+import AppFooter from '@shared/components/AppFooter.jsx';
+import { ichingTheme } from '@shared/themes/iching.js';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -611,8 +613,10 @@ export default function App() {
 
       {/* ===== HEADER ===== */}
       <AppHeader
-        theme="iching"
+        appId="iching"
+        colors={ichingTheme}
         onLogoClick={handleFullReset}
+        useAuthHook={useAuth}
         logo={
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {[true, false, true].map((yang, i) => (
@@ -627,13 +631,6 @@ export default function App() {
         }
         title="易 IChingNow"
         subtitle={t('app.subtitle', 'Lập Quẻ Kinh Dịch')}
-        navItems={[
-          {
-            label: t('nav.tarot', '🃏 Xem Tarot'),
-            href: 'https://vunph.id.vn/tarot/',
-            external: true,
-          },
-        ]}
         onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
         languageLabel={language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}
         primaryAction={
@@ -802,16 +799,11 @@ export default function App() {
       </main>
 
       {/* ===== FOOTER ===== */}
-      <footer style={{
-        textAlign: 'center',
-        padding: '24px 16px',
-        color: 'var(--color-ink-muted)',
-        fontSize: '0.8125rem',
-        borderTop: '1px solid rgba(184,134,11,0.15)',
-        marginTop: 24,
-      }}>
-        {t('footer.text', '易 IChingNow — Công cụ lập quẻ Kinh Dịch  ·  Chỉ lập quẻ, không luận giải')}
-      </footer>
+      <AppFooter
+        appId="iching"
+        colors={ichingTheme}
+        tagline={t('footer.text', '易 IChingNow — Công cụ lập quẻ Kinh Dịch · Chỉ lập quẻ, không luận giải')}
+      />
 
       {/* Responsive grid styles */}
       <style>{`

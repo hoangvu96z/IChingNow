@@ -4,7 +4,9 @@ import { anLaSoTuVi } from './utils/tuViEngine';
 import BirthInputForm from './components/BirthInputForm.jsx';
 import LasoChart from './components/LasoChart.jsx';
 import SummaryPanel from './components/SummaryPanel.jsx';
-import AuthUserBadge from './components/AuthUserBadge.jsx';
+import AppHeader from '@shared/components/AppHeader.jsx';
+import AppFooter from '@shared/components/AppFooter.jsx';
+import { tuviTheme } from '@shared/themes/tuvi.js';
 
 // Generate star particles for background
 function StarParticles() {
@@ -39,9 +41,31 @@ function StarParticles() {
   );
 }
 
+// Theme toggle button component
+function ThemeToggleButton({ theme, onToggle }) {
+  return (
+    <button
+      className="theme-toggle"
+      onClick={onToggle}
+      title={theme === 'light' ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
+      aria-label="Toggle theme"
+      type="button"
+      id="theme-toggle-btn"
+    >
+      <span className={`theme-toggle-icon ${theme === 'dark' ? 'active' : ''}`}>
+        {theme === 'light' ? '☀️' : '🌙'}
+      </span>
+      <div className="theme-toggle-track">
+        <div className="theme-toggle-thumb" />
+      </div>
+      <span className="theme-toggle-label">
+        {theme === 'light' ? 'Sáng' : 'Tối'}
+      </span>
+    </button>
+  );
+}
+
 export default function App() {
-  const { isAuthenticated, user, login, logout } = useAuth();
-  
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('tuvinow_theme') || 'light';
   });
@@ -91,42 +115,47 @@ export default function App() {
       <div className="app-bg" />
       <StarParticles />
 
-      {/* Header */}
-      <header className="app-header">
-        <div className="header-brand" onClick={handleNewReading}>
-          <span className="header-logo">🔮</span>
-          <div>
-            <div className="header-title">TuVi Now</div>
-            <div className="header-subtitle">Tử Vi Đẩu Số Online</div>
-          </div>
-        </div>
-        <div className="header-actions">
-          {chartResult && (
-            <button className="btn-new-reading" onClick={handleNewReading}>
+      {/* ===== HEADER ===== */}
+      <AppHeader
+        appId="tuvi"
+        colors={tuviTheme}
+        onLogoClick={handleNewReading}
+        useAuthHook={useAuth}
+        logo={
+          <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>🔮</span>
+        }
+        title="TuViNow"
+        subtitle="Tử Vi Đẩu Số Online"
+        themeToggle={
+          <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+        }
+        primaryAction={
+          chartResult ? (
+            <button
+              className="btn-new-reading"
+              onClick={handleNewReading}
+              style={{
+                background: 'rgba(109,213,176,0.12)',
+                border: '1px solid rgba(109,213,176,0.4)',
+                borderRadius: 8,
+                color: '#6dd5b0',
+                padding: '7px 14px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                whiteSpace: 'nowrap',
+                fontFamily: 'inherit',
+                justifyContent: 'center',
+                width: '100%',
+              }}
+            >
               ✦ Lập lá số mới
             </button>
-          )}
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            title={theme === 'light' ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
-            aria-label="Toggle theme"
-            type="button"
-            id="theme-toggle-btn"
-          >
-            <span className={`theme-toggle-icon ${theme === 'dark' ? 'active' : ''}`}>
-              {theme === 'light' ? '☀️' : '🌙'}
-            </span>
-            <div className="theme-toggle-track">
-              <div className="theme-toggle-thumb" />
-            </div>
-            <span className="theme-toggle-label">
-              {theme === 'light' ? 'Sáng' : 'Tối'}
-            </span>
-          </button>
-          <AuthUserBadge />
-        </div>
-      </header>
+          ) : null
+        }
+      />
 
       {/* Main Content */}
       <main className="app-content">
@@ -141,6 +170,13 @@ export default function App() {
           </>
         )}
       </main>
+
+      {/* ===== FOOTER ===== */}
+      <AppFooter
+        appId="tuvi"
+        colors={tuviTheme}
+        tagline="Tử Vi Đẩu Số — Lập lá số trực tuyến, không lưu dữ liệu cá nhân"
+      />
     </>
   );
 }

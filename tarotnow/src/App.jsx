@@ -16,6 +16,8 @@ import PromptExporter from './components/PromptExporter';
 import ManualPickMode from './components/ManualPickMode';
 import AiInterpretationPanel from './components/AiInterpretationPanel';
 import AppHeader from './components/AppHeader.jsx';
+import AppFooter from '@shared/components/AppFooter.jsx';
+import { tarotTheme } from '@shared/themes/tarot.js';
 import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import { useLanguage } from './context/LanguageContext';
 
@@ -407,8 +409,10 @@ ${summaryObj.advice}
 
       {/* ===== HEADER ===== */}
       <AppHeader
-        theme="tarot"
+        appId="tarot"
+        colors={tarotTheme}
         onLogoClick={handleResetApp}
+        useAuthHook={useAuth}
         logo={
           <div style={{
             width: 20,
@@ -426,12 +430,6 @@ ${summaryObj.advice}
         }
         title="TarotNow"
         subtitle={t('app.subtitle', 'Trải Bài Tarot & Luận Giải AI')}
-        navItems={[
-          {
-            label: t('nav.iching_link', '☯️ Lập quẻ Dịch'),
-            href: '/kinhdich/',
-          },
-        ]}
         onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
         languageLabel={language === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
         primaryAction={
@@ -1011,11 +1009,11 @@ ${summaryObj.advice}
         </div>
       )}
 
-      <footer className="app-footer">
-        <p>
-          {t('footer.text', 'Tarot & AI Oracle App. Made with ❤️. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.')}
-        </p>
-      </footer>
+      <AppFooter
+        appId="tarot"
+        colors={tarotTheme}
+        tagline={t('footer.text', 'Tarot & AI Oracle App. Made with ❤️. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.')}
+      />
     </>
   );
 }

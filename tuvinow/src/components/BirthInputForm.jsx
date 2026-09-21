@@ -3,6 +3,7 @@ import { solarToLunar, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYea
 
 export default function BirthInputForm({ onSubmit }) {
   const [name, setName] = useState('');
+  const [nameError, setNameError] = useState('');
   const [day, setDay] = useState(15);
   const [month, setMonth] = useState(1);
   const [year, setYear] = useState(1990);
@@ -14,8 +15,24 @@ export default function BirthInputForm({ onSubmit }) {
   const monthOptions = useMemo(() => getMonthsInYear(), []);
   const dayOptions = useMemo(() => getDaysInMonth(isLunar), [isLunar]);
 
+  const handleNameChange = (e) => {
+    const val = e.target.value;
+    setName(val);
+    if (nameError && val.trim()) {
+      setNameError('');
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setNameError('Vui lòng nhập họ tên trước khi lập lá số!');
+      const inputEl = document.getElementById('input-name');
+      if (inputEl) inputEl.focus();
+      return;
+    }
 
     let lunarData;
     if (isLunar) {
@@ -38,7 +55,7 @@ export default function BirthInputForm({ onSubmit }) {
     }
 
     onSubmit({
-      name: name.trim() || 'Không tên',
+      name: trimmedName,
       ...lunarData,
       lunarHourIndex: hourIndex,
       gender,
@@ -46,6 +63,8 @@ export default function BirthInputForm({ onSubmit }) {
       solarInput: { day, month, year },
     });
   };
+
+  const isFormValid = name.trim().length > 0;
 
   return (
     <div className="form-container">
@@ -55,15 +74,31 @@ export default function BirthInputForm({ onSubmit }) {
 
         {/* Họ Tên */}
         <div className="form-group">
-          <label className="form-label">Họ Tên</label>
+          <label className="form-label" htmlFor="input-name">
+            Họ Tên <span style={{ color: '#e53e3e', fontWeight: 700 }}>*</span>
+          </label>
           <input
             type="text"
-            className="form-input"
-            placeholder="Nhập họ tên..."
+            className={`form-input ${nameError ? 'input-error' : ''}`}
+            placeholder="Nhập họ tên (bắt buộc)..."
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={handleNameChange}
             id="input-name"
+            autoComplete="name"
           />
+          {nameError && (
+            <div style={{
+              color: '#e53e3e',
+              fontSize: '0.78rem',
+              marginTop: 5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontWeight: 500,
+            }}>
+              <span>⚠️</span> {nameError}
+            </div>
+          )}
         </div>
 
         {/* Calendar Toggle */}
@@ -178,7 +213,13 @@ export default function BirthInputForm({ onSubmit }) {
           </div>
         </div>
 
-        <button type="submit" className="btn-submit" id="btn-lap-la-so">
+        <button
+          type="submit"
+          className="btn-submit"
+          id="btn-lap-la-so"
+          disabled={!isFormValid}
+          title={!isFormValid ? 'Vui lòng nhập họ tên để lập lá số' : 'Lập lá số Tử Vi'}
+        >
           ✦ Lập Lá Số ✦
         </button>
       </form>

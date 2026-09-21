@@ -51,6 +51,7 @@ export default function LasoChart({ result, inputData }) {
         cacheBust: true,
         pixelRatio: 2.5, // 2.5x pixel ratio for crystal-clear sharp text
         backgroundColor: bgColor,
+        skipFonts: true,
       });
 
       const link = document.createElement('a');
@@ -85,6 +86,7 @@ export default function LasoChart({ result, inputData }) {
         cacheBust: true,
         pixelRatio: 2.5,
         backgroundColor: bgColor,
+        skipFonts: true,
       });
 
       const pdf = new jsPDF({

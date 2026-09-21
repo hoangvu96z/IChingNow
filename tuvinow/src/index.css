@@ -267,8 +267,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--gap-lg);
-  padding-top: 80px;
+  padding: 16px var(--gap-lg);
 }
 
 /* ─── Header ───────────────────────────────────────────────────────────────── */
@@ -397,8 +396,9 @@ body {
 /* ─── Form Card (BirthInputForm) ───────────────────────────────────────────── */
 .form-container {
   width: 100%;
-  max-width: 580px;
-  margin: var(--gap-xl) auto;
+  max-width: 550px;
+  margin: 12px auto 20px;
+  scroll-margin-top: 72px;
 }
 
 .form-card {
@@ -406,7 +406,7 @@ body {
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-xl);
-  padding: var(--gap-xl) var(--gap-lg);
+  padding: 22px 28px;
   box-shadow: var(--shadow-card), var(--shadow-glow-gold);
   position: relative;
   overflow: hidden;
@@ -424,23 +424,28 @@ body {
 
 .form-title {
   font-family: var(--font-serif);
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--accent-gold-bright);
   text-align: center;
-  margin-bottom: var(--gap-xs);
+  margin-bottom: 2px;
   letter-spacing: 0.02em;
 }
 
 .form-subtitle {
   text-align: center;
   color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin-bottom: var(--gap-lg);
+  font-size: 0.82rem;
+  margin-bottom: 16px;
 }
 
 .form-group {
-  margin-bottom: var(--gap-md);
+  margin-bottom: 12px;
+}
+
+.form-input.input-error {
+  border-color: #e53e3e !important;
+  box-shadow: 0 0 0 1px #e53e3e !important;
 }
 
 .form-label {
@@ -606,33 +611,33 @@ body {
 /* Submit Button */
 .btn-submit {
   width: 100%;
-  padding: 14px;
-  margin-top: var(--gap-md);
+  padding: 12px;
+  margin-top: 12px;
   background: var(--btn-submit-bg);
   background-size: 200% 200%;
   border: none;
   border-radius: var(--radius-md);
   color: var(--btn-submit-color);
   font-family: var(--font-serif);
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: box-shadow 0.3s, transform 0.15s;
+  transition: box-shadow 0.3s, transform 0.15s, opacity 0.2s;
   position: relative;
   overflow: hidden;
 }
 
-.btn-submit:hover {
+.btn-submit:hover:not(:disabled) {
   box-shadow: 0 4px 20px var(--btn-submit-glow);
   transform: translateY(-1px);
 }
 
-.btn-submit:active {
+.btn-submit:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.btn-submit::after {
+.btn-submit:not(:disabled)::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -654,9 +659,11 @@ body {
 }
 
 .btn-submit:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+  filter: grayscale(0.2);
 }
 
 /* New Reading Button */
@@ -1149,8 +1156,7 @@ body {
 /* ─── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app-content {
-    padding: var(--gap-md);
-    padding-top: 72px;
+    padding: 12px var(--gap-md);
   }
 
   .form-card {
