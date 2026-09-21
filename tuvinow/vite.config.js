@@ -23,6 +23,10 @@ export default defineConfig({
       allow: ['..'],
     },
     proxy: {
+      '/plans': { target: 'http://localhost:3000', changeOrigin: true },
+      '/readings': { target: 'http://localhost:3000', changeOrigin: true },
+      '/sso': { target: 'http://localhost:3000', changeOrigin: true },
+      '/ui': { target: 'http://localhost:3000', changeOrigin: true },
       '/tuvi/api-vps': {
         target: 'http://43.128.116.69',
         changeOrigin: true,

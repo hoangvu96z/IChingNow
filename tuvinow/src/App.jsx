@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import { anLaSoTuVi } from './utils/tuViEngine';
 import BirthInputForm from './components/BirthInputForm.jsx';
 import LasoChart from './components/LasoChart.jsx';
 import SummaryPanel from './components/SummaryPanel.jsx';
+import TuViAiPanel from './components/TuViAiPanel.jsx';
+import { useReadingsApi } from './hooks/useReadingsApi';
 import AppHeader from '@shared/components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { tuviTheme } from '@shared/themes/tuvi.js';
@@ -65,6 +67,18 @@ function ThemeToggleButton({ theme, onToggle }) {
   );
 }
 
+function ReadingSession({ result, inputData, reading, persistReading, onSaved }) {
+  const active = useRef(false);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  const savedId = useRef(reading?.id || null);
+  const save = async (aiConversation) => {
+    const id = await persistReading(savedId.current, { result, inputData, aiConversation });
+    savedId.current = id;
+    if (active.current) onSaved(id);
+  };
+  return <TuViAiPanel result={result} inputData={inputData} initialConversation={reading?.data?.aiConversation} onSave={save} />;
+}
+
 export default function App() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('tuvinow_theme') || 'light';
@@ -79,6 +93,11 @@ export default function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
+  const { user, isAuthenticated } = useAuth();
+  const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, deleteReading } = useReadingsApi(isAuthenticated, user?.id);
+  const [reading, setReading] = useState(null);
+  const [sessionId, setSessionId] = useState(0);
+  const [historyActionError, setHistoryActionError] = useState('');
   const [chartResult, setChartResult] = useState(null);
   const [inputData, setInputData] = useState(null);
   const [showForm, setShowForm] = useState(true);
@@ -95,6 +114,8 @@ export default function App() {
       gender,
     });
 
+    setReading(null);
+    setSessionId(value => value + 1);
     setChartResult(result);
     setInputData(data);
     setShowForm(false);
@@ -104,10 +125,27 @@ export default function App() {
   }, []);
 
   const handleNewReading = useCallback(() => {
+    setReading(null);
+    setSessionId(value => value + 1);
     setChartResult(null);
     setInputData(null);
     setShowForm(true);
   }, []);
+
+  useEffect(() => { handleNewReading(); }, [user?.id, handleNewReading]);
+
+  const openReading = (item) => {
+    if (!item.data?.inputData || !Array.isArray(item.data?.result?.palates) || item.data.result.palates.length !== 12) {
+      setHistoryActionError('Lá số này thiếu dữ liệu hoặc không giải mã được.');
+      return;
+    }
+    setHistoryActionError('');
+    setReading(item);
+    setInputData(item.data.inputData);
+    setChartResult(item.data.result);
+    setShowForm(false);
+    setSessionId(value => value + 1);
+  };
 
   return (
     <>
@@ -167,15 +205,30 @@ export default function App() {
           <>
             <LasoChart result={chartResult} inputData={inputData} />
             <SummaryPanel result={chartResult} inputData={inputData} />
+            <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} onSaved={id => setReading(previous => ({ ...previous, id }))} />
           </>
         )}
+        {isAuthenticated && <details className="summary-panel tuvi-history">
+          <summary>Lịch sử lá số ({history.length})</summary>
+          <button onClick={loadHistory} disabled={historyLoading}>{historyLoading ? 'Đang tải…' : 'Tải lại lịch sử'}</button>
+          {(historyError || historyActionError) && <p role="alert">{historyError || historyActionError}</p>}
+          {!historyLoading && !history.length && <p>Chưa có lá số đã lưu.</p>}
+          {history.map(item => <div key={item.id} className="tuvi-history-row">
+            <button onClick={() => openReading(item)}>{item.data?.inputData?.name || item.title} · {new Date(item.createdAt).toLocaleDateString('vi-VN')}{item.data?.aiConversation ? ' · Có luận giải AI' : ''}</button>
+            <button onClick={async () => {
+              if (!window.confirm('Xóa lá số và hội thoại này khỏi lịch sử?')) return;
+              try { await deleteReading(item.id); if (reading?.id === item.id) handleNewReading(); }
+              catch (err) { setHistoryActionError(err.message); }
+            }}>Xóa</button>
+          </div>)}
+        </details>}
       </main>
 
       {/* ===== FOOTER ===== */}
       <AppFooter
         appId="tuvi"
         colors={tuviTheme}
-        tagline="Tử Vi Đẩu Số — Lập lá số trực tuyến, không lưu dữ liệu cá nhân"
+        tagline="Tử Vi Đẩu Số — Lập lá số, luận giải AI và lưu lịch sử khi đăng nhập"
       />
     </>
   );
