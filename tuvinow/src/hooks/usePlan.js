@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 
-const SSO_BASE = import.meta.env.VITE_SSO_URL || '';
+// In dev, use relative paths (Vite proxy → sso.vunph.click). In prod use full SSO URL.
+const SSO_BASE = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_SSO_URL || '').replace(/\/$/, '');
 
 function getAuthHeaders() {
   const token = localStorage.getItem('sso_token');

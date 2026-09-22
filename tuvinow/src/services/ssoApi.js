@@ -1,4 +1,9 @@
-const BASE = (import.meta.env.VITE_SSO_URL || '').replace(/\/$/, '');
+// In development, use relative paths (Vite proxy → sso.vunph.click) to avoid CORS issues.
+// In production, VITE_SSO_URL should be set to the full SSO server URL.
+const BASE = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_SSO_URL || '').replace(/\/$/, '');
+
 export async function ssoRequest(path, { method = 'GET', body, signal } = {}) {
   const token = localStorage.getItem('sso_token');
   const response = await fetch(`${BASE}${path}`, {

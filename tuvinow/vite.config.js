@@ -18,15 +18,34 @@ export default defineConfig({
   },
   server: {
     port: 5175,
+    host: 'localhost',
     fs: {
       // Allow serving files from one level up (for shared/)
       allow: ['..'],
     },
     proxy: {
-      '/plans': { target: 'http://localhost:3000', changeOrigin: true },
-      '/readings': { target: 'http://localhost:3000', changeOrigin: true },
-      '/sso': { target: 'http://localhost:3000', changeOrigin: true },
-      '/ui': { target: 'http://localhost:3000', changeOrigin: true },
+      // Proxy SSO API calls to avoid CORS issues in dev
+      // In production, VITE_SSO_URL = https://sso.vunph.click (direct)
+      '/plans': {
+        target: 'https://sso.vunph.click',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/readings': {
+        target: 'https://sso.vunph.click',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/sso': {
+        target: 'https://sso.vunph.click',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/ui': {
+        target: 'https://sso.vunph.click',
+        changeOrigin: true,
+        secure: true,
+      },
       '/tuvi/api-vps': {
         target: 'http://43.128.116.69',
         changeOrigin: true,

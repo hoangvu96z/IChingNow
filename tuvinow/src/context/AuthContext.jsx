@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
-// Dev: VITE_SSO_URL trống → dùng relative path qua vite proxy (/sso/*)
+// Dev: Vite proxy → sso.vunph.click (tránh CORS với relative path)
 // Prod: VITE_SSO_URL=https://sso.vunph.click → gọi thẳng tới SSO server
-const SSO_BASE = import.meta.env.VITE_SSO_URL || '';
+const SSO_BASE = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_SSO_URL || '').replace(/\/$/, '');
 
 const AuthContext = createContext(null);
 
