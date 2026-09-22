@@ -167,3 +167,36 @@ test('older Mai Hoa without a companion table only links visible hexagrams', () 
     !buildEvidenceCatalog(result).some((item) => item.id.startsWith('line.')),
   );
 });
+
+test('one parsed result keeps both the interpretation and questions', async () => {
+  const { parseInterpretationResponse } = await import('../src/logic/interpretationEvidence.js');
+  const raw = JSON.stringify({ version: 1, sections: [{ title: 'Tổng quan', text: 'Nội dung luận giải đầy đủ', references: ['hex.primary'] }], questions: ['Nên làm gì tiếp?'] });
+  for (const response of [raw, `\`\`\`json\n${raw}\n\`\`\``, `Dưới đây là luận giải:\n${raw}\n---SUGGESTED_QUESTIONS---\n1. Nên làm gì tiếp?`]) {
+    const parsed = parseInterpretationResponse(response, catalog);
+    assert.equal(parsed.sections[0].text, 'Nội dung luận giải đầy đủ');
+    assert.deepEqual(parsed.questions, ['Nên làm gì tiếp?']);
+    assert.deepEqual(parsed.sections[0].references, ['hex.primary']);
+  }
+});
+
+test('legacy questions do not remove the preceding interpretation', async () => {
+  const { parseInterpretationResponse } = await import('../src/logic/interpretationEvidence.js');
+  const parsed = parseInterpretationResponse('## Tổng quan\nLuận giải cũ.\n---SUGGESTED_QUESTIONS---\n1. Nên làm gì tiếp?', catalog);
+  assert.equal(parsed.fallback, '## Tổng quan\nLuận giải cũ.');
+  assert.deepEqual(parsed.questions, ['Nên làm gì tiếp?']);
+});
+
+test('questions-only responses are explicitly missing interpretation', async () => {
+  const { parseInterpretationResponse } = await import('../src/logic/interpretationEvidence.js');
+  for (const raw of ['---SUGGESTED_QUESTIONS---\n1. Nên làm gì tiếp?', JSON.stringify({ version: 1, sections: [], questions: ['Nên làm gì tiếp?'] })]) {
+    const parsed = parseInterpretationResponse(raw, catalog);
+    assert.equal(parsed.fallback, '');
+    assert.equal(parsed.sections.length, 0);
+    assert.deepEqual(parsed.questions, ['Nên làm gì tiếp?']);
+  }
+});
+
+test('JSON extraction preserves braces and escaped quotes inside prose', () => {
+  const raw = JSON.stringify({ version: 1, sections: [{ text: 'Chữ { trong câu và "lời khuyên" } vẫn giữ nguyên.' }] });
+  assert.equal(parseEvidenceResponse(`Luận giải:\n${raw}\nKết thúc`, catalog).sections[0].text, 'Chữ { trong câu và "lời khuyên" } vẫn giữ nguyên.');
+});

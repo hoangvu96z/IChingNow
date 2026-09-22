@@ -11,7 +11,7 @@
     "cg:init": "codegraph init -i",
     "cg:index": "codegraph index",
     "cg:explore": "codegraph explore",
-    "test:evidence": "node --test test/interpretationEvidence.test.js"
+    "test:evidence": "node --test test/interpretationEvidence.test.js test/evidenceRendering.test.js"
   },
   "dependencies": {
     "lunar-javascript": "^1.7.7",

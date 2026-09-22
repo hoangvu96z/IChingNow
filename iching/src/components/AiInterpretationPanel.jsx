@@ -1,6 +1,6 @@
 import { useEvidence } from '../context/evidenceState';
 import EvidenceInterpretation from './EvidenceInterpretation';
-import { evidencePrompt, parseEvidenceResponse } from '../logic/interpretationEvidence';
+import { evidencePrompt, parseInterpretationResponse } from '../logic/interpretationEvidence';
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { usePlan } from '../hooks/usePlan.js';
@@ -517,7 +517,9 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
           }
 
           // Kiểm tra tính toàn vẹn: nếu dữ liệu trả về rỗng hoặc quá ngắn do đứt cáp bất ngờ, coi như thất bại để retry
-          if (!accumulatedText || accumulatedText.trim().length < 40) {
+          const parsedAnswer = parseInterpretationResponse(accumulatedText, evidence?.catalog || []);
+          if (!accumulatedText || accumulatedText.trim().length < 40 ||
+              (!parsedAnswer.sections.length && !parsedAnswer.fallback.trim())) {
             throw new Error('Dữ liệu trả về bị ngắt quãng hoặc không hoàn chỉnh');
           }
 
@@ -570,8 +572,8 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       const castTime = result.castTime || '';
 
       const userPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nPlease format your analysis using Markdown with the following structure:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.\n\nCRITICAL REQUIREMENT AT THE END:\nAt the very end of your response, output exact delimiter line "---SUGGESTED_QUESTIONS---" followed by 3 concise follow-up questions relevant to this reading:\n---SUGGESTED_QUESTIONS---\n1. [Question 1]\n2. [Question 2]\n3. [Question 3]`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải theo cấu trúc sau (viết bằng Markdown):\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.\n\nYÊU CẦU BẮT BUỘC Ở CUỐI BÀI:\nỞ cuối cùng bài viết, hãy xuất đúng dòng phân cách "---SUGGESTED_QUESTIONS---" theo sau là 3 câu hỏi đào sâu ngắn gọn dành riêng cho quẻ này:\n---SUGGESTED_QUESTIONS---\n1. [Câu hỏi 1]\n2. [Câu hỏi 2]\n3. [Câu hỏi 3]`;
+        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInclude the following topics in your interpretation sections:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải các nội dung sau trong các mục luận giải:\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
 
       const messages = [
         { role: 'system', content: sysPrompt },
@@ -607,53 +609,8 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     }
   };
 
-  const parseInterpretationAndQuestions = (fullText) => {
-    if (!fullText) return { cleanText: '', questions: [] };
-    const structured = parseEvidenceResponse(fullText, evidence?.catalog || []);
-    if (structured.structured) return { cleanText: '', questions: structured.questions };
-
-    let cleanText = fullText;
-    let questionsPart = '';
-
-    const regexHeader = /(?:---SUGGESTED_QUESTIONS---|###?\s*💡?\s*Gợi ý\s*(?:3\s*)?câu hỏi|###?\s*💡?\s*Suggested\s*(?:3\s*)?Follow-up|💡\s*Gợi ý\s*(?:3\s*)?câu hỏi|💡\s*Suggested\s*(?:3\s*)?Follow-up)/i;
-    const match = fullText.match(regexHeader);
-
-    if (match && match.index !== undefined) {
-      cleanText = fullText.slice(0, match.index).trim();
-      cleanText = cleanText.replace(/---\s*$/, '').trim();
-      questionsPart = fullText.slice(match.index).trim();
-    }
-
-    const questions = [];
-    if (questionsPart) {
-      const lines = questionsPart.split('\n');
-      lines.forEach(line => {
-        let cleaned = line.trim();
-        if (/gợi ý|suggested|follow-up|câu hỏi tiếp theo/i.test(cleaned) && !/Q\d|câu hỏi \d|\?/i.test(cleaned)) {
-          return;
-        }
-
-        cleaned = cleaned
-          .replace(/^(?:---SUGGESTED_QUESTIONS---|###?\s*|💡\s*|\d+\.|\*|-)*\s*/gi, '')
-          .replace(/^(?:\*\*)?Q\d+:?\s*/gi, '')
-          .replace(/^\*\*/, '')
-          .replace(/\*\*$/, '')
-          .replace(/^["'“`]+|["'”`]+$/g, '')
-          .replace(/\*\*+/g, '')
-          .trim();
-
-        if (cleaned && cleaned.length > 8) {
-          if (!questions.includes(cleaned)) {
-            questions.push(cleaned);
-          }
-        }
-      });
-    }
-
-    return { cleanText, questions: questions.slice(0, 3) };
-  };
-
-  const { cleanText: displayInterpretation, questions: aiSuggestedQuestions } = parseInterpretationAndQuestions(interpretation);
+  const parsedInterpretation = parseInterpretationResponse(interpretation, evidence?.catalog || []);
+  const aiSuggestedQuestions = parsedInterpretation.questions;
 
   // ─── Handler cho câu hỏi thêm tới AI (Memory 100% ngữ cảnh quẻ + render toàn vẹn) ───
   const handleSendFollowUp = async (e, textOverride = null) => {
@@ -941,8 +898,13 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       {/* Final Interpretation Result & Interactive Q&A (Rendered All At Once) */}
       {!loading && interpretation && (
         <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(184,134,11,0.22)', borderRadius: 10, padding: 22, boxShadow: '0 4px 16px rgba(44,24,16,0.03)' }}>
-            <EvidenceInterpretation text={interpretation} fallbackText={displayInterpretation} renderMarkdown={parseMarkdown} />
+          <div style={{ background: 'var(--color-paper)', border: '1px solid var(--color-paper-dark)', borderRadius: 10, padding: 22, boxShadow: '0 4px 16px rgba(44,24,16,0.03)' }}>
+            <EvidenceInterpretation parsedResponse={parsedInterpretation} renderMarkdown={parseMarkdown} />
+            {!parsedInterpretation.sections.length && !parsedInterpretation.fallback.trim() && (
+              <button type="button" className="btn-primary" onClick={handleInterpret}>
+                {isEn ? 'Try again' : 'Luận giải lại'}
+              </button>
+            )}
             {result?.aiConversation?.initialTimestamp && (
               <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: 14, fontFamily: 'monospace', opacity: 0.75, borderTop: '1px dashed rgba(184,134,11,0.15)', paddingTop: 8 }}>
                 🕐 {new Date(result.aiConversation.initialTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

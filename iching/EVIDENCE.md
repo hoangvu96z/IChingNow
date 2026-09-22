@@ -31,3 +31,7 @@ npm run lint:iching
 ```
 
 Kiểm thử trình duyệt đã thực hiện bằng API mô phỏng: SSE → luận có căn cứ → mở tab bảng → highlight/focus → hỏi tiếp → lưu hội thoại mã hóa → reload lịch sử; Mai Hoa mobile; lịch sử Markdown cũ; hủy khi đổi phương pháp. Chưa gọi provider AI thật hoặc triển khai production.
+
+## Xử lý phản hồi thiếu nội dung
+
+Luận giải và câu hỏi gợi ý dùng chung kết quả parse. JSON có lời dẫn hoặc khối câu hỏi cũ ở cuối vẫn được đọc; prompt mới chỉ yêu cầu một định dạng JSON. Phản hồi chỉ chứa câu hỏi không được xem là luận giải thành công. Bản ghi cũ thiếu luận giải hiển thị thông báo và nút thử lại. Bộ test bao gồm render trực tiếp component React cho JSON, Markdown cũ, JSON bị cắt và phản hồi chỉ có câu hỏi.
