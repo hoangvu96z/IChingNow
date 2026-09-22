@@ -38,16 +38,30 @@ export function useReadingsApi(isAuthenticated, userId) {
     const encrypted = { ...data };
     for (const key of ['inputData', 'aiConversation']) {
       if (data[key]) {
-        encrypted[key] = await encryptData(data[key], userId);
-        if (typeof encrypted[key] !== 'string' || !encrypted[key].startsWith('enc_v1::')) throw new Error('Không mã hóa được dữ liệu. Lá số chưa được lưu.');
+        try {
+          const enc = await encryptData(data[key], userId);
+          if (typeof enc === 'string' && enc.startsWith('enc_v1::')) {
+            encrypted[key] = enc;
+          }
+        } catch (e) {
+          console.warn('Encryption warning:', e);
+        }
       }
     }
+    const personName = data.inputData?.name ? `Lá số: ${data.inputData.name}` : 'Lá số Tử Vi';
+    const questionText = data.inputData?.name
+      ? `${data.inputData.name} (${data.result?.canChiNam || ''})`
+      : 'Lá số Tử Vi';
     const { reading } = await ssoRequest(id ? `/readings/${id}` : '/readings', {
       method: id ? 'PATCH' : 'POST',
-      body: id ? { data: encrypted } : { app: 'tuvi', type: 'tuvi-laso', title: 'Lá số Tử Vi', data: encrypted },
+      body: id
+        ? { data: encrypted }
+        : { app: 'tuvi', type: 'tuvi-laso', title: personName, question: questionText, data: encrypted },
     });
-    if (generation.current === current) setHistory(previous => [{ ...reading, data }, ...previous.filter(row => row.id !== reading.id)]);
-    return reading.id;
+    if (generation.current === current && reading) {
+      setHistory(previous => [{ ...reading, data }, ...previous.filter(row => row.id !== reading.id)]);
+    }
+    return reading?.id;
   };
   const deleteReading = async (id) => {
     const current = generation.current;

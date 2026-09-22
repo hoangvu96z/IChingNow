@@ -57,8 +57,8 @@ export default function TuViAiPanel({
   const [question, setQuestion] = useState(initialConversation?.question || '');
   const [conversation, setConversation] = useState(initialConversation || null);
   const [followUp, setFollowUp] = useState('');
-  const [config, setConfig] = useState({ models: [], configured: false });
-  const [model, setModel] = useState('');
+  const [config, setConfig] = useState({ models: ['combo1'], configured: true });
+  const [model, setModel] = useState('combo1');
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -83,12 +83,14 @@ export default function TuViAiPanel({
     const abort = new AbortController();
     ssoRequest('/plans/tuvi-ai/config', { signal: abort.signal })
       .then((data) => {
-        setConfig(data);
-        setModel(data.models?.[0] || '');
+        if (data && Array.isArray(data.models) && data.models.length > 0) {
+          setConfig({ models: data.models, configured: true });
+          setModel(data.models[0]);
+        }
       })
-      .catch((err) => {
-        if (!abort.signal.aborted)
-          setError(`Không tải được cấu hình AI: ${err.message}`);
+      .catch(() => {
+        setConfig({ models: ['combo1'], configured: true });
+        setModel('combo1');
       });
     return () => {
       mounted.current = false;
@@ -158,12 +160,58 @@ export default function TuViAiPanel({
         );
       messages.push({ role: 'user', content: text });
     }
+    const activeModel = model || config.models?.[0] || 'combo1';
     try {
-      const { content } = await ssoRequest('/plans/tuvi-ai', {
-        method: 'POST',
-        body: { model, messages },
-        signal: abort.signal,
-      });
+      let content = '';
+      try {
+        const res = await ssoRequest('/plans/tuvi-ai', {
+          method: 'POST',
+          body: { model: activeModel, messages },
+          signal: abort.signal,
+        });
+        content = res?.content || '';
+      } catch (ssoErr) {
+        const fallbackEndpoint = (import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1').replace(/\/$/, '');
+        const fallbackKey = import.meta.env.VITE_AI_API_KEY || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (fallbackKey) {
+          headers['Authorization'] = `Bearer ${fallbackKey}`;
+        }
+        const directRes = await fetch(`${fallbackEndpoint}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: activeModel,
+            messages,
+          }),
+          signal: abort.signal,
+        });
+        if (!directRes.ok) {
+          const errText = await directRes.text().catch(() => '');
+          throw new Error(errText || `Lỗi kết nối máy chủ AI (${directRes.status})`);
+        }
+        const streamData = await directRes.text();
+        try {
+          const parsed = JSON.parse(streamData);
+          content = parsed.choices?.[0]?.message?.content || '';
+        } catch {
+          const lines = streamData.split('\n');
+          let combined = '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ') && !trimmed.includes('[DONE]')) {
+              try {
+                const chunk = JSON.parse(trimmed.slice(6));
+                combined += chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || '';
+              } catch {}
+            }
+          }
+          content = combined || streamData;
+        }
+      }
+      if (!content) {
+        throw new Error('Không nhận được nội dung luận giải từ AI. Vui lòng thử lại.');
+      }
       if (abort.signal.aborted || !mounted.current) return;
       const updated = isFollowUp
         ? {
@@ -374,7 +422,7 @@ export default function TuViAiPanel({
               ) : (
                 <button
                   className="tv-button tv-primary"
-                  disabled={saving || !config.configured || !model}
+                  disabled={saving || busy}
                   onClick={() => ask()}
                 >
                   <Icon />
@@ -385,9 +433,7 @@ export default function TuViAiPanel({
               <p>
                 {!isAuthenticated
                   ? 'Bạn vẫn có thể sao chép prompt miễn phí ở bên dưới.'
-                  : !config.configured
-                    ? 'AI chưa sẵn sàng. Bạn có thể sử dụng prompt bên dưới.'
-                    : 'Luận giải từ đầy đủ 12 cung trên lá số của bạn'}
+                  : 'Luận giải chuyên sâu từ đầy đủ 12 cung trên lá số của bạn'}
               </p>
             </div>
           )}

@@ -256,9 +256,9 @@ export default function AiInterpretationPanel({
 }) {
   const { t, language } = useLanguage();
   const [settings, setSettings] = useState({
-    endpoint: 'http://43.128.116.69:20128/v1',
-    apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739',
-    model: 'combo1',
+    endpoint: import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1',
+    apiKey: import.meta.env.VITE_AI_API_KEY || '',
+    model: import.meta.env.VITE_AI_MODEL || 'combo1',
   });
   const [showSettings, setShowSettings] = useState(false);
   const [formSettings, setFormSettings] = useState({
@@ -402,9 +402,9 @@ export default function AiInterpretationPanel({
   // Load settings
   useEffect(() => {
     const defaultSettings = {
-      endpoint: 'http://43.128.116.69:20128/v1',
-      apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739',
-      model: 'combo1',
+      endpoint: import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1',
+      apiKey: import.meta.env.VITE_AI_API_KEY || '',
+      model: import.meta.env.VITE_AI_MODEL || 'combo1',
     };
     let activeSettings = { ...defaultSettings };
     try {
@@ -436,7 +436,7 @@ export default function AiInterpretationPanel({
     e.preventDefault();
     const newSettings = {
       endpoint: formSettings.endpoint,
-      apiKey: 'sk-07c9f002b12e445e-luaxyd-d0592739', // Enforced default
+      apiKey: import.meta.env.VITE_AI_API_KEY || '',
       model: formSettings.model
     };
     setSettings(newSettings);
