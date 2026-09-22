@@ -1,3 +1,4 @@
+import { EvidenceProvider } from './context/EvidenceContext.jsx';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import { useReadingsApi } from './hooks/useReadingsApi.js';
@@ -234,10 +235,15 @@ function MaiHoaExportCard({ result }) {
  * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
  */
 function ResultSection({ mode, result, maiHoaResult, onChangeMethod, activeReadingId, updateReadingData }) {
-  if (mode.startsWith('mai-hoa')) {
-    return <MaiHoaResultSection result={maiHoaResult} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />;
-  }
-  return <CoinCastResultSection result={result} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />;
+  const { user } = useAuth();
+  const isMaiHoa = mode.startsWith('mai-hoa');
+  const source = isMaiHoa ? maiHoaResult : result;
+  const { aiConversation: _conversation, ...identity } = source || {};
+  return <EvidenceProvider key={`${user?.id || 'guest'}:${JSON.stringify(identity)}`} result={source}>
+    {isMaiHoa
+      ? <MaiHoaResultSection result={maiHoaResult} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />
+      : <CoinCastResultSection result={result} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />}
+  </EvidenceProvider>;
 }
 
 function CoinCastResultSection({ result, onChangeMethod, activeReadingId, updateReadingData }) {

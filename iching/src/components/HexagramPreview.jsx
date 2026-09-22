@@ -1,3 +1,4 @@
+import { useEvidence } from '../context/evidenceState';
 import React from 'react';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
@@ -15,6 +16,7 @@ export default function HexagramPreview({ result }) {
     <div className="responsive-hexagrams-container" style={{ gap: 16 }}>
       {/* Quẻ chủ */}
       <HexCard
+        evidenceId="hex.primary"
         label={t('result.primary_hex', 'QUẺ CHỦ')}
         hexagram={hasPrimary}
         lines={result?.lines}
@@ -33,6 +35,7 @@ export default function HexagramPreview({ result }) {
       {/* Quẻ biến */}
       {hasMoving && (
         <HexCard
+          evidenceId="hex.changed"
           label={t('result.changed_hex', 'QUẺ BIẾN')}
           hexagram={hasChanged}
           lines={result?.lines ? buildChangedLines(result.lines) : []}
@@ -44,14 +47,15 @@ export default function HexagramPreview({ result }) {
   );
 }
 
-function HexCard({ label, hexagram, lines, accent, isEmpty }) {
+function HexCard({ evidenceId, label, hexagram, lines, accent, isEmpty }) {
   const { t, language } = useLanguage();
+  const evidence = useEvidence();
   const hexName = hexagram 
     ? (language === 'en' ? t(`hex.name.${hexagram.id}`, hexagram.nameVi) : hexagram.nameVi)
     : '—';
 
   return (
-    <div style={{
+    <div {...evidence?.targetProps(evidenceId)} style={{
       flex: 1,
       minWidth: 130,
       maxWidth: 200,

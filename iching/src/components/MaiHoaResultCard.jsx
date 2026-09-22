@@ -1,3 +1,4 @@
+import { useEvidence } from '../context/evidenceState';
 import React from 'react';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import DescriptionPanel from './DescriptionPanel.jsx';
@@ -5,14 +6,15 @@ import LucHaoTable from './LucHaoTable.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
 // ─── Hexagram card (1 trong 3 quẻ) ───────────────────────────────────────────
-function HexCard({ label, labelColor, hexagram, lines, subtitle, badge }) {
+function HexCard({ evidenceId, label, labelColor, hexagram, lines, subtitle, badge }) {
   const { t, language } = useLanguage();
+  const evidence = useEvidence();
   const hexName = hexagram
     ? (language === 'en' ? t(`hex.name.${hexagram.id}`, hexagram.nameVi) : hexagram.nameVi)
     : '—';
 
   return (
-    <div style={{
+    <div {...evidence?.targetProps(evidenceId)} style={{
       flex: 1,
       minWidth: 120,
       display: 'flex',
@@ -95,6 +97,7 @@ function Arrow() {
 
 // ─── Thể/Dụng badge trong card quẻ chủ ───────────────────────────────────────
 function TheDungOverlay({ upperTrigram, lowerTrigram, theDung }) {
+  const evidence = useEvidence();
   const { t } = useLanguage();
   const dungIsUpper  = theDung.dung === 'upper';
   const dungTrigram  = dungIsUpper ? upperTrigram : lowerTrigram;
@@ -104,7 +107,7 @@ function TheDungOverlay({ upperTrigram, lowerTrigram, theDung }) {
   const theTrigramName = theTrigram ? t(`trigram.${theTrigram.nameVi}`, theTrigram.nameVi) : '';
 
   return (
-    <div style={{
+    <div {...evidence?.targetProps("maihoa.the-dung")} style={{
       display: 'flex',
       gap: 8,
       justifyContent: 'center',
@@ -189,6 +192,7 @@ function CalcTable({ result }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function MaiHoaResultCard({ result }) {
   const { t, language } = useLanguage();
+  const evidence = useEvidence();
 
   if (!result) return null;
 
@@ -234,7 +238,7 @@ export default function MaiHoaResultCard({ result }) {
       <div className="responsive-hexagrams-container">
 
         {/* Quẻ Chủ */}
-        <div style={{ flex: 1, minWidth: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div {...evidence?.targetProps("hex.primary")} style={{ flex: 1, minWidth: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-vermillion)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             {t('maihoa.result_aspect_chu', 'Quẻ Chủ')}
           </div>
@@ -253,6 +257,7 @@ export default function MaiHoaResultCard({ result }) {
 
         {/* Quẻ Hỗ */}
         <HexCard
+          evidenceId="hex.mutual"
           label={t('maihoa.result_aspect_ho', 'Quẻ Hỗ')}
           labelColor="#7c5cbf"
           hexagram={queHo?.hexagram}
@@ -264,6 +269,7 @@ export default function MaiHoaResultCard({ result }) {
 
         {/* Quẻ Biến */}
         <HexCard
+          evidenceId="hex.changed"
           label={t('maihoa.result_aspect_bien', 'Quẻ Biến')}
           labelColor="var(--color-jade)"
           hexagram={changedHexagram}

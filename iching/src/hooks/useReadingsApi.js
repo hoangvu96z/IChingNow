@@ -235,7 +235,7 @@ export function useReadingsApi(isAuthenticated, userId = 'default_user') {
     } catch (err) {
       console.error('updateReadingData error:', err);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userId]);
 
   return {
     history,

@@ -1,3 +1,4 @@
+import { useEvidence } from '../context/evidenceState';
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
@@ -51,6 +52,7 @@ export default function LucHaoTable({ result }) {
           {/* Quẻ chủ */}
           <div style={{ flex: 1, minWidth: hasChanged ? 230 : 0 }}>
             <HaoTableSection
+              evidenceKind="primary"
               lines={sortedPrimary}
               khongVong={result.khongVong || []}
               showLucThu={false}
@@ -64,6 +66,7 @@ export default function LucHaoTable({ result }) {
               {/* Quẻ biến */}
               <div style={{ flex: 1, minWidth: 230 }}>
                 <HaoTableSection
+                  evidenceKind="changed"
                   lines={sortedChanged}
                   khongVong={result.khongVong || []}
                   showLucThu={true}
@@ -122,7 +125,8 @@ function HexNameHeader({ hexagram, palace, queType, isChanged, flex }) {
   );
 }
 
-function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
+function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentColor }) {
+  const evidence = useEvidence();
   const { t, language } = useLanguage();
 
   const headers = [
@@ -167,7 +171,7 @@ function HaoTableSection({ lines, khongVong, showLucThu, accentColor }) {
           const lucThuLabel = line.lucThu ? t(`lucThu.${line.lucThu}`, line.lucThu) : '—';
 
           return (
-            <tr key={line.index} style={{
+            <tr key={line.index} {...evidence?.targetProps(`line.${evidenceKind}.${line.index}`)} style={{
               borderBottom: '1px solid rgba(184,134,11,0.09)',
               background: idx % 2 === 0 ? 'transparent' : 'rgba(184,134,11,0.03)',
             }}>

@@ -1,3 +1,6 @@
+import { useEvidence } from '../context/evidenceState';
+import EvidenceInterpretation from './EvidenceInterpretation';
+import { evidencePrompt, parseEvidenceResponse } from '../logic/interpretationEvidence';
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { usePlan } from '../hooks/usePlan.js';
@@ -221,6 +224,15 @@ function IChingWaitingAnimation({ isEn, retryInfo, elapsedSeconds }) {
 }
 
 export default function AiInterpretationPanel({ result, mode, plainTextResult, readingId, onSaveAiConversation }) {
+  const evidence = useEvidence();
+  const active = useRef(false);
+  const requestController = useRef(null);
+  const requestLock = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; requestController.current?.abort(); };
+  }, []);
+
   const { t, language } = useLanguage();
   const isEn = language === 'en';
   const [settings, setSettings] = useState({
@@ -431,7 +443,9 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       const currentModel = fallbackModels[modelIdx];
 
       for (let attempt = 1; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
+        let timeoutId;
         try {
+          if (!active.current) throw new Error("Reading changed");
           if (modelIdx > 0 || attempt > 1) {
             const retryMsg = isEn
               ? `Reconnecting with ${currentModel} (Attempt ${attempt}/${MAX_RETRIES_PER_MODEL})...`
@@ -443,8 +457,10 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
             if (onStatusUpdate) onStatusUpdate('');
           }
 
+          if (!active.current) throw new Error("Reading changed");
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
+          requestController.current = controller;
+          timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
 
           const response = await fetch(`${callEndpoint}/chat/completions`, {
             method: 'POST',
@@ -460,7 +476,6 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
             signal: controller.signal
           });
 
-          clearTimeout(timeoutId);
 
           if (!response.ok) {
             const errText = await response.text();
@@ -509,8 +524,12 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
           // Thành công nhận toàn bộ dữ liệu!
           return accumulatedText.trim();
         } catch (err) {
+          if (!active.current) throw err;
           console.warn(`[AI Request] Model ${currentModel} attempt ${attempt} failed:`, err);
           lastError = err;
+        } finally {
+          clearTimeout(timeoutId);
+          requestController.current = null;
         }
       }
     }
@@ -520,11 +539,14 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
   // ─── Luận giải quẻ dịch ───
   const handleInterpret = async () => {
-    if (!result) return;
+    if (!result || requestLock.current) return;
+    requestLock.current = true;
 
     // Check quota before calling AI
     const quotaResult = await consumeQuota();
+    if (!active.current) { requestLock.current = false; return; }
     if (!quotaResult.ok) {
+      requestLock.current = false;
       setShowPricing(true);
       return;
     }
@@ -553,7 +575,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
       const messages = [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt + evidencePrompt(evidence?.catalog || [], isEn) }
       ];
 
       // Gọi AI với cơ chế retry tự động và gom kết quả toàn vẹn
@@ -562,11 +584,13 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       });
 
       // Render 1 lần trọn vẹn
+      if (!active.current) return;
       setInterpretation(fullText);
 
       if (onSaveAiConversation && readingId) {
         onSaveAiConversation(readingId, {
           aiConversation: {
+            evidenceVersion: 1,
             initialInterpretation: fullText,
             initialTimestamp: new Date().toISOString(),
             followUps: [],
@@ -574,16 +598,19 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
         });
       }
     } catch (err) {
+      if (!active.current) return;
       console.error('AI Error:', err);
       setError(err.message || (isEn ? 'Error calling AI Server.' : 'Lỗi khi gọi API của server AI. Vui lòng bấm thử lại.'));
     } finally {
-      setLoading(false);
-      setRetryStatus('');
+      requestLock.current = false;
+      if (active.current) { setLoading(false); setRetryStatus(''); }
     }
   };
 
   const parseInterpretationAndQuestions = (fullText) => {
     if (!fullText) return { cleanText: '', questions: [] };
+    const structured = parseEvidenceResponse(fullText, evidence?.catalog || []);
+    if (structured.structured) return { cleanText: '', questions: structured.questions };
 
     let cleanText = fullText;
     let questionsPart = '';
@@ -632,7 +659,8 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
   const handleSendFollowUp = async (e, textOverride = null) => {
     if (e) e.preventDefault();
     const questionToSend = (textOverride || userQuestion).trim();
-    if (!questionToSend || askingFollowUp || followUps.length >= 5) return;
+    if (!questionToSend || questionToSend.length > 2048 || requestLock.current || askingFollowUp || followUps.length >= 5) return;
+    requestLock.current = true;
 
     setAskingFollowUp(true);
     setFollowUpError('');
@@ -654,7 +682,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
       const messages = [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: initialUserPrompt },
+        { role: 'user', content: initialUserPrompt + evidencePrompt(evidence?.catalog || [], isEn) },
         { role: 'assistant', content: interpretation }
       ];
 
@@ -670,6 +698,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
         setFollowUpRetryStatus(status);
       });
 
+      if (!active.current) return;
       const newFollowUp = {
         id: Date.now().toString(),
         question: questionToSend,
@@ -686,6 +715,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
         onSaveAiConversation(readingId, {
           aiConversation: {
             ...(result?.aiConversation || {}),
+            evidenceVersion: 1,
             initialInterpretation: interpretation,
             initialTimestamp: result?.aiConversation?.initialTimestamp || new Date().toISOString(),
             followUps: updatedFollowUps,
@@ -693,11 +723,12 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
         });
       }
     } catch (err) {
+      if (!active.current) return;
       console.error(err);
       setFollowUpError(err.message || (isEn ? 'Error connecting to AI. Please try again.' : 'Lỗi khi kết nối AI để trả lời câu hỏi. Vui lòng bấm gửi lại.'));
     } finally {
-      setAskingFollowUp(false);
-      setFollowUpRetryStatus('');
+      requestLock.current = false;
+      if (active.current) { setAskingFollowUp(false); setFollowUpRetryStatus(''); }
     }
   };
 
@@ -911,7 +942,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       {!loading && interpretation && (
         <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(184,134,11,0.22)', borderRadius: 10, padding: 22, boxShadow: '0 4px 16px rgba(44,24,16,0.03)' }}>
-            <div dangerouslySetInnerHTML={{ __html: parseMarkdown(displayInterpretation) }} />
+            <EvidenceInterpretation text={interpretation} fallbackText={displayInterpretation} renderMarkdown={parseMarkdown} />
             {result?.aiConversation?.initialTimestamp && (
               <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: 14, fontFamily: 'monospace', opacity: 0.75, borderTop: '1px dashed rgba(184,134,11,0.15)', paddingTop: 8 }}>
                 🕐 {new Date(result.aiConversation.initialTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -965,7 +996,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
                         padding: '12px 16px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                       }}>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--color-ink)', lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: parseMarkdown(item.answer) }} />
+                        <EvidenceInterpretation text={item.answer} renderMarkdown={parseMarkdown} />
                         {item.answerTimestamp && (
                           <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: 6, fontFamily: 'monospace' }}>
                             🕐 {new Date(item.answerTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

@@ -1,3 +1,4 @@
+import { evidencePlainText } from '../logic/interpretationEvidence';
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
@@ -177,7 +178,7 @@ export default function HistoryManagementModal({
                           )}
                         </div>
                         <div style={{ background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.15)', borderRadius: 8, padding: '10px 14px', fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.65, maxHeight: 200, overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
-                          {conv.initialInterpretation.slice(0, 800)}{conv.initialInterpretation.length > 800 ? '...' : ''}
+                          {evidencePlainText(conv.initialInterpretation).slice(0, 800)}{evidencePlainText(conv.initialInterpretation).length > 800 ? '...' : ''}
                         </div>
                       </div>
                     )}
@@ -202,7 +203,7 @@ export default function HistoryManagementModal({
                                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1a6b4a', minWidth: 22 }}>AI</span>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
-                                    {fu.answer.slice(0, 600)}{fu.answer.length > 600 ? '...' : ''}
+                                    {evidencePlainText(fu.answer).slice(0, 600)}{evidencePlainText(fu.answer).length > 600 ? '...' : ''}
                                   </div>
                                   {fu.answerTimestamp && (
                                     <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>🕐 {formatTimeShort(fu.answerTimestamp)}</div>

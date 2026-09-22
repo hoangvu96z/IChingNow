@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useEvidence } from '../context/evidenceState';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import LucHaoTable from './LucHaoTable.jsx';
 import DescriptionPanel from './DescriptionPanel.jsx';
@@ -10,6 +11,11 @@ import DescriptionPanel from './DescriptionPanel.jsx';
 export default function LucHaoCombinedTabCard({ result }) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('table'); // 'table' | 'basic'
+
+  const evidence = useEvidence();
+  useEffect(() => {
+    if (evidence?.selectedIds.some(id => id.startsWith('line.'))) setActiveTab('table');
+  }, [evidence?.selectedIds]);
 
   if (!result) return null;
 

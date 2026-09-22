@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "cg:init": "codegraph init -i",
     "cg:index": "codegraph index",
-    "cg:explore": "codegraph explore"
+    "cg:explore": "codegraph explore",
+    "test:evidence": "node --test test/interpretationEvidence.test.js"
   },
   "dependencies": {
     "lunar-javascript": "^1.7.7",
