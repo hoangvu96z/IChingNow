@@ -141,6 +141,7 @@ export default function LasoChart({ result, inputData }) {
       <div className="chart-actions-bar">
         <div className="chart-actions-title">
           <span>🔮 Lá Số Tử Vi — {inputData?.name || 'Bản Mệnh'}</span>
+          {result.viewYearCanChi && <span className="chart-year-label">Lưu niên {result.viewYear || ''} · {result.viewYearCanChi}</span>}
         </div>
         <div className="chart-actions-buttons">
           {exportMessage && (
@@ -187,6 +188,7 @@ export default function LasoChart({ result, inputData }) {
 
           {/* Center Info Panel */}
           <div className="chart-center">
+            {result.viewYearCanChi && <div className="center-info-row"><span className="label">Lưu niên:</span><span className="value">{result.viewYear || ''} {result.viewYearCanChi}</span></div>}
             <div className="center-name">
               {inputData?.name || 'Lá Số Tử Vi'}
             </div>

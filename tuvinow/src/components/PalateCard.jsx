@@ -50,10 +50,11 @@ export default function PalateCard({ palace }) {
 
   // Separate Tứ Hóa from other phụ tinh
   const hoaStars = phuTinh.filter(s => s.startsWith('Hóa '));
-  const otherPhuTinh = phuTinh.filter(s => !s.startsWith('Hóa '));
+  const annualStars = phuTinh.filter(s => s.startsWith('L.'));
+  const otherPhuTinh = phuTinh.filter(s => !s.startsWith('Hóa ') && !s.startsWith('L.'));
 
   // Show Mệnh/Thân label
-  const funcLabel = chucNang || '';
+  const funcLabel = (chucNang || '').replace(' <THÂN>', '');
   const isMenhCung = funcLabel.includes('Mệnh') && !funcLabel.includes('Phụ Mẫu');
 
   return (
@@ -73,12 +74,6 @@ export default function PalateCard({ palace }) {
       <div className="palace-stars">
         {chinhTinh.map((star, i) => {
           const statusClass = getStarStatusClass(star);
-          // Also check if this star has Tứ Hóa
-          const starName = star.split(' ')[0];
-          const relatedHoa = hoaStars.filter(h => {
-            // Simple: just show Hóa at the palace level
-            return false; // Handled below
-          });
           return (
             <div key={i} className={`chinh-tinh ${statusClass}`}>
               {star}
@@ -105,6 +100,9 @@ export default function PalateCard({ palace }) {
         )}
       </div>
 
+      {annualStars.length > 0 && <div className="palace-annual-stars" aria-label="Sao lưu niên">
+        {annualStars.join(' · ')}
+      </div>}
       {/* Footer */}
       <div className="palace-footer">
         <div className="palace-trangsinh">{trangSinh}</div>

@@ -7,6 +7,7 @@ export function buildTuViEvidence(result) {
     facts: [
       ['Chính tinh', p.chinhTinh.join(', ') || 'Vô chính diệu'],
       ['Phụ tinh', p.phuTinh.join(', ') || 'Không có'],
+      ...(result.viewYearCanChi ? [['Năm lưu niên', `${result.viewYear || ''} ${result.viewYearCanChi}`]] : []),
       ['Mệnh / Thân', [p.isMenh && 'Mệnh', p.isThan && 'Thân'].filter(Boolean).join(', ') || 'Không'],
       ['Tràng Sinh', p.trangSinh],
       ['Đại hạn', `${p.daiHan}–${p.daiHan + 9} tuổi`],

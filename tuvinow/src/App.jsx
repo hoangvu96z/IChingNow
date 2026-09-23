@@ -61,14 +61,12 @@ function ThemeToggleButton({ theme, onToggle }) {
   );
 }
 
-function ReadingSession({ result, inputData, reading, persistReading, chartSaveRef, onSaved }) {
+function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved }) {
   const active = useRef(false);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const savedId = useRef(reading?.id || null);
   const save = async (aiConversation) => {
-    if (!savedId.current && chartSaveRef.current) {
-      savedId.current = await chartSaveRef.current.catch(() => null);
-    }
+    if (!savedId.current) savedId.current = await ensureChartSaved();
     const id = await persistReading(savedId.current, { result, inputData, aiConversation });
     savedId.current = id;
     if (active.current) onSaved(id);
@@ -110,16 +108,7 @@ export default function App() {
   }, []);
 
   const handleSubmit = useCallback((data) => {
-    const { yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHourIndex, gender } = data;
-
-    const result = anLaSoTuVi({
-      yearCanIndex,
-      yearChiIndex,
-      lunarMonth,
-      lunarDay: lunarDay,
-      lunarHourIndex,
-      gender,
-    });
+    const result = anLaSoTuVi(data);
 
     setReading(null);
     setSessionId(value => value + 1);
@@ -145,29 +134,29 @@ export default function App() {
 
   useEffect(() => { handleNewReading(); }, [user?.id, handleNewReading]);
 
-  // Auto-save newly calculated chart to history when user is authenticated
+  // Initial chart save and AI save share one in-flight creation request.
+  const ensureChartSaved = useCallback(() => {
+    if (chartSaveRef.current) return chartSaveRef.current;
+    setSaveStatus('Đang tự lưu lá số…');
+    const pending = persistReading(null, { result: chartResult, inputData });
+    chartSaveRef.current = pending;
+    pending.then(id => {
+      if (chartSaveRef.current !== pending) return;
+      setReading({ id, data: { result: chartResult, inputData } });
+      setSaveStatus('Đã tự lưu lá số');
+    }).catch(() => {
+      if (chartSaveRef.current !== pending) return;
+      chartSaveRef.current = null;
+      setSaveStatus('Chưa lưu được lá số. Sẽ thử lại khi kết nối phục hồi.');
+    });
+    return pending;
+  }, [persistReading, chartResult, inputData]);
+
   useEffect(() => {
     if (chartResult && inputData && isAuthenticated && user?.id && !reading?.id) {
-      if (chartSaveRef.current) return;
-      setSaveStatus('Đang tự lưu lá số…');
-      const pending = persistReading(null, { result: chartResult, inputData });
-      chartSaveRef.current = pending;
-      pending
-        .then((savedId) => {
-          if (chartSaveRef.current === pending && savedId) {
-            setReading({ id: savedId, data: { result: chartResult, inputData } });
-            setSaveStatus('Đã tự lưu lá số');
-          }
-        })
-        .catch((err) => {
-          console.warn('Auto-save reading error:', err);
-          if (chartSaveRef.current === pending) {
-            chartSaveRef.current = null;
-            setSaveStatus('Chưa lưu được lá số. Sẽ thử lại khi kết nối phục hồi.');
-          }
-        });
+      ensureChartSaved().catch(() => {});
     }
-  }, [chartResult, inputData, isAuthenticated, user?.id, reading?.id, persistReading, retrySave]);
+  }, [chartResult, inputData, isAuthenticated, user?.id, reading?.id, ensureChartSaved, retrySave]);
 
   const openReading = (item) => {
     if (!item.data?.inputData) {
@@ -176,15 +165,18 @@ export default function App() {
     }
     setHistoryActionError('');
     let result = item.data.result;
+    let restoredReading = item;
     if (!result || !Array.isArray(result.palates) || result.palates.length !== 12) {
       try {
         result = anLaSoTuVi(item.data.inputData);
+        // Old AI text must not be paired with a newly calculated chart.
+        restoredReading = { ...item, data: { ...item.data, result, aiConversation: null } };
       } catch {
         setHistoryActionError('Không thể lập lại lá số từ dữ liệu.');
         return;
       }
     }
-    setReading(item);
+    setReading(restoredReading);
     chartSaveRef.current = null;
     setInputData(item.data.inputData);
     setChartResult(result);
@@ -261,7 +253,7 @@ export default function App() {
             <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
             <LasoChart result={chartResult} inputData={inputData} />
             <SummaryPanel result={chartResult} inputData={inputData} />
-            <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} chartSaveRef={chartSaveRef} onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }} />
+            <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} ensureChartSaved={ensureChartSaved} onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }} />
             </TuViEvidenceProvider>
           </>
         )}

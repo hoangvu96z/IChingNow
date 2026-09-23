@@ -1479,3 +1479,7 @@ body {
   border-color: var(--border-subtle);
   background: var(--bg-secondary);
 }
+
+.palace-annual-stars { color: var(--accent-cyan); font-size: .7rem; line-height: 1.6; padding-top: 5px; border-top: 1px dashed var(--border-subtle); }
+.chart-year-label { display: block; color: var(--text-secondary); font: 500 12px var(--font-sans); margin-top: 5px; }
+.form-error { color: var(--star-ham); font-size: 13px; margin-bottom: 14px; line-height: 1.6; }

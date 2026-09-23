@@ -68,8 +68,7 @@ export function solarToLunar(year, month, day) {
     };
   } catch (err) {
     console.error('Solar to Lunar conversion error:', err);
-    // Fallback: tính bằng công thức
-    return fallbackConvert(year, month, day);
+    throw new Error('Không chuyển được ngày sinh sang âm lịch. Vui lòng kiểm tra ngày hoặc nhập âm lịch trực tiếp.');
   }
 }
 
@@ -92,25 +91,6 @@ function fallbackYearCan(lunarYear) {
 
 function fallbackYearChi(lunarYear) {
   return (lunarYear - 4) % 12;
-}
-
-function fallbackConvert(year, month, day) {
-  // Simplified fallback — use mathematical Can-Chi
-  const yearCanIndex = fallbackYearCan(year);
-  const yearChiIndex = fallbackYearChi(year);
-
-  return {
-    lunarYear: year,
-    lunarMonth: month,
-    lunarDay: day,
-    isLeap: false,
-    yearCanIndex,
-    yearChiIndex,
-    yearCanName: THIEN_CAN_VI[yearCanIndex],
-    yearChiName: DIA_CHI_VI[yearChiIndex],
-    lunarDateStr: `${month}/${day}/${year} (ước lượng)`,
-    solarDateStr: `${day}/${month}/${year} (Dương lịch)`,
-  };
 }
 
 /**

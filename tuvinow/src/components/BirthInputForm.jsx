@@ -10,6 +10,8 @@ export default function BirthInputForm({ onSubmit }) {
   const [hourIndex, setHourIndex] = useState(0);
   const [gender, setGender] = useState(1); // 1 = Nam, 0 = Nữ
   const [isLunar, setIsLunar] = useState(false);
+  const [viewYear, setViewYear] = useState('');
+  const [formError, setFormError] = useState('');
 
   const yearOptions = useMemo(() => getYearOptions(), []);
   const monthOptions = useMemo(() => getMonthsInYear(), []);
@@ -34,34 +36,48 @@ export default function BirthInputForm({ onSubmit }) {
       return;
     }
 
-    let lunarData;
-    if (isLunar) {
-      // User nhập trực tiếp âm lịch
-      const yearCanIndex = (year - 4) % 10;
-      const yearChiIndex = (year - 4) % 12;
-      lunarData = {
-        lunarYear: year,
-        lunarMonth: month,
-        lunarDay: day,
-        yearCanIndex: yearCanIndex < 0 ? yearCanIndex + 10 : yearCanIndex,
-        yearChiIndex: yearChiIndex < 0 ? yearChiIndex + 12 : yearChiIndex,
-        isLeap: false,
-        solarDateStr: '(Nhập âm lịch)',
-        lunarDateStr: `${month}/${day}/${year} (Âm lịch)`,
-      };
-    } else {
-      // Convert dương lịch → âm lịch
-      lunarData = solarToLunar(year, month, day);
-    }
+    setFormError('');
+    try {
+      let lunarData;
+      if (isLunar) {
+        // User nhập trực tiếp âm lịch
+        const yearCanIndex = (year - 4) % 10;
+        const yearChiIndex = (year - 4) % 12;
+        lunarData = {
+          lunarYear: year,
+          lunarMonth: month,
+          lunarDay: day,
+          yearCanIndex: yearCanIndex < 0 ? yearCanIndex + 10 : yearCanIndex,
+          yearChiIndex: yearChiIndex < 0 ? yearChiIndex + 12 : yearChiIndex,
+          isLeap: false,
+          solarDateStr: '(Nhập âm lịch)',
+          lunarDateStr: `${month}/${day}/${year} (Âm lịch)`,
+        };
+      } else {
+        // Convert dương lịch → âm lịch
+        lunarData = solarToLunar(year, month, day);
+      }
 
-    onSubmit({
-      name: trimmedName,
-      ...lunarData,
-      lunarHourIndex: hourIndex,
-      gender,
-      isLunar,
-      solarInput: { day, month, year },
-    });
+      const annualYear = viewYear === '' ? undefined : Number(viewYear);
+      if (annualYear !== undefined && (!Number.isInteger(annualYear) || annualYear < 1900 || annualYear > 2100)) {
+        throw new Error('Năm xem phải là số nguyên từ 1900 đến 2100.');
+      }
+      onSubmit({
+        name: trimmedName,
+        ...lunarData,
+        lunarHourIndex: hourIndex,
+        gender,
+        isLunar,
+        solarInput: { day, month, year },
+        ...(annualYear === undefined ? {} : {
+          viewYear: annualYear,
+          viewYearCanIndex: (annualYear - 4) % 10,
+          viewYearChiIndex: (annualYear - 4) % 12,
+        }),
+      });
+    } catch (error) {
+      setFormError(error.message || 'Không thể lập lá số từ thông tin này.');
+    }
   };
 
   const isFormValid = name.trim().length > 0;
@@ -213,6 +229,12 @@ export default function BirthInputForm({ onSubmit }) {
           </div>
         </div>
 
+        <div className="form-group">
+          <label className="form-label" htmlFor="view-year">Năm xem lưu niên <span className="text-muted">(không bắt buộc)</span></label>
+          <input id="view-year" className="form-input" type="number" min="1900" max="2100" step="1"
+            value={viewYear} onChange={event => setViewYear(event.target.value)} placeholder="Để trống nếu chỉ xem lá số gốc" />
+        </div>
+        {formError && <p role="alert" className="form-error">{formError}</p>}
         <button
           type="submit"
           className="btn-submit"
