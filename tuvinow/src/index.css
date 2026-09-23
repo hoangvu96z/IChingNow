@@ -324,74 +324,55 @@ body {
   gap: var(--gap-sm);
 }
 
-/* ─── Theme Toggle ─────────────────────────────────────────────────────────── */
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  user-select: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.theme-toggle:hover {
-  border-color: var(--accent-gold);
-  box-shadow: var(--shadow-glow-gold);
-}
-
-.theme-toggle-icon {
-  font-size: 16px;
-  line-height: 1;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.theme-toggle-icon.active {
-  transform: rotate(360deg) scale(1.1);
-}
-
-.theme-toggle-track {
-  width: 36px;
-  height: 20px;
-  background: var(--border-subtle);
+/* Compact TuVi navigation on the shared dark header. */
+.theme-toggle,
+.tuvi-header-new {
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .4);
   border-radius: 10px;
-  position: relative;
-  transition: background 0.3s;
+  background: rgba(255, 255, 255, .09);
+  color: #fff;
+  font: 600 19px var(--font-sans);
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
 }
+.theme-toggle:hover,
+.tuvi-header-new:hover {
+  background: rgba(109, 213, 176, .18);
+  border-color: #6dd5b0;
+}
+.theme-toggle:focus-visible,
+.tuvi-header-new:focus-visible,
+.tuvi-history-link:focus-visible {
+  outline: 2px solid #6dd5b0;
+  outline-offset: 3px;
+}
+.tuvi-header-new { color: #a9f0d5; font-size: 25px; }
+.tuvi-chart-toolbar {
+  width: 98%; max-width: 1200px; margin: 0 auto 8px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 16px;
+  min-height: 32px;
+}
+.tuvi-auto-save-status { color: var(--text-secondary); font-size: 12px; }
+.tuvi-history-link {
+  color: var(--accent-purple); background: var(--bg-card);
+  border: 1px solid var(--border-purple); border-radius: 8px;
+  padding: 7px 12px; font: 600 12px var(--font-sans); cursor: pointer;
+}
+.tuvi-history-link:hover { background: var(--accent-purple-dim); }
+.tuvi-form-history {
+  max-width: 860px; margin: 24px auto 0; padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  background: var(--bg-card); border: 1px solid var(--border-purple);
+  border-radius: 12px;
+}
+.tuvi-form-history strong { color: var(--accent-purple); font-size: 14px; }
+.tuvi-form-history p { color: var(--text-secondary); font-size: 12px; margin-top: 5px; }
+@media (max-width: 520px) { .tuvi-form-history { flex-wrap: wrap; } }
 
-[data-theme="dark"] .theme-toggle-track {
-  background: var(--accent-gold-dim);
-}
-
-.theme-toggle-thumb {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background: var(--accent-gold);
-  border-radius: 50%;
-  top: 2px;
-  left: 2px;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="dark"] .theme-toggle-thumb {
-  transform: translateX(16px);
-  background: var(--accent-gold-bright);
-}
-
-.theme-toggle-label {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  min-width: 28px;
-  text-align: center;
-}
 
 /* ─── Form Card (BirthInputForm) ───────────────────────────────────────────── */
 .form-container {
@@ -1192,9 +1173,6 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 
-  .theme-toggle-label {
-    display: none;
-  }
 }
 
 @media (max-width: 520px) {
@@ -1478,3 +1456,26 @@ body {
 .tv-service-status { background: var(--tv-soft); border: 1px solid var(--tv-line); color: var(--tv-ink); }
 .tv-service-status p { color: var(--tv-muted); }
 .tv-service-status .tv-text-button { color: var(--tv-gold); }
+
+/* Stronger controls on the light theme. */
+:root:not([data-theme="dark"]) .tv-topic,
+:root:not([data-theme="dark"]) .tv-secondary,
+:root:not([data-theme="dark"]) .tv-suggestions button,
+:root:not([data-theme="dark"]) .tv-export-tabs button,
+:root:not([data-theme="dark"]) .btn-export {
+  border-color: var(--border-gold);
+  color: var(--accent-gold-bright);
+  background: var(--bg-card);
+  font-weight: 650;
+}
+:root:not([data-theme="dark"]) .tv-topic.is-selected,
+:root:not([data-theme="dark"]) .tv-export-tabs button.is-selected {
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold-bright);
+  border-color: var(--accent-gold-bright);
+}
+:root:not([data-theme="dark"]) .tuvi-ai button:disabled {
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+  background: var(--bg-secondary);
+}

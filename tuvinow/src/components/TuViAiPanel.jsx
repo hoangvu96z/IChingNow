@@ -20,7 +20,6 @@ function Icon({ name = 'spark', size = 18 }) {
     chat: 'M21 11a8 8 0 0 1-8 8H7l-5 3 2-6a8 8 0 1 1 17-5Z',
     book: 'M12 5v16M12 5C8 2 4 3 2 4v15c4-2 7-1 10 2 3-3 6-4 10-2V4c-2-1-6-2-10 1Z',
     check: 'm5 12 4 4L19 6',
-    save: 'M4 3h13l4 4v14H3V3h1Zm3 0v7h10V3M7 21v-7h10v7',
   };
   return (
     <svg
@@ -74,6 +73,8 @@ export default function TuViAiPanel({
   const [elapsed, setElapsed] = useState(0);
   const controller = useRef(null);
   const mounted = useRef(false);
+  const pendingSave = useRef(null);
+  const savingRef = useRef(false);
   const evidence = useTuViEvidence();
   const catalog = evidence?.catalog || [];
   const prompt = buildTuViPrompt(result, inputData, topic, question);
@@ -123,6 +124,14 @@ export default function TuViAiPanel({
     return () => clearInterval(timer);
   }, [busy]);
 
+  useEffect(() => {
+    const retry = () => {
+      if (pendingSave.current && !savingRef.current) save(pendingSave.current);
+    };
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, []);
+
   async function copy(text) {
     try {
       await navigator.clipboard.writeText(text);
@@ -135,16 +144,20 @@ export default function TuViAiPanel({
       );
     }
   }
-  async function save(value = conversation) {
+  async function save(value) {
+    pendingSave.current = value;
+    savingRef.current = true;
     setSaving(true);
     setSaveMessage('');
     try {
       await onSave(value);
-      if (mounted.current) setSaveMessage('Đã lưu lá số và hội thoại.');
+      pendingSave.current = null;
+      if (mounted.current) setSaveMessage('Đã tự lưu lá số và hội thoại.');
     } catch (err) {
       if (mounted.current)
-        setSaveMessage(`Chưa lưu được: ${err.message}. Bấm Lưu để thử lại.`);
+        setSaveMessage(`Chưa lưu được: ${err.message}. Sẽ tự thử lại khi có mạng.`);
     } finally {
+      savingRef.current = false;
       if (mounted.current) setSaving(false);
     }
   }
@@ -525,19 +538,11 @@ export default function TuViAiPanel({
             )}
           </div>
         )}
-        {isAuthenticated && (
+        {isAuthenticated && (saving || saveMessage) && (
           <footer className="tv-card-footer">
             <span className="tv-save-status" role="status">
-              {saveMessage || 'Lưu lá số để xem lại bất cứ lúc nào'}
+              {saving ? 'Đang tự lưu lá số và hội thoại…' : saveMessage}
             </span>
-            <button
-              className="tv-text-button"
-              disabled={busy || saving}
-              onClick={() => save()}
-            >
-              <Icon name="save" size={16} />
-              {saving ? 'Đang lưu…' : 'Lưu lá số & hội thoại'}
-            </button>
           </footer>
         )}
       </section>

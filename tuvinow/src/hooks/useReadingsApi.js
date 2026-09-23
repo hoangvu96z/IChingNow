@@ -32,7 +32,7 @@ export function useReadingsApi(isAuthenticated, userId) {
   }, [isAuthenticated, userId]);
   useEffect(() => { loadHistory(); return () => { generation.current++; }; }, [loadHistory]);
 
-  const persistReading = async (id, data) => {
+  const persistReading = useCallback(async (id, data) => {
     if (!isAuthenticated || !userId) throw new Error('Vui lòng đăng nhập để lưu lá số');
     const current = generation.current;
     const encrypted = { ...data };
@@ -58,11 +58,12 @@ export function useReadingsApi(isAuthenticated, userId) {
         ? { data: encrypted }
         : { app: 'tuvi', type: 'tuvi-laso', title: personName, question: questionText, data: encrypted },
     });
+    if (!reading?.id) throw new Error('Máy chủ chưa xác nhận đã lưu lá số');
     if (generation.current === current && reading) {
       setHistory(previous => [{ ...reading, data }, ...previous.filter(row => row.id !== reading.id)]);
     }
     return reading?.id;
-  };
+  }, [isAuthenticated, userId]);
   const deleteReading = async (id) => {
     const current = generation.current;
     await ssoRequest(`/readings/${id}`, { method: 'DELETE' });

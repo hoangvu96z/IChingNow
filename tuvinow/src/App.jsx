@@ -52,28 +52,23 @@ function ThemeToggleButton({ theme, onToggle }) {
       className="theme-toggle"
       onClick={onToggle}
       title={theme === 'light' ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
-      aria-label="Toggle theme"
+      aria-label={theme === 'light' ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
       type="button"
       id="theme-toggle-btn"
     >
-      <span className={`theme-toggle-icon ${theme === 'dark' ? 'active' : ''}`}>
-        {theme === 'light' ? '☀️' : '🌙'}
-      </span>
-      <div className="theme-toggle-track">
-        <div className="theme-toggle-thumb" />
-      </div>
-      <span className="theme-toggle-label">
-        {theme === 'light' ? 'Sáng' : 'Tối'}
-      </span>
+      <span aria-hidden="true">{theme === 'light' ? '🌙' : '☀️'}</span>
     </button>
   );
 }
 
-function ReadingSession({ result, inputData, reading, persistReading, onSaved }) {
+function ReadingSession({ result, inputData, reading, persistReading, chartSaveRef, onSaved }) {
   const active = useRef(false);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const savedId = useRef(reading?.id || null);
   const save = async (aiConversation) => {
+    if (!savedId.current && chartSaveRef.current) {
+      savedId.current = await chartSaveRef.current.catch(() => null);
+    }
     const id = await persistReading(savedId.current, { result, inputData, aiConversation });
     savedId.current = id;
     if (active.current) onSaved(id);
@@ -104,7 +99,15 @@ export default function App() {
   const [inputData, setInputData] = useState(null);
   const [showForm, setShowForm] = useState(true);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [manualSaveStatus, setManualSaveStatus] = useState('');
+  const [saveStatus, setSaveStatus] = useState('');
+  const [retrySave, setRetrySave] = useState(0);
+  const chartSaveRef = useRef(null);
+
+  useEffect(() => {
+    const retry = () => setRetrySave(value => value + 1);
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, []);
 
   const handleSubmit = useCallback((data) => {
     const { yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHourIndex, gender } = data;
@@ -123,7 +126,8 @@ export default function App() {
     setChartResult(result);
     setInputData(data);
     setShowForm(false);
-    setManualSaveStatus('');
+    chartSaveRef.current = null;
+    setSaveStatus('');
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -135,7 +139,8 @@ export default function App() {
     setChartResult(null);
     setInputData(null);
     setShowForm(true);
-    setManualSaveStatus('');
+    chartSaveRef.current = null;
+    setSaveStatus('');
   }, []);
 
   useEffect(() => { handleNewReading(); }, [user?.id, handleNewReading]);
@@ -143,33 +148,26 @@ export default function App() {
   // Auto-save newly calculated chart to history when user is authenticated
   useEffect(() => {
     if (chartResult && inputData && isAuthenticated && user?.id && !reading?.id) {
-      persistReading(null, { result: chartResult, inputData })
+      if (chartSaveRef.current) return;
+      setSaveStatus('Đang tự lưu lá số…');
+      const pending = persistReading(null, { result: chartResult, inputData });
+      chartSaveRef.current = pending;
+      pending
         .then((savedId) => {
-          if (savedId) {
+          if (chartSaveRef.current === pending && savedId) {
             setReading({ id: savedId, data: { result: chartResult, inputData } });
-            setManualSaveStatus('Đã lưu');
+            setSaveStatus('Đã tự lưu lá số');
           }
         })
         .catch((err) => {
           console.warn('Auto-save reading error:', err);
+          if (chartSaveRef.current === pending) {
+            chartSaveRef.current = null;
+            setSaveStatus('Chưa lưu được lá số. Sẽ thử lại khi kết nối phục hồi.');
+          }
         });
     }
-  }, [chartResult, inputData, isAuthenticated, user?.id, reading?.id, persistReading]);
-
-  const handleManualSave = async () => {
-    if (!isAuthenticated) return;
-    try {
-      setManualSaveStatus('Đang lưu...');
-      const savedId = await persistReading(reading?.id || null, { result: chartResult, inputData, aiConversation: reading?.data?.aiConversation });
-      if (savedId) {
-        setReading(prev => ({ ...(prev || {}), id: savedId, data: { ...(prev?.data || {}), result: chartResult, inputData } }));
-        setManualSaveStatus('Đã lưu ✓');
-      }
-    } catch (err) {
-      setManualSaveStatus('Lỗi lưu');
-      alert(`Chưa lưu được: ${err.message}`);
-    }
-  };
+  }, [chartResult, inputData, isAuthenticated, user?.id, reading?.id, persistReading, retrySave]);
 
   const openReading = (item) => {
     if (!item.data?.inputData) {
@@ -187,12 +185,13 @@ export default function App() {
       }
     }
     setReading(item);
+    chartSaveRef.current = null;
     setInputData(item.data.inputData);
     setChartResult(result);
     setShowForm(false);
     setShowHistoryModal(false);
     setSessionId(value => value + 1);
-    setManualSaveStatus('Đã lưu');
+    setSaveStatus('Đã lưu trong lịch sử');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -216,57 +215,17 @@ export default function App() {
         themeToggle={
           <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
         }
-        primaryAction={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {isAuthenticated && (
-              <button
-                className="btn-history"
-                onClick={() => setShowHistoryModal(true)}
-                title="Xem lịch sử lá số"
-                style={{
-                  background: 'rgba(155, 89, 182, 0.15)',
-                  border: '1px solid rgba(155, 89, 182, 0.4)',
-                  borderRadius: '8px',
-                  color: '#d8b4fe',
-                  padding: '7px 14px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap',
-                  fontFamily: 'inherit',
-                  fontWeight: 500,
-                }}
-              >
-                📜 Lịch sử {history.length > 0 ? `(${history.length})` : ''}
-              </button>
-            )}
-            {chartResult && (
-              <button
-                className="btn-new-reading"
-                onClick={handleNewReading}
-                style={{
-                  background: 'rgba(109,213,176,0.12)',
-                  border: '1px solid rgba(109,213,176,0.4)',
-                  borderRadius: 8,
-                  color: '#6dd5b0',
-                  padding: '7px 14px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  whiteSpace: 'nowrap',
-                  fontFamily: 'inherit',
-                  justifyContent: 'center',
-                }}
-              >
-                ✦ Lập lá số mới
-              </button>
-            )}
-          </div>
-        }
+        primaryAction={chartResult && (
+          <button
+            type="button"
+            className="tuvi-header-new"
+            onClick={handleNewReading}
+            title="Lập lá số mới"
+            aria-label="Lập lá số mới"
+          >
+            <span aria-hidden="true">✦</span>
+          </button>
+        )}
       />
 
       {/* Main Content */}
@@ -275,47 +234,12 @@ export default function App() {
           <>
             <BirthInputForm onSubmit={handleSubmit} />
             {isAuthenticated && history.length > 0 && (
-              <div
-                style={{
-                  maxWidth: '860px',
-                  margin: '24px auto 0',
-                  padding: '16px 20px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(155, 89, 182, 0.25)',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.6rem' }}>📜</span>
-                  <div>
-                    <strong style={{ color: '#ffd700', fontSize: '0.95rem' }}>
-                      Lịch sử lá số của bạn ({history.length})
-                    </strong>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
-                      Xem lại các lá số và luận giải AI bạn đã lập trước đây.
-                    </p>
-                  </div>
+              <div className="tuvi-form-history">
+                <div>
+                  <strong>Lịch sử lá số ({history.length})</strong>
+                  <p>Xem lại lá số và luận giải đã tự lưu.</p>
                 </div>
-                <button
-                  onClick={() => setShowHistoryModal(true)}
-                  style={{
-                    background: 'linear-gradient(135deg, #7c5cfc 0%, #9b59b6 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '8px 18px',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 2px 10px rgba(124, 92, 252, 0.3)',
-                  }}
-                >
+                <button className="tuvi-history-link" type="button" onClick={() => setShowHistoryModal(true)}>
                   Mở lịch sử
                 </button>
               </div>
@@ -325,87 +249,19 @@ export default function App() {
 
         {chartResult && (
           <>
-            {/* Quick Actions Bar */}
-            <div
-              style={{
-                maxWidth: '1200px',
-                margin: '0 auto 16px auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                padding: '0 4px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <button
-                  onClick={handleNewReading}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    borderRadius: '8px',
-                    color: '#cbd5e1',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  ← Lập lá số khác
+            {isAuthenticated && (
+              <div className="tuvi-chart-toolbar">
+                <span className="tuvi-auto-save-status" role="status">{saveStatus}</span>
+                <button className="tuvi-history-link" type="button" onClick={() => setShowHistoryModal(true)}>
+                  <span aria-hidden="true">📜</span> Lịch sử ({history.length})
                 </button>
-                {isAuthenticated && (
-                  <button
-                    onClick={handleManualSave}
-                    style={{
-                      background: manualSaveStatus === 'Đã lưu ✓' || manualSaveStatus === 'Đã lưu'
-                        ? 'rgba(109, 213, 176, 0.15)'
-                        : 'rgba(255, 255, 255, 0.06)',
-                      border: manualSaveStatus === 'Đã lưu ✓' || manualSaveStatus === 'Đã lưu'
-                        ? '1px solid rgba(109, 213, 176, 0.4)'
-                        : '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: '8px',
-                      color: manualSaveStatus === 'Đã lưu ✓' || manualSaveStatus === 'Đã lưu'
-                        ? '#6dd5b0'
-                        : '#cbd5e1',
-                      padding: '6px 14px',
-                      fontSize: '0.82rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    💾 {manualSaveStatus || 'Lưu vào lịch sử'}
-                  </button>
-                )}
               </div>
-              {isAuthenticated && (
-                <button
-                  onClick={() => setShowHistoryModal(true)}
-                  style={{
-                    background: 'rgba(155, 89, 182, 0.15)',
-                    border: '1px solid rgba(155, 89, 182, 0.3)',
-                    borderRadius: '8px',
-                    color: '#d8b4fe',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  📜 Lịch sử ({history.length})
-                </button>
-              )}
-            </div>
+            )}
 
             <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
             <LasoChart result={chartResult} inputData={inputData} />
             <SummaryPanel result={chartResult} inputData={inputData} />
-            <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} onSaved={id => { setReading(previous => ({ ...previous, id })); setManualSaveStatus('Đã lưu ✓'); }} />
+            <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} chartSaveRef={chartSaveRef} onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }} />
             </TuViEvidenceProvider>
           </>
         )}
