@@ -41,3 +41,12 @@ npx nest build
 ```
 
 Kiểm tra thực tế sau deploy: đăng nhập → lập lá số → copy prompt → luận giải → hỏi tiếp → tải lại trang → mở lịch sử. Kiểm tra tài khoản hết quota và cấu hình AI không hợp lệ. Không gọi AI thật trong bộ test; upstream được mock để không tiêu quota/chi phí.
+# Evidence-linked interpretation
+
+In-app AI requests use JSON version 1: `sections` containing `title`, `text`, and `references`, plus `questions`. References `palace.0` through `palace.11` use the engine's `chiIndex`. Only existing palace IDs become links. The evidence panel displays the original computed stars, decade, and palace flags. Its locate button scrolls and focuses the palace; Escape closes it and restores button focus.
+
+Raw responses remain in saved conversations. Copy exports readable prose; legacy Markdown remains supported. Questions-only responses are rejected instead of saved as successful interpretations. The provider resets with the reading/account session. Styles use existing light/dark theme tokens.
+
+Deploy TuViNow together with the system-prompt update in `vInfiSSO/src/plans/plans.controller.ts`, which allows the requested JSON format. No database migration is needed. Manual prompt export continues to request Markdown.
+
+Validation: `npm test --prefix tuvinow`, `npm run build:tuvi`, and the SSO `plans.tuvi-ai.spec.ts` suite. Component rendering tests use synthetic responses; live provider output has not been verified.

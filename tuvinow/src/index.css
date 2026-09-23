@@ -1457,3 +1457,21 @@ body {
   .tv-terminal textarea { font-size: 10px; padding: 14px; height: 190px; }
 }
 @media (prefers-reduced-motion: reduce) { .tv-orbit > span, .tv-orbit > i { animation: none; } }
+
+/* Evidence uses the same semantic colors in light and dark themes. */
+.tv-evidence-answer > section + section { border-top: 1px solid var(--border-subtle); margin-top: 22px; padding-top: 16px; }
+.palace-card[data-evidence-selected] { outline: 3px solid var(--accent-gold); outline-offset: -3px; scroll-margin-top: 90px; }
+.tv-evidence-panel { position: fixed; z-index: 100; right: 16px; top: 85px; bottom: 20px; width: min(370px, calc(100vw - 32px)); overflow-y: auto; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px; box-shadow: 0 12px 40px #0003; }
+.tv-evidence-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tv-evidence-panel h3, .tv-evidence-panel h4 { color: var(--text-gold); margin: 0 0 12px; }
+.tv-evidence-panel p { margin: 10px 0; line-height: 1.6; }
+.tv-evidence-caption { color: var(--text-secondary); font-size: 12px; }
+.tv-evidence-panel section { border-top: 1px solid var(--border-subtle); padding-top: 16px; margin-top: 18px; }
+.tv-evidence-panel dl > div { margin: 10px 0; }
+.tv-evidence-panel dt { font-size: 12px; color: var(--text-secondary); }
+.tv-evidence-panel dd { margin: 4px 0 0; font-size: 14px; line-height: 1.6; }
+.tv-evidence-panel button { color: var(--text-gold); background: transparent; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 9px 12px; cursor: pointer; }
+.tv-evidence-panel button:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
+@media (max-width: 640px) {
+  .tv-evidence-panel { inset: auto 8px 8px; width: auto; max-height: 43dvh; padding: 16px; }
+}

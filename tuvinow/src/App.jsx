@@ -1,3 +1,4 @@
+import TuViEvidenceProvider from './components/TuViEvidenceProvider';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import { anLaSoTuVi } from './utils/tuViEngine';
@@ -401,9 +402,11 @@ export default function App() {
               )}
             </div>
 
+            <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
             <LasoChart result={chartResult} inputData={inputData} />
             <SummaryPanel result={chartResult} inputData={inputData} />
             <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} onSaved={id => { setReading(previous => ({ ...previous, id })); setManualSaveStatus('Đã lưu ✓'); }} />
+            </TuViEvidenceProvider>
           </>
         )}
       </main>

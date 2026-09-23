@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import TuViEvidenceAnswer from './TuViEvidenceAnswer';
+import { useTuViEvidence } from '../context/tuViEvidenceState';
+import { parseTuViAnswer, tuViAnswerText, tuViEvidencePrompt } from '../utils/tuViEvidence';
 import {
   TOPICS,
   buildTuViText,
   buildTuViPrompt,
-  splitSuggestions,
 } from '../utils/buildTuViPrompt';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../hooks/usePlan';
@@ -71,8 +72,11 @@ export default function TuViAiPanel({
   const [elapsed, setElapsed] = useState(0);
   const controller = useRef(null);
   const mounted = useRef(false);
+  const evidence = useTuViEvidence();
+  const catalog = evidence?.catalog || [];
   const prompt = buildTuViPrompt(result, inputData, topic, question);
-  const parsed = splitSuggestions(conversation?.initialInterpretation || '');
+  const parsed = parseTuViAnswer(conversation?.initialInterpretation || '', catalog);
+  const answerText = tuViAnswerText(conversation?.initialInterpretation || '');
   const followUps = conversation?.followUps || [];
   const exportText =
     exportTab === 'prompt' ? prompt : buildTuViText(result, inputData);
@@ -146,7 +150,8 @@ export default function TuViAiPanel({
     setBusy(true);
     setError('');
     const timeout = setTimeout(() => abort.abort(), 195000);
-    const basePrompt = isFollowUp ? conversation.prompt : prompt;
+    const apiPrompt = buildTuViPrompt(result, inputData, topic, question, true) + tuViEvidencePrompt(catalog);
+    const basePrompt = isFollowUp ? conversation.prompt : apiPrompt;
     const messages = [{ role: 'user', content: basePrompt }];
     if (isFollowUp) {
       messages.push({
@@ -158,7 +163,7 @@ export default function TuViAiPanel({
           { role: 'user', content: item.question },
           { role: 'assistant', content: item.answer },
         );
-      messages.push({ role: 'user', content: text });
+      messages.push({ role: 'user', content: text + tuViEvidencePrompt(catalog) });
     }
     const activeModel = model || config.models?.[0] || 'combo1';
     try {
@@ -171,6 +176,7 @@ export default function TuViAiPanel({
         });
         content = res?.content || '';
       } catch (ssoErr) {
+        if (abort.signal.aborted || !mounted.current) throw ssoErr;
         const fallbackEndpoint = (import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1').replace(/\/$/, '');
         const fallbackKey = import.meta.env.VITE_AI_API_KEY || '';
         const headers = { 'Content-Type': 'application/json' };
@@ -209,7 +215,8 @@ export default function TuViAiPanel({
           content = combined || streamData;
         }
       }
-      if (!content) {
+      const answer = parseTuViAnswer(content, catalog);
+      if (!answer.sections.length && !answer.fallback.trim()) {
         throw new Error('Không nhận được nội dung luận giải từ AI. Vui lòng thử lại.');
       }
       if (abort.signal.aborted || !mounted.current) return;
@@ -219,7 +226,8 @@ export default function TuViAiPanel({
             followUps: [...followUps, { question: text, answer: content }],
           }
         : {
-            prompt,
+            prompt: apiPrompt,
+            evidenceVersion: 1,
             topic,
             question,
             initialInterpretation: content,
@@ -454,16 +462,16 @@ export default function TuViAiPanel({
               </span>
               <button
                 className="tv-text-button"
-                onClick={() => copy(conversation.initialInterpretation)}
+                onClick={() => copy(answerText)}
               >
                 <Icon name="copy" size={15} />
-                {copiedText === conversation.initialInterpretation
+                {copiedText === answerText
                   ? 'Đã sao chép!'
                   : 'Copy luận giải'}
               </button>
             </div>
             <article className="tv-prose">
-              <ReactMarkdown>{parsed.answer}</ReactMarkdown>
+              <TuViEvidenceAnswer parsedResponse={parsed} />
             </article>
             <div className="tv-chat-divider">
               <span />
@@ -480,9 +488,7 @@ export default function TuViAiPanel({
                   <div className="tv-assistant-bubble">
                     <span className="tv-chat-avatar">✦</span>
                     <div className="tv-prose">
-                      <ReactMarkdown>
-                        {splitSuggestions(item.answer).answer}
-                      </ReactMarkdown>
+                      <TuViEvidenceAnswer text={item.answer} />
                     </div>
                   </div>
                 </div>
@@ -492,8 +498,8 @@ export default function TuViAiPanel({
               <>
                 <div className="tv-suggestions">
                   {(followUps.length
-                    ? splitSuggestions(followUps.at(-1).answer).suggestions
-                    : parsed.suggestions
+                    ? parseTuViAnswer(followUps.at(-1).answer, catalog).questions
+                    : parsed.questions
                   ).map((text) => (
                     <button
                       key={text}

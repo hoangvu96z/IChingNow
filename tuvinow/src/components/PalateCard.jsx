@@ -1,3 +1,4 @@
+import { useTuViEvidence } from '../context/tuViEvidenceState';
 import React from 'react';
 
 /**
@@ -35,6 +36,7 @@ const HOA_SYMBOLS = {
 };
 
 export default function PalateCard({ palace }) {
+  const evidence = useTuViEvidence();
   if (!palace) return null;
 
   const { chiIndex, chiName, canName, chucNang, daiHan, trangSinh, isTuan, isTriet, isMenh, isThan, chinhTinh, phuTinh } = palace;
@@ -55,7 +57,7 @@ export default function PalateCard({ palace }) {
   const isMenhCung = funcLabel.includes('Mệnh') && !funcLabel.includes('Phụ Mẫu');
 
   return (
-    <div className={cardClass}>
+    <div className={cardClass} {...evidence?.targetProps(`palace.${chiIndex}`)}>
       {/* Header */}
       <div className="palace-header">
         <div>
