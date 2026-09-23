@@ -1,5 +1,7 @@
 # Thuật toán an lá số v8
 
+Tài liệu lịch sử; phiên bản hiện tại là v11, xem `ENGINE_V11.md`.
+
 Nguồn tích hợp: `tu-vi-an-so-v8 (1).js` do người dùng cung cấp.
 
 SHA-256 nguồn: `0ebaa8c29b9fa43880277cc6a52edf2129637dc1c4e3d563d46154895a41bf31`.

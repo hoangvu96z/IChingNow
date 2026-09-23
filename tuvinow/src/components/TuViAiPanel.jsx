@@ -578,7 +578,7 @@ export default function TuViAiPanel({
               }}
             >
               <Icon size={16} />
-              Prompt mẫu cho AI
+              Prompt luận giải đầy đủ
             </button>
             <button
               aria-pressed={exportTab === 'data'}
@@ -616,8 +616,8 @@ export default function TuViAiPanel({
           <div className="tv-export-actions">
             <p>
               {exportTab === 'prompt'
-                ? 'Prompt sử dụng chủ đề và câu hỏi bạn đã chọn ở trên. Sao chép và dán vào ChatGPT, Claude hoặc Gemini.'
-                : 'Bao gồm thông tin ngày sinh, bản mệnh, chính tinh và phụ tinh của đủ 12 cung.'}
+                ? 'Gồm đủ 12 cung, quan hệ tam hợp/xung chiếu, Tứ Hóa và các hạn đã tính; kèm hướng dẫn luận giải theo chủ đề và câu hỏi đã chọn. Sao chép toàn bộ để dùng với AI khác.'
+                : 'Dữ liệu đầy đủ từ lá số đang xem, gồm sao, trạng thái, Tuần/Triệt, Cân lượng và các hạn nếu có. Phần chưa có dữ liệu được ghi rõ.'}
             </p>
             <button
               className={`tv-button tv-primary ${exportCopied ? 'tv-copied' : ''}`}

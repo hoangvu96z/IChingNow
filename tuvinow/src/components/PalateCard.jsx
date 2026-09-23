@@ -71,6 +71,10 @@ export default function PalateCard({ palace }) {
       </div>
 
       {/* Stars */}
+      {(palace.isTieuHan || palace.luuNienChucNang) && <div className="palace-year-context">
+        {palace.isTieuHan && <span className="palace-tieuhan">Tiểu hạn</span>}
+        {palace.luuNienChucNang && <span title="Cung lưu niên đại hạn">{palace.luuNienChucNang}</span>}
+      </div>}
       <div className="palace-stars">
         {chinhTinh.map((star, i) => {
           const statusClass = getStarStatusClass(star);

@@ -10,6 +10,8 @@ export function buildTuViEvidence(result) {
       ...(result.viewYearCanChi ? [['Năm lưu niên', `${result.viewYear || ''} ${result.viewYearCanChi}`]] : []),
       ['Mệnh / Thân', [p.isMenh && 'Mệnh', p.isThan && 'Thân'].filter(Boolean).join(', ') || 'Không'],
       ['Tràng Sinh', p.trangSinh],
+      ...(p.isTieuHan ? [['Tiểu hạn', `${result.tuoiAm} tuổi · ${result.viewYear || result.viewYearStr || ''}`]] : []),
+      ...(p.luuNienChucNang ? [['Cung lưu niên đại hạn', p.luuNienChucNang]] : []),
       ['Đại hạn', `${p.daiHan}–${p.daiHan + 9} tuổi`],
       ['Tuần', p.isTuan ? 'Có' : 'Không'],
       ['Triệt', p.isTriet ? 'Có' : 'Không'],

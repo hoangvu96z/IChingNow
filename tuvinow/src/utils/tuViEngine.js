@@ -1,14 +1,11 @@
-// UI adapter for the user-supplied v8 algorithm. No star placement is performed here.
-import { anLaSoTuVi as calculate, DIA_CHI } from './tuViEngineV8.js';
-export { THIEN_CAN, DIA_CHI, TEN_CUNG_CHUC_NANG,
-  MIEU_HAM_MAP, getMenhThanIndex, getCuc, getTuViIndex, getTrangThaiStar } from './tuViEngineV8.js';
-import { THIEN_CAN } from './tuViEngineV8.js';
+// UI adapter for the user-supplied v11 algorithm. No star placement is performed here.
+import { anLaSoTuVi as calculate, DIA_CHI } from './tuViEngineV11.js';
+export { THIEN_CAN, DIA_CHI, TEN_CUNG_CHUC_NANG, NGU_HANH_CUC_NAME,
+  MIEU_HAM_MAP, getMenhThanIndex, getCuc, getTuViIndex, getTrangThaiStar } from './tuViEngineV11.js';
+import { THIEN_CAN } from './tuViEngineV11.js';
 
-// Compatibility export retained for chart consumers; the supplied v8 source
-// exposes the Cục number/name through getCuc rather than this lookup table.
-export const NGU_HANH_CUC_NAME = { 2: 'Thủy', 3: 'Mộc', 4: 'Kim', 5: 'Thổ', 6: 'Hỏa' };
 
-export const TUVI_ENGINE_VERSION = 'user-v8';
+export const TUVI_ENGINE_VERSION = 'user-v11';
 
 export function getTrangThaiName(code) {
   return ({ M: 'Miếu', V: 'Vượng', Đ: 'Đắc', B: 'Bình', H: 'Hãm' })[code] || code;
@@ -31,7 +28,16 @@ export function anLaSoTuVi(input) {
     requireInteger(input.viewYearCanIndex, 0, 9, 'Can năm xem');
     requireInteger(input.viewYearChiIndex, 0, 11, 'Chi năm xem');
   }
-  const result = calculate(input);
+  // Pass explicit lunar birth/view years. Never activate the source's clock-based
+  // fallback when an older chart provides only annual Can/Chi.
+  const namSinh = input.namSinh ?? input.lunarYear;
+  const namXem = input.namXem ?? input.viewYear;
+  if (namSinh !== undefined) requireInteger(namSinh, 1, 9999, 'Năm sinh âm lịch');
+  if (namXem !== undefined) {
+    requireInteger(namXem, 1, 9999, 'Năm xem');
+    if (namSinh !== undefined && namXem < namSinh) throw new Error('Năm xem phải từ năm sinh âm lịch trở đi.');
+  }
+  const result = calculate({ ...input, namSinh: namXem === undefined ? undefined : namSinh, namXem });
   const menhIndex = DIA_CHI.indexOf(result.menhCung);
   const thanIndex = DIA_CHI.indexOf(result.thanCung);
   return {
@@ -41,7 +47,7 @@ export function anLaSoTuVi(input) {
     tuanCung: result.palates.filter(p => p.isTuan).map(p => p.chiName),
     trietCung: result.palates.filter(p => p.isTriet).map(p => p.chiName),
     ...(hasViewYear ? {
-      viewYear: input.viewYear,
+      viewYear: namXem,
       viewYearCanChi: `${THIEN_CAN[input.viewYearCanIndex]} ${DIA_CHI[input.viewYearChiIndex]}`,
     } : {}),
     palates: result.palates.map(p => ({ ...p, isMenh: p.chiIndex === menhIndex, isThan: p.chiIndex === thanIndex })),

@@ -25,6 +25,18 @@ export default function SummaryPanel({ result, inputData }) {
       </h3>
 
       <div className="summary-grid">
+        {result.canLuongStr && <div className="summary-item">
+          <div className="summary-item-label">Cân lượng</div>
+          <div className="summary-item-value gold">{result.canLuongStr}</div>
+        </div>}
+        {result.tuoiAm != null && <div className="summary-item">
+          <div className="summary-item-label">Tuổi âm · năm {result.viewYear}</div>
+          <div className="summary-item-value">{result.tuoiAm} tuổi</div>
+        </div>}
+        {result.tieuHanCung && <div className="summary-item">
+          <div className="summary-item-label">Tiểu hạn</div>
+          <div className="summary-item-value gold">{result.tieuHanCung}</div>
+        </div>}
         <div className="summary-item">
           <div className="summary-item-label">Họ Tên</div>
           <div className="summary-item-value gold">{inputData?.name || '—'}</div>
@@ -89,6 +101,10 @@ export default function SummaryPanel({ result, inputData }) {
           </div>
         </div>
       </div>
+      {result.canLuongStr && <p className="annual-chart-note">LN. là cung lưu niên đại hạn; L. là sao lưu niên.
+        {result.tuoiAm == null ? ' Chọn năm xem khi lập lá số để hiển thị tuổi âm và Tiểu hạn.' :
+          !palates.some(p => p.luuNienChucNang) ? ' Tuổi đang xem chưa nằm trong các đại hạn của lá số nên chưa có cung LN.' : ''}
+      </p>}
     </div>
   );
 }

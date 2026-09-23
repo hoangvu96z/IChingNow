@@ -4,7 +4,37 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { anLaSoTuVi } from '../src/utils/tuViEngine.js';
 import { buildTuViText, buildTuViPrompt } from '../src/utils/buildTuViPrompt.js';
-const original = createRequire(import.meta.url)('./fixtures/tuvi-v8-user.cjs');
+const original = createRequire(import.meta.url)('./fixtures/tuvi-v11-user.cjs');
+
+test('v11 age, annual palaces and weight match source across age boundaries and both genders', () => {
+  for (let year = 1984; year < 2044; year++) for (const gender of [0, 1])
+    for (const age of [1, 2, 3, 4, 5, 6, 12, 13, 30, 60, 120, 130]) {
+      const namXem = year + age - 1;
+      const input = { yearCanIndex: (year - 4) % 10, yearChiIndex: (year - 4) % 12,
+        gender, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3,
+        lunarYear: year, viewYear: namXem, viewYearCanIndex: (namXem - 4) % 10, viewYearChiIndex: (namXem - 4) % 12 };
+      const expected = original.anLaSoTuVi({ ...input, namSinh: year, namXem });
+      const actual = anLaSoTuVi(input);
+      assert.equal(actual.tuoiAm, age);
+      for (const key of ['canLuongStr', 'tieuHanCung', 'viewYearStr']) assert.equal(actual[key], expected[key]);
+      actual.palates.forEach((p, i) => {
+        for (const key of Object.keys(expected.palates[i])) assert.deepEqual(p[key], expected.palates[i][key]);
+      });
+      assert.equal(actual.palates.filter(p => p.isTieuHan).length, 1);
+      assert.ok(buildTuViText(actual, input).includes(`Cân lượng: ${expected.canLuongStr}`));
+    }
+});
+
+test('missing annual year never invokes wall-clock fallback and pre-birth years are rejected', () => {
+  const input = { yearCanIndex: 2, yearChiIndex: 0, gender: 1, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3, lunarYear: 1996 };
+  for (const extra of [{}, { viewYearCanIndex: 2, viewYearChiIndex: 6 }]) {
+    const result = anLaSoTuVi({ ...input, ...extra });
+    assert.equal(result.tuoiAm, null);
+    assert.equal(result.tieuHanCung, null);
+    assert.ok(result.palates.every(p => !p.isTieuHan && !p.luuNienChucNang));
+  }
+  assert.throws(() => anLaSoTuVi({ ...input, viewYear: 1995 }), /Năm xem/);
+});
 
 function compare(input) {
   const expected = original.anLaSoTuVi(input);
@@ -18,7 +48,7 @@ function compare(input) {
       }
     } else assert.deepEqual(actual[key], expected[key]);
   }
-  assert.equal(actual.engineVersion, 'user-v8');
+  assert.equal(actual.engineVersion, 'user-v11');
   assert.deepEqual(actual.tuanCung, expected.palates.filter(p => p.isTuan).map(p => p.chiName));
   assert.deepEqual(actual.trietCung, expected.palates.filter(p => p.isTriet).map(p => p.chiName));
   assert.equal(actual.palates.filter(p => p.isMenh).length, 1);
@@ -26,9 +56,9 @@ function compare(input) {
   assert.equal(actual.palates.find(p => p.isThan).chiName, expected.thanCung);
 }
 
-test('calculation body is identical to the supplied v8 source', () => {
-  const source = readFileSync(new URL('./fixtures/tuvi-v8-user.cjs', import.meta.url), 'utf8');
-  const core = readFileSync(new URL('../src/utils/tuViEngineV8.js', import.meta.url), 'utf8');
+test('calculation body is identical to the supplied v11 source', () => {
+  const source = readFileSync(new URL('./fixtures/tuvi-v11-user.cjs', import.meta.url), 'utf8');
+  const core = readFileSync(new URL('../src/utils/tuViEngineV11.js', import.meta.url), 'utf8');
   assert.equal(core.split('// ESM exports')[0], source.split("if (typeof module !== 'undefined'")[0]);
 });
 
@@ -68,7 +98,7 @@ test('partial annual input and invalid days are rejected rather than invented', 
 });
 
 
-test('v8 places Thien Phuc exactly as supplied for all ten heavenly stems', () => {
+test('v11 places Thien Phuc exactly as supplied for all ten heavenly stems', () => {
   const expected = ['Dậu', 'Thân', 'Tý', 'Hợi', 'Mão', 'Dần', 'Ngọ', 'Tỵ', 'Ngọ', 'Tỵ'];
   for (let yearCanIndex = 0; yearCanIndex < 10; yearCanIndex++) {
     const result = anLaSoTuVi({ yearCanIndex, yearChiIndex: yearCanIndex, gender: 1, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3 });

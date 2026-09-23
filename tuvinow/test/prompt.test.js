@@ -33,3 +33,35 @@ test('suggestions are optional and limited to three', () => {
   assert.deepEqual(splitSuggestions('Bài luận'), { answer: 'Bài luận', suggestions: [] });
   assert.deepEqual(splitSuggestions('Bài luận\n---SUGGESTED_QUESTIONS---\n1. A\n2. B\n- C\n4. D'), { answer: 'Bài luận', suggestions: ['A', 'B', 'C'] });
 });
+
+test('full external export preserves annual facts and derives relationships from actual palace positions', () => {
+  const annualInput = { ...input, viewYear: 2026, viewYearCanIndex: 2, viewYearChiIndex: 6 };
+  const annual = anLaSoTuVi(annualInput);
+  const before = structuredClone(annual);
+  const text = buildTuViPrompt(annual, annualInput, 'love', 'Về gia đình?');
+  assert.ok(text.includes('Khảo sát đủ 12 cung'));
+  assert.ok(text.includes('Tuổi âm năm xem: 31'));
+  assert.ok(text.includes(annual.canLuongStr));
+  for (const p of annual.palates) {
+    const opposite = annual.palates.find(other => other.chiIndex === (p.chiIndex + 6) % 12);
+    assert.ok(text.includes(`xung chiếu = ${opposite.chucNang} tại ${opposite.chiName}`));
+    assert.ok(text.includes(`Cung lưu niên đại hạn: ${p.luuNienChucNang}`));
+    for (const s of p.phuTinh.filter(s => s.startsWith('L.'))) assert.ok(text.includes(s));
+  }
+  assert.ok(!text.includes('chỉ có 5'));
+  assert.ok(!text.includes('undefined'));
+  assert.deepEqual(annual, before);
+});
+
+test('older charts retain absent annual fields and incomplete birth input is explicit', () => {
+  const legacy = structuredClone(result);
+  delete legacy.engineVersion;
+  delete legacy.canLuongStr;
+  delete legacy.tuoiAm;
+  delete legacy.tieuHanCung;
+  const text = buildTuViText(legacy, {});
+  assert.ok(text.includes('Không ghi nhận (lá số lịch sử)'));
+  assert.ok(text.includes('Tiểu hạn: Chưa có dữ liệu'));
+  assert.ok(text.includes('Cân lượng: Chưa có dữ liệu'));
+  assert.ok(!text.includes('undefined'));
+});

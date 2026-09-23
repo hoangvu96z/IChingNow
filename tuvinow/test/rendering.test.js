@@ -13,6 +13,15 @@ test('answer and actual palace components render evidence and legacy text', asyn
     const { default: Answer } = await server.ssrLoadModule('/src/components/TuViEvidenceAnswer.jsx');
     const { default: LocalReport } = await server.ssrLoadModule('/src/components/TuViLocalReport.jsx');
     const { default: Palace } = await server.ssrLoadModule('/src/components/PalateCard.jsx');
+    const { default: Summary } = await server.ssrLoadModule('/src/components/SummaryPanel.jsx');
+    const annual = anLaSoTuVi({ lunarYear: 1996, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3, yearCanIndex: 2, yearChiIndex: 0, gender: 0, viewYear: 2026, viewYearCanIndex: 2, viewYearChiIndex: 6 });
+    const annualHtml = renderToStaticMarkup(React.createElement(Provider, { result: annual },
+      React.createElement(Summary, { result: annual }),
+      ...annual.palates.map(p => React.createElement(Palace, { palace: p, key: p.chiIndex }))));
+    assert.ok(annualHtml.includes(annual.canLuongStr));
+    assert.ok(annualHtml.includes('31 tuổi'));
+    assert.equal((annualHtml.match(/class="palace-tieuhan"/g) || []).length, 1);
+    for (const p of annual.palates) assert.ok(annualHtml.includes(p.luuNienChucNang));
     const result = anLaSoTuVi({ lunarYear: 1996, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3, yearCanIndex: 2, yearChiIndex: 0, gender: 1 });
     const localHtml = renderToStaticMarkup(React.createElement(LocalReport, { result }));
     assert.equal((localHtml.match(/<details/g) || []).length, 6);

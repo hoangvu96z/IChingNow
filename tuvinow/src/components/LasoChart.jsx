@@ -188,6 +188,8 @@ export default function LasoChart({ result, inputData }) {
 
           {/* Center Info Panel */}
           <div className="chart-center">
+            {result.canLuongStr && <div className="center-info-row"><span className="label">Cân lượng:</span><span className="value">{result.canLuongStr}</span></div>}
+            {result.tuoiAm != null && <div className="center-info-row"><span className="label">Tuổi âm:</span><span className="value">{result.tuoiAm} · Tiểu hạn {result.tieuHanCung}</span></div>}
             {result.viewYearCanChi && <div className="center-info-row"><span className="label">Lưu niên:</span><span className="value">{result.viewYear || ''} {result.viewYearCanChi}</span></div>}
             <div className="center-name">
               {inputData?.name || 'Lá Số Tử Vi'}

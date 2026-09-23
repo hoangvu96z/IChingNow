@@ -1482,4 +1482,7 @@ body {
 
 .palace-annual-stars { color: var(--accent-cyan); font-size: .7rem; line-height: 1.6; padding-top: 5px; border-top: 1px dashed var(--border-subtle); }
 .chart-year-label { display: block; color: var(--text-secondary); font: 500 12px var(--font-sans); margin-top: 5px; }
+.palace-year-context { display: flex; flex-wrap: wrap; gap: 5px 10px; align-items: center; color: var(--accent-cyan); font-size: .72rem; padding-bottom: 6px; }
+.palace-tieuhan { color: var(--accent-gold); background: var(--accent-gold-dim); border: 1px solid var(--accent-gold); border-radius: 5px; padding: 2px 5px; font-weight: 600; }
+.annual-chart-note { color: var(--text-secondary); font-size: .8rem; line-height: 1.6; margin-top: 16px; }
 .form-error { color: var(--star-ham); font-size: 13px; margin-bottom: 14px; line-height: 1.6; }
