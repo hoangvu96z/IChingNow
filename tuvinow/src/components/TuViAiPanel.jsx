@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import TuViEvidenceAnswer from './TuViEvidenceAnswer';
 import { useTuViEvidence } from '../context/tuViEvidenceState';
 import { parseTuViAnswer, tuViAnswerText, tuViEvidencePrompt } from '../utils/tuViEvidence';
@@ -58,7 +58,9 @@ export default function TuViAiPanel({
   const [question, setQuestion] = useState(initialConversation?.question || '');
   const [conversation, setConversation] = useState(initialConversation || null);
   const [followUp, setFollowUp] = useState('');
-  const [config, setConfig] = useState({ models: ['combo1'], configured: true });
+  const [config, setConfig] = useState({ models: ['combo1'], configured: null });
+  const [checkingConfig, setCheckingConfig] = useState(true);
+  const [configError, setConfigError] = useState('');
   const [model, setModel] = useState('combo1');
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -82,26 +84,37 @@ export default function TuViAiPanel({
     exportTab === 'prompt' ? prompt : buildTuViText(result, inputData);
   const exportCopied = copiedText === exportText;
 
+  const checkConfig = useCallback(async (signal) => {
+    setCheckingConfig(true);
+    setConfigError('');
+    try {
+      const data = await ssoRequest('/plans/tuvi-ai/config', { signal });
+      if (signal?.aborted || !mounted.current) return;
+      const models = Array.isArray(data.models) ? data.models.filter(m => typeof m === 'string' && m.trim()) : [];
+      if (!models.length || typeof data.configured !== 'boolean') throw new Error('Invalid AI configuration');
+      setConfig({ models, configured: data.configured });
+      setModel(previous => models.includes(previous) ? previous : models[0]);
+    } catch {
+      if (signal?.aborted || !mounted.current) return;
+      setConfig(previous => ({ ...previous, configured: null }));
+      setConfigError('Chưa kiểm tra được dịch vụ AI. Vui lòng kiểm tra kết nối rồi thử lại.');
+    } finally {
+      if (!signal?.aborted && mounted.current) setCheckingConfig(false);
+    }
+  }, []);
+
   useEffect(() => {
     mounted.current = true;
     const abort = new AbortController();
-    ssoRequest('/plans/tuvi-ai/config', { signal: abort.signal })
-      .then((data) => {
-        if (data && Array.isArray(data.models) && data.models.length > 0) {
-          setConfig({ models: data.models, configured: true });
-          setModel(data.models[0]);
-        }
-      })
-      .catch(() => {
-        setConfig({ models: ['combo1'], configured: true });
-        setModel('combo1');
-      });
+    checkConfig(abort.signal);
     return () => {
       mounted.current = false;
       abort.abort();
       controller.current?.abort();
     };
-  }, []);
+  }, [checkConfig]);
+
+  const aiUnavailable = checkingConfig || config.configured !== true;
 
   useEffect(() => {
     if (!busy) return;
@@ -136,7 +149,7 @@ export default function TuViAiPanel({
     }
   }
   async function ask(nextQuestion) {
-    if (controller.current || saving) return;
+    if (controller.current || saving || aiUnavailable) return;
     const isFollowUp = typeof nextQuestion === 'string';
     const text = isFollowUp ? nextQuestion.trim() : '';
     if (isFollowUp && (!text || text.length > 2048 || followUps.length >= 5))
@@ -167,54 +180,12 @@ export default function TuViAiPanel({
     }
     const activeModel = model || config.models?.[0] || 'combo1';
     try {
-      let content = '';
-      try {
-        const res = await ssoRequest('/plans/tuvi-ai', {
-          method: 'POST',
-          body: { model: activeModel, messages },
-          signal: abort.signal,
-        });
-        content = res?.content || '';
-      } catch (ssoErr) {
-        if (abort.signal.aborted || !mounted.current) throw ssoErr;
-        const fallbackEndpoint = (import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1').replace(/\/$/, '');
-        const fallbackKey = import.meta.env.VITE_AI_API_KEY || '';
-        const headers = { 'Content-Type': 'application/json' };
-        if (fallbackKey) {
-          headers['Authorization'] = `Bearer ${fallbackKey}`;
-        }
-        const directRes = await fetch(`${fallbackEndpoint}/chat/completions`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model: activeModel,
-            messages,
-          }),
-          signal: abort.signal,
-        });
-        if (!directRes.ok) {
-          const errText = await directRes.text().catch(() => '');
-          throw new Error(errText || `Lỗi kết nối máy chủ AI (${directRes.status})`);
-        }
-        const streamData = await directRes.text();
-        try {
-          const parsed = JSON.parse(streamData);
-          content = parsed.choices?.[0]?.message?.content || '';
-        } catch {
-          const lines = streamData.split('\n');
-          let combined = '';
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('data: ') && !trimmed.includes('[DONE]')) {
-              try {
-                const chunk = JSON.parse(trimmed.slice(6));
-                combined += chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || '';
-              } catch {}
-            }
-          }
-          content = combined || streamData;
-        }
-      }
+      const res = await ssoRequest('/plans/tuvi-ai', {
+        method: 'POST',
+        body: { model: activeModel, messages },
+        signal: abort.signal,
+      });
+      const content = res?.content || '';
       const answer = parseTuViAnswer(content, catalog);
       if (!answer.sections.length && !answer.fallback.trim()) {
         throw new Error('Không nhận được nội dung luận giải từ AI. Vui lòng thử lại.');
@@ -237,6 +208,7 @@ export default function TuViAiPanel({
       setFollowUp('');
       await save(updated);
     } catch (err) {
+      if (mounted.current && err.code === 'AI_NOT_CONFIGURED') setConfig(previous => ({ ...previous, configured: false }));
       if (mounted.current)
         setError(
           abort.signal.aborted
@@ -430,11 +402,11 @@ export default function TuViAiPanel({
               ) : (
                 <button
                   className="tv-button tv-primary"
-                  disabled={saving || busy}
+                  disabled={saving || busy || aiUnavailable}
                   onClick={() => ask()}
                 >
                   <Icon />
-                  {conversation ? 'Luận giải lại lá số' : 'Luận giải lá số'}
+                  {checkingConfig ? 'Đang kiểm tra dịch vụ…' : aiUnavailable ? 'AI tạm chưa sẵn sàng' : conversation ? 'Luận giải lại lá số' : 'Luận giải lá số'}
                   <Icon name="arrow" />
                 </button>
               )}
@@ -443,6 +415,13 @@ export default function TuViAiPanel({
                   ? 'Bạn vẫn có thể sao chép prompt miễn phí ở bên dưới.'
                   : 'Luận giải chuyên sâu từ đầy đủ 12 cung trên lá số của bạn'}
               </p>
+            </div>
+          )}
+          {!checkingConfig && aiUnavailable && (
+            <div className="tv-notice tv-service-status" role="status">
+              <strong>{configError ? 'Chưa kết nối được dịch vụ AI' : 'Dịch vụ AI chưa sẵn sàng'}</strong>
+              <p>{configError || 'Bạn vẫn có thể lưu lá số hoặc sao chép prompt bên dưới để luận giải với AI khác.'}</p>
+              <button type="button" className="tv-text-button" onClick={() => checkConfig()} disabled={checkingConfig}>Kiểm tra lại dịch vụ</button>
             </div>
           )}
           {error && (
@@ -503,7 +482,7 @@ export default function TuViAiPanel({
                   ).map((text) => (
                     <button
                       key={text}
-                      disabled={busy || saving}
+                      disabled={busy || saving || aiUnavailable}
                       onClick={() => ask(text)}
                     >
                       {text}
@@ -531,7 +510,7 @@ export default function TuViAiPanel({
                     <span>{followUp.length}/2048</span>
                     <button
                       className="tv-button tv-primary"
-                      disabled={busy || saving || !followUp.trim()}
+                      disabled={busy || saving || aiUnavailable || !followUp.trim()}
                     >
                       Gửi câu hỏi
                       <Icon name="arrow" size={16} />

@@ -21,9 +21,11 @@ TUVI_AI_MODELS=combo1
 
 Có thể liệt kê nhiều model, phân cách bằng dấu phẩy. Frontend chỉ chọn trong danh sách này. Không đưa API key vào biến `VITE_` hoặc commit credential vào repo.
 
-`.env` local của SSO đã được cấu hình từ upstream đang có ở app IChing. Môi trường production cần đặt key qua biến môi trường/secret trên server; `.env.production` trong repo không được bổ sung key mới.
+Khi chạy `NODE_ENV=production`, SSO đọc `.env` trước rồi bổ sung biến còn thiếu từ `.env.production`. Biến môi trường của tiến trình được ưu tiên cao nhất. Đặt các file tại thư mục gốc SSO; PM2 đã cố định `cwd` tại thư mục chứa ecosystem config. Không để `TUVI_AI_API_KEY` rỗng trong nguồn ưu tiên cao hơn. Sau khi cập nhật biến môi trường, khởi động lại PM2 với `--update-env`.
 
-Frontend cần `VITE_SSO_URL` trỏ đến SSO (cùng cấu hình đăng nhập hiện có). Nếu biến này trống trong dev, Vite proxy `/sso`, `/ui`, `/plans`, `/readings` đến `http://localhost:3000`. Production phải dùng SSO URL thực, không dựa vào Vite proxy. Đảm bảo `ALLOWED_ORIGINS` của SSO cho phép origin chạy TuViNow.
+Kiểm tra `GET /plans/tuvi-ai/config`: `configured: true` xác nhận đã nạp key, chưa xác nhận upstream hoạt động. Nếu trả `false`, backend không gọi upstream và không trừ quota. UI sẽ hiện trạng thái chưa sẵn sàng và cho kiểm tra lại. Frontend chỉ gọi SSO, không gọi trực tiếp upstream hay dùng key `VITE_AI_API_KEY` để vượt lỗi SSO.
+
+Frontend cần `VITE_SSO_URL` trỏ đến SSO (cùng cấu hình đăng nhập hiện có). Nếu biến này trống trong dev, Vite proxy `/sso`, `/ui`, `/plans`, `/readings` đến `https://sso.vunph.click`. Production phải dùng SSO URL thực, không dựa vào Vite proxy. Đảm bảo `ALLOWED_ORIGINS` của SSO cho phép origin chạy TuViNow.
 
 Triển khai backend SSO trước, rồi build/deploy TuViNow. Không cần migration database. Hai app TarotNow và IChing không đổi luồng gọi AI.
 

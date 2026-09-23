@@ -7,7 +7,7 @@ import react from '@vitejs/plugin-react';
 import { anLaSoTuVi } from '../src/utils/tuViEngine.js';
 
 test('answer and actual palace components render evidence and legacy text', async () => {
-  const server = await createServer({ configFile: false, plugins: [react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true }, appType: 'custom' });
+  const server = await createServer({ configFile: false, plugins: [react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { default: Provider } = await server.ssrLoadModule('/src/components/TuViEvidenceProvider.jsx');
     const { default: Answer } = await server.ssrLoadModule('/src/components/TuViEvidenceAnswer.jsx');

@@ -1475,3 +1475,6 @@ body {
 @media (max-width: 640px) {
   .tv-evidence-panel { inset: auto 8px 8px; width: auto; max-height: 43dvh; padding: 16px; }
 }
+.tv-service-status { background: var(--tv-soft); border: 1px solid var(--tv-line); color: var(--tv-ink); }
+.tv-service-status p { color: var(--tv-muted); }
+.tv-service-status .tv-text-button { color: var(--tv-gold); }
