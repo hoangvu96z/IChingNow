@@ -5,6 +5,7 @@ import { anLaSoTuVi } from './utils/tuViEngine';
 import BirthInputForm from './components/BirthInputForm.jsx';
 import LasoChart from './components/LasoChart.jsx';
 import SummaryPanel from './components/SummaryPanel.jsx';
+import TuViLocalReport from './components/TuViLocalReport.jsx';
 import TuViAiPanel from './components/TuViAiPanel.jsx';
 import { useReadingsApi } from './hooks/useReadingsApi';
 import TuViHistoryModal from './components/TuViHistoryModal.jsx';
@@ -253,6 +254,7 @@ export default function App() {
             <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
             <LasoChart result={chartResult} inputData={inputData} />
             <SummaryPanel result={chartResult} inputData={inputData} />
+            <TuViLocalReport result={chartResult} />
             <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} ensureChartSaved={ensureChartSaved} onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }} />
             </TuViEvidenceProvider>
           </>

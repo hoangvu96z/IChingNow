@@ -1,5 +1,7 @@
 # Thuật toán Tử Vi v4 do người dùng cung cấp
 
+Tài liệu lịch sử. Phiên bản đang dùng đã chuyển sang v8; xem `ENGINE_V8.md`. Các core cũ và fixture lịch sử được giữ để đối chiếu.
+
 Nguồn nguyên văn: `test/fixtures/tuvi-v4-user.cjs` (tệp người dùng gửi, không chỉnh sửa).
 SHA-256: `1955e5bace37bb9eeac1630728bb9373fce9805999c3e04b56e17e307beed560`.
 

@@ -1,10 +1,14 @@
-// UI adapter for the user-supplied v4 algorithm. No star placement is performed here.
-import { anLaSoTuVi as calculate, DIA_CHI } from './tuViEngineV4.js';
-export { THIEN_CAN, DIA_CHI, TEN_CUNG_CHUC_NANG, NGU_HANH_CUC_NAME,
-  MIEU_HAM_MAP, getMenhThanIndex, getCuc, getTuViIndex, getTrangThaiStar } from './tuViEngineV4.js';
-import { THIEN_CAN } from './tuViEngineV4.js';
+// UI adapter for the user-supplied v8 algorithm. No star placement is performed here.
+import { anLaSoTuVi as calculate, DIA_CHI } from './tuViEngineV8.js';
+export { THIEN_CAN, DIA_CHI, TEN_CUNG_CHUC_NANG,
+  MIEU_HAM_MAP, getMenhThanIndex, getCuc, getTuViIndex, getTrangThaiStar } from './tuViEngineV8.js';
+import { THIEN_CAN } from './tuViEngineV8.js';
 
-export const TUVI_ENGINE_VERSION = 'user-v4';
+// Compatibility export retained for chart consumers; the supplied v8 source
+// exposes the Cục number/name through getCuc rather than this lookup table.
+export const NGU_HANH_CUC_NAME = { 2: 'Thủy', 3: 'Mộc', 4: 'Kim', 5: 'Thổ', 6: 'Hỏa' };
+
+export const TUVI_ENGINE_VERSION = 'user-v8';
 
 export function getTrangThaiName(code) {
   return ({ M: 'Miếu', V: 'Vượng', Đ: 'Đắc', B: 'Bình', H: 'Hãm' })[code] || code;

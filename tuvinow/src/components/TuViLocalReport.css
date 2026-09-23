@@ -1,0 +1,21 @@
+.tuvi-local-report { width: 98%; max-width: 1200px; margin: 0 auto 32px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-subtle); border-top: 2px solid var(--accent-gold); border-radius: 18px; overflow: hidden; }
+.local-report-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 26px 28px; }
+.local-report-header h2 { margin: 0 0 6px; font: 600 1.65rem var(--font-serif); color: var(--accent-gold); }
+.local-report-header p, .local-report-footer { font-size: .82rem; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+.local-report-badge { flex-shrink: 0; color: var(--accent-cyan); background: var(--bg-secondary); border: 1px solid var(--accent-cyan); border-radius: 999px; padding: 5px 12px; font-size: .75rem; font-weight: 600; }
+.local-report-section { border-top: 1px solid var(--border-subtle); }
+.local-report-section summary { display: flex; gap: 14px; align-items: center; padding: 20px 28px; cursor: pointer; list-style: none; font-size: .95rem; font-weight: 600; }
+.local-report-section summary::-webkit-details-marker { display: none; }
+.local-report-section summary:hover { background: var(--accent-gold-dim); }
+.local-report-section summary:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: -4px; }
+.local-report-number { color: var(--accent-gold); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.local-report-chevron { margin-left: auto; color: var(--text-secondary); }
+.local-report-section[open] > summary .local-report-chevron { transform: rotate(180deg); }
+.local-report-prose { padding: 0 28px 24px 60px; line-height: 1.85; font-size: .92rem; overflow-wrap: anywhere; }
+.local-report-prose h3 { color: var(--accent-gold); font-size: 1.05rem; margin: 18px 0 10px; }
+.local-report-prose p { margin: 8px 0; }
+.local-report-prose ul { padding-left: 20px; margin: 8px 0; }
+.local-report-prose li { margin: 8px 0; }
+.local-report-prose strong { font-weight: 600; }
+.local-report-footer, .local-report-message { padding: 18px 28px; border-top: 1px solid var(--border-subtle); }
+@media (max-width: 600px) { .local-report-header { padding: 20px 16px; align-items: flex-start; } .local-report-header h2 { font-size: 1.4rem; } .local-report-section summary { padding: 18px 16px; gap: 10px; } .local-report-prose { padding: 0 18px 20px; } .local-report-footer, .local-report-message { padding: 16px; } }

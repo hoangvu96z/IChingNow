@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { anLaSoTuVi } from '../src/utils/tuViEngine.js';
 import { buildTuViText, buildTuViPrompt } from '../src/utils/buildTuViPrompt.js';
-const original = createRequire(import.meta.url)('./fixtures/tuvi-v4-user.cjs');
+const original = createRequire(import.meta.url)('./fixtures/tuvi-v8-user.cjs');
 
 function compare(input) {
   const expected = original.anLaSoTuVi(input);
@@ -18,7 +18,7 @@ function compare(input) {
       }
     } else assert.deepEqual(actual[key], expected[key]);
   }
-  assert.equal(actual.engineVersion, 'user-v4');
+  assert.equal(actual.engineVersion, 'user-v8');
   assert.deepEqual(actual.tuanCung, expected.palates.filter(p => p.isTuan).map(p => p.chiName));
   assert.deepEqual(actual.trietCung, expected.palates.filter(p => p.isTriet).map(p => p.chiName));
   assert.equal(actual.palates.filter(p => p.isMenh).length, 1);
@@ -26,9 +26,9 @@ function compare(input) {
   assert.equal(actual.palates.find(p => p.isThan).chiName, expected.thanCung);
 }
 
-test('calculation body is identical to the supplied v4 source', () => {
-  const source = readFileSync(new URL('./fixtures/tuvi-v4-user.cjs', import.meta.url), 'utf8');
-  const core = readFileSync(new URL('../src/utils/tuViEngineV4.js', import.meta.url), 'utf8');
+test('calculation body is identical to the supplied v8 source', () => {
+  const source = readFileSync(new URL('./fixtures/tuvi-v8-user.cjs', import.meta.url), 'utf8');
+  const core = readFileSync(new URL('../src/utils/tuViEngineV8.js', import.meta.url), 'utf8');
   assert.equal(core.split('// ESM exports')[0], source.split("if (typeof module !== 'undefined'")[0]);
 });
 
@@ -47,7 +47,7 @@ test('all 60 annual years match original; omitted year adds no annual stars', ()
   for (let year = 0; year < 60; year++) {
     const input = { ...birth, viewYearCanIndex: year % 10, viewYearChiIndex: year % 12 };
     compare(input);
-    assert.equal(anLaSoTuVi(input).palates.flatMap(p => p.phuTinh).filter(s => s.startsWith('L.')).length, 5);
+    assert.ok(anLaSoTuVi(input).palates.flatMap(p => p.phuTinh).filter(s => s.startsWith('L.')).length >= 9);
   }
   const input = { ...birth, viewYear: 2026, viewYearCanIndex: 2, viewYearChiIndex: 6 };
   const result = anLaSoTuVi(input);
@@ -62,7 +62,19 @@ test('partial annual input and invalid days are rejected rather than invented', 
   assert.throws(() => anLaSoTuVi({ ...input, viewYearCanIndex: 2 }));
   assert.throws(() => anLaSoTuVi({ ...input, lunarDay: 31 }));
   const result = anLaSoTuVi(input);
-  assert.deepEqual(result.tuanCung, ['Dậu', 'Tuất']);
+  assert.deepEqual(result.tuanCung, ['Thân', 'Dậu']);
   assert.equal(result.chuThan, 'Linh Tinh');
   assert.equal(result.palates.flatMap(p => p.phuTinh).filter(s => s.startsWith('Hóa ')).length, 4);
+});
+
+
+test('v8 places Thien Phuc exactly as supplied for all ten heavenly stems', () => {
+  const expected = ['Dậu', 'Thân', 'Tý', 'Hợi', 'Mão', 'Dần', 'Ngọ', 'Tỵ', 'Ngọ', 'Tỵ'];
+  for (let yearCanIndex = 0; yearCanIndex < 10; yearCanIndex++) {
+    const result = anLaSoTuVi({ yearCanIndex, yearChiIndex: yearCanIndex, gender: 1, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3 });
+    const palaces = result.palates.filter(p => p.phuTinh.includes('Thiên Phúc'));
+    assert.equal(palaces.length, 1);
+    assert.equal(palaces[0].chiName, expected[yearCanIndex]);
+    assert.ok(buildTuViText(result, {}).includes('Thiên Phúc'));
+  }
 });

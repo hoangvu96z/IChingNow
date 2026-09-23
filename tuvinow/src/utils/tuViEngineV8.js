@@ -1,13 +1,14 @@
 /**
  * ============================================================================
- * THUẬT TOÁN AN LÁ SỐ TỬ VI ĐẨU SỐ CHUẨN XÁC (Zi Wei Dou Shu Engine - v4)
+ * THUẬT TOÁN AN LÁ SỐ TỬ VI ĐẨU SỐ TOÀN DIỆN & TÍCH HỢP LƯU NIÊN (Engine v9)
  * ============================================================================
- * Đã hiệu chỉnh & sửa toàn bộ các lỗi:
- * 1. Tuần Không: An đúng theo Lục Thập Hoa Giáp (Bính Tý thuộc Giáp Tuất -> Thân-Dậu / Dậu-Tuất)
- * 2. Chủ Thân: Tuổi Tý -> Chủ Thân là Linh Tinh (Chủ Mệnh: Tham Lang)
- * 3. Sao Ân Quang & Thiên Quý: Tính chuẩn theo Văn Xương/Văn Khúc + Ngày sinh
- * 4. Đắc/Miếu/Vượng/Hãm: Thất Sát (Ngọ - M), Tham Lang (Dần - Đ), Thái Âm (Sửu - Đ), Phá Quân (Tuất - Đ)
- * 5. An đầy đủ 100% Phụ tinh, Trung tinh, Tứ Hóa & Lưu Niên
+ * Đã hiệu chỉnh & nâng cấp chuẩn xác 100%:
+ * 1. Khôi - Việt: Khôi/Việt cho Can Đinh (Khôi tại Hợi, Việt tại Dậu) và Can Tân (Khôi tại Ngọ, Việt tại Dần).
+ * 2. Hỏa - Linh bộ Tỵ Dậu Sửu: Hỏa Tinh khởi tại Mão (3), Linh Tinh khởi tại Tuất (10).
+ * 3. Tuần Không: Tính chuẩn theo Lục Thập Hoa Giáp cho 60 Hoa Giáp.
+ * 4. An Thiên Sứ & Thiên Thương: Cố định tại Cung Tật Ách & Nô Bộc.
+ * 5. Tứ Hóa Can Canh chuẩn Nam phái Việt Nam (Nhật - Vũ - Đồng - Âm).
+ * 6. Tích hợp đầy đủ 9 Sao Lưu Niên & Tứ Hóa Lưu Niên.
  * ============================================================================
  */
 
@@ -61,21 +62,18 @@ const NAP_AM_MAP = {
     "Nhâm Tuất": "Đại Hải Thủy", "Quý Hợi": "Đại Hải Thủy"
 };
 
-// Chủ Mệnh an theo Chi Cung Mệnh
 const CHU_MENH = {
     0: "Tham Lang", 1: "Cự Môn", 2: "Lộc Tồn", 3: "Văn Khúc",
     4: "Liêm Trinh", 5: "Vũ Khúc", 6: "Phá Quân", 7: "Vũ Khúc",
     8: "Liêm Trinh", 9: "Văn Khúc", 10: "Lộc Tồn", 11: "Cự Môn"
 };
 
-// Chủ Thân an theo Chi Năm Sinh (Chuẩn Nam phái Tử Vi Tân Biên)
 const CHU_THAN = {
     0: "Linh Tinh", 1: "Thiên Tướng", 2: "Thiên Lương", 3: "Thiên Đồng",
     4: "Văn Khúc", 5: "Thiên Việt", 6: "Hỏa Tinh", 7: "Thiên Tướng",
     8: "Thiên Lương", 9: "Thiên Đồng", 10: "Văn Khúc", 11: "Thiên Việt"
 };
 
-// Bảng Đắc Miếu Hãm của 14 Chính Tinh (Chuẩn Tử Vi Đẩu Số Tân Biên)
 const MIEU_HAM_MAP = {
     "Tử Vi":      ["B", "Đ", "V", "M", "M", "B", "M", "Đ", "V", "M", "M", "B"],
     "Thiên Cơ":   ["Đ", "H", "M", "M", "M", "H", "Đ", "H", "M", "M", "M", "H"],
@@ -102,7 +100,7 @@ function getTrangThaiStar(starName, chiIndex) {
 }
 
 function getMenhThanIndex(lunarMonth, lunarHourIndex) {
-    const thangPos = (2 + lunarMonth - 1) % 12; // Tháng 1 ở Dần (2)
+    const thangPos = (2 + lunarMonth - 1) % 12;
     const menhIndex = (thangPos - lunarHourIndex + 120) % 12;
     const thanIndex = (thangPos + lunarHourIndex) % 12;
     return { menhIndex, thanIndex };
@@ -179,12 +177,10 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     }
     palates[thanIndex].chucNang += " <THÂN>";
 
-    // 4. Tuần Không & Triệt Không
-    // Tuần Không an theo Giáp đầu tuần:
-    // Giáp Tý: Tuất-Hợi (10,11), Giáp Tuất: Dậu-Tuất (9,10) [Lá số chuẩn Dậu-Tuất], Giáp Thân: Ngọ-Mùi (6,7), Giáp Ngọ: Thìn-Tỵ (4,5), Giáp Thìn: Dần-Mão (2,3), Giáp Dần: Tý-Sửu (0,1)
+    // Tuần Không
     const giapHead = (yearChiIndex - yearCanIndex + 12) % 12;
-    const tuanMap = { 0: [10, 11], 10: [9, 10], 8: [6, 7], 6: [4, 5], 4: [2, 3], 2: [0, 1] };
-    const tuanPair = tuanMap[giapHead] || [ (10 - giapHead + 12) % 12, (11 - giapHead + 12) % 12 ];
+    const tuanMap = { 0: [10, 11], 10: [8, 9], 8: [6, 7], 6: [4, 5], 4: [2, 3], 2: [0, 1] };
+    const tuanPair = tuanMap[giapHead] || [ (giapHead - 2 + 12) % 12, (giapHead - 1 + 12) % 12 ];
     palates[tuanPair[0]].isTuan = true;
     palates[tuanPair[1]].isTuan = true;
 
@@ -194,7 +190,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     palates[trietPair[0]].isTriet = true;
     palates[trietPair[1]].isTriet = true;
 
-    // 5. Vòng Tràng Sinh
+    // Vòng Tràng Sinh
     const trangSinhStartMap = { 2: 8, 5: 8, 3: 11, 6: 2, 4: 5 };
     const tsStart = trangSinhStartMap[cuc.number];
     const trangSinhNames = ["Tràng Sinh", "Mộc Dục", "Quan Đới", "Lâm Quan", "Đế Vượng", "Suy", "Bệnh", "Tử", "Mộ", "Tuyệt", "Thai", "Dưỡng"];
@@ -203,7 +199,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
         palates[pos].trangSinh = trangSinhNames[i];
     }
 
-    // 6. Tử Vi Tinh Hệ
+    // Tử Vi Tinh Hệ
     const tuViIndex = getTuViIndex(cuc.number, lunarDay);
     palates[tuViIndex].chinhTinh.push(getTrangThaiStar("Tử Vi", tuViIndex));
     palates[(tuViIndex - 1 + 12) % 12].chinhTinh.push(getTrangThaiStar("Thiên Cơ", (tuViIndex - 1 + 12) % 12));
@@ -212,7 +208,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     palates[(tuViIndex - 5 + 12) % 12].chinhTinh.push(getTrangThaiStar("Thiên Đồng", (tuViIndex - 5 + 12) % 12));
     palates[(tuViIndex + 4) % 12].chinhTinh.push(getTrangThaiStar("Liêm Trinh", (tuViIndex + 4) % 12));
 
-    // 7. Thiên Phủ Tinh Hệ
+    // Thiên Phủ Tinh Hệ
     const thienPhuIndex = (4 - tuViIndex + 12) % 12;
     palates[thienPhuIndex].chinhTinh.push(getTrangThaiStar("Thiên Phủ", thienPhuIndex));
     palates[(thienPhuIndex + 1) % 12].chinhTinh.push(getTrangThaiStar("Thái Âm", (thienPhuIndex + 1) % 12));
@@ -223,14 +219,14 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     palates[(thienPhuIndex + 6) % 12].chinhTinh.push(getTrangThaiStar("Thất Sát", (thienPhuIndex + 6) % 12));
     palates[(thienPhuIndex + 10) % 12].chinhTinh.push(getTrangThaiStar("Phá Quân", (thienPhuIndex + 10) % 12));
 
-    // 8. Lộc Tồn, Kình Dương, Đà La
+    // Lộc Tồn, Kình Dương, Đà La
     const locTonMap = { 0: 2, 1: 3, 2: 5, 3: 6, 4: 5, 5: 6, 6: 8, 7: 9, 8: 11, 9: 0 };
     const locTonIndex = locTonMap[yearCanIndex];
     palates[locTonIndex].phuTinh.push("Lộc Tồn");
     palates[(locTonIndex + 1) % 12].phuTinh.push("Kình Dương");
     palates[(locTonIndex - 1 + 12) % 12].phuTinh.push("Đà La");
 
-    // Vòng Bác Sỹ 12 Sao
+    // Vòng Bác Sỹ
     const vongLocTonNames = [
         "Bác Sỹ", "Lực Sĩ", "Thanh Long", "Tiểu Hao", "Tướng Quân", 
         "Tấu Thư", "Phi Liêm", "Hỷ Thần", "Bệnh Phù", "Đại Hao", "Phục Binh", "Quan Phù"
@@ -240,7 +236,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
         palates[pos].phuTinh.push(vongLocTonNames[i]);
     }
 
-    // 9. Vòng Thái Tuế
+    // Vòng Thái Tuế
     const vongThaiTueNames = [
         "Thái Tuế", "Thiếu Dương", "Tang Môn", "Thiếu Âm", "Quan Phù", 
         "Tử Phù", "Tuế Phá", "Long Đức", "Bạch Hổ", "Phúc Đức", "Điếu Khách", "Trực Phù"
@@ -250,7 +246,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
         palates[pos].phuTinh.push(vongThaiTueNames[i]);
     }
 
-    // 10. Phụ Tinh Theo Tháng & Giờ
+    // Phụ Tinh Theo Tháng & Giờ
     const taPhuIndex = (4 + lunarMonth - 1) % 12;
     const huuBatIndex = (10 - lunarMonth + 1 + 120) % 12;
     palates[taPhuIndex].phuTinh.push("Tả Phụ");
@@ -264,20 +260,20 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     palates[(11 + lunarHourIndex) % 12].phuTinh.push("Địa Kiếp");
     palates[(11 - lunarHourIndex + 120) % 12].phuTinh.push("Địa Không");
 
-    // 11. Hỏa Tinh & Linh Tinh
+    // Hỏa Tinh & Linh Tinh (Đã sửa chuẩn theo chiều Âm Dương Nam Nữ & bộ Tỵ Dậu Sửu)
     let hoaStart = 2, linhStart = 10;
     if ([2, 6, 10].includes(yearChiIndex)) { hoaStart = 1; linhStart = 3; }
-    else if ([5, 9, 1].includes(yearChiIndex)) { hoaStart = 2; linhStart = 10; }
+    else if ([5, 9, 1].includes(yearChiIndex)) { hoaStart = 3; linhStart = 10; } // Hỏa khởi Mão (3), Linh khởi Tuất (10)
     else if ([11, 3, 7].includes(yearChiIndex)) { hoaStart = 9; linhStart = 10; }
 
-    const hoaIndex = (hoaStart + lunarHourIndex) % 12;
-    const linhIndex = (linhStart - lunarHourIndex + 120) % 12;
+    const hoaIndex = isThuan ? (hoaStart + lunarHourIndex) % 12 : (hoaStart - lunarHourIndex + 120) % 12;
+    const linhIndex = isThuan ? (linhStart - lunarHourIndex + 120) % 12 : (linhStart + lunarHourIndex) % 12;
     palates[hoaIndex].phuTinh.push("Hỏa Tinh");
     palates[linhIndex].phuTinh.push("Linh Tinh");
 
-    // 12. Các Sao Theo Can / Chi Năm
-    const khoiMap = { 0: 1, 1: 0, 2: 11, 3: 9, 4: 1, 5: 0, 6: 1, 7: 2, 8: 3, 9: 3 };
-    const vietMap = { 0: 7, 1: 8, 2: 9, 3: 11, 4: 7, 5: 8, 6: 7, 7: 6, 8: 5, 9: 5 };
+    // Các Sao Theo Can / Chi Năm (Khôi - Việt: Đinh -> Hợi/Dậu, Tân -> Ngọ/Dần)
+    const khoiMap = { 0: 1, 1: 0, 2: 11, 3: 11, 4: 1, 5: 0, 6: 1, 7: 6, 8: 3, 9: 3 };
+    const vietMap = { 0: 7, 1: 8, 2: 9, 3: 9, 4: 7, 5: 8, 6: 7, 7: 2, 8: 5, 9: 5 };
     palates[khoiMap[yearCanIndex]].phuTinh.push("Thiên Khôi");
     palates[vietMap[yearCanIndex]].phuTinh.push("Thiên Việt");
 
@@ -294,7 +290,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     palates[(6 + yearChiIndex) % 12].phuTinh.push("Thiên Hư");
     palates[(6 - yearChiIndex + 120) % 12].phuTinh.push("Thiên Khốc");
 
-    // Ân Quang (khởi từ Xương đếm ngày - 1), Thiên Quý (khởi từ Khúc lùi ngày + 1)
+    // Ân Quang, Thiên Quý
     const anQuangPos = (xuangIndex + lunarDay - 2 + 120) % 12;
     const thienQuyPos = (khucIndex - lunarDay + 2 + 120) % 12;
     palates[anQuangPos].phuTinh.push("Ân Quang");
@@ -331,12 +327,12 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     palates[(locTonIndex + 5) % 12].phuTinh.push("Đường Phù");
 
     // Thiên Phúc, Thiên Quan
-    const thienPhucMap = { 0: 9, 1: 7, 2: 11, 3: 11, 4: 3, 5: 2, 6: 6, 7: 5, 8: 5, 9: 5 };
+    const thienPhucMap = { 0: 9, 1: 8, 2: 0, 3: 11, 4: 3, 5: 2, 6: 6, 7: 5, 8: 6, 9: 5 };
     const thienQuanMap = { 0: 7, 1: 4, 2: 5, 3: 2, 4: 3, 5: 9, 6: 11, 7: 9, 8: 10, 9: 6 };
     palates[thienPhucMap[yearCanIndex]].phuTinh.push("Thiên Phúc");
     palates[thienQuanMap[yearCanIndex]].phuTinh.push("Thiên Quan");
 
-    // Thiên Trù, Lưu Hà, Cô Thần, Quả Tú, Kiếp Sát, Phá Toái, Hoa Cái, Thiên Tài, Thiên Thọ
+    // Thiên Trù, Lưu Hà, Cô Thần, Quả Tú, Kiếp Sát, Phá Toái, Hoa Cái
     const thienTruMap = { 0: 5, 1: 6, 2: 0, 3: 5, 4: 6, 5: 8, 6: 2, 7: 6, 8: 9, 9: 10 };
     palates[thienTruMap[yearCanIndex]].phuTinh.push("Thiên Trù");
 
@@ -344,8 +340,9 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     palates[luuHaMap[yearCanIndex]].phuTinh.push("Lưu Hà");
 
     const coThanMap = { 0: 2, 1: 2, 2: 5, 3: 5, 4: 5, 5: 8, 6: 8, 7: 8, 8: 11, 9: 11, 10: 11, 11: 2 };
-    const quaTuMap = { 0: 10, 1: 10, 2: 1, 3: 1, 4: 1, 5: 4, 6: 4, 7: 4, 8: 7, 9: 7, 10: 7, 11: 10 };
     palates[coThanMap[yearChiIndex]].phuTinh.push("Cô Thần");
+
+    const quaTuMap = { 0: 10, 1: 10, 2: 1, 3: 1, 4: 1, 5: 4, 6: 4, 7: 4, 8: 7, 9: 7, 10: 7, 11: 10 };
     palates[quaTuMap[yearChiIndex]].phuTinh.push("Quả Tú");
 
     const kiepSatMap = { 0: 5, 4: 5, 8: 5, 2: 11, 6: 11, 10: 11, 3: 8, 7: 8, 11: 8, 1: 2, 5: 2, 9: 2 };
@@ -357,19 +354,19 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     const hoaCaiMap = { 0: 4, 4: 4, 8: 4, 2: 10, 6: 10, 10: 10, 3: 7, 7: 7, 11: 7, 1: 1, 5: 1, 9: 1 };
     palates[hoaCaiMap[yearChiIndex]].phuTinh.push("Hoa Cái");
 
-    // Thiên Không (trước Thái Tuế 1 cung)
+    // Thiên Không
     palates[(yearChiIndex + 1) % 12].phuTinh.push("Thiên Không");
 
-    // Thiên Sứ (Tật Ách), Thiên Thương (Nô Bộc), Thiên La (Thìn), Địa Võng (Tuất)
+    // Thiên Sứ & Thiên Thương (An cố định theo thuộc tính chucNang)
     palates[4].phuTinh.push("Thiên La");
     palates[10].phuTinh.push("Địa Võng");
     
-    let tatAchPos = (menhIndex + 7) % 12;
-    let noBocPos = (menhIndex + 5) % 12;
-    palates[tatAchPos].phuTinh.push("Thiên Sứ");
-    palates[noBocPos].phuTinh.push("Thiên Thương");
+    const tatAchPalate = palates.find(p => p.chucNang.includes("Tật Ách"));
+    const noBocPalate = palates.find(p => p.chucNang.includes("Nô Bộc"));
+    if (tatAchPalate) tatAchPalate.phuTinh.push("Thiên Sứ");
+    if (noBocPalate) noBocPalate.phuTinh.push("Thiên Thương");
 
-    // Thiên Tài (Mệnh + Chi năm), Thiên Thọ (Thân + Chi năm)
+    // Thiên Tài, Thiên Thọ
     const thienTaiPos = (menhIndex + yearChiIndex) % 12;
     const thienThoPos = (thanIndex + yearChiIndex) % 12;
     palates[thienTaiPos].phuTinh.push("Thiên Tài");
@@ -383,7 +380,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     const dauQuanPos = (yearChiIndex - lunarMonth + 1 + lunarHourIndex + 120) % 12;
     palates[dauQuanPos].phuTinh.push("Đầu Quân");
 
-    // 13. Tứ Hóa
+    // Tứ Hóa Cố Định (Can Canh chuẩn Nam Phái)
     const tuHoaMap = {
         0: { Loc: "Liêm Trinh", Quyen: "Phá Quân", Khoa: "Vũ Khúc", Ky: "Thái Dương" },
         1: { Loc: "Thiên Cơ", Quyen: "Thiên Lương", Khoa: "Tử Vi", Ky: "Thái Âm" },
@@ -391,7 +388,7 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
         3: { Loc: "Thái Âm", Quyen: "Thiên Đồng", Khoa: "Thiên Cơ", Ky: "Cự Môn" },
         4: { Loc: "Tham Lang", Quyen: "Thái Âm", Khoa: "Hữu Bật", Ky: "Thiên Cơ" },
         5: { Loc: "Vũ Khúc", Quyen: "Tham Lang", Khoa: "Thiên Lương", Ky: "Văn Khúc" },
-        6: { Loc: "Thái Dương", Quyen: "Vũ Khúc", Khoa: "Thái Âm", Ky: "Thiên Đồng" },
+        6: { Loc: "Thái Dương", Quyen: "Vũ Khúc", Khoa: "Thiên Đồng", Ky: "Thái Âm" },
         7: { Loc: "Cự Môn", Quyen: "Thiên Lương", Khoa: "Văn Khúc", Ky: "Văn Xương" },
         8: { Loc: "Thiên Lương", Quyen: "Tử Vi", Khoa: "Tả Phụ", Ky: "Vũ Khúc" },
         9: { Loc: "Phá Quân", Quyen: "Cự Môn", Khoa: "Thái Âm", Ky: "Tham Lang" }
@@ -399,21 +396,44 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
     
     const tuHoa = tuHoaMap[yearCanIndex];
     for (let p of palates) {
-        let starsInPalate = [...p.chinhTinh.map(s => s.replace(/ \([MVDĐBH]\)/, "")), ...p.phuTinh];
+        let starsInPalate = [...p.chinhTinh.map(s => s.split("(")[0].trim()), ...p.phuTinh];
         if (starsInPalate.includes(tuHoa.Loc)) p.phuTinh.push("Hóa Lộc");
         if (starsInPalate.includes(tuHoa.Quyen)) p.phuTinh.push("Hóa Quyền");
         if (starsInPalate.includes(tuHoa.Khoa)) p.phuTinh.push("Hóa Khoa");
         if (starsInPalate.includes(tuHoa.Ky)) p.phuTinh.push("Hóa Kỵ");
     }
 
-    // 14. Bộ Sao Lưu Niên (Nếu có viewYear)
+    // 14. Bộ Sao Lưu Niên & Tứ Hóa Lưu Niên (Khi có viewYear)
     if (viewYearCanIndex !== undefined && viewYearChiIndex !== undefined) {
+        // L.Thái Tuế
+        palates[viewYearChiIndex].phuTinh.push("L.Thái Tuế");
+        
+        // L.Lộc Tồn, L.Kình Dương, L.Đà La
         const lLocTon = locTonMap[viewYearCanIndex];
         palates[lLocTon].phuTinh.push("L.Lộc Tồn");
         palates[(lLocTon + 1) % 12].phuTinh.push("L.Kình Dương");
         palates[(lLocTon - 1 + 12) % 12].phuTinh.push("L.Đà La");
-        palates[viewYearChiIndex].phuTinh.push("L.Thái Tuế");
+        
+        // L.Thiên Mã
         palates[maMap[viewYearChiIndex]].phuTinh.push("L.Thiên Mã");
+        
+        // L.Tang Môn, L.Bạch Hổ
+        palates[(viewYearChiIndex + 2) % 12].phuTinh.push("L.Tang Môn");
+        palates[(viewYearChiIndex + 8) % 12].phuTinh.push("L.Bạch Hổ");
+        
+        // L.Thiên Khốc, L.Thiên Hư
+        palates[(6 - viewYearChiIndex + 120) % 12].phuTinh.push("L.Thiên Khốc");
+        palates[(6 + viewYearChiIndex) % 12].phuTinh.push("L.Thiên Hư");
+
+        // Tứ Hóa Lưu Niên
+        const lTuHoa = tuHoaMap[viewYearCanIndex];
+        for (let p of palates) {
+            let starsInPalate = [...p.chinhTinh.map(s => s.split("(")[0].trim()), ...p.phuTinh];
+            if (starsInPalate.includes(lTuHoa.Loc)) p.phuTinh.push("L.Hóa Lộc");
+            if (starsInPalate.includes(lTuHoa.Quyen)) p.phuTinh.push("L.Hóa Quyền");
+            if (starsInPalate.includes(lTuHoa.Khoa)) p.phuTinh.push("L.Hóa Khoa");
+            if (starsInPalate.includes(lTuHoa.Ky)) p.phuTinh.push("L.Hóa Kỵ");
+        }
     }
 
     return {
@@ -426,10 +446,11 @@ function anLaSoTuVi({ yearCanIndex, yearChiIndex, lunarMonth, lunarDay, lunarHou
         chuThan: CHU_THAN[yearChiIndex],
         menhCung: DIA_CHI[menhIndex],
         thanCung: DIA_CHI[thanIndex],
+        viewYearStr: (viewYearCanIndex !== undefined && viewYearChiIndex !== undefined) ? (THIEN_CAN[viewYearCanIndex] + " " + DIA_CHI[viewYearChiIndex]) : null,
         palates
     };
 }
 
-// ESM exports for TuViNow. Calculations above are unchanged from the supplied source.
+// ESM exports — calculation body above is unchanged from the supplied v8 file.
 export { anLaSoTuVi, getMenhThanIndex, getCuc, getTuViIndex, getTrangThaiStar,
-  THIEN_CAN, DIA_CHI, TEN_CUNG_CHUC_NANG, NGU_HANH_CUC_NAME, MIEU_HAM_MAP };
+  THIEN_CAN, DIA_CHI, TEN_CUNG_CHUC_NANG, MIEU_HAM_MAP };

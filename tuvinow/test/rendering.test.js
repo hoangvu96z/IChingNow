@@ -11,8 +11,18 @@ test('answer and actual palace components render evidence and legacy text', asyn
   try {
     const { default: Provider } = await server.ssrLoadModule('/src/components/TuViEvidenceProvider.jsx');
     const { default: Answer } = await server.ssrLoadModule('/src/components/TuViEvidenceAnswer.jsx');
+    const { default: LocalReport } = await server.ssrLoadModule('/src/components/TuViLocalReport.jsx');
     const { default: Palace } = await server.ssrLoadModule('/src/components/PalateCard.jsx');
     const result = anLaSoTuVi({ lunarYear: 1996, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3, yearCanIndex: 2, yearChiIndex: 0, gender: 1 });
+    const localHtml = renderToStaticMarkup(React.createElement(LocalReport, { result }));
+    assert.equal((localHtml.match(/<details/g) || []).length, 6);
+    assert.ok(localHtml.includes('Miễn phí'));
+    assert.ok(localHtml.includes('Bạn chưa chọn năm xem hạn'));
+    assert.ok(localHtml.includes('&lt;THÂN&gt;'));
+    assert.ok(!localHtml.includes('viewYearCanIndex'));
+    const invalidHtml = renderToStaticMarkup(React.createElement(LocalReport, { result: {} }));
+    assert.ok(invalidHtml.includes('chưa đủ dữ liệu'));
+    assert.ok(!invalidHtml.includes('<details'));
     const render = text => renderToStaticMarkup(React.createElement(Provider, { result },
       React.createElement(Answer, { text }), ...result.palates.map(p => React.createElement(Palace, { palace: p, key: p.chiIndex }))));
     const html = render(JSON.stringify({ version: 1, sections: [{ title: 'Tổng quan', text: 'Luận giải có **căn cứ**', references: ['palace.0', 'palace.99'] }] }));

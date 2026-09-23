@@ -261,7 +261,7 @@ export default function TuViAiPanel({
             </span>
             <div>
               <h3 id="tuvi-ai-title">Luận giải Tử Vi bằng AI</h3>
-              <p>Thấu hiểu lá số, tìm hướng đi cho riêng bạn</p>
+              <p>Phân tích chuyên sâu, hỏi thêm theo vấn đề bạn quan tâm</p>
             </div>
           </div>
           <div className="tv-header-actions">
