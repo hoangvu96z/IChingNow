@@ -125,3 +125,33 @@ export function getYearOptions() {
   }
   return years;
 }
+
+/**
+ * Lấy chuỗi Can Chi của một năm
+ * @param {number} year
+ * @returns {string} ví dụ: "Bính Ngọ", "Ất Tỵ"
+ */
+export function getYearCanChi(year) {
+  const canIndex = ((year - 4) % 10 + 10) % 10;
+  const chiIndex = ((year - 4) % 12 + 12) % 12;
+  return `${THIEN_CAN_VI[canIndex]} ${DIA_CHI_VI[chiIndex]}`;
+}
+
+/**
+ * Danh sách lựa chọn năm xem lưu niên kèm Can Chi
+ */
+export function getViewYearOptions(minYear = 1920, maxOffset = 25) {
+  const currentYear = new Date().getFullYear();
+  const topYear = currentYear + maxOffset;
+  const years = [];
+  for (let y = topYear; y >= minYear; y--) {
+    const canChi = getYearCanChi(y);
+    const tag = y === currentYear ? ' (Năm nay)' : y === currentYear + 1 ? ' (Năm sau)' : '';
+    years.push({
+      value: y,
+      label: `${y} · ${canChi}${tag}`,
+      canChi,
+    });
+  }
+  return years;
+}

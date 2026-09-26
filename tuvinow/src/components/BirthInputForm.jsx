@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { solarToLunar, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYearOptions } from '../utils/lunarConverter';
+import { solarToLunar, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYearOptions, getViewYearOptions } from '../utils/lunarConverter';
 
 export default function BirthInputForm({ onSubmit }) {
   const [name, setName] = useState('');
@@ -13,7 +13,9 @@ export default function BirthInputForm({ onSubmit }) {
   const [viewYear, setViewYear] = useState('');
   const [formError, setFormError] = useState('');
 
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
   const yearOptions = useMemo(() => getYearOptions(), []);
+  const viewYearOptions = useMemo(() => getViewYearOptions(1920, 30), []);
   const monthOptions = useMemo(() => getMonthsInYear(), []);
   const dayOptions = useMemo(() => getDaysInMonth(isLunar), [isLunar]);
 
@@ -61,6 +63,9 @@ export default function BirthInputForm({ onSubmit }) {
       const annualYear = viewYear === '' ? undefined : Number(viewYear);
       if (annualYear !== undefined && (!Number.isInteger(annualYear) || annualYear < 1900 || annualYear > 2100)) {
         throw new Error('Năm xem phải là số nguyên từ 1900 đến 2100.');
+      }
+      if (annualYear !== undefined && annualYear < year) {
+        throw new Error(`Năm xem lưu niên (${annualYear}) không thể trước năm sinh (${year}).`);
       }
       onSubmit({
         name: trimmedName,
@@ -230,9 +235,78 @@ export default function BirthInputForm({ onSubmit }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="view-year">Năm xem lưu niên <span className="text-muted">(không bắt buộc)</span></label>
-          <input id="view-year" className="form-input" type="number" min="1900" max="2100" step="1"
-            value={viewYear} onChange={event => setViewYear(event.target.value)} placeholder="Để trống nếu chỉ xem lá số gốc" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+            <label className="form-label" htmlFor="view-year" style={{ margin: 0 }}>
+              Năm xem lưu niên <span className="text-muted">(không bắt buộc)</span>
+            </label>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setViewYear(String(currentYear))}
+                style={{
+                  background: viewYear === String(currentYear) ? 'var(--accent-gold)' : 'var(--accent-gold-dim)',
+                  color: viewYear === String(currentYear) ? '#ffffff' : 'var(--accent-gold-bright)',
+                  border: '1px solid var(--accent-gold)',
+                  borderRadius: '6px',
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Năm nay ({currentYear})
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewYear(String(currentYear + 1))}
+                style={{
+                  background: viewYear === String(currentYear + 1) ? 'var(--accent-gold)' : 'var(--accent-gold-dim)',
+                  color: viewYear === String(currentYear + 1) ? '#ffffff' : 'var(--accent-gold-bright)',
+                  border: '1px solid var(--accent-gold)',
+                  borderRadius: '6px',
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Năm sau ({currentYear + 1})
+              </button>
+              {viewYear !== '' && (
+                <button
+                  type="button"
+                  onClick={() => setViewYear('')}
+                  title="Bỏ chọn năm lưu niên"
+                  style={{
+                    background: 'transparent',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '6px',
+                    padding: '2px 6px',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✕ Bỏ
+                </button>
+              )}
+            </div>
+          </div>
+          <select
+            id="view-year"
+            className="form-select"
+            value={viewYear}
+            onChange={(event) => setViewYear(event.target.value)}
+          >
+            <option value="">-- Để trống nếu chỉ xem lá số gốc --</option>
+            {viewYearOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
         {formError && <p role="alert" className="form-error">{formError}</p>}
         <button

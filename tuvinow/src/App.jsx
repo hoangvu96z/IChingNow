@@ -7,6 +7,7 @@ import LasoChart from './components/LasoChart.jsx';
 import SummaryPanel from './components/SummaryPanel.jsx';
 import TuViLocalReport from './components/TuViLocalReport.jsx';
 import TuViAiPanel from './components/TuViAiPanel.jsx';
+import HopHonPage from './components/HopHonPage.jsx';
 import { useReadingsApi } from './hooks/useReadingsApi';
 import TuViHistoryModal from './components/TuViHistoryModal.jsx';
 import AppHeader from '@shared/components/AppHeader.jsx';
@@ -76,6 +77,12 @@ function ReadingSession({ result, inputData, reading, persistReading, ensureChar
 }
 
 export default function App() {
+  const [page, setPage] = useState(() => window.location.hash === '#hop-hon' ? 'hop-hon' : 'la-so');
+  useEffect(() => {
+    const update = () => setPage(window.location.hash === '#hop-hon' ? 'hop-hon' : 'la-so');
+    window.addEventListener('hashchange', update);
+    return () => window.removeEventListener('hashchange', update);
+  }, []);
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('tuvinow_theme') || 'light';
   });
@@ -210,7 +217,7 @@ export default function App() {
       <AppHeader
         appId="tuvi"
         colors={tuviTheme}
-        onLogoClick={handleNewReading}
+        onLogoClick={() => { window.location.hash = 'la-so'; handleNewReading(); }}
         useAuthHook={useAuth}
         logo={
           <img
@@ -225,7 +232,7 @@ export default function App() {
         themeToggle={
           <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
         }
-        primaryAction={chartResult && (
+        primaryAction={page === 'la-so' && chartResult && (
           <button
             type="button"
             className="tuvi-header-new"
@@ -240,7 +247,12 @@ export default function App() {
 
       {/* Main Content */}
       <main className="app-content">
-        {showForm && !chartResult && (
+        <nav className="tuvi-page-nav" aria-label="Chức năng Tử Vi">
+          <a href="#la-so" aria-current={page === 'la-so' ? 'page' : undefined}>Lá số cá nhân</a>
+          <a href="#hop-hon" aria-current={page === 'hop-hon' ? 'page' : undefined}>♡ Hợp hôn</a>
+        </nav>
+        {page === 'hop-hon' && <HopHonPage />}
+        {page === 'la-so' && showForm && !chartResult && (
           <>
             <BirthInputForm onSubmit={handleSubmit} />
             {isAuthenticated && history.length > 0 && (
@@ -257,7 +269,7 @@ export default function App() {
           </>
         )}
 
-        {chartResult && (
+        {page === 'la-so' && chartResult && (
           <>
             {isAuthenticated && (
               <div className="tuvi-chart-toolbar">

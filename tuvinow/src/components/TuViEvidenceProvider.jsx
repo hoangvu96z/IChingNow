@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { TuViEvidenceContext } from '../context/tuViEvidenceState';
 import { buildTuViEvidence } from '../utils/tuViEvidence';
 
-export default function TuViEvidenceProvider({ result, children }) {
-  const catalog = useMemo(() => buildTuViEvidence(result), [result]);
+export default function TuViEvidenceProvider({ result, children, evidenceCatalog }) {
+  const catalog = useMemo(() => evidenceCatalog || buildTuViEvidence(result), [result, evidenceCatalog]);
   const [selection, setSelection] = useState(null);
   const trigger = useRef(null);
   const heading = useRef(null);
@@ -29,11 +29,11 @@ export default function TuViEvidenceProvider({ result, children }) {
       {entries.map(item => <section key={item.id}>
         <h4>{item.label}</h4>
         <dl>{item.facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <button type="button" onClick={() => {
+        {!evidenceCatalog && <button type="button" onClick={() => {
           const target = document.getElementById(`tuvi-${item.id}`);
           target?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
           target?.focus({ preventScroll: true });
-        }}>Xem trên lá số ↑</button>
+        }}>Xem trên lá số ↑</button>}
       </section>)}
     </aside>}
   </TuViEvidenceContext.Provider>;

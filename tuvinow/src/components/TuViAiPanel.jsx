@@ -43,6 +43,7 @@ export default function TuViAiPanel({
   inputData,
   initialConversation,
   onSave,
+  readingContext,
 }) {
   const { isAuthenticated, login } = useAuth();
   const {
@@ -77,12 +78,13 @@ export default function TuViAiPanel({
   const savingRef = useRef(false);
   const evidence = useTuViEvidence();
   const catalog = evidence?.catalog || [];
-  const prompt = buildTuViPrompt(result, inputData, topic, question);
+  const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured));
+  const prompt = makePrompt(topic, question, false);
   const parsed = parseTuViAnswer(conversation?.initialInterpretation || '', catalog);
   const answerText = tuViAnswerText(conversation?.initialInterpretation || '');
   const followUps = conversation?.followUps || [];
   const exportText =
-    exportTab === 'prompt' ? prompt : buildTuViText(result, inputData);
+    exportTab === 'prompt' ? prompt : readingContext?.exportText || buildTuViText(result, inputData);
   const exportCopied = copiedText === exportText;
 
   const checkConfig = useCallback(async (signal) => {
@@ -176,7 +178,7 @@ export default function TuViAiPanel({
     setBusy(true);
     setError('');
     const timeout = setTimeout(() => abort.abort(), 195000);
-    const apiPrompt = buildTuViPrompt(result, inputData, topic, question, true) + tuViEvidencePrompt(catalog);
+    const apiPrompt = makePrompt(topic, question, true) + tuViEvidencePrompt(catalog);
     const basePrompt = isFollowUp ? conversation.prompt : apiPrompt;
     const messages = [{ role: 'user', content: basePrompt }];
     if (isFollowUp) {
@@ -260,7 +262,7 @@ export default function TuViAiPanel({
               <Icon />
             </span>
             <div>
-              <h3 id="tuvi-ai-title">Luận giải Tử Vi bằng AI</h3>
+              <h3 id="tuvi-ai-title">{readingContext?.title || 'Luận giải Tử Vi bằng AI'}</h3>
               <p>Phân tích chuyên sâu, hỏi thêm theo vấn đề bạn quan tâm</p>
             </div>
           </div>
@@ -346,11 +348,13 @@ export default function TuViAiPanel({
         <div className="tv-reading-body">
           <div className="tv-context">
             <span className="tv-context-star">✦</span>
-            <strong>{inputData.name || 'Lá số của bạn'}</strong>
+            <strong>{readingContext?.label || inputData.name || 'Lá số của bạn'}</strong>
+            {!readingContext && <>
             <span className="tv-context-dot">·</span>
             <span>{result.canChiNam}</span>
             <span className="tv-context-dot">·</span>
             <span>{result.cucName}</span>
+            </>}
           </div>
           <div className="tv-topic-label">Bạn muốn tìm hiểu điều gì?</div>
           <div className="tv-topics" role="group" aria-label="Chủ đề luận giải">
@@ -419,14 +423,14 @@ export default function TuViAiPanel({
                   onClick={() => ask()}
                 >
                   <Icon />
-                  {checkingConfig ? 'Đang kiểm tra dịch vụ…' : aiUnavailable ? 'AI tạm chưa sẵn sàng' : conversation ? 'Luận giải lại lá số' : 'Luận giải lá số'}
+                  {checkingConfig ? 'Đang kiểm tra dịch vụ…' : aiUnavailable ? 'AI tạm chưa sẵn sàng' : readingContext ? (conversation ? 'Luận giải lại hợp hôn' : 'Luận giải hợp hôn') : conversation ? 'Luận giải lại lá số' : 'Luận giải lá số'}
                   <Icon name="arrow" />
                 </button>
               )}
               <p>
                 {!isAuthenticated
                   ? 'Bạn vẫn có thể sao chép prompt miễn phí ở bên dưới.'
-                  : 'Luận giải chuyên sâu từ đầy đủ 12 cung trên lá số của bạn'}
+                  : readingContext ? 'Đối chiếu đầy đủ hai lá số và câu hỏi của bạn' : 'Luận giải chuyên sâu từ đầy đủ 12 cung trên lá số của bạn'}
               </p>
             </div>
           )}
@@ -558,7 +562,7 @@ export default function TuViAiPanel({
             </span>
             <div>
               <h3 id="tuvi-export-title">Xuất dữ liệu luận giải cho AI</h3>
-              <p>Mang lá số của bạn đến trợ lý AI yêu thích</p>
+              <p>{readingContext ? 'Mang hai lá số và kết quả đối chiếu đến trợ lý AI yêu thích' : 'Mang lá số của bạn đến trợ lý AI yêu thích'}</p>
             </div>
           </div>
           <span className="tv-free-badge">Miễn phí</span>
@@ -615,7 +619,7 @@ export default function TuViAiPanel({
           </div>
           <div className="tv-export-actions">
             <p>
-              {exportTab === 'prompt'
+              {readingContext ? 'Bao gồm đầy đủ hai lá số, cách chấm điểm và giới hạn của các quy tắc hiện có. Sao chép toàn bộ để AI giữ đúng ngữ cảnh hai người.' : exportTab === 'prompt'
                 ? 'Gồm đủ 12 cung, quan hệ tam hợp/xung chiếu, Tứ Hóa và các hạn đã tính; kèm hướng dẫn luận giải theo chủ đề và câu hỏi đã chọn. Sao chép toàn bộ để dùng với AI khác.'
                 : 'Dữ liệu đầy đủ từ lá số đang xem, gồm sao, trạng thái, Tuần/Triệt, Cân lượng và các hạn nếu có. Phần chưa có dữ liệu được ghi rõ.'}
             </p>
