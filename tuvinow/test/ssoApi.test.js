@@ -33,6 +33,17 @@ test('SSO AI errors preserve their status, make one request, and never fall back
     await assert.rejects(ssoRequest('/plans/tuvi-ai', { signal: abort.signal }), error => error === abortError);
     globalThis.fetch = async () => new Response(JSON.stringify({ content: 'Luận giải thành công' }));
     assert.deepEqual(await ssoRequest('/plans/tuvi-ai'), { content: 'Luận giải thành công' });
+
+    // Test deleteAll endpoint
+    let deleteCall = null;
+    globalThis.fetch = async (url, options) => {
+      deleteCall = { url, options };
+      return new Response(JSON.stringify({ success: true }));
+    };
+    const res = await ssoRequest('/readings/all?app=tuvi', { method: 'DELETE' });
+    assert.deepEqual(res, { success: true });
+    assert.equal(deleteCall.url, '/readings/all?app=tuvi');
+    assert.equal(deleteCall.options.method, 'DELETE');
   } finally {
     globalThis.fetch = originalFetch;
     if (storage) Object.defineProperty(globalThis, 'localStorage', storage);
@@ -40,3 +51,4 @@ test('SSO AI errors preserve their status, make one request, and never fall back
     await server.close();
   }
 });
+

@@ -69,5 +69,11 @@ export function useReadingsApi(isAuthenticated, userId) {
     await ssoRequest(`/readings/${id}`, { method: 'DELETE' });
     if (generation.current === current) setHistory(previous => previous.filter(row => row.id !== id));
   };
-  return { history, error, loading, loadHistory, persistReading, deleteReading };
+  const deleteAllReadings = async () => {
+    const current = generation.current;
+    await ssoRequest('/readings/all?app=tuvi', { method: 'DELETE' });
+    if (generation.current === current) setHistory([]);
+  };
+  return { history, error, loading, loadHistory, persistReading, deleteReading, deleteAllReadings };
 }
+

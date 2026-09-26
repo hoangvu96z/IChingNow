@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { GIO_SINH_OPTIONS } from '../utils/lunarConverter';
+import { DIA_CHI } from '../utils/tuViEngine';
 
 export default function TuViHistoryModal({
   isOpen,
@@ -7,10 +9,12 @@ export default function TuViHistoryModal({
   loading = false,
   onSelect,
   onDelete,
+  onDeleteAll,
   onRefresh,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const filtered = useMemo(() => {
     if (!searchTerm.trim()) return history;
@@ -35,6 +39,22 @@ export default function TuViHistoryModal({
       alert(`Xóa thất bại: ${err.message}`);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!history.length || isDeletingAll) return;
+    const confirmMessage = `Bạn có chắc chắn muốn xóa toàn bộ ${history.length} lá số trong lịch sử không?\nThao tác này không thể hoàn tác.`;
+    if (!window.confirm(confirmMessage)) return;
+    setIsDeletingAll(true);
+    try {
+      if (onDeleteAll) {
+        await onDeleteAll();
+      }
+    } catch (err) {
+      alert(`Xóa toàn bộ thất bại: ${err.message || 'Lỗi không xác định'}`);
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -110,10 +130,36 @@ export default function TuViHistoryModal({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onDeleteAll && history.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                disabled={isDeletingAll || loading}
+                title="Xóa tất cả lá số đã lưu"
+                style={{
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '8px',
+                  color: '#f87171',
+                  padding: '6px 12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                  cursor: (isDeletingAll || loading) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  opacity: isDeletingAll ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+              >
+                🗑️ {isDeletingAll ? 'Đang xóa...' : 'Xóa tất cả'}
+              </button>
+            )}
             {onRefresh && (
               <button
+                type="button"
                 onClick={onRefresh}
-                disabled={loading}
+                disabled={loading || isDeletingAll}
                 title="Làm mới lịch sử"
                 style={{
                   background: 'rgba(255, 255, 255, 0.06)',
@@ -122,7 +168,7 @@ export default function TuViHistoryModal({
                   color: '#94a3b8',
                   padding: '6px 12px',
                   fontSize: '0.8rem',
-                  cursor: loading ? 'not-allowed' : 'pointer',
+                  cursor: (loading || isDeletingAll) ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
@@ -216,10 +262,45 @@ export default function TuViHistoryModal({
               const res = item.data?.result;
               const hasAi = !!item.data?.aiConversation;
               const name = input?.name || item.title || 'Lá số Tử Vi';
-              const gender = input?.gender === 'nam' ? 'Nam' : input?.gender === 'nu' ? 'Nữ' : '';
-              const birthText = input
-                ? `${input.birthDay}/${input.birthMonth}/${input.birthYear} · Giờ ${input.birthHour || ''}`
-                : '';
+              const isMale = input?.gender === 1 || input?.gender === 'nam' || input?.gender === 'Nam';
+              const isFemale = input?.gender === 0 || input?.gender === 'nu' || input?.gender === 'Nữ';
+              const gender = isMale ? 'Nam' : isFemale ? 'Nữ' : '';
+
+              // Format date & time cleanly with fallbacks
+              let solarDate = '';
+              if (input?.solarInput?.day && input?.solarInput?.month && input?.solarInput?.year) {
+                const d = String(input.solarInput.day).padStart(2, '0');
+                const m = String(input.solarInput.month).padStart(2, '0');
+                solarDate = `${d}/${m}/${input.solarInput.year}`;
+              } else if (input?.solarDateStr && input.solarDateStr !== '(Nhập âm lịch)') {
+                solarDate = input.solarDateStr.replace(' (Dương lịch)', '').trim();
+              } else if (input?.birthDay && input?.birthMonth && input?.birthYear) {
+                const d = String(input.birthDay).padStart(2, '0');
+                const m = String(input.birthMonth).padStart(2, '0');
+                solarDate = `${d}/${m}/${input.birthYear}`;
+              }
+
+              let lunarDate = '';
+              if (input?.lunarDay && input?.lunarMonth) {
+                const ld = String(input.lunarDay).padStart(2, '0');
+                const lm = String(input.lunarMonth).padStart(2, '0');
+                const ly = input?.lunarYear ? `/${input.lunarYear}` : '';
+                lunarDate = `ÂL: ${ld}/${lm}${ly}`;
+              }
+
+              let hourStr = '';
+              if (input?.lunarHourIndex !== undefined) {
+                const hourOpt = GIO_SINH_OPTIONS?.[input.lunarHourIndex];
+                hourStr = hourOpt ? `Giờ ${hourOpt.label}` : `Giờ ${DIA_CHI?.[input.lunarHourIndex] || ''}`;
+              } else if (input?.birthHour) {
+                hourStr = `Giờ ${input.birthHour}`;
+              }
+
+              const birthParts = [];
+              if (solarDate) birthParts.push(solarDate);
+              if (lunarDate) birthParts.push(lunarDate);
+              if (hourStr) birthParts.push(hourStr);
+              const birthText = birthParts.join(' · ');
 
               return (
                 <div
@@ -341,11 +422,42 @@ export default function TuViHistoryModal({
             padding: '12px 24px',
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             background: 'rgba(0, 0, 0, 0.2)',
           }}
         >
+          <div>
+            {onDeleteAll && history.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                disabled={isDeletingAll || loading}
+                title="Xóa toàn bộ lịch sử lá số"
+                style={{
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  color: '#f87171',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '8px',
+                  padding: '7px 14px',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  cursor: (isDeletingAll || loading) ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  opacity: isDeletingAll ? 0.6 : 1,
+                }}
+              >
+                <span>🗑️</span>
+                <span>{isDeletingAll ? 'Đang xóa toàn bộ...' : 'Xóa tất cả'}</span>
+              </button>
+            )}
+          </div>
+
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'rgba(255, 255, 255, 0.08)',

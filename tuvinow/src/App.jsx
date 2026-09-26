@@ -90,7 +90,7 @@ export default function App() {
   }, []);
 
   const { user, isAuthenticated } = useAuth();
-  const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, deleteReading } = useReadingsApi(isAuthenticated, user?.id);
+  const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, deleteReading, deleteAllReadings } = useReadingsApi(isAuthenticated, user?.id);
   const [reading, setReading] = useState(null);
   const [sessionId, setSessionId] = useState(0);
   const [historyActionError, setHistoryActionError] = useState('');
@@ -188,6 +188,18 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleDeleteReading = useCallback(async (id) => {
+    await deleteReading(id);
+    if (reading?.id === id) {
+      setReading(null);
+    }
+  }, [deleteReading, reading?.id]);
+
+  const handleDeleteAll = useCallback(async () => {
+    await deleteAllReadings();
+    setReading(null);
+  }, [deleteAllReadings]);
+
   return (
     <>
       {/* Animated Background */}
@@ -268,7 +280,8 @@ export default function App() {
         history={history}
         loading={historyLoading}
         onSelect={openReading}
-        onDelete={deleteReading}
+        onDelete={handleDeleteReading}
+        onDeleteAll={handleDeleteAll}
         onRefresh={loadHistory}
       />
 
