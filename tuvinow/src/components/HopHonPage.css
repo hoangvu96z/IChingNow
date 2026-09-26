@@ -13,7 +13,9 @@
 .hh-person legend { padding: 0 12px; color: var(--accent-gold); font: 600 1.4rem var(--font-serif); }
 .hh-person label { display: grid; gap: 6px; margin-bottom: 18px; font-size: .85rem; }
 .hh-person input, .hh-person select { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-input); color: var(--text-primary); font: inherit; }
-.hh-date { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 12px; }
+.hh-person input[type="date"] { cursor: pointer; min-height: 44px; }
+.hh-person input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.75; padding: 4px; border-radius: 4px; transition: opacity 0.2s, background-color 0.2s; }
+.hh-person input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; background-color: var(--accent-gold-dim, rgba(212, 165, 116, 0.15)); }
 .hh-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .hop-hon button:not(:where(.tuvi-ai *)) { border: 1px solid var(--border-subtle); border-radius: 9px; padding: 10px 16px; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font: inherit; }
 .hop-hon button:not(:where(.tuvi-ai *)):disabled { opacity: .55; cursor: wait; }

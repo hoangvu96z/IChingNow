@@ -3,23 +3,109 @@ import { useAuth } from '../context/AuthContext';
 import { ssoRequest } from '../services/ssoApi';
 import { encryptData, decryptData } from '../utils/cryptoUtils';
 import { buildCompatibility, compatibilityEvidence, compatibilityPrompt, compatibilityText, WEIGHTS } from '../utils/compatibility';
+import { getYearCanChi } from '../utils/lunarConverter';
 import TuViAiPanel from './TuViAiPanel';
 import TuViEvidenceProvider from './TuViEvidenceProvider';
 import './HopHonPage.css';
 
 const HISTORY_APP = 'tuvi-hop-hon';
 const emptyPerson = gioiTinh => ({ hoTen: '', ngay: '', thang: '', nam: '', gio: '', gioiTinh });
+const CANH_GIO = ['Tý (23h–01h)', 'Sửu (01h–03h)', 'Dần (03h–05h)', 'Mão (05h–07h)', 'Thìn (07h–09h)', 'Tỵ (09h–11h)', 'Ngọ (11h–13h)', 'Mùi (13h–15h)', 'Thân (15h–17h)', 'Dậu (17h–19h)', 'Tuất (19h–21h)', 'Hợi (21h–23h)'];
 
 function PersonForm({ label, value, onChange }) {
   const set = (key, data) => onChange({ ...value, [key]: data });
-  return <fieldset className="hh-person"><legend>{label}</legend>
-    <label>Họ và tên<input required maxLength={100} autoComplete="off" value={value.hoTen} onChange={e => set('hoTen', e.target.value)} /></label>
-    <div className="hh-date">{[['ngay', 'Ngày', 1, 31], ['thang', 'Tháng', 1, 12], ['nam', 'Năm', 1900, new Date().getFullYear()]].map(([key, title, min, max]) => <label key={key}>{title}<input type="number" required min={min} max={max} value={value[key]} onChange={e => set(key, e.target.value === '' ? '' : Number(e.target.value))} /></label>)}</div>
-    <div className="hh-two"><label>Giờ sinh (0–23)<input type="number" required min="0" max="23" value={value.gio} onChange={e => set('gio', e.target.value === '' ? '' : Number(e.target.value))} /></label>
-      <label>Giới tính<select value={value.gioiTinh} onChange={e => set('gioiTinh', e.target.value)}><option>Nam</option><option>Nữ</option></select></label></div>
-    <p className="hh-muted">Nhập ngày dương lịch. Giờ sinh được quy đổi sang giờ Địa Chi như khi lập lá số.</p>
-  </fieldset>;
+
+  const dateValue = (value.nam && value.thang && value.ngay)
+    ? `${String(value.nam).padStart(4, '0')}-${String(value.thang).padStart(2, '0')}-${String(value.ngay).padStart(2, '0')}`
+    : '';
+
+  const handleDateChange = (e) => {
+    const val = e.target.value;
+    if (!val) {
+      onChange({ ...value, ngay: '', thang: '', nam: '' });
+      return;
+    }
+    const [y, m, d] = val.split('-').map(Number);
+    onChange({ ...value, nam: y, thang: m, ngay: d });
+  };
+
+  const hasValidDate = value.nam && value.thang && value.ngay;
+  const canChiYear = hasValidDate ? getYearCanChi(value.nam) : '';
+  const hourNum = value.gio !== '' ? Number(value.gio) : null;
+  const canhGioName = (hourNum !== null && Number.isInteger(hourNum) && hourNum >= 0 && hourNum <= 23)
+    ? CANH_GIO[Math.floor((hourNum + 1) / 2) % 12]
+    : null;
+
+  return (
+    <fieldset className="hh-person">
+      <legend>{label}</legend>
+      <label>
+        Họ và tên
+        <input
+          required
+          maxLength={100}
+          autoComplete="off"
+          placeholder="Nhập họ và tên..."
+          value={value.hoTen}
+          onChange={e => set('hoTen', e.target.value)}
+        />
+      </label>
+
+      <label>
+        <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Ngày sinh (Dương lịch)</span>
+          {canChiYear && (
+            <span style={{ color: 'var(--accent-gold)', fontSize: '0.8rem', fontWeight: 600 }}>
+              ✦ Năm {canChiYear}
+            </span>
+          )}
+        </span>
+        <input
+          type="date"
+          required
+          min="1900-01-01"
+          max={`${new Date().getFullYear()}-12-31`}
+          value={dateValue}
+          onChange={handleDateChange}
+          onClick={(e) => {
+            try { e.target.showPicker?.(); } catch {}
+          }}
+        />
+      </label>
+
+      <div className="hh-two">
+        <label>
+          <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Giờ sinh (0–23)</span>
+            {canhGioName && (
+              <span style={{ color: 'var(--accent-gold)', fontSize: '0.78rem', fontWeight: 500 }}>
+                {canhGioName}
+              </span>
+            )}
+          </span>
+          <input
+            type="number"
+            required
+            min="0"
+            max="23"
+            placeholder="0–23"
+            value={value.gio}
+            onChange={e => set('gio', e.target.value === '' ? '' : Number(e.target.value))}
+          />
+        </label>
+        <label>
+          Giới tính
+          <select value={value.gioiTinh} onChange={e => set('gioiTinh', e.target.value)}>
+            <option>Nam</option>
+            <option>Nữ</option>
+          </select>
+        </label>
+      </div>
+      <p className="hh-muted">Nhập ngày dương lịch. Giờ sinh được quy đổi sang giờ Địa Chi như khi lập lá số.</p>
+    </fieldset>
+  );
 }
+
 
 function PairSession({ initial, userId, onStored }) {
   const [pair] = useState(initial.pair);
