@@ -11,8 +11,47 @@ import './HopHonPage.css';
 const HISTORY_APP = 'tuvi-hop-hon';
 const emptyPerson = gioiTinh => ({ hoTen: '', ngay: '', thang: '', nam: '', gio: '', gioiTinh });
 const CANH_GIO = ['Tý (23h–01h)', 'Sửu (01h–03h)', 'Dần (03h–05h)', 'Mão (05h–07h)', 'Thìn (07h–09h)', 'Tỵ (09h–11h)', 'Ngọ (11h–13h)', 'Mùi (13h–15h)', 'Thân (15h–17h)', 'Dậu (17h–19h)', 'Tuất (19h–21h)', 'Hợi (21h–23h)'];
+const CARD_ICONS = { nguHanh: '🔥', phuThe: '💍', tuHoa: '✨', daoHoa: '🌸' };
 
-function PersonForm({ label, value, onChange }) {
+function ScoreRing({ score, size = 170, strokeWidth = 6 }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setAnimated(true), 100); return () => clearTimeout(t); }, []);
+  return (
+    <div className="hh-score-wrapper">
+      <div className="hh-score-glow" />
+      <svg className="hh-score-ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <defs>
+          <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--accent-gold)" />
+            <stop offset="100%" stopColor="var(--accent-gold-bright)" />
+          </linearGradient>
+        </defs>
+        <circle className="hh-score-ring-bg" cx={size / 2} cy={size / 2} r={radius} />
+        <circle className="hh-score-ring-fill" cx={size / 2} cy={size / 2} r={radius}
+          style={{ strokeDasharray: circumference, strokeDashoffset: animated ? offset : circumference }} />
+      </svg>
+      <div className="hh-score">
+        <strong>{score}</strong>
+        <span>/ 100</span>
+      </div>
+    </div>
+  );
+}
+
+function ProgressBar({ value, max = 100 }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => { const t = setTimeout(() => setWidth((value / max) * 100), 100); return () => clearTimeout(t); }, [value, max]);
+  return (
+    <div className="hh-progress" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={`${value}/${max}`}>
+      <div className="hh-progress-fill" style={{ width: `${width}%` }} />
+    </div>
+  );
+}
+
+function PersonForm({ label, value, onChange, side }) {
   const set = (key, data) => onChange({ ...value, [key]: data });
 
   const dateValue = (value.nam && value.thang && value.ngay)
@@ -36,9 +75,11 @@ function PersonForm({ label, value, onChange }) {
     ? CANH_GIO[Math.floor((hourNum + 1) / 2) % 12]
     : null;
 
+  const personIcon = side === 'A' ? '👨' : '👩';
+
   return (
     <fieldset className="hh-person">
-      <legend>{label}</legend>
+      <legend><span className="hh-person-icon">{personIcon}</span> {label}</legend>
       <label>
         Họ và tên
         <input
@@ -55,7 +96,7 @@ function PersonForm({ label, value, onChange }) {
         <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Ngày sinh (Dương lịch)</span>
           {canChiYear && (
-            <span style={{ color: 'var(--accent-gold)', fontSize: '0.8rem', fontWeight: 600 }}>
+            <span className="hh-can-chi">
               ✦ Năm {canChiYear}
             </span>
           )}
@@ -78,7 +119,7 @@ function PersonForm({ label, value, onChange }) {
           <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Giờ sinh (0–23)</span>
             {canhGioName && (
-              <span style={{ color: 'var(--accent-gold)', fontSize: '0.78rem', fontWeight: 500 }}>
+              <span className="hh-can-chi">
                 {canhGioName}
               </span>
             )}
@@ -148,17 +189,29 @@ function PairSession({ initial, userId, onStored }) {
   const { assessment: a } = pair;
   return <>
     <section className="hh-result" aria-labelledby="hh-result-title">
-      <p className="hh-eyebrow">KẾT QUẢ ĐỐI CHIẾU</p><h2 id="hh-result-title">{a.husbandName} <span>&amp;</span> {a.wifeName}</h2>
-      <div className="hh-score"><strong>{a.totalScore}</strong><span>/ 100</span></div><h3>{a.ratingText}</h3>
+      <p className="hh-eyebrow">KẾT QUẢ ĐỐI CHIẾU</p>
+      <h2 id="hh-result-title">{a.husbandName} <span>&amp;</span> {a.wifeName}</h2>
+      <ScoreRing score={a.totalScore} />
+      <h3>{a.ratingText}</h3>
       <p className="hh-muted">Điểm tham khảo theo bộ quy tắc mẫu · Tứ Hóa chéo chưa được tính</p>
-      <div className="hh-elements"><span>{a.elements.husbandElement}<small>Chồng</small></span><p>{a.elements.interaction}</p><span>{a.elements.wifeElement}<small>Vợ</small></span></div>
+      <div className="hh-elements">
+        <span>{a.elements.husbandElement}<small>Chồng</small></span>
+        <p>{a.elements.interaction}</p>
+        <span>{a.elements.wifeElement}<small>Vợ</small></span>
+      </div>
     </section>
     <div className="hh-grid">{Object.entries(a.cards).map(([key, card]) => <section className="hh-card" key={key}>
-      <header><h3>{card.title}</h3><strong>{card.score}<small>/100</small></strong></header>
-      <progress max="100" value={card.score} aria-label={`${card.title}: ${card.score}/100`} />
-      <p className="hh-muted">Trọng số {WEIGHTS[key] * 100}%{card.provisional ? ' · Điểm mặc định' : ''}</p><p>{card.detail}</p>
+      <header>
+        <h3><span className="hh-card-icon">{CARD_ICONS[key] || '📋'}</span>{card.title}</h3>
+        <strong>{card.score}<small>/100</small></strong>
+      </header>
+      <ProgressBar value={card.score} />
+      <div className="hh-weight">
+        ⚖️ Trọng số {WEIGHTS[key] * 100}%{card.provisional ? ' · Điểm mặc định' : ''}
+      </div>
+      <p>{card.detail}</p>
     </section>)}</div>
-    <section className="hh-card"><h3>Cách đọc kết quả</h3><p>Điểm trước làm tròn: {a.rawScore}/100. Tổng hợp bằng trọng số 30% Ngũ hành, 30% Phu Thê, 25% Tứ Hóa và 15% Đào hoa.</p>
+    <section className="hh-card"><h3>📖 Cách đọc kết quả</h3><p>Điểm trước làm tròn: {a.rawScore}/100. Tổng hợp bằng trọng số 30% Ngũ hành, 30% Phu Thê, 25% Tứ Hóa và 15% Đào hoa.</p>
       <p>Đây là kết quả của bộ quy tắc tham khảo, không phải xác suất hôn nhân thành công. Sự thấu hiểu, giao tiếp và cách hai người cùng giải quyết vấn đề vẫn cần được xem xét trong thực tế.</p>
       <details><summary>Dữ kiện hai lá số</summary><pre className="hh-data">{compatibilityText(pair)}</pre></details>
     </section>
@@ -214,15 +267,26 @@ function AuthenticatedPage({ userId }) {
     <p role="status">{error || (access === false ? 'Tài khoản cần có lượt TuViNow khả dụng. Kiểm tra gói hoặc liên hệ quản trị viên để được cấp quyền.' : 'Đang kiểm tra quyền sử dụng…')}</p>
     {(error || access === false) && <button onClick={checkAccess}>Kiểm tra lại</button>}</section>;
   return <>
-    <header className="hh-hero"><span aria-hidden="true">♡</span><h1>Hợp hôn · Tử Vi</h1><p>Hai lá số, những điểm gặp nhau và điều cần thấu hiểu.</p></header>
-    <details className="hh-guide"><summary>Hướng dẫn &amp; phạm vi chấm điểm</summary><p>Đối chiếu Ngũ hành, cung Phu Thê và các sao Đào hoa từ hai lá số. Tứ Hóa chéo hiện dùng điểm mặc định của code mẫu. Phần AI bên dưới giúp hỏi sâu theo dữ kiện của từng người.</p><p>Trang yêu cầu đăng nhập và quyền/lượt TuViNow. Mỗi câu hỏi AI dùng một lượt; xem kết quả quy tắc không trừ lượt AI.</p></details>
-    {!session ? <form onSubmit={submit} className="hh-form"><div className="hh-grid">
-      <PersonForm label="Bên A · Chồng" value={payload.chong} onChange={chong => setPayload(p => ({ ...p, chong }))} />
-      <PersonForm label="Bên B · Vợ" value={payload.vo} onChange={vo => setPayload(p => ({ ...p, vo }))} />
-    </div><button className="hh-primary" disabled={busy}>{busy ? 'Đang đối chiếu…' : 'Xem hợp hôn'}</button></form>
+    <header className="hh-hero">
+      <div className="hh-hearts" aria-hidden="true">
+        <span>♡</span><span>♡</span><span>♡</span><span>♡</span><span>♡</span>
+      </div>
+      <div className="hh-hero-icon"><span aria-hidden="true">💕</span></div>
+      <h1>Hợp hôn · Tử Vi</h1>
+      <p>Hai lá số, những điểm gặp nhau và điều cần thấu hiểu.</p>
+    </header>
+    <details className="hh-guide"><summary>📋 Hướng dẫn &amp; phạm vi chấm điểm</summary><p>Đối chiếu Ngũ hành, cung Phu Thê và các sao Đào hoa từ hai lá số. Tứ Hóa chéo hiện dùng điểm mặc định của code mẫu. Phần AI bên dưới giúp hỏi sâu theo dữ kiện của từng người.</p><p>Trang yêu cầu đăng nhập và quyền/lượt TuViNow. Mỗi câu hỏi AI dùng một lượt; xem kết quả quy tắc không trừ lượt AI.</p></details>
+    {!session ? <form onSubmit={submit} className="hh-form">
+      <div className="hh-grid">
+        <PersonForm label="Bên A · Chồng" side="A" value={payload.chong} onChange={chong => setPayload(p => ({ ...p, chong }))} />
+        <PersonForm label="Bên B · Vợ" side="B" value={payload.vo} onChange={vo => setPayload(p => ({ ...p, vo }))} />
+      </div>
+      <div className="hh-divider"><span aria-hidden="true">♡</span></div>
+      <button className="hh-primary" disabled={busy}>{busy ? '✨ Đang đối chiếu…' : '💕 Xem hợp hôn'}</button>
+    </form>
       : <><button className="hh-back" onClick={() => setSession(null)}>← Đổi thông tin hai người</button><PairSession key={session.key} initial={session} userId={userId} onStored={loadHistory} /></>}
     {error && <p role="alert">{error}</p>}
-    <details className="hh-history"><summary>Lịch sử Hợp hôn ({history.length})</summary>
+    <details className="hh-history"><summary>📂 Lịch sử Hợp hôn ({history.length})</summary>
       {historyError && <p role="alert">{historyError}</p>}<button onClick={loadHistory}>Làm mới</button>
       {history.map(row => <button key={row.id} className="hh-history-row" onClick={() => {
         const restored = row.restored;

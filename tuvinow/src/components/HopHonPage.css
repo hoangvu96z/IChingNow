@@ -1,53 +1,832 @@
-.hop-hon { max-width: 1200px; margin: 0 auto; padding: 0 16px 40px; color: var(--text-primary); }
-.hh-hero { text-align: center; padding: 32px 12px; }
-.hh-hero > span { font: 56px var(--font-serif); color: var(--accent-gold); }
-.hh-hero h1 { font: 600 2.4rem var(--font-serif); color: var(--accent-gold); margin: 8px 0; }
-.hh-hero p, .hh-muted { color: var(--text-secondary); font-size: .85rem; line-height: 1.7; }
-.hh-guide, .hh-history { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 18px 22px; margin-bottom: 24px; line-height: 1.7; }
-.hop-hon summary { cursor: pointer; color: var(--accent-gold); font-weight: 600; }
-.hh-guide p { margin-top: 12px; }
-.hh-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-bottom: 24px; }
-.hh-person, .hh-card { min-width: 0; padding: 28px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--bg-card); line-height: 1.8; }
-.hh-person { border-top: 3px solid var(--accent-gold); }
-.hh-person:nth-child(2) { border-top-color: var(--accent-purple); }
-.hh-person legend { padding: 0 12px; color: var(--accent-gold); font: 600 1.4rem var(--font-serif); }
-.hh-person label { display: grid; gap: 6px; margin-bottom: 18px; font-size: .85rem; }
-.hh-person input, .hh-person select { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-input); color: var(--text-primary); font: inherit; }
-.hh-person input[type="date"] { cursor: pointer; min-height: 44px; }
-.hh-person input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.75; padding: 4px; border-radius: 4px; transition: opacity 0.2s, background-color 0.2s; }
-.hh-person input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; background-color: var(--accent-gold-dim, rgba(212, 165, 116, 0.15)); }
-.hh-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.hop-hon button:not(:where(.tuvi-ai *)) { border: 1px solid var(--border-subtle); border-radius: 9px; padding: 10px 16px; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font: inherit; }
-.hop-hon button:not(:where(.tuvi-ai *)):disabled { opacity: .55; cursor: wait; }
-.hop-hon :is(input, select, button, summary):focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
-.hop-hon .hh-primary { background: var(--accent-gold); color: var(--bg-primary); font-weight: 600; padding: 14px 30px; }
-.hh-form { text-align: center; margin-bottom: 28px; }
-.hh-form fieldset { text-align: left; }
-.hh-result { text-align: center; padding: 30px 10px; }
-.hh-result h2 { font: 600 1.9rem var(--font-serif); overflow-wrap: anywhere; }
-.hh-result h2 span, .hh-result h3, .hh-eyebrow { color: var(--accent-gold); }
-.hh-eyebrow { letter-spacing: .16em; font-size: .7rem; margin-bottom: 16px; }
-.hh-score { width: 150px; height: 150px; border: 3px solid var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; margin: 24px auto; background: var(--accent-gold-dim); }
-.hh-score strong { font: 600 3.6rem var(--font-serif); }
-.hh-score span { color: var(--text-secondary); }
-.hh-elements { max-width: 600px; display: flex; gap: 24px; align-items: center; justify-content: center; margin: 24px auto; padding: 22px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--bg-card); }
-.hh-elements > span { font: 600 1.5rem var(--font-serif); }
-.hh-elements small { display: block; font: .75rem var(--font-sans); color: var(--text-secondary); margin-top: 8px; }
-.hh-elements p { font-size: .85rem; max-width: 230px; }
-.hh-card header { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; }
-.hh-card h3 { font: 600 1.35rem var(--font-serif); color: var(--accent-gold); }
-.hh-card header strong { color: var(--accent-gold); font-size: 1.5rem; white-space: nowrap; }
-.hh-card small { font-size: .7rem; color: var(--text-secondary); }
-.hh-card progress { width: 100%; height: 8px; accent-color: var(--accent-gold); }
-.hh-card p { margin: 14px 0; font-size: .9rem; }
-.hh-data { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 420px; overflow: auto; font-size: .75rem; }
-.hh-save { display: flex; gap: 12px; align-items: center; margin: 18px 0; font-size: .8rem; color: var(--text-secondary); }
-.hh-gate { text-align: center; max-width: 650px; margin: 45px auto; }
-.hh-history { margin-top: 24px; }
-.hop-hon .hh-history-row { display: flex; width: 100%; gap: 16px; justify-content: space-between; text-align: left; margin-top: 10px; }
-.hh-history-row small { white-space: nowrap; }
-.hh-back { margin-bottom: 18px; }
-.tuvi-page-nav { display: flex; gap: 8px; justify-content: center; margin: 10px auto 24px; }
-.tuvi-page-nav a { padding: 10px 20px; border: 1px solid var(--border-subtle); border-radius: 999px; color: var(--text-secondary); text-decoration: none; background: var(--bg-card); }
-.tuvi-page-nav a[aria-current="page"] { border-color: var(--accent-gold); color: var(--accent-gold); background: var(--accent-gold-dim); }
-@media (max-width: 680px) { .hh-grid { grid-template-columns: 1fr; gap: 20px; } .hh-person, .hh-card { padding: 20px; } .hh-hero h1 { font-size: 2rem; } .hh-elements { gap: 12px; padding: 16px; } .hop-hon { padding: 0 8px 24px; } }
+/* ═══════════════════════════════════════════════════════════════
+   HopHonPage – Premium Redesign
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Container ── */
+.hop-hon {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px 60px;
+  color: var(--text-primary);
+  position: relative;
+}
+
+/* ── Hero Section ── */
+.hh-hero {
+  text-align: center;
+  padding: 48px 16px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hh-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 40%,
+    var(--accent-gold-dim) 0%,
+    transparent 70%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.hh-hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-gold-dim), var(--accent-purple-dim));
+  border: 2px solid var(--accent-gold);
+  margin-bottom: 16px;
+  position: relative;
+  animation: hh-pulse 3s ease-in-out infinite;
+}
+
+.hh-hero-icon span {
+  font-size: 36px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+}
+
+@keyframes hh-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--accent-gold-dim); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px 8px var(--accent-gold-dim); }
+}
+
+.hh-hero h1 {
+  font: 600 2.6rem var(--font-serif);
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 8px 0;
+  position: relative;
+}
+
+.hh-hero p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.hh-muted {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+/* ── Floating hearts decoration ── */
+.hh-hearts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.hh-hearts span {
+  position: absolute;
+  font-size: 14px;
+  opacity: 0;
+  animation: hh-float-heart 6s ease-in-out infinite;
+}
+
+.hh-hearts span:nth-child(1) { left: 10%; animation-delay: 0s; font-size: 12px; }
+.hh-hearts span:nth-child(2) { left: 25%; animation-delay: 1.2s; font-size: 16px; }
+.hh-hearts span:nth-child(3) { left: 50%; animation-delay: 2.4s; font-size: 10px; }
+.hh-hearts span:nth-child(4) { left: 75%; animation-delay: 3.6s; font-size: 14px; }
+.hh-hearts span:nth-child(5) { left: 90%; animation-delay: 4.8s; font-size: 12px; }
+
+@keyframes hh-float-heart {
+  0% { transform: translateY(100%); opacity: 0; }
+  20% { opacity: 0.5; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-200%); opacity: 0; }
+}
+
+/* ── Guide & History accordion ── */
+.hh-guide, .hh-history {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  line-height: 1.7;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.hh-guide:hover, .hh-history:hover {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 12px var(--accent-gold-dim);
+}
+
+.hop-hon summary {
+  cursor: pointer;
+  color: var(--accent-gold);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.hop-hon summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform 0.3s;
+  font-size: 0.9em;
+}
+
+.hop-hon details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.hh-guide p {
+  margin-top: 12px;
+}
+
+/* ── Form Grid ── */
+.hh-form {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.hh-form fieldset {
+  text-align: left;
+}
+
+.hh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+/* ── Person Card ── */
+.hh-person, .hh-card {
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  background: var(--bg-card);
+  line-height: 1.8;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+}
+
+.hh-person:hover, .hh-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.hh-person {
+  border-top: none;
+}
+
+.hh-person::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-bright));
+  border-radius: 20px 20px 0 0;
+}
+
+.hh-person:nth-child(2)::before {
+  background: linear-gradient(90deg, var(--accent-purple), #a78bfa);
+}
+
+.hh-person::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle at top right,
+    var(--accent-gold-dim) 0%,
+    transparent 70%);
+  pointer-events: none;
+}
+
+.hh-person:nth-child(2)::after {
+  background: radial-gradient(circle at top right,
+    var(--accent-purple-dim) 0%,
+    transparent 70%);
+}
+
+.hh-person legend {
+  padding: 0 14px;
+  color: var(--accent-gold);
+  font: 600 1.3rem var(--font-serif);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hh-person:nth-child(2) legend {
+  color: var(--accent-purple);
+}
+
+.hh-person-icon {
+  font-size: 1.1em;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+}
+
+.hh-person label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.hh-person input,
+.hh-person select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.hh-person input:hover,
+.hh-person select:hover {
+  border-color: var(--accent-gold);
+}
+
+.hh-person input:focus,
+.hh-person select:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px var(--accent-gold-dim);
+  outline: none;
+}
+
+.hh-person:nth-child(2) input:focus,
+.hh-person:nth-child(2) select:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px var(--accent-purple-dim);
+}
+
+.hh-person input[type="date"] {
+  cursor: pointer;
+  min-height: 46px;
+}
+
+.hh-person input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.75;
+  padding: 4px;
+  border-radius: 6px;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.hh-person input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: var(--accent-gold-dim);
+}
+
+.hh-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.hh-can-chi {
+  color: var(--accent-gold);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ── Divider between form sections ── */
+.hh-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.hh-divider::before,
+.hh-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+}
+
+.hh-divider span {
+  font-size: 1.4rem;
+  color: var(--accent-gold);
+  animation: hh-heartbeat 1.8s ease-in-out infinite;
+}
+
+@keyframes hh-heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.2); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.15); }
+  56% { transform: scale(1); }
+}
+
+/* ── Buttons ── */
+.hop-hon button:not(:where(.tuvi-ai *)) {
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  transition: all 0.25s;
+}
+
+.hop-hon button:not(:where(.tuvi-ai *)):hover {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+}
+
+.hop-hon button:not(:where(.tuvi-ai *)):disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.hop-hon :is(input, select, button, summary):focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 3px;
+}
+
+.hop-hon .hh-primary {
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright));
+  color: var(--bg-primary);
+  font-weight: 600;
+  padding: 16px 40px;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hop-hon .hh-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px var(--accent-gold-dim);
+}
+
+.hop-hon .hh-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+
+.hop-hon .hh-primary:hover:not(:disabled)::after {
+  transform: translateX(100%);
+}
+
+/* ── Result Section ── */
+.hh-result {
+  text-align: center;
+  padding: 40px 16px 20px;
+  position: relative;
+}
+
+.hh-result::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--accent-gold-dim) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.hh-eyebrow {
+  letter-spacing: 0.2em;
+  font-size: 0.72rem;
+  margin-bottom: 12px;
+  color: var(--accent-gold);
+  font-weight: 600;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.hh-result h2 {
+  font: 600 2rem var(--font-serif);
+  overflow-wrap: anywhere;
+  position: relative;
+}
+
+.hh-result h2 span {
+  color: var(--accent-gold);
+  margin: 0 8px;
+}
+
+.hh-result h3 {
+  color: var(--accent-gold);
+  position: relative;
+}
+
+/* ── Score Ring ── */
+.hh-score-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 32px auto;
+  position: relative;
+}
+
+.hh-score {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  position: relative;
+  background: var(--bg-card);
+  z-index: 1;
+}
+
+.hh-score-ring {
+  position: absolute;
+  width: 170px;
+  height: 170px;
+  transform: rotate(-90deg);
+}
+
+.hh-score-ring-bg {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: 6;
+}
+
+.hh-score-ring-fill {
+  fill: none;
+  stroke: url(#scoreGradient);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 452;
+  stroke-dashoffset: 452;
+  transition: stroke-dashoffset 1.5s ease-out;
+}
+
+.hh-score strong {
+  font: 600 3.8rem var(--font-serif);
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.hh-score span {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.hh-score-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-gold-dim) 0%, transparent 70%);
+  animation: hh-glow 3s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes hh-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+/* ── Elements Comparison ── */
+.hh-elements {
+  max-width: 600px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  margin: 28px auto;
+  padding: 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-card);
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.hh-elements::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    var(--accent-gold-dim) 0%,
+    transparent 40%,
+    transparent 60%,
+    var(--accent-purple-dim) 100%);
+  pointer-events: none;
+}
+
+.hh-elements > span {
+  font: 600 1.5rem var(--font-serif);
+  position: relative;
+  z-index: 1;
+}
+
+.hh-elements small {
+  display: block;
+  font: 0.75rem var(--font-sans);
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.hh-elements p {
+  font-size: 0.85rem;
+  max-width: 230px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Criteria Cards ── */
+.hh-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.hh-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-purple));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.hh-card:hover::before {
+  opacity: 1;
+}
+
+.hh-card header {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.hh-card-icon {
+  font-size: 1.3em;
+  margin-right: 6px;
+}
+
+.hh-card h3 {
+  font: 600 1.3rem var(--font-serif);
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hh-card header strong {
+  color: var(--accent-gold);
+  font-size: 1.5rem;
+  white-space: nowrap;
+}
+
+.hh-card small {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* Custom progress bar */
+.hh-progress {
+  width: 100%;
+  height: 8px;
+  background: var(--border-subtle);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+
+.hh-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-bright));
+  transition: width 1.2s ease-out;
+  position: relative;
+}
+
+.hh-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: hh-shimmer 2s infinite;
+}
+
+@keyframes hh-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.hh-card p {
+  margin: 14px 0;
+  font-size: 0.9rem;
+}
+
+.hh-data {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 420px;
+  overflow: auto;
+  font-size: 0.75rem;
+}
+
+/* ── Weight badge ── */
+.hh-weight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ── Save status ── */
+.hh-save {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 18px 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ── Gate / Login Card ── */
+.hh-gate {
+  text-align: center;
+  max-width: 650px;
+  margin: 60px auto;
+  padding: 48px 32px;
+}
+
+.hh-gate h1, .hh-gate h2 {
+  font: 600 2rem var(--font-serif);
+  color: var(--accent-gold);
+  margin-bottom: 12px;
+}
+
+/* ── History ── */
+.hh-history {
+  margin-top: 24px;
+}
+
+.hop-hon .hh-history-row {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+  justify-content: space-between;
+  text-align: left;
+  margin-top: 10px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.hop-hon .hh-history-row:hover {
+  background: var(--accent-gold-dim);
+  border-color: var(--accent-gold);
+}
+
+.hh-history-row small {
+  white-space: nowrap;
+}
+
+/* ── Back button ── */
+.hh-back {
+  margin-bottom: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Page nav ── */
+.tuvi-page-nav {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 10px auto 24px;
+}
+
+.tuvi-page-nav a {
+  padding: 10px 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: var(--bg-card);
+  transition: all 0.25s;
+}
+
+.tuvi-page-nav a:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.tuvi-page-nav a[aria-current="page"] {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+}
+
+/* ── Entrance animations ── */
+@keyframes hh-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hh-hero { animation: hh-fade-up 0.6s ease-out; }
+.hh-form { animation: hh-fade-up 0.6s ease-out 0.15s both; }
+.hh-result { animation: hh-fade-up 0.6s ease-out; }
+.hh-grid .hh-card:nth-child(1) { animation: hh-fade-up 0.5s ease-out 0.1s both; }
+.hh-grid .hh-card:nth-child(2) { animation: hh-fade-up 0.5s ease-out 0.2s both; }
+.hh-grid .hh-card:nth-child(3) { animation: hh-fade-up 0.5s ease-out 0.3s both; }
+.hh-grid .hh-card:nth-child(4) { animation: hh-fade-up 0.5s ease-out 0.4s both; }
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  .hh-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .hh-person, .hh-card {
+    padding: 22px;
+  }
+
+  .hh-hero {
+    padding: 36px 12px 24px;
+  }
+
+  .hh-hero h1 {
+    font-size: 2rem;
+  }
+
+  .hh-result h2 {
+    font-size: 1.6rem;
+  }
+
+  .hh-elements {
+    gap: 12px;
+    padding: 18px;
+    flex-direction: column;
+  }
+
+  .hop-hon {
+    padding: 0 10px 32px;
+  }
+
+  .hh-hero-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .hh-hero-icon span {
+    font-size: 28px;
+  }
+
+  .hh-divider {
+    display: none;
+  }
+
+  .hh-score-wrapper {
+    margin: 24px auto;
+  }
+}
