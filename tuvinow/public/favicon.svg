@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100%" height="100%">
+  <defs>
+    <!-- Deep Cosmic Violet Background -->
+    <radialGradient id="tvCosmicBg" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#31135e" />
+      <stop offset="45%" stop-color="#180b33" />
+      <stop offset="100%" stop-color="#090414" />
+    </radialGradient>
+
+    <!-- Celestial Nebula Glow behind Star -->
+    <radialGradient id="tvNebula" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.6" />
+      <stop offset="35%" stop-color="#8b5cf6" stop-opacity="0.45" />
+      <stop offset="70%" stop-color="#3b0764" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Star Facets Light / Highlight -->
+    <linearGradient id="tvFacetLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+
+    <!-- Star Facets Shadow / Tone -->
+    <linearGradient id="tvFacetDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="60%" stop-color="#b45309" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+
+    <!-- Diagonal Ray Facet Light -->
+    <linearGradient id="tvDiagLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fed7aa" />
+      <stop offset="50%" stop-color="#fb923c" />
+      <stop offset="100%" stop-color="#c2410c" />
+    </linearGradient>
+
+    <!-- Diagonal Ray Facet Dark -->
+    <linearGradient id="tvDiagDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c" />
+      <stop offset="70%" stop-color="#9a3412" />
+      <stop offset="100%" stop-color="#431407" />
+    </linearGradient>
+
+    <!-- Golden Rim Gradient -->
+    <linearGradient id="tvRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="30%" stop-color="#8b5cf6" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#fde047" />
+    </linearGradient>
+
+    <!-- Center Pearl Core -->
+    <radialGradient id="tvPearl" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#fef08a" />
+      <stop offset="75%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#854d0e" />
+    </radialGradient>
+  </defs>
+
+  <!-- Rounded Squircle Base (App Icon / Favicon frame) -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#tvCosmicBg)" stroke="url(#tvRim)" stroke-width="1.6" />
+
+  <!-- Ambient Glow -->
+  <circle cx="32" cy="32" r="22" fill="url(#tvNebula)" />
+
+  <!-- 12 Cung Astrological Dial Ring -->
+  <circle cx="32" cy="32" r="24.5" fill="none" stroke="#a78bfa" stroke-width="0.75" stroke-dasharray="2 4.4" opacity="0.65" />
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#eab308" stroke-width="0.5" opacity="0.35" />
+
+  <!-- 12 Cung Golden Beads (Representing 12 Palaces of Tu Vi) -->
+  <circle cx="32" cy="7.5" r="1.1" fill="#fde047" opacity="0.9" />
+  <circle cx="44.2" cy="10.8" r="0.9" fill="#fef08a" opacity="0.75" />
+  <circle cx="53.2" cy="19.8" r="0.9" fill="#fef08a" opacity="0.75" />
+  <circle cx="56.5" cy="32" r="1.1" fill="#fde047" opacity="0.9" />
+  <circle cx="53.2" cy="44.2" r="0.9" fill="#fef08a" opacity="0.75" />
+  <circle cx="44.2" cy="53.2" r="0.9" fill="#fef08a" opacity="0.75" />
+  <circle cx="32" cy="56.5" r="1.1" fill="#fde047" opacity="0.9" />
+  <circle cx="19.8" cy="53.2" r="0.9" fill="#fef08a" opacity="0.75" />
+  <circle cx="10.8" cy="44.2" r="0.9" fill="#fef08a" opacity="0.75" />
+  <circle cx="7.5" cy="32" r="1.1" fill="#fde047" opacity="0.9" />
+  <circle cx="10.8" cy="19.8" r="0.9" fill="#fef08a" opacity="0.75" />
+  <circle cx="19.8" cy="10.8" r="0.9" fill="#fef08a" opacity="0.75" />
+
+  <!-- 8-Pointed Imperial Polaris Star (Sao Tử Vi / Đế Tinh) -->
+  <!-- 1. Diagonal Rays (Secondary / Warm Bronze-Gold) -->
+  <!-- NE Ray -->
+  <polygon points="43.5,20.5 32,32 34.2,27" fill="url(#tvDiagLight)" />
+  <polygon points="43.5,20.5 37,29.8 32,32" fill="url(#tvDiagDark)" />
+
+  <!-- SE Ray -->
+  <polygon points="43.5,43.5 32,32 37,34.2" fill="url(#tvDiagLight)" />
+  <polygon points="43.5,43.5 34.2,37 32,32" fill="url(#tvDiagDark)" />
+
+  <!-- SW Ray -->
+  <polygon points="20.5,43.5 32,32 27,34.2" fill="url(#tvDiagLight)" />
+  <polygon points="20.5,43.5 29.8,37 32,32" fill="url(#tvDiagDark)" />
+
+  <!-- NW Ray -->
+  <polygon points="20.5,20.5 32,32 29.8,27" fill="url(#tvDiagLight)" />
+  <polygon points="20.5,20.5 27,29.8 32,32" fill="url(#tvDiagDark)" />
+
+  <!-- 2. Cardinal Rays (Primary / Radiant Imperial Gold) -->
+  <!-- North Ray (Sao Bắc Cực) -->
+  <polygon points="32,7 32,32 29.8,27" fill="url(#tvFacetLight)" />
+  <polygon points="32,7 34.2,27 32,32" fill="url(#tvFacetDark)" />
+
+  <!-- South Ray -->
+  <polygon points="32,57 32,32 34.2,37" fill="url(#tvFacetLight)" />
+  <polygon points="32,57 29.8,37 32,32" fill="url(#tvFacetDark)" />
+
+  <!-- East Ray -->
+  <polygon points="57,32 32,32 37,29.8" fill="url(#tvFacetLight)" />
+  <polygon points="57,32 37,34.2 32,32" fill="url(#tvFacetDark)" />
+
+  <!-- West Ray -->
+  <polygon points="7,32 32,32 27,34.2" fill="url(#tvFacetLight)" />
+  <polygon points="7,32 27,29.8 32,32" fill="url(#tvFacetDark)" />
+
+  <!-- Central Star Sparkle / Jewel Core -->
+  <circle cx="32" cy="32" r="4.5" fill="#451a03" opacity="0.3" />
+  <circle cx="32" cy="32" r="3.5" fill="url(#tvPearl)" stroke="#ffffff" stroke-width="0.6" />
+  <circle cx="30.8" cy="30.8" r="1.1" fill="#ffffff" opacity="0.9" />
+</svg>

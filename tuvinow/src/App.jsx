@@ -213,8 +213,13 @@ export default function App() {
         onLogoClick={handleNewReading}
         useAuthHook={useAuth}
         logo={
-          <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>🔮</span>
+          <img
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            alt="TuViNow"
+            style={{ width: 28, height: 28, borderRadius: 7, display: 'block', boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)' }}
+          />
         }
+
         title="TuViNow"
         subtitle="Tử Vi Đẩu Số Online"
         themeToggle={
