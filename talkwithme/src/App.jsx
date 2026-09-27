@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import AppFooter from '@shared/components/AppFooter.jsx';
 import TalkWithMePage from './components/TalkWithMePage.jsx';
 
 function StarParticles() {
@@ -82,9 +83,17 @@ export default function App() {
         <TalkWithMePage />
       </main>
 
-      <footer className="app-footer">
-        © 2026 vunph.id.vn · Made with ❤️ in Việt Nam
-      </footer>
+      <AppFooter
+        appId="talkwithme"
+        colors={{
+          accent: '#38bdf8',
+          footerBorder: 'rgba(56, 189, 248, 0.18)',
+          footerLink: 'var(--text-secondary, rgba(255,255,255,0.65))',
+          footerText: 'var(--text-muted, rgba(255,255,255,0.45))',
+          footerDot: 'rgba(56, 189, 248, 0.3)',
+        }}
+        tagline="TalkWithMe — Hòm thư trực tuyến, kết nối và gửi phản hồi ẩn danh hoặc định danh"
+      />
     </>
   );
 }

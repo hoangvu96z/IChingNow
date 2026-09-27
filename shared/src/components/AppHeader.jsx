@@ -57,6 +57,14 @@ const APPS = [
     url: '/tuvi/',
     color: '#6dd5b0',
   },
+  {
+    id: 'talkwithme',
+    icon: '💬',
+    name: 'TalkWithMe',
+    tagline: 'Liên Hệ & Góp Ý',
+    url: '/talkwithme/',
+    color: '#38bdf8',
+  },
 ];
 
 // ─── Apps Dropdown ──────────────────────────────────────────────────────────
