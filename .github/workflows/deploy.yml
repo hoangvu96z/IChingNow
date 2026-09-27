@@ -14,6 +14,7 @@ jobs:
       iching: ${{ steps.filter.outputs.iching }}
       tarot: ${{ steps.filter.outputs.tarot }}
       tuvi: ${{ steps.filter.outputs.tuvi }}
+      talkwithme: ${{ steps.filter.outputs.talkwithme }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -29,6 +30,8 @@ jobs:
               - 'tarotnow/**'
             tuvi:
               - 'tuvinow/**'
+            talkwithme:
+              - 'talkwithme/**'
 
   # ─── Deploy IChing ───
   deploy-iching:
@@ -154,6 +157,49 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./tuvinow/dist/
           server-dir: ./tuvi/
+          dangerous-clean-slate: true
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+
+  # ─── Deploy TalkWithMe ───
+  deploy-talkwithme:
+    name: 💬 Deploy TalkWithMe
+    needs: changes
+    if: needs.changes.outputs.talkwithme == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: talkwithme/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm install
+        working-directory: talkwithme
+
+      - name: 🔨 Build
+        run: npm run build
+        working-directory: talkwithme
+
+      - name: 🗑️ Xóa file cũ & Upload lên hosting
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          port: 21
+          protocol: ftps
+          security: loose
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./talkwithme/dist/
+          server-dir: ./talkwithme/
           dangerous-clean-slate: true
           exclude: |
             **/.git*
