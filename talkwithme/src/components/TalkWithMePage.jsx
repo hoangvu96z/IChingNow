@@ -45,11 +45,42 @@ async function fileToBase64(file) {
   });
 }
 
+function getClientMetadata() {
+  try {
+    const screenWidth = window.screen?.width || 0;
+    const screenHeight = window.screen?.height || 0;
+    const dpr = window.devicePixelRatio || 1;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const language = navigator.language || navigator.userLanguage || '';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
+
+    return {
+      screen: `${screenWidth}x${screenHeight} (DPR ${dpr})`,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      timezone,
+      language,
+      isMobile,
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function sendMessage({ sessionId, name, email, title, message, imageData, imageMime }) {
+  const clientMeta = getClientMetadata();
   const res = await fetch(`${SSO_BASE}/contact/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId, name, email, title, message, imageData, imageMime }),
+    body: JSON.stringify({
+      sessionId,
+      name,
+      email,
+      title,
+      message,
+      imageData,
+      imageMime,
+      clientMeta,
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
