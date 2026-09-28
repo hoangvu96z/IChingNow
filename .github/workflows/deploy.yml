@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   # ─── Detect which app(s) changed ───
@@ -26,12 +27,20 @@ jobs:
           filters: |
             iching:
               - 'iching/**'
+              - 'shared/**'
+              - '.github/workflows/deploy.yml'
             tarot:
               - 'tarotnow/**'
+              - 'shared/**'
+              - '.github/workflows/deploy.yml'
             tuvi:
               - 'tuvinow/**'
+              - 'shared/**'
+              - '.github/workflows/deploy.yml'
             talkwithme:
               - 'talkwithme/**'
+              - 'shared/**'
+              - '.github/workflows/deploy.yml'
 
   # ─── Deploy IChing ───
   deploy-iching:
