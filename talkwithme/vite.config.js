@@ -4,7 +4,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/talkwithme/',
+  base: '/talk/',
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../shared/src'),

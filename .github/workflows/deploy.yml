@@ -198,7 +198,7 @@ jobs:
         run: npm run build
         working-directory: talkwithme
 
-      - name: 🗑️ Xóa file cũ & Upload lên hosting
+      - name: 🗑️ Xóa file cũ & Upload lên hosting (./talk/)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -208,10 +208,43 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./talkwithme/dist/
-          server-dir: ./talkwithme/
+          server-dir: ./talk/
           dangerous-clean-slate: true
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
+
+      - name: 🔀 Tạo trang chuyển hướng từ ./talkwithme/ sang ./talk/
+        run: |
+          mkdir -p ./talkwithme_redirect
+          cat << 'EOF' > ./talkwithme_redirect/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=/talk/">
+            <link rel="canonical" href="https://vunph.id.vn/talk/">
+            <title>Chuyển hướng đến TalkWithMe...</title>
+            <script>window.location.replace('/talk/' + window.location.search + window.location.hash);</script>
+          </head>
+          <body>
+            <p>Đang chuyển hướng sang <a href="/talk/">/talk/</a>...</p>
+          </body>
+          </html>
+          EOF
+
+      - name: 🚀 Upload trang chuyển hướng lên ./talkwithme/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          port: 21
+          protocol: ftps
+          security: loose
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./talkwithme_redirect/
+          server-dir: ./talkwithme/
+          dangerous-clean-slate: true
+
 

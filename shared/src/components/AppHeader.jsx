@@ -62,7 +62,7 @@ const APPS = [
     icon: '💬',
     name: 'TalkWithMe',
     tagline: 'Liên Hệ & Góp Ý',
-    url: '/talkwithme/',
+    url: '/talk/',
     color: '#38bdf8',
   },
 ];
