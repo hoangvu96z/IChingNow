@@ -19,6 +19,7 @@ import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { ichingTheme } from '@shared/themes/iching.js';
+import { trackPageVisit } from '@shared/utils/analytics.js';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -425,6 +426,11 @@ export default function App() {
   const [maiHoaResult,     setMaiHoaResult]     = useState(null);
   const [hasPickedMethod,  setHasPickedMethod]  = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+
+  // ─── Analytics ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    trackPageVisit('iching');
+  }, []);
 
   // ─── Auth + Readings API ──────────────────────────────────────────────────
   const { isAuthenticated, user } = useAuth();

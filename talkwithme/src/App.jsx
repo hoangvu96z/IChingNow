@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import AppFooter from '@shared/components/AppFooter.jsx';
+import { trackPageVisit } from '@shared/utils/analytics.js';
 import TalkWithMePage from './components/TalkWithMePage.jsx';
 
 function StarParticles() {
@@ -57,6 +58,10 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('twm_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    trackPageVisit('talkwithme');
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));

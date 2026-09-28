@@ -18,6 +18,7 @@ import AiInterpretationPanel from './components/AiInterpretationPanel';
 import AppHeader from './components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { tarotTheme } from '@shared/themes/tarot.js';
+import { trackPageVisit } from '@shared/utils/analytics.js';
 import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import { useLanguage } from './context/LanguageContext';
 
@@ -119,6 +120,11 @@ export default function App() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory, isAuthenticated]);
+
+  // Track page visit analytics
+  useEffect(() => {
+    trackPageVisit('tarot');
+  }, []);
 
   const hasAutoLoadedUrlRef = useRef(false);
 

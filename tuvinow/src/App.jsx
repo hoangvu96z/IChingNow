@@ -13,6 +13,7 @@ import TuViHistoryModal from './components/TuViHistoryModal.jsx';
 import AppHeader from '@shared/components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { tuviTheme } from '@shared/themes/tuvi.js';
+import { trackPageVisit } from '@shared/utils/analytics.js';
 
 // Generate star particles for background
 function StarParticles() {
@@ -91,6 +92,10 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('tuvinow_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    trackPageVisit('tuvi');
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
