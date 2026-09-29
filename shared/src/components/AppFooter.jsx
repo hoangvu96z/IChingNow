@@ -13,7 +13,6 @@ const APPS = [
   { id: 'iching', icon: '☯️', name: 'IChingNow', url: '/kinhdich/' },
   { id: 'tarot',  icon: '🃏', name: 'TarotNow',  url: '/tarot/' },
   { id: 'tuvi',   icon: '🔮', name: 'TuViNow',   url: '/tuvi/' },
-  { id: 'talkwithme', icon: '💬', name: 'TalkWithMe', url: '/talk/' },
 ];
 
 export default function AppFooter({ colors = {}, appId, tagline }) {
