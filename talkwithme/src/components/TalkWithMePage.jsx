@@ -36,11 +36,82 @@ function generateSessionId() {
   return 'twm_' + crypto.randomUUID().replace(/-/g, '').substring(0, 16);
 }
 
-async function fileToBase64(file) {
+/**
+ * Nén hình ảnh xuống chuẩn độ phân giải 720p (Max 1280x720 hoặc 720x1280)
+ * Tự động scale tỉ lệ khung hình, nén JPEG 0.82 để dung lượng siêu nhẹ (~50KB-180KB)
+ */
+async function compressImageTo720p(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error(`Không thể đọc file ${file.name}`));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error(`Không thể nạp hình ảnh ${file.name}`));
+      img.onload = () => {
+        const width = img.naturalWidth || img.width;
+        const height = img.naturalHeight || img.height;
+
+        // Chuẩn 720p: cạnh dài max 1280px, cạnh ngắn max 720px
+        const isLandscape = width >= height;
+        const maxLong = 1280;
+        const maxShort = 720;
+
+        let targetWidth = width;
+        let targetHeight = height;
+
+        if (isLandscape) {
+          if (targetWidth > maxLong) {
+            targetHeight = Math.round((targetHeight * maxLong) / targetWidth);
+            targetWidth = maxLong;
+          }
+          if (targetHeight > maxShort) {
+            targetWidth = Math.round((targetWidth * maxShort) / targetHeight);
+            targetHeight = maxShort;
+          }
+        } else {
+          if (targetHeight > maxLong) {
+            targetWidth = Math.round((targetWidth * maxLong) / targetHeight);
+            targetHeight = maxLong;
+          }
+          if (targetWidth > maxShort) {
+            targetHeight = Math.round((targetHeight * maxShort) / targetWidth);
+            targetWidth = maxShort;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas không khả dụng'));
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        // Xuất chuẩn JPEG chất lượng cao 0.82 (dung lượng tối ưu)
+        const mime = 'image/jpeg';
+        const dataUrl = canvas.toDataURL(mime, 0.82);
+        const base64 = dataUrl.split(',')[1];
+        const compressedSize = Math.round((base64.length * 3) / 4);
+
+        resolve({
+          id: 'img_' + Math.random().toString(36).slice(2, 9),
+          data: base64,
+          mime,
+          preview: dataUrl,
+          name: file.name,
+          originalSize: file.size,
+          compressedSize,
+          width: targetWidth,
+          height: targetHeight,
+        });
+      };
+      img.src = reader.result;
+    };
     reader.readAsDataURL(file);
   });
 }
@@ -66,7 +137,7 @@ function getClientMetadata() {
   }
 }
 
-async function sendMessage({ sessionId, name, email, title, message, imageData, imageMime }) {
+async function sendMessage({ sessionId, name, email, title, message, images }) {
   const clientMeta = getClientMetadata();
   const res = await fetch(`${SSO_BASE}/contact/messages`, {
     method: 'POST',
@@ -77,8 +148,16 @@ async function sendMessage({ sessionId, name, email, title, message, imageData, 
       email,
       title,
       message,
-      imageData,
-      imageMime,
+      images: images && images.length > 0 ? images.map(img => ({
+        data: img.data,
+        mime: img.mime,
+        name: img.name,
+        size: img.compressedSize,
+        width: img.width,
+        height: img.height,
+      })) : undefined,
+      imageData: images && images[0] ? images[0].data : undefined,
+      imageMime: images && images[0] ? images[0].mime : undefined,
       clientMeta,
     }),
   });
@@ -111,8 +190,8 @@ export default function TalkWithMePage() {
   const [email, setEmail] = useState(session?.email || '');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [attachedImages, setAttachedImages] = useState([]);
+  const [compressing, setCompressing] = useState(false);
   const fileInputRef = useRef(null);
   const messageListRef = useRef(null);
   const textareaRef = useRef(null);
@@ -137,33 +216,47 @@ export default function TalkWithMePage() {
     }
   }, [messages]);
 
-  const handleImageChange = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (!file) { setImageFile(null); setImagePreview(null); return; }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setError('Chỉ hỗ trợ ảnh JPG, PNG, GIF hoặc WebP.');
-      e.target.value = '';
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      setError('Ảnh quá lớn. Tối đa 1.5MB.');
-      e.target.value = '';
-      return;
-    }
-
-    setImageFile(file);
-    setError('');
-    const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result);
-    reader.readAsDataURL(file);
-  }, []);
-
-  const removeImage = useCallback(() => {
-    setImageFile(null);
-    setImagePreview(null);
+  const handleImageChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, []);
+
+    const currentCount = attachedImages.length;
+    const availableSlots = 3 - currentCount;
+    if (availableSlots <= 0) {
+      setError('Đã đạt giới hạn tối đa 3 ảnh đính kèm.');
+      return;
+    }
+
+    const filesToProcess = files.slice(0, availableSlots);
+    if (files.length > availableSlots) {
+      setError(`Chỉ có thể đính kèm tối đa 3 ảnh/tin nhắn. Đã chọn ${availableSlots} ảnh.`);
+    } else {
+      setError('');
+    }
+
+    setCompressing(true);
+    try {
+      const processed = [];
+      for (const file of filesToProcess) {
+        if (!ALLOWED_TYPES.includes(file.type)) {
+          throw new Error(`File "${file.name}" không hợp lệ. Chỉ chấp nhận JPG, PNG, GIF, WebP.`);
+        }
+        const compressed = await compressImageTo720p(file);
+        processed.push(compressed);
+      }
+      setAttachedImages((prev) => [...prev, ...processed].slice(0, 3));
+    } catch (err) {
+      setError(err.message || 'Lỗi khi xử lý nén ảnh 720p.');
+    } finally {
+      setCompressing(false);
+    }
+  };
+
+  const removeImage = (idToRemove) => {
+    setAttachedImages((prev) => prev.filter((img) => img.id !== idToRemove));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -181,20 +274,13 @@ export default function TalkWithMePage() {
         sid = generateSessionId();
       }
 
-      let imageData, imageMime;
-      if (imageFile) {
-        imageData = await fileToBase64(imageFile);
-        imageMime = imageFile.type;
-      }
-
       const result = await sendMessage({
         sessionId: sid,
         name: name.trim(),
         email: email.trim() || undefined,
         title: title.trim() || undefined,
         message: message.trim(),
-        imageData,
-        imageMime,
+        images: attachedImages,
       });
 
       // Save session
@@ -208,7 +294,7 @@ export default function TalkWithMePage() {
       // Reset form fields (keep name & email)
       setTitle('');
       setMessage('');
-      removeImage();
+      setAttachedImages([]);
       setSuccess('Tin nhắn đã gửi thành công! 🎉');
       setTimeout(() => setSuccess(''), 5000);
 
@@ -229,7 +315,7 @@ export default function TalkWithMePage() {
     setEmail('');
     setTitle('');
     setMessage('');
-    removeImage();
+    setAttachedImages([]);
     setError('');
     setSuccess('');
   };
@@ -278,9 +364,9 @@ export default function TalkWithMePage() {
                   </div>
                   {msg.title && <h3 className="twm-msg-title">{msg.title}</h3>}
                   <p className="twm-msg-body">{msg.message}</p>
-                  {msg.hasImage && (
+                  {(msg.hasImage || msg.imageCount > 0) && (
                     <div className="twm-msg-attachment">
-                      <span>📷</span> Có ảnh đính kèm
+                      <span>📷</span> Có {msg.imageCount && msg.imageCount > 1 ? `${msg.imageCount} ảnh` : 'ảnh'} đính kèm
                     </div>
                   )}
                 </article>
@@ -379,8 +465,8 @@ export default function TalkWithMePage() {
               </div>
             </label>
 
-            {/* Image Upload */}
-            <div className="twm-upload-area">
+            {/* Image Upload Area — Max 3 images & Auto 720p compression */}
+            <div className="twm-upload-section">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -388,18 +474,54 @@ export default function TalkWithMePage() {
                 onChange={handleImageChange}
                 className="twm-file-hidden"
                 id="twm-file-input"
+                multiple
+                disabled={attachedImages.length >= 3 || compressing}
               />
-              {!imagePreview ? (
-                <label htmlFor="twm-file-input" className="twm-upload-dropzone">
-                  <span className="twm-upload-icon">🖼️</span>
-                  <span>Đính kèm ảnh</span>
-                  <small>JPG, PNG, GIF, WebP · Tối đa 1.5MB</small>
+
+              {/* Grid of attached images */}
+              {attachedImages.length > 0 && (
+                <div className="twm-previews-grid">
+                  {attachedImages.map((img, idx) => (
+                    <div className="twm-preview-card" key={img.id || idx}>
+                      <img src={img.preview} alt={img.name} />
+                      <button
+                        type="button"
+                        className="twm-preview-x"
+                        onClick={() => removeImage(img.id)}
+                        aria-label="Xoá ảnh này"
+                      >
+                        ✕
+                      </button>
+                      <div className="twm-preview-badge">
+                        <span className="twm-badge-res">720p</span>
+                        <span>{Math.round(img.compressedSize / 1024)} KB</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Dropzone / Add More Button */}
+              {attachedImages.length < 3 ? (
+                <label
+                  htmlFor="twm-file-input"
+                  className={`twm-upload-dropzone ${compressing ? 'is-compressing' : ''}`}
+                >
+                  <span className="twm-upload-icon">{compressing ? '⚙️' : '🖼️'}</span>
+                  <div className="twm-upload-text">
+                    <strong>
+                      {compressing
+                        ? 'Đang tự động nén chuẩn 720p...'
+                        : attachedImages.length === 0
+                        ? 'Đính kèm ảnh (tối đa 3 ảnh)'
+                        : `Thêm ảnh (${attachedImages.length}/3)`}
+                    </strong>
+                    <small>Tự động nén chuẩn 720p HD · Hỗ trợ JPG, PNG, WebP</small>
+                  </div>
                 </label>
               ) : (
-                <div className="twm-preview">
-                  <img src={imagePreview} alt="Xem trước ảnh" />
-                  <button type="button" className="twm-preview-x" onClick={removeImage} aria-label="Xoá ảnh">✕</button>
-                  <span className="twm-preview-name">{imageFile?.name}</span>
+                <div className="twm-upload-full-badge">
+                  <span>✅ Đã đính kèm tối đa 3/3 ảnh (chuẩn 720p)</span>
                 </div>
               )}
             </div>

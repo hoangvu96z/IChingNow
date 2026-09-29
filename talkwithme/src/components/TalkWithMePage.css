@@ -387,8 +387,12 @@
 }
 
 /* ── Upload ── */
-.twm-upload-area {
+/* ── Upload Section ── */
+.twm-upload-section {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .twm-file-hidden {
@@ -399,19 +403,92 @@
   pointer-events: none;
 }
 
+/* Grid of multiple image previews */
+.twm-previews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.twm-preview-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  aspect-ratio: 4 / 3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: twm-slide-up 0.25s ease-out;
+}
+
+.twm-preview-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.twm-preview-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.75) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.twm-preview-x:hover {
+  background: var(--accent-rose) !important;
+  transform: scale(1.1);
+}
+
+.twm-preview-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #f8fafc;
+  font-size: 0.68rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.twm-badge-res {
+  color: var(--accent-cyan);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Upload Dropzone / Add Button */
 .twm-upload-dropzone {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 20px;
-  border: 2px dashed var(--border-subtle);
-  border-radius: 14px;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1.5px dashed var(--border-subtle);
+  border-radius: 12px;
   cursor: pointer;
   color: var(--text-secondary);
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   transition: all 0.25s;
-  text-align: center;
 }
 
 .twm-upload-dropzone:hover {
@@ -420,63 +497,47 @@
   background: var(--accent-cyan-dim);
 }
 
+.twm-upload-dropzone.is-compressing {
+  border-color: var(--accent-cyan);
+  background: var(--accent-cyan-dim);
+  animation: twm-pulse 1.5s infinite;
+  pointer-events: none;
+}
+
 .twm-upload-icon {
-  font-size: 1.6rem;
-  margin-bottom: 2px;
+  font-size: 1.4rem;
+  flex-shrink: 0;
 }
 
-.twm-upload-dropzone small {
-  font-size: 0.72rem;
-  opacity: 0.6;
-}
-
-/* Preview */
-.twm-preview {
-  position: relative;
-  display: inline-flex;
+.twm-upload-text {
+  display: flex;
   flex-direction: column;
-  max-width: 260px;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  animation: twm-slide-up 0.3s ease-out;
+  gap: 2px;
+  text-align: left;
 }
 
-.twm-preview img {
-  display: block;
-  width: 100%;
-  max-height: 200px;
-  object-fit: cover;
+.twm-upload-text strong {
+  font-size: 0.85rem;
+  color: var(--text-primary);
 }
 
-.twm-preview-x {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.75) !important;
-  color: #fff !important;
-  border: none !important;
-  font-size: 12px;
-  cursor: pointer;
+.twm-upload-text small {
+  font-size: 0.72rem;
+  opacity: 0.65;
+}
+
+.twm-upload-full-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.twm-preview-x:hover {
-  background: var(--accent-rose) !important;
-}
-
-.twm-preview-name {
-  padding: 6px 10px;
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* ── Alerts ── */
