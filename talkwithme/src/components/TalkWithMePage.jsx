@@ -88,8 +88,9 @@ async function compressImageTo720p(file) {
           return;
         }
 
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        // Vẽ nền trắng để tránh PNG/WebP trong suốt bị đen khi chuyển sang JPEG
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
         // Xuất chuẩn JPEG chất lượng cao 0.82 (dung lượng tối ưu)
@@ -241,6 +242,9 @@ export default function TalkWithMePage() {
       for (const file of filesToProcess) {
         if (!ALLOWED_TYPES.includes(file.type)) {
           throw new Error(`File "${file.name}" không hợp lệ. Chỉ chấp nhận JPG, PNG, GIF, WebP.`);
+        }
+        if (file.size > 25 * 1024 * 1024) {
+          throw new Error(`Ảnh "${file.name}" quá lớn (vượt quá 25MB).`);
         }
         const compressed = await compressImageTo720p(file);
         processed.push(compressed);
