@@ -20,6 +20,7 @@ import AppFooter from '@shared/components/AppFooter.jsx';
 import { tarotTheme } from '@shared/themes/tarot.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
 import HistoryManagementModal from './components/HistoryManagementModal.jsx';
+import DailyCardPull from './components/DailyCardPull.jsx';
 import { useLanguage } from './context/LanguageContext';
 
 export default function App() {
@@ -475,6 +476,9 @@ ${summaryObj.advice}
       />
 
       <main className="panels-container">
+        {/* Daily Card Pull — Free daily engagement */}
+        <DailyCardPull tarotCards={tarotCards} />
+
         {/* Left Side: Setup & Settings */}
         <section className="left-panel-stack" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 

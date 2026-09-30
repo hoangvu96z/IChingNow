@@ -633,3 +633,147 @@ body {
 .evidence-fact dd { margin: 0; overflow-wrap: anywhere; }
 .evidence-open:focus-visible, .evidence-drawer button:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 3px; }
 @media (max-width: 700px) { .evidence-drawer { top: auto; right: 0; bottom: 0; width: 100%; max-width: 100%; max-height: 48dvh; border-radius: 18px 18px 0 0; padding-bottom: max(20px, env(safe-area-inset-bottom)); } }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DAILY STREAK BAR (IChingNow)
+   ═══════════════════════════════════════════════════════════════════════ */
+.iching-streak-bar {
+  padding: 18px 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(240, 230, 200, 0.5) 100%);
+  border: 1px solid rgba(184, 134, 11, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px var(--color-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.iching-streak-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.iching-streak-main {
+  flex: 1;
+  min-width: 260px;
+}
+
+.iching-streak-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.iching-streak-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(184, 134, 11, 0.1);
+  border: 1px solid rgba(184, 134, 11, 0.25);
+  color: var(--color-ink);
+}
+
+.iching-streak-chip-flame {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(245, 158, 11, 0.15));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #c0392b;
+}
+
+.iching-flame-icon {
+  font-size: 0.95rem;
+  animation: flameWiggle 2s infinite ease-in-out;
+  display: inline-block;
+}
+
+@keyframes flameWiggle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.18) rotate(4deg); }
+}
+
+.iching-streak-count {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #c0392b;
+}
+
+.iching-streak-chip-freeze {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #2563eb;
+}
+
+.iching-streak-greeting {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--color-ink);
+}
+
+.iching-streak-date {
+  font-size: 0.9rem;
+  font-weight: normal;
+  color: var(--color-ink-muted);
+}
+
+.iching-streak-subgreeting {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+  line-height: 1.5;
+}
+
+.iching-daily-cast-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: 'Noto Serif', serif;
+  background: linear-gradient(135deg, #b8860b 0%, #8a6508 100%);
+  color: #fff;
+  border: 1px solid #d4a017;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(184, 134, 11, 0.28);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.iching-daily-cast-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(184, 134, 11, 0.4);
+  background: linear-gradient(135deg, #d4a017 0%, #b8860b 100%);
+}
+
+.iching-daily-cast-icon {
+  font-size: 1.1rem;
+  display: inline-block;
+  transition: transform 0.4s ease;
+}
+
+.iching-daily-cast-btn:hover .iching-daily-cast-icon {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 600px) {
+  .iching-streak-bar {
+    padding: 14px 16px;
+  }
+  .iching-streak-action {
+    width: 100%;
+  }
+  .iching-daily-cast-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

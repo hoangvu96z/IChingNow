@@ -20,6 +20,8 @@ import AppHeader from './components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { ichingTheme } from '@shared/themes/iching.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
+import DailyStreakBar from './components/DailyStreakBar.jsx';
+import { useStreak } from '@shared/utils/useStreak.js';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -419,6 +421,7 @@ function MaiHoaResultSection({ result, onChangeMethod, activeReadingId, updateRe
 
 export default function App() {
   const { t, language, setLanguage } = useLanguage();
+  const { streak, recordActivity } = useStreak('iching');
   const [formData,         setFormData]         = useState(getDefaultForm());
   const [mode,             setMode]             = useState('quick');
   const [lines,            setLines]            = useState([]);
@@ -426,6 +429,20 @@ export default function App() {
   const [maiHoaResult,     setMaiHoaResult]     = useState(null);
   const [hasPickedMethod,  setHasPickedMethod]  = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+
+  const handleStartDailyCast = useCallback((dailyQuestion) => {
+    setFormData(prev => ({
+      ...prev,
+      question: dailyQuestion,
+    }));
+    if (!hasPickedMethod) {
+      setMode('quick');
+      setLines([]);
+      setResult(null);
+      setMaiHoaResult(null);
+      setHasPickedMethod(true);
+    }
+  }, [hasPickedMethod]);
 
   // ─── Analytics ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -556,6 +573,7 @@ export default function App() {
       mode: currentMode,
     });
     setResult(r);
+    recordActivity();
   }
 
   // Quick cast callback
@@ -675,6 +693,12 @@ export default function App() {
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           
+          {/* Daily Streak & Wisdom Bar */}
+          <DailyStreakBar
+            onStartDailyCast={handleStartDailyCast}
+            hasActiveResult={Boolean(result || maiHoaResult)}
+          />
+
           {/* 1. Form nhập liệu (Ở TRÊN CÙNG / GIỮA) */}
           <section className="card" style={{ padding: 24 }}>
             <div className="section-title" style={{ marginBottom: 16 }}>
@@ -729,6 +753,7 @@ export default function App() {
                   onResult={(res) => {
                     setActiveReadingId(null);
                     setMaiHoaResult(res);
+                    recordActivity();
                   }}
                   onReset={handleMaiHoaReset}
                 />

@@ -14,6 +14,8 @@ import AppHeader from '@shared/components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { tuviTheme } from '@shared/themes/tuvi.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
+import ShareCard from './components/ShareCard.jsx';
+import { useStreak } from '@shared/utils/useStreak.js';
 
 // Generate star particles for background
 function StarParticles() {
@@ -103,6 +105,7 @@ export default function App() {
 
   const { user, isAuthenticated } = useAuth();
   const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, deleteReading, deleteAllReadings } = useReadingsApi(isAuthenticated, user?.id);
+  const { streak, recordActivity } = useStreak('tuvi');
   const [reading, setReading] = useState(null);
   const [sessionId, setSessionId] = useState(0);
   const [historyActionError, setHistoryActionError] = useState('');
@@ -122,6 +125,7 @@ export default function App() {
 
   const handleSubmit = useCallback((data) => {
     const result = anLaSoTuVi(data);
+    recordActivity();
 
     setReading(null);
     setSessionId(value => value + 1);
@@ -133,7 +137,7 @@ export default function App() {
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [recordActivity]);
 
   const handleNewReading = useCallback(() => {
     setReading(null);
@@ -276,17 +280,25 @@ export default function App() {
 
         {page === 'la-so' && chartResult && (
           <>
-            {isAuthenticated && (
-              <div className="tuvi-chart-toolbar">
-                <span className="tuvi-auto-save-status" role="status">{saveStatus}</span>
-                <button className="tuvi-history-link" type="button" onClick={() => setShowHistoryModal(true)}>
-                  <span aria-hidden="true">📜</span> Lịch sử ({history.length})
-                </button>
-              </div>
-            )}
+            <div className="tuvi-chart-toolbar">
+              {streak > 0 ? (
+                <span className="tuvi-streak-badge" title={`${streak} ngày liên tiếp lập lá số`}>
+                  🔥 {streak} ngày liên tiếp
+                </span>
+              ) : <span />}
+              {isAuthenticated && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span className="tuvi-auto-save-status" role="status">{saveStatus}</span>
+                  <button className="tuvi-history-link" type="button" onClick={() => setShowHistoryModal(true)}>
+                    <span aria-hidden="true">📜</span> Lịch sử ({history.length})
+                  </button>
+                </div>
+              )}
+            </div>
 
             <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
             <LasoChart result={chartResult} inputData={inputData} />
+            <ShareCard result={chartResult} inputData={inputData} />
             <SummaryPanel result={chartResult} inputData={inputData} />
             <TuViLocalReport result={chartResult} />
             <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} ensureChartSaved={ensureChartSaved} onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }} />
