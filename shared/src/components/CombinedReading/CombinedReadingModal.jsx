@@ -10,7 +10,7 @@
  *   sourceApp         — 'iching' | 'tuvi'
  *   language          — 'vi' | 'en'
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   useCombinedReading,
   TOPIC_LABELS,
@@ -19,6 +19,7 @@ import {
   getBirthCanChiAndMenh,
   normalizeHexResult,
   GIO_SINH_OPTIONS,
+  getHourIndexFromTimeStr,
 } from './useCombinedReading.js';
 
 const STORAGE_KEY = 'ichingnow_user_birth';
@@ -65,6 +66,26 @@ function QuickBirthForm({ onSubmit, language }) {
       return saved.gender || 'nam';
     } catch { return 'nam'; }
   });
+
+  const [exactTime, setExactTime] = useState(() => {
+    const opt = GIO_SINH_OPTIONS[hourIndex] || GIO_SINH_OPTIONS[6];
+    return `${String(opt.startHour).padStart(2, '0')}:00`;
+  });
+
+  const handleTimeChange = (e) => {
+    const val = e.target.value;
+    if (!val) return;
+    setExactTime(val);
+    const matchedIdx = getHourIndexFromTimeStr(val);
+    setHourIndex(matchedIdx);
+  };
+
+  const handleHourSelectChange = (e) => {
+    const idx = Number(e.target.value);
+    setHourIndex(idx);
+    const opt = GIO_SINH_OPTIONS[idx] || GIO_SINH_OPTIONS[6];
+    setExactTime(`${String(opt.startHour).padStart(2, '0')}:00`);
+  };
 
   const currentYear = new Date().getFullYear();
   const years = useMemo(() => Array.from({ length: currentYear - 1920 + 1 }, (_, i) => currentYear - i), [currentYear]);
@@ -310,23 +331,53 @@ function QuickBirthForm({ onSubmit, language }) {
         </div>
       )}
 
-      {/* Giờ sinh (12 Canh giờ) + Giới tính */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px', alignItems: 'end' }}>
+      {/* Giờ sinh (12 Canh giờ + Timepicker) + Giới tính */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.45fr 1fr', gap: '12px', alignItems: 'end' }}>
         <div>
-          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {isVi ? 'Giờ sinh (12 Canh giờ)' : 'Birth Hour (12 Branches)'}
-          </label>
-          <select
-            value={hourIndex}
-            onChange={e => setHourIndex(Number(e.target.value))}
-            style={selectStyle}
-          >
-            {GIO_SINH_OPTIONS.map(g => (
-              <option key={g.value} value={g.value} style={{ background: '#181135', color: '#fff' }}>
-                {isVi ? `Giờ ${g.label}` : g.label}
-              </option>
-            ))}
-          </select>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {isVi ? 'Giờ sinh (12 Canh giờ)' : 'Birth Hour (12 Branches)'}
+            </label>
+            <span style={{ fontSize: '11px', color: '#c4b5fd', fontWeight: 600 }}>
+              ⏰ {exactTime}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <select
+              value={hourIndex}
+              onChange={handleHourSelectChange}
+              style={{ ...selectStyle, flex: 1 }}
+            >
+              {GIO_SINH_OPTIONS.map(g => (
+                <option key={g.value} value={g.value} style={{ background: '#181135', color: '#fff' }}>
+                  {isVi ? `Giờ ${g.label}` : g.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="time"
+              value={exactTime}
+              onChange={handleTimeChange}
+              title={isVi ? 'Nhập giờ sinh chính xác' : 'Enter exact birth time'}
+              style={{
+                width: '92px',
+                padding: '11px 8px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(229,193,88,0.25)',
+                borderRadius: '10px',
+                color: '#fff',
+                fontSize: '13px',
+                fontFamily: "'Inter', sans-serif",
+                colorScheme: 'dark',
+                outline: 'none',
+                cursor: 'pointer',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+            💡 {isVi ? 'Cần giờ sinh để xác định Cung Mệnh & Thân' : 'Determines Life & Body palaces'}
+          </div>
         </div>
 
         <div>
@@ -365,6 +416,7 @@ function QuickBirthForm({ onSubmit, language }) {
               </button>
             ))}
           </div>
+          <div style={{ height: '16px' }} />
         </div>
       </div>
 
@@ -585,18 +637,43 @@ export default function CombinedReadingModal({
     setStep(3);
   };
 
-  const effectiveBirthInfo = inputData ? {
-    yearCan: inputData.yearCan || '',
-    yearChi: inputData.yearChi || '',
-    canChi: (inputData.yearCan && inputData.yearChi) ? `${inputData.yearCan} ${inputData.yearChi}` : '',
-    menh: chartResult?.nguHanh || '',
-    cuc: chartResult?.cuc || '',
-    name: inputData.name || '',
-    gender: inputData.gender || '',
-    day: inputData.day || '',
-    month: inputData.month || '',
-    year: inputData.year || '',
-  } : localBirthInfo;
+  const effectiveBirthInfo = useMemo(() => {
+    if (inputData) {
+      const hIdx = inputData.lunarHourIndex !== undefined ? inputData.lunarHourIndex : 6;
+      const hOpt = GIO_SINH_OPTIONS[hIdx] || GIO_SINH_OPTIONS[6];
+      const sDay = inputData.solarInput?.day || inputData.day || '';
+      const sMonth = inputData.solarInput?.month || inputData.month || '';
+      const sYear = inputData.solarInput?.year || inputData.year || '';
+      return {
+        yearCan: inputData.yearCan || '',
+        yearChi: inputData.yearChi || '',
+        canChi: (inputData.yearCan && inputData.yearChi) ? `${inputData.yearCan} ${inputData.yearChi}` : '',
+        menh: chartResult?.nguHanh || '',
+        cuc: chartResult?.cuc || '',
+        name: inputData.name || '',
+        gender: (inputData.gender === 1 || inputData.gender === 'nam') ? 'nam' : 'nu',
+        day: sDay,
+        month: sMonth,
+        year: sYear,
+        hourIndex: hIdx,
+        hourName: hOpt.name,
+        hourLabel: hOpt.label,
+      };
+    }
+    if (localBirthInfo) {
+      const hIdx = (localBirthInfo.hourIndex !== undefined && localBirthInfo.hourIndex !== null)
+        ? Number(localBirthInfo.hourIndex)
+        : 6;
+      const hOpt = GIO_SINH_OPTIONS[hIdx] || GIO_SINH_OPTIONS[6];
+      return {
+        ...localBirthInfo,
+        hourIndex: hIdx,
+        hourName: localBirthInfo.hourName || hOpt.name,
+        hourLabel: localBirthInfo.hourLabel || hOpt.label,
+      };
+    }
+    return null;
+  }, [inputData, chartResult, localBirthInfo]);
 
   const handleCastAndAsk = () => {
     // Chỉ tự gieo quẻ nếu quẻ hoàn toàn chưa có
@@ -771,11 +848,12 @@ export default function CombinedReadingModal({
               padding: '12px 14px',
               marginBottom: '16px',
               fontSize: '12px',
-              color: 'rgba(255,255,255,0.5)',
+              color: 'rgba(255,255,255,0.7)',
+              lineHeight: '1.5',
             }}>
               💡 {isVi
-                ? 'Để có lá số chi tiết đầy đủ 12 cung, hãy lập lá số trên TuViNow rồi bấm "Hỏi Kinh Dịch". Hoặc nhập ngày sinh để AI đối chiếu bản mệnh cơ bản.'
-                : 'For full 12 palaces, create your chart on TuViNow and tap "Ask I Ching". Or enter birth date below for natal baseline.'}
+                ? 'Nhập ngày sinh và giờ sinh (12 Canh giờ) để xác định chính xác Cung Mệnh, Cung Thân và bản mệnh trên lá số Tử Vi đối chiếu cùng quẻ Kinh Dịch.'
+                : 'Enter your birth date and birth hour (12 branches) to determine your Life Palace, Body Palace and natal chart context.'}
             </div>
             <QuickBirthForm onSubmit={handleBirthSubmit} language={language} />
             <button onClick={() => setStep(3)} style={{
@@ -836,7 +914,8 @@ export default function CombinedReadingModal({
                 {effectiveBirthInfo?.day && (
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
                     👤 {effectiveBirthInfo.name && effectiveBirthInfo.name !== 'Người hỏi' ? `${effectiveBirthInfo.name} · ` : ''}
-                    {isVi ? 'Sinh ngày' : 'Born:'} {effectiveBirthInfo.day}/{effectiveBirthInfo.month}/{effectiveBirthInfo.year} · {effectiveBirthInfo.gender === 'nam' ? '♂ Nam' : '♀ Nữ'}
+                    {isVi ? 'Sinh ngày' : 'Born:'} {effectiveBirthInfo.day}/{effectiveBirthInfo.month}/{effectiveBirthInfo.year}
+                    {effectiveBirthInfo.hourName ? ` · Giờ ${effectiveBirthInfo.hourName} (${effectiveBirthInfo.hourLabel})` : ''} · {effectiveBirthInfo.gender === 'nam' ? '♂ Nam' : '♀ Nữ'}
                   </div>
                 )}
                 {relevantPalaces && relevantPalaces.length > 0 && (

@@ -244,32 +244,69 @@ export function summarizeRelevantPalaces(chartResult, topic) {
   return chartResult.palates
     .filter(p => relevantCungs.some(c => (p.chucNang || '').includes(c) || c.includes(p.chucNang || '')))
     .slice(0, 3)
-    .map(p => ({
-      name: p.chucNang || p.chiName,
-      chi: p.chiName,
-      stars: (p.stars || []).map(s => `${s.name}${s.trangThai ? ` (${s.trangThai})` : ''}`).join(', '),
-      isMenh: p.isMenh,
-      isThan: p.isThan,
-      isTuan: p.isTuan,
-      isTriet: p.isTriet,
-    }));
+    .map(p => {
+      let starsFormatted = '';
+      if (Array.isArray(p.stars) && p.stars.length > 0) {
+        starsFormatted = p.stars.map(s => typeof s === 'string' ? s : `${s.name}${s.trangThai ? ` (${s.trangThai})` : ''}`).join(', ');
+      } else {
+        const chinh = Array.isArray(p.chinhTinh) && p.chinhTinh.length > 0
+          ? `Chính: ${p.chinhTinh.join(', ')}`
+          : 'Vô chính diệu';
+        const phu = Array.isArray(p.phuTinh) && p.phuTinh.length > 0
+          ? `Phụ: ${p.phuTinh.slice(0, 4).join(', ')}`
+          : '';
+        starsFormatted = [chinh, phu].filter(Boolean).join(' · ');
+      }
+      return {
+        name: p.chucNang || p.chiName,
+        chi: p.chiName,
+        stars: starsFormatted,
+        isMenh: p.isMenh,
+        isThan: p.isThan,
+        isTuan: p.isTuan,
+        isTriet: p.isTriet,
+      };
+    });
 }
 
 // ─── 12 Canh Giờ Sinh ──────────────────────────────────────────────────────
 export const GIO_SINH_OPTIONS = [
-  { label: 'Tý (23:00 – 01:00)', value: 0, name: 'Tý' },
-  { label: 'Sửu (01:00 – 03:00)', value: 1, name: 'Sửu' },
-  { label: 'Dần (03:00 – 05:00)', value: 2, name: 'Dần' },
-  { label: 'Mão (05:00 – 07:00)', value: 3, name: 'Mão' },
-  { label: 'Thìn (07:00 – 09:00)', value: 4, name: 'Thìn' },
-  { label: 'Tỵ (09:00 – 11:00)', value: 5, name: 'Tỵ' },
-  { label: 'Ngọ (11:00 – 13:00)', value: 6, name: 'Ngọ' },
-  { label: 'Mùi (13:00 – 15:00)', value: 7, name: 'Mùi' },
-  { label: 'Thân (15:00 – 17:00)', value: 8, name: 'Thân' },
-  { label: 'Dậu (17:00 – 19:00)', value: 9, name: 'Dậu' },
-  { label: 'Tuất (19:00 – 21:00)', value: 10, name: 'Tuất' },
-  { label: 'Hợi (21:00 – 23:00)', value: 11, name: 'Hợi' },
+  { label: 'Tý (23:00 – 01:00)', value: 0, name: 'Tý', startHour: 23, endHour: 1 },
+  { label: 'Sửu (01:00 – 03:00)', value: 1, name: 'Sửu', startHour: 1, endHour: 3 },
+  { label: 'Dần (03:00 – 05:00)', value: 2, name: 'Dần', startHour: 3, endHour: 5 },
+  { label: 'Mão (05:00 – 07:00)', value: 3, name: 'Mão', startHour: 5, endHour: 7 },
+  { label: 'Thìn (07:00 – 09:00)', value: 4, name: 'Thìn', startHour: 7, endHour: 9 },
+  { label: 'Tỵ (09:00 – 11:00)', value: 5, name: 'Tỵ', startHour: 9, endHour: 11 },
+  { label: 'Ngọ (11:00 – 13:00)', value: 6, name: 'Ngọ', startHour: 11, endHour: 13 },
+  { label: 'Mùi (13:00 – 15:00)', value: 7, name: 'Mùi', startHour: 13, endHour: 15 },
+  { label: 'Thân (15:00 – 17:00)', value: 8, name: 'Thân', startHour: 15, endHour: 17 },
+  { label: 'Dậu (17:00 – 19:00)', value: 9, name: 'Dậu', startHour: 17, endHour: 19 },
+  { label: 'Tuất (19:00 – 21:00)', value: 10, name: 'Tuất', startHour: 19, endHour: 21 },
+  { label: 'Hợi (21:00 – 23:00)', value: 11, name: 'Hợi', startHour: 21, endHour: 23 },
 ];
+
+/**
+ * Chuyển đổi giờ đồng hồ (hh:mm) thành index 12 Canh Giờ (0 = Tý ... 11 = Hợi)
+ */
+export function getHourIndexFromTimeStr(timeStr) {
+  if (!timeStr) return 6;
+  const parts = timeStr.split(':');
+  const h = parseInt(parts[0], 10);
+  if (isNaN(h)) return 6;
+  if (h >= 23 || h < 1) return 0;
+  if (h >= 1 && h < 3) return 1;
+  if (h >= 3 && h < 5) return 2;
+  if (h >= 5 && h < 7) return 3;
+  if (h >= 7 && h < 9) return 4;
+  if (h >= 9 && h < 11) return 5;
+  if (h >= 11 && h < 13) return 6;
+  if (h >= 13 && h < 15) return 7;
+  if (h >= 15 && h < 17) return 8;
+  if (h >= 17 && h < 19) return 9;
+  if (h >= 19 && h < 21) return 10;
+  if (h >= 21 && h < 23) return 11;
+  return 6;
+}
 
 /**
  * Build AI prompt kết hợp Tử Vi + Kinh Dịch
