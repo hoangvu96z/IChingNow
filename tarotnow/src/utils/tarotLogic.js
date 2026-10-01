@@ -125,21 +125,179 @@ export function assignOrientation(cards, reversedEnabled, reversedRate, seed) {
  */
 export const SPREADS = [
   { id: "single", name: "1 Lá (Rút nhanh)", count: 1, positions: ["Đại diện cho tình hình của bạn"] },
-  
-  // 3-card spreads
-  { id: "ppf", name: "3 Lá (Quá khứ - Hiện tại - Tương lai)", count: 3, positions: ["Quá khứ (Past)", "Hiện tại (Present)", "Tương lai (Future)"] },
-  { id: "soa", name: "3 Lá (Tình huống - Trở ngại - Lời khuyên)", count: 3, positions: ["Tình huống (Situation)", "Trở ngại (Obstacle)", "Lời khuyên (Advice)"] },
-  { id: "mha", name: "3 Lá (Suy nghĩ - Cảm xúc - Hành động)", count: 3, positions: ["Suy nghĩ (Mind)", "Cảm xúc (Heart)", "Hành động (Action)"] },
-  { id: "opt", name: "3 Lá (Lựa chọn A - Lựa chọn B - Gợi ý)", count: 3, positions: ["Lựa chọn A (Option A)", "Lựa chọn B (Option B)", "Gợi ý (Guidance)"] },
-  { id: "hbp", name: "3 Lá (Hỗ trợ - Cản trở - Tiềm năng)", count: 3, positions: ["Điều hỗ trợ (What Helps)", "Điều cản trở (What Blocks)", "Tiềm năng (Potential)"] },
-  
-  // 5-card spreads
-  { id: "five-cross", name: "5 Lá (Chữ thập - Nền/Hiện tại/Trở ngại/Lời khuyên/Kết quả)", count: 5, positions: ["Nền tảng/Quá khứ", "Hiện trạng", "Trở ngại/Thách thức", "Lời khuyên", "Kết quả tương lai"] },
-  { id: "five-decision", name: "5 Lá (Nhánh lựa chọn - Hướng A/Hướng B/Cần biết/Tránh/Lời khuyên)", count: 5, positions: ["Lựa chọn A", "Lựa chọn B", "Yếu tố cần biết", "Yếu tố nên tránh", "Lời khuyên tổng hợp"] },
-  { id: "five-relationship", name: "5 Lá (Tương quan - Bạn/Đối phương/Liên kết/Rào cản/Tương lai)", count: 5, positions: ["Bạn (Self)", "Đối phương (Partner)", "Liên kết chung (Dynamic)", "Rào cản/Thách thức", "Xu hướng tương lai"] },
-  
-  // Custom
-  { id: "custom", name: "Tự chọn X Lá (Narrative spread)", count: 3, positions: [] }
+
+  // ── Yes / No ──────────────────────────────────────────────────────────────
+  {
+    id: "yes-no",
+    name: "Yes / No (Câu trả lời nhanh)",
+    count: 1,
+    positions: ["Câu trả lời"],
+    layout: "yes-no",
+    description: "Rút 1 lá duy nhất để nhận câu trả lời Yes / No trực tiếp từ vũ trụ.",
+    icon: "⚡",
+    category: "quick"
+  },
+
+  // ── 3-card spreads ────────────────────────────────────────────────────────
+  {
+    id: "ppf",
+    name: "3 Lá — Quá khứ · Hiện tại · Tương lai",
+    count: 3,
+    positions: ["Quá khứ (Past)", "Hiện tại (Present)", "Tương lai (Future)"],
+    layout: "row",
+    description: "Trải bài kinh điển nhất — nhìn lại hành trình, nắm bắt hiện tại, hướng tới tương lai.",
+    icon: "⏳",
+    category: "classic"
+  },
+  {
+    id: "soa",
+    name: "3 Lá — Tình huống · Trở ngại · Lời khuyên",
+    count: 3,
+    positions: ["Tình huống (Situation)", "Trở ngại (Obstacle)", "Lời khuyên (Advice)"],
+    layout: "row",
+    icon: "🎯",
+    category: "decision"
+  },
+  {
+    id: "mha",
+    name: "3 Lá — Suy nghĩ · Cảm xúc · Hành động",
+    count: 3,
+    positions: ["Suy nghĩ (Mind)", "Cảm xúc (Heart)", "Hành động (Action)"],
+    layout: "row",
+    icon: "💡",
+    category: "insight"
+  },
+  {
+    id: "opt",
+    name: "3 Lá — Lựa chọn A · B · Gợi ý",
+    count: 3,
+    positions: ["Lựa chọn A (Option A)", "Lựa chọn B (Option B)", "Gợi ý (Guidance)"],
+    layout: "row",
+    icon: "🔀",
+    category: "decision"
+  },
+  {
+    id: "hbp",
+    name: "3 Lá — Hỗ trợ · Cản trở · Tiềm năng",
+    count: 3,
+    positions: ["Điều hỗ trợ (What Helps)", "Điều cản trở (What Blocks)", "Tiềm năng (Potential)"],
+    layout: "row",
+    icon: "🌱",
+    category: "insight"
+  },
+
+  // ── 5-card spreads ────────────────────────────────────────────────────────
+  {
+    id: "five-cross",
+    name: "5 Lá — Chữ thập (Cross)",
+    count: 5,
+    positions: ["Nền tảng/Quá khứ", "Hiện trạng", "Trở ngại/Thách thức", "Lời khuyên", "Kết quả tương lai"],
+    layout: "cross-5",
+    description: "Hình chữ thập 5 lá — nhìn tổng quan tình hình từ nhiều phương diện.",
+    icon: "✚",
+    category: "classic"
+  },
+  {
+    id: "five-decision",
+    name: "5 Lá — Ngã rẽ lựa chọn",
+    count: 5,
+    positions: ["Lựa chọn A", "Lựa chọn B", "Yếu tố cần biết", "Yếu tố nên tránh", "Lời khuyên tổng hợp"],
+    layout: "row",
+    icon: "🔱",
+    category: "decision"
+  },
+  {
+    id: "five-relationship",
+    name: "5 Lá — Tình cảm & Mối quan hệ",
+    count: 5,
+    positions: ["Bạn (Self)", "Đối phương (Partner)", "Liên kết chung (Dynamic)", "Rào cản/Thách thức", "Xu hướng tương lai"],
+    layout: "row",
+    description: "Trải bài khám phá năng lượng trong mối quan hệ tình cảm hoặc đối tác.",
+    icon: "💑",
+    category: "relationship"
+  },
+  {
+    id: "career-5",
+    name: "5 Lá — Sự nghiệp & Công việc",
+    count: 5,
+    positions: ["Hiện trạng công việc", "Điểm mạnh của bạn", "Thách thức phía trước", "Cơ hội tiềm ẩn", "Kết quả nếu hành động ngay"],
+    layout: "row",
+    description: "Trải bài chuyên cho sự nghiệp — phân tích thực lực, thách thức và hướng phát triển.",
+    icon: "💼",
+    category: "career"
+  },
+
+  // ── 7-card spreads ────────────────────────────────────────────────────────
+  {
+    id: "horseshoe",
+    name: "7 Lá — Móng ngựa (Horseshoe)",
+    count: 7,
+    positions: [
+      "Quá khứ xa (Distant Past)",
+      "Quá khứ gần (Recent Past)",
+      "Hiện tại (Present)",
+      "Tương lai gần (Near Future)",
+      "Ảnh hưởng xung quanh (Influences)",
+      "Rào cản/Thách thức (Obstacle)",
+      "Kết quả cuối cùng (Outcome)"
+    ],
+    layout: "horseshoe",
+    description: "Vòng cung 7 lá hình móng ngựa — dòng chảy thời gian toàn diện từ quá khứ đến tương lai.",
+    icon: "🧲",
+    category: "classic"
+  },
+  {
+    id: "relationship-7",
+    name: "7 Lá — Phân tích mối quan hệ chuyên sâu",
+    count: 7,
+    positions: [
+      "Bạn nhìn nhận mối quan hệ thế nào",
+      "Đối phương nhìn nhận thế nào",
+      "Nền tảng mối quan hệ",
+      "Điểm mạnh chung",
+      "Điểm cần cải thiện",
+      "Thách thức lớn nhất",
+      "Tiềm năng tương lai"
+    ],
+    layout: "horseshoe",
+    description: "Phân tích sâu năng lượng cả hai phía trong mối quan hệ.",
+    icon: "💞",
+    category: "relationship"
+  },
+
+  // ── Celtic Cross (10 lá) ──────────────────────────────────────────────────
+  {
+    id: "celtic-cross",
+    name: "10 Lá — Celtic Cross (Thánh giá Celtic)",
+    count: 10,
+    positions: [
+      "Tình huống hiện tại (Present Situation)",    // 1 — center
+      "Thách thức / Giao thoa (Challenge)",          // 2 — crosses #1
+      "Nền tảng / Gốc rễ (Foundation)",             // 3 — below
+      "Quá khứ gần (Recent Past)",                   // 4 — left
+      "Khả năng tốt nhất (Best Outcome)",            // 5 — above
+      "Tương lai gần (Near Future)",                  // 6 — right
+      "Bạn trong tình huống này (You/Your Attitude)",// 7 — staff bottom
+      "Ảnh hưởng bên ngoài (External Influences)",   // 8 — staff 2nd
+      "Hy vọng & Nỗi sợ (Hopes & Fears)",           // 9 — staff 3rd
+      "Kết quả cuối cùng (Final Outcome)"            // 10 — staff top
+    ],
+    layout: "celtic-cross",
+    description: "Trải bài nổi tiếng nhất thế giới — 10 lá bài cho cái nhìn toàn diện nhất về tình huống của bạn.",
+    icon: "✟",
+    category: "classic"
+  },
+
+  // ── Custom ────────────────────────────────────────────────────────────────
+  {
+    id: "custom",
+    name: "Tùy chỉnh X Lá (Narrative spread)",
+    count: 3,
+    positions: [],
+    layout: "row",
+    icon: "🎨",
+    category: "custom"
+  }
 ];
 
 export const PERSPECTIVES = [

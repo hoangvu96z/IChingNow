@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../shared/src'),
+      '@iching': path.resolve(__dirname, 'src'),
       // Ensure only one instance of React is used even for files outside project root
       'react': path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),

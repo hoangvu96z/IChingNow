@@ -21,6 +21,8 @@ import { tarotTheme } from '@shared/themes/tarot.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
 import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import DailyCardPull from './components/DailyCardPull.jsx';
+import SpreadSelector from './components/SpreadSelector.jsx';
+import SpreadLayoutVisualizer from './components/SpreadLayoutVisualizer.jsx';
 import { useLanguage } from './context/LanguageContext';
 
 export default function App() {
@@ -538,16 +540,11 @@ ${summaryObj.advice}
             <div className="settings-grid-3">
               <div className="settings-col">
                 <label className="form-label">{t('form.spread_label', 'Chọn Trải Bài (Spread)')}</label>
-                <select
-                  className="custom-select"
-                  value={activeSpread}
-                  onChange={(e) => handleSpreadPresetChange(e.target.value)}
+                <SpreadSelector
+                  activeSpread={activeSpread}
+                  onSpreadChange={handleSpreadPresetChange}
                   disabled={isDrawing || isShuffling}
-                >
-                  {SPREADS.map(s => (
-                    <option key={s.id} value={s.id}>{t('spread.name.' + s.id, s.name)}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div className="settings-col">
@@ -676,17 +673,11 @@ ${summaryObj.advice}
                   <div className="spinner" style={{ margin: '20px auto 0' }}></div>
                 </div>
               ) : (
-                <div className="cards-grid">
-                  {drawnCards.map((c, idx) => (
-                    <Card3D
-                      key={c.id}
-                      card={c}
-                      index={idx}
-                      revealDelay={idx * 200}
-                      onCardClick={setSelectedModalCard}
-                    />
-                  ))}
-                </div>
+                <SpreadLayoutVisualizer
+                  cards={drawnCards}
+                  spread={SPREADS.find(s => s.id === activeSpread)}
+                  onCardClick={setSelectedModalCard}
+                />
               )}
             </div>
           )}

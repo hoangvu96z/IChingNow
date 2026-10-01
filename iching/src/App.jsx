@@ -28,6 +28,7 @@ import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js
 import { useLanguage } from './context/LanguageContext.jsx';
 import { vi } from './data/translations/vi.js';
 import { en } from './data/translations/en.js';
+import CombinedReadingModal from '@shared/components/CombinedReading/CombinedReadingModal.jsx';
 
 function CanChiInfoBar({ canChi }) {
   const { t, language } = useLanguage();
@@ -251,6 +252,7 @@ function ResultSection({ mode, result, maiHoaResult, onChangeMethod, activeReadi
 
 function CoinCastResultSection({ result, onChangeMethod, activeReadingId, updateReadingData }) {
   const { t, language } = useLanguage();
+  const [showCombinedModal, setShowCombinedModal] = useState(false);
   if (!result) return null;
   const plainText = buildPlainTextResult(result, language);
 
@@ -258,11 +260,49 @@ function CoinCastResultSection({ result, onChangeMethod, activeReadingId, update
     <>
       {/* Quẻ Preview */}
       <section className="card" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 16 }}>{t('result.hex_title', 'Kết quả quẻ')}</div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: '12px', flexWrap: 'wrap' }}>
+          <div className="section-title" style={{ margin: 0 }}>{t('result.hex_title', 'Kết quả quẻ')}</div>
+          {/* Nút kết hợp Tử Vi */}
+          <button
+            type="button"
+            onClick={() => setShowCombinedModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(184,134,11,0.1))',
+              border: '1px solid rgba(139,92,246,0.35)',
+              borderRadius: '20px',
+              color: '#a78bfa',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: 600,
+              fontFamily: "'Inter', sans-serif",
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.28), rgba(184,134,11,0.18))'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(184,134,11,0.1))'; }}
+          >
+            ⭐ Kết hợp Tử Vi
+          </button>
+        </div>
         <div className="animate-in">
           <HexagramPreview result={result} />
         </div>
       </section>
+
+      {/* Combined Reading Modal */}
+      <CombinedReadingModal
+        isOpen={showCombinedModal}
+        onClose={() => setShowCombinedModal(false)}
+        chartResult={null}
+        inputData={null}
+        sourceApp="iching"
+        language={language}
+      />
 
       {/* Combined Tabbed Section: Bảng Lục Hào & Luận Giải Cơ Bản (2 Tabs, Default: Bảng Lục Hào) */}
       <LucHaoCombinedTabCard result={result} />

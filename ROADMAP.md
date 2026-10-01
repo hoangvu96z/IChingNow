@@ -1,7 +1,7 @@
 # 🔮 Kế Hoạch & Roadmap Phát Triển: TuViNow · IChingNow · TarotNow
 
 > **Tài liệu chiến lược & lộ trình tính năng hệ sinh thái SpiritNow**  
-> Cập nhật lần cuối: 30/09/2026
+> Cập nhật lần cuối: 01/10/2026
 
 ---
 
@@ -13,6 +13,8 @@
 | **Quick Win #2: Social Share Card + Image Export** | TuViNow | ✅ **Đã xong** | Thẻ chia sẻ mạng xã hội tóm tắt lá số, tích hợp Web Share API + xuất ảnh PNG 3x DPI + copy clipboard |
 | **Quick Win #3: Daily Streak & Wisdom Bar** | IChingNow | ✅ **Đã xong** | Lời chúc theo giờ (Sáng/Chiều/Tối), hiển thị chuỗi ngày gieo quẻ, CTA 1-click "Gieo quẻ hôm nay", đếm streak tự động |
 | **Shared Hook `useStreak`** | Cả 3 apps | ✅ **Đã xong** | Nằm tại `shared/src/utils/useStreak.js`, lưu `localStorage`, cơ chế bảo vệ chuỗi (Streak Freeze) |
+| **Multiple Spread Layouts cho TarotNow** | TarotNow | ✅ **Đã xong** | Celtic Cross (10 lá), Horseshoe (7 lá), Relationship (7 lá), Career (5 lá), Yes/No — layout visualizer theo vị trí, SpreadSelector có category tabs |
+| **Kết hợp Tử Vi + Kinh Dịch (Combined Reading)** | IChingNow + TuViNow | ✅ **Đã xong** | Shared module `CombinedReadingModal` — chọn chủ đề (sự nghiệp/tình duyên/tài lộc...), gieo quẻ 3 xu, AI tổng hợp cả hai nguồn. Tích hợp nút "🔮 Hỏi Kinh Dịch" ở TuViNow và "⭐ Kết hợp Tử Vi" ở IChingNow |
 | **Quick Win #4: Social Share Card cho Kinh Dịch** | IChingNow | ⏳ **Kế tiếp** | Thẻ ảnh đồ họa Quẻ Chủ, Quẻ Biến, Lời Thoán để share FB/Zalo |
 | **Quick Win #5: Tap-to-learn (Tra cứu nhanh)** | Cả 3 apps | ⏳ **Kế tiếp** | Chạm vào sao/lá bài/quẻ hiển thị popup giải nghĩa nhanh |
 | **Hợp Hôn Chuyên Sâu (4 tiêu chí + AI)** | TuViNow | ⏳ **Đang chờ thuật toán** | Đã có `HOP_HON_PLAN.md`, cần nguồn thuật toán đầy đủ |
