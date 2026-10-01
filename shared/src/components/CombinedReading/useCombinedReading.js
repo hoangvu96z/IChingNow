@@ -255,6 +255,22 @@ export function summarizeRelevantPalaces(chartResult, topic) {
     }));
 }
 
+// ─── 12 Canh Giờ Sinh ──────────────────────────────────────────────────────
+export const GIO_SINH_OPTIONS = [
+  { label: 'Tý (23:00 – 01:00)', value: 0, name: 'Tý' },
+  { label: 'Sửu (01:00 – 03:00)', value: 1, name: 'Sửu' },
+  { label: 'Dần (03:00 – 05:00)', value: 2, name: 'Dần' },
+  { label: 'Mão (05:00 – 07:00)', value: 3, name: 'Mão' },
+  { label: 'Thìn (07:00 – 09:00)', value: 4, name: 'Thìn' },
+  { label: 'Tỵ (09:00 – 11:00)', value: 5, name: 'Tỵ' },
+  { label: 'Ngọ (11:00 – 13:00)', value: 6, name: 'Ngọ' },
+  { label: 'Mùi (13:00 – 15:00)', value: 7, name: 'Mùi' },
+  { label: 'Thân (15:00 – 17:00)', value: 8, name: 'Thân' },
+  { label: 'Dậu (17:00 – 19:00)', value: 9, name: 'Dậu' },
+  { label: 'Tuất (19:00 – 21:00)', value: 10, name: 'Tuất' },
+  { label: 'Hợi (21:00 – 23:00)', value: 11, name: 'Hợi' },
+];
+
 /**
  * Build AI prompt kết hợp Tử Vi + Kinh Dịch
  */
@@ -276,6 +292,9 @@ export function buildCombinedPrompt({ topic, question, birthInfo, relevantPalace
     if (birthInfo.name && birthInfo.name !== 'Người hỏi') parts.push(`Họ tên: ${birthInfo.name}`);
     if (birthInfo.day && birthInfo.month && birthInfo.year) {
       parts.push(`Sinh ngày ${birthInfo.day}/${birthInfo.month}/${birthInfo.year}`);
+    }
+    if (birthInfo.hourName || birthInfo.hourLabel) {
+      parts.push(`Giờ sinh: Giờ ${birthInfo.hourName || ''} (${birthInfo.hourLabel || ''})`);
     }
     if (birthInfo.gender) {
       parts.push(`Giới tính: ${birthInfo.gender === 'nam' ? 'Nam' : 'Nữ'}`);

@@ -18,6 +18,7 @@ import {
   summarizeRelevantPalaces,
   getBirthCanChiAndMenh,
   normalizeHexResult,
+  GIO_SINH_OPTIONS,
 } from './useCombinedReading.js';
 
 const STORAGE_KEY = 'ichingnow_user_birth';
@@ -51,6 +52,12 @@ function QuickBirthForm({ onSubmit, language }) {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       return saved.day ? Number(saved.day) : 15;
     } catch { return 15; }
+  });
+  const [hourIndex, setHourIndex] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return (saved.hourIndex !== undefined && saved.hourIndex !== null) ? Number(saved.hourIndex) : 6; // Mặc định Giờ Ngọ (11:00-13:00)
+    } catch { return 6; }
   });
   const [gender, setGender] = useState(() => {
     try {
@@ -88,14 +95,19 @@ function QuickBirthForm({ onSubmit, language }) {
   };
 
   const canChiMenh = getBirthCanChiAndMenh(year);
+  const currentHourOpt = GIO_SINH_OPTIONS[hourIndex] || GIO_SINH_OPTIONS[6];
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const canChiInfo = getBirthCanChiAndMenh(year);
+    const hourOpt = GIO_SINH_OPTIONS[hourIndex] || GIO_SINH_OPTIONS[6];
     const birthInfo = {
       year,
       month,
       day,
+      hourIndex,
+      hourLabel: hourOpt.label,
+      hourName: hourOpt.name,
       gender,
       name: name.trim() || (isVi ? 'Người hỏi' : 'Querent'),
       yearCan: canChiInfo?.yearCan || '',
@@ -116,7 +128,7 @@ function QuickBirthForm({ onSubmit, language }) {
     border: '1px solid rgba(229,193,88,0.25)',
     borderRadius: '10px',
     color: '#fff',
-    fontSize: '14px',
+    fontSize: '13px',
     fontFamily: "'Inter', sans-serif",
     outline: 'none',
     cursor: 'pointer',
@@ -270,7 +282,7 @@ function QuickBirthForm({ onSubmit, language }) {
         </div>
       )}
 
-      {/* Real-time Can Chi & Bản Mệnh */}
+      {/* Real-time Can Chi & Bản Mệnh & Giờ */}
       {canChiMenh && (
         <div style={{
           padding: '8px 12px',
@@ -282,10 +294,13 @@ function QuickBirthForm({ onSubmit, language }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '6px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '14px' }}>✨</span>
             <span>{isVi ? `Năm ${canChiMenh.canChi} (${year})` : `${canChiMenh.canChi} (${year})`}</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)' }}>· Giờ {currentHourOpt.name}</span>
           </div>
           {canChiMenh.menh && (
             <span style={{ fontWeight: 600, color: '#f3e5ab' }}>
@@ -295,10 +310,27 @@ function QuickBirthForm({ onSubmit, language }) {
         </div>
       )}
 
-      {/* Giới tính + Tên */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '12px', alignItems: 'end' }}>
+      {/* Giờ sinh (12 Canh giờ) + Giới tính */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px', alignItems: 'end' }}>
         <div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {isVi ? 'Giờ sinh (12 Canh giờ)' : 'Birth Hour (12 Branches)'}
+          </label>
+          <select
+            value={hourIndex}
+            onChange={e => setHourIndex(Number(e.target.value))}
+            style={selectStyle}
+          >
+            {GIO_SINH_OPTIONS.map(g => (
+              <option key={g.value} value={g.value} style={{ background: '#181135', color: '#fff' }}>
+                {isVi ? `Giờ ${g.label}` : g.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             {isVi ? 'Giới tính' : 'Gender'}
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -311,14 +343,16 @@ function QuickBirthForm({ onSubmit, language }) {
                 type="button"
                 onClick={() => setGender(val)}
                 style={{
+                  flex: 1,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  padding: '10px 16px',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  padding: '11px 10px',
                   borderRadius: '10px',
-                  border: `1px solid ${gender === val ? 'rgba(124,58,237,0.6)' : 'rgba(255,255,255,0.08)'}`,
+                  border: `1px solid ${gender === val ? 'rgba(124,58,237,0.7)' : 'rgba(255,255,255,0.1)'}`,
                   background: gender === val ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.04)',
-                  color: gender === val ? '#c4b5fd' : 'rgba(255,255,255,0.45)',
+                  color: gender === val ? '#c4b5fd' : 'rgba(255,255,255,0.6)',
                   cursor: 'pointer',
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '13px',
@@ -332,33 +366,34 @@ function QuickBirthForm({ onSubmit, language }) {
             ))}
           </div>
         </div>
+      </div>
 
-        <div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {isVi ? 'Họ tên (tuỳ chọn)' : 'Name (optional)'}
-          </div>
-          <input
-            type="text"
-            placeholder={isVi ? 'Nguyễn Văn A' : 'Your name'}
-            value={name}
-            onChange={e => setName(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '10px',
-              color: '#fff',
-              fontSize: '13px',
-              fontFamily: "'Inter', sans-serif",
-              padding: '10px 14px',
-              outline: 'none',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.15s',
-            }}
-            onFocus={e => { e.currentTarget.style.borderColor = 'rgba(124,58,237,0.5)'; }}
-            onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-          />
+      {/* Họ tên */}
+      <div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          {isVi ? 'Họ tên (tuỳ chọn)' : 'Name (optional)'}
         </div>
+        <input
+          type="text"
+          placeholder={isVi ? 'Nguyễn Văn A' : 'Your name'}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          style={{
+            width: '100%',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '10px',
+            color: '#fff',
+            fontSize: '13px',
+            fontFamily: "'Inter', sans-serif",
+            padding: '10px 14px',
+            outline: 'none',
+            boxSizing: 'border-box',
+            transition: 'border-color 0.15s',
+          }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(124,58,237,0.5)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+        />
       </div>
 
       {/* CTA Button */}
@@ -380,7 +415,7 @@ function QuickBirthForm({ onSubmit, language }) {
           letterSpacing: '0.3px',
         }}
       >
-        {isVi ? 'Xác nhận' : 'Confirm'} — {day}/{month}/{year} · {gender === 'nam' ? '♂ Nam' : '♀ Nữ'}{canChiMenh ? ` (${canChiMenh.canChi})` : ''}
+        {isVi ? 'Xác nhận' : 'Confirm'} — {day}/{month}/{year} · Giờ {currentHourOpt.name} · {gender === 'nam' ? '♂ Nam' : '♀ Nữ'}{canChiMenh ? ` (${canChiMenh.canChi})` : ''}
       </button>
     </form>
   );
