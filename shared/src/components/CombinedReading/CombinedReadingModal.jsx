@@ -26,6 +26,8 @@ const STORAGE_KEY = 'ichingnow_user_birth';
 function QuickBirthForm({ onSubmit, language }) {
   const isVi = language !== 'en';
 
+  const [inputMode, setInputMode] = useState('picker'); // 'picker' | 'dropdown'
+
   const [name, setName] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -35,20 +37,20 @@ function QuickBirthForm({ onSubmit, language }) {
   const [year, setYear] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return saved.year ? String(saved.year) : '';
-    } catch { return ''; }
+      return saved.year ? Number(saved.year) : 1996;
+    } catch { return 1996; }
   });
   const [month, setMonth] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return saved.month ? Number(saved.month) : 0;
-    } catch { return 0; }
+      return saved.month ? Number(saved.month) : 6;
+    } catch { return 6; }
   });
   const [day, setDay] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return saved.day ? Number(saved.day) : 0;
-    } catch { return 0; }
+      return saved.day ? Number(saved.day) : 15;
+    } catch { return 15; }
   });
   const [gender, setGender] = useState(() => {
     try {
@@ -57,27 +59,41 @@ function QuickBirthForm({ onSubmit, language }) {
     } catch { return 'nam'; }
   });
 
-  const MONTHS_VI = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
-  const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const months = isVi ? MONTHS_VI : MONTHS_EN;
+  const currentYear = new Date().getFullYear();
+  const years = useMemo(() => Array.from({ length: currentYear - 1920 + 1 }, (_, i) => currentYear - i), [currentYear]);
 
   const daysInMonth = (m, y) => {
     if (!m) return 31;
-    const yr = parseInt(y, 10) || 2000;
-    return new Date(yr, m, 0).getDate();
+    return new Date(y || 2000, m, 0).getDate();
   };
   const totalDays = daysInMonth(month, year);
-  const days = Array.from({ length: totalDays }, (_, i) => i + 1);
+  const days = useMemo(() => Array.from({ length: totalDays }, (_, i) => i + 1), [totalDays]);
 
-  const canSubmit = year.length === 4 && month > 0 && day > 0;
-  const canChiMenh = year.length === 4 ? getBirthCanChiAndMenh(year) : null;
+  const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+  const handleDatepickerChange = (e) => {
+    const val = e.target.value;
+    if (!val) return;
+    const parts = val.split('-');
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      if (y && m && d) {
+        setYear(y);
+        setMonth(m);
+        setDay(d);
+      }
+    }
+  };
+
+  const canChiMenh = getBirthCanChiAndMenh(year);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!canSubmit) return;
     const canChiInfo = getBirthCanChiAndMenh(year);
     const birthInfo = {
-      year: parseInt(year, 10),
+      year,
       month,
       day,
       gender,
@@ -93,123 +109,196 @@ function QuickBirthForm({ onSubmit, language }) {
     onSubmit({ birthInfo });
   };
 
-  const chipBase = {
-    borderRadius: '8px',
-    border: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.04)',
-    color: 'rgba(255,255,255,0.55)',
+  const selectStyle = {
+    width: '100%',
+    padding: '11px 12px',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(229,193,88,0.25)',
+    borderRadius: '10px',
+    color: '#fff',
+    fontSize: '14px',
     fontFamily: "'Inter', sans-serif",
-    fontSize: '12px',
-    fontWeight: 500,
+    outline: 'none',
     cursor: 'pointer',
-    padding: '6px 4px',
-    textAlign: 'center',
-    transition: 'all 0.15s',
-    lineHeight: 1,
-  };
-  const chipActive = {
-    ...chipBase,
-    background: 'rgba(124,58,237,0.25)',
-    border: '1px solid rgba(124,58,237,0.6)',
-    color: '#c4b5fd',
-    fontWeight: 700,
+    colorScheme: 'dark',
+    boxSizing: 'border-box',
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
-        {isVi
-          ? 'Nhập ngày sinh để hệ thống đối chiếu bản mệnh và các cung liên quan trên lá số Tử Vi.'
-          : 'Enter your birth date so AI can reference your natal chart and relevant palaces.'}
-      </p>
-
-      {/* ── Năm sinh ── */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {isVi ? 'Năm sinh' : 'Birth Year'}
-          </div>
-          {year.length === 4 && canChiMenh && (
-            <div style={{ fontSize: '12px', color: '#c4b5fd', fontWeight: 600 }}>
-              ✨ Năm {canChiMenh.canChi} {canChiMenh.menh ? `· Mệnh ${canChiMenh.menh}` : ''}
-            </div>
-          )}
-        </div>
-        <input
-          type="text"
-          inputMode="numeric"
-          maxLength={4}
-          placeholder="1990"
-          value={year}
-          onChange={e => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          style={{
-            width: '100%',
-            background: 'transparent',
-            border: 'none',
-            borderBottom: `2px solid ${year.length === 4 ? 'rgba(124,58,237,0.7)' : 'rgba(255,255,255,0.15)'}`,
-            color: '#fff',
-            fontSize: '28px',
-            fontWeight: 700,
-            fontFamily: "'Inter', sans-serif",
-            letterSpacing: '6px',
-            padding: '4px 0 8px',
-            outline: 'none',
-            boxSizing: 'border-box',
-            caretColor: '#a78bfa',
-          }}
-          required
-        />
-      </div>
-
-      {/* ── Tháng ── */}
-      <div>
-        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          {isVi ? 'Tháng' : 'Month'}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
-          {months.map((m, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => { setMonth(i + 1); if (day > daysInMonth(i + 1, year)) setDay(0); }}
-              style={month === i + 1 ? chipActive : chipBase}
-              onMouseEnter={e => { if (month !== i + 1) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; } }}
-              onMouseLeave={e => { if (month !== i + 1) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; } }}
-            >
-              {m}
-            </button>
-          ))}
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {/* Mode toggle */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+          {isVi ? 'Ngày tháng năm sinh (Dương lịch)' : 'Date of Birth (Solar)'}
+        </span>
+        <div style={{
+          display: 'inline-flex',
+          background: 'rgba(255,255,255,0.06)',
+          borderRadius: '8px',
+          padding: '3px',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}>
+          <button
+            type="button"
+            onClick={() => setInputMode('picker')}
+            style={{
+              padding: '4px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              background: inputMode === 'picker' ? 'rgba(124,58,237,0.7)' : 'transparent',
+              color: inputMode === 'picker' ? '#fff' : 'rgba(255,255,255,0.5)',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif",
+              transition: 'all 0.15s',
+            }}
+          >
+            📅 {isVi ? 'Datepicker (Lịch)' : 'Datepicker'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('dropdown')}
+            style={{
+              padding: '4px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              background: inputMode === 'dropdown' ? 'rgba(124,58,237,0.7)' : 'transparent',
+              color: inputMode === 'dropdown' ? '#fff' : 'rgba(255,255,255,0.5)',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif",
+              transition: 'all 0.15s',
+            }}
+          >
+            📋 {isVi ? 'Dropdown' : 'Dropdown list'}
+          </button>
         </div>
       </div>
 
-      {/* ── Ngày ── */}
-      {month > 0 && (
+      {/* Input container */}
+      {inputMode === 'picker' ? (
         <div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {isVi ? 'Ngày' : 'Day'}
+          <input
+            type="date"
+            value={isoDate}
+            min="1920-01-01"
+            max={`${currentYear}-12-31`}
+            onChange={handleDatepickerChange}
+            onClick={(e) => {
+              try { e.target.showPicker?.(); } catch {}
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 14px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(229,193,88,0.3)',
+              borderRadius: '10px',
+              color: '#fff',
+              fontSize: '15px',
+              fontFamily: "'Inter', sans-serif",
+              outline: 'none',
+              cursor: 'pointer',
+              colorScheme: 'dark',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: '8px' }}>
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
+              {isVi ? 'Ngày' : 'Day'}
+            </label>
+            <select
+              value={day}
+              onChange={e => setDay(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {days.map(d => (
+                <option key={d} value={d} style={{ background: '#181135', color: '#fff' }}>
+                  {isVi ? `Ngày ${d}` : d}
+                </option>
+              ))}
+            </select>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' }}>
-            {days.map(d => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDay(d)}
-                style={day === d ? { ...chipActive, fontSize: '11px' } : { ...chipBase, fontSize: '11px' }}
-                onMouseEnter={e => { if (day !== d) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; } }}
-                onMouseLeave={e => { if (day !== d) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; } }}
-              >
-                {d}
-              </button>
-            ))}
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
+              {isVi ? 'Tháng' : 'Month'}
+            </label>
+            <select
+              value={month}
+              onChange={e => {
+                const newM = Number(e.target.value);
+                setMonth(newM);
+                const maxD = daysInMonth(newM, year);
+                if (day > maxD) setDay(maxD);
+              }}
+              style={selectStyle}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m} style={{ background: '#181135', color: '#fff' }}>
+                  {isVi ? `Tháng ${m}` : `Month ${m}`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
+              {isVi ? 'Năm' : 'Year'}
+            </label>
+            <select
+              value={year}
+              onChange={e => {
+                const newY = Number(e.target.value);
+                setYear(newY);
+                const maxD = daysInMonth(month, newY);
+                if (day > maxD) setDay(maxD);
+              }}
+              style={selectStyle}
+            >
+              {years.map(y => (
+                <option key={y} value={y} style={{ background: '#181135', color: '#fff' }}>
+                  {y}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}
 
-      {/* ── Giới tính + Tên ── */}
+      {/* Real-time Can Chi & Bản Mệnh */}
+      {canChiMenh && (
+        <div style={{
+          padding: '8px 12px',
+          background: 'rgba(124,58,237,0.14)',
+          border: '1px solid rgba(124,58,237,0.3)',
+          borderRadius: '8px',
+          fontSize: '12px',
+          color: '#ddd6fe',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '14px' }}>✨</span>
+            <span>{isVi ? `Năm ${canChiMenh.canChi} (${year})` : `${canChiMenh.canChi} (${year})`}</span>
+          </div>
+          {canChiMenh.menh && (
+            <span style={{ fontWeight: 600, color: '#f3e5ab' }}>
+              {isVi ? `Mệnh ${canChiMenh.menh}` : `Element: ${canChiMenh.menh}`}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Giới tính + Tên */}
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '12px', alignItems: 'end' }}>
-        {/* Giới tính — button group */}
         <div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             {isVi ? 'Giới tính' : 'Gender'}
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -223,30 +312,30 @@ function QuickBirthForm({ onSubmit, language }) {
                 onClick={() => setGender(val)}
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '2px',
-                  padding: '8px 16px',
+                  gap: '5px',
+                  padding: '10px 16px',
                   borderRadius: '10px',
                   border: `1px solid ${gender === val ? 'rgba(124,58,237,0.6)' : 'rgba(255,255,255,0.08)'}`,
-                  background: gender === val ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
+                  background: gender === val ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.04)',
                   color: gender === val ? '#c4b5fd' : 'rgba(255,255,255,0.45)',
                   cursor: 'pointer',
                   fontFamily: "'Inter', sans-serif",
+                  fontSize: '13px',
+                  fontWeight: 600,
                   transition: 'all 0.15s',
                 }}
               >
-                <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span>
-                <span style={{ fontSize: '11px', fontWeight: 600 }}>{label}</span>
+                <span>{icon}</span>
+                <span>{label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Tên */}
         <div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {isVi ? 'Tên (tuỳ chọn)' : 'Name (optional)'}
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {isVi ? 'Họ tên (tuỳ chọn)' : 'Name (optional)'}
           </div>
           <input
             type="text"
@@ -259,7 +348,7 @@ function QuickBirthForm({ onSubmit, language }) {
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '10px',
               color: '#fff',
-              fontSize: '14px',
+              fontSize: '13px',
               fontFamily: "'Inter', sans-serif",
               padding: '10px 14px',
               outline: 'none',
@@ -272,30 +361,26 @@ function QuickBirthForm({ onSubmit, language }) {
         </div>
       </div>
 
-      {/* ── CTA ── */}
+      {/* CTA Button */}
       <button
         type="submit"
-        disabled={!canSubmit}
         style={{
-          background: canSubmit
-            ? 'linear-gradient(135deg, #7c3aed, #4f46e5)'
-            : 'rgba(255,255,255,0.05)',
+          marginTop: '6px',
+          background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
           border: 'none',
           borderRadius: '12px',
-          color: canSubmit ? '#fff' : 'rgba(255,255,255,0.25)',
+          color: '#fff',
           padding: '13px',
           fontSize: '14px',
           fontWeight: 700,
           fontFamily: "'Inter', sans-serif",
-          cursor: canSubmit ? 'pointer' : 'not-allowed',
+          cursor: 'pointer',
           transition: 'all 0.2s',
-          boxShadow: canSubmit ? '0 4px 20px rgba(124,58,237,0.4)' : 'none',
+          boxShadow: '0 4px 20px rgba(124,58,237,0.4)',
           letterSpacing: '0.3px',
         }}
       >
-        {canSubmit
-          ? `${isVi ? 'Xác nhận' : 'Confirm'} — ${day}/${month}/${year} · ${gender === 'nam' ? '♂' : '♀'}${canChiMenh ? ` (${canChiMenh.canChi})` : ''}`
-          : (isVi ? 'Chọn đủ năm · tháng · ngày để tiếp tục' : 'Select year · month · day to continue')}
+        {isVi ? 'Xác nhận' : 'Confirm'} — {day}/{month}/{year} · {gender === 'nam' ? '♂ Nam' : '♀ Nữ'}{canChiMenh ? ` (${canChiMenh.canChi})` : ''}
       </button>
     </form>
   );
