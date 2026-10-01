@@ -17,98 +17,236 @@ import { useCombinedReading, TOPIC_LABELS, TOPIC_CUNG_MAP, summarizeRelevantPala
 function QuickBirthForm({ onSubmit, language }) {
   const [name, setName] = useState('');
   const [year, setYear] = useState('');
-  const [month, setMonth] = useState('');
-  const [day, setDay] = useState('');
+  const [month, setMonth] = useState(0);   // 0 = chưa chọn
+  const [day, setDay] = useState(0);        // 0 = chưa chọn
   const [gender, setGender] = useState('nam');
   const isVi = language !== 'en';
 
+  const MONTHS_VI = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+  const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = isVi ? MONTHS_VI : MONTHS_EN;
+
+  // Số ngày theo tháng (dùng năm hiện tại nếu chưa nhập năm)
+  const daysInMonth = (m, y) => {
+    if (!m) return 31;
+    const yr = parseInt(y) || 2000;
+    return new Date(yr, m, 0).getDate();
+  };
+  const totalDays = daysInMonth(month, year);
+  const days = Array.from({ length: totalDays }, (_, i) => i + 1);
+
+  const canSubmit = year.length === 4 && month > 0 && day > 0;
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!year || !month || !day) return;
-    // Pass raw birth info for AI prompt (not full lá số calculation — that's optional)
+    if (!canSubmit) return;
     onSubmit({
       birthInfo: {
         year: parseInt(year),
-        month: parseInt(month),
-        day: parseInt(day),
+        month,
+        day,
         gender,
-        name: name || (isVi ? 'Người hỏi' : 'Querent'),
+        name: name.trim() || (isVi ? 'Người hỏi' : 'Querent'),
       }
     });
   };
 
-  const inputStyle = {
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(229,193,88,0.2)',
+  const chipBase = {
     borderRadius: '8px',
-    padding: '8px 12px',
-    color: '#fff',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.04)',
+    color: 'rgba(255,255,255,0.55)',
     fontFamily: "'Inter', sans-serif",
-    fontSize: '14px',
-    width: '100%',
-    outline: 'none',
+    fontSize: '12px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    padding: '6px 4px',
+    textAlign: 'center',
+    transition: 'all 0.15s',
+    lineHeight: 1,
+  };
+  const chipActive = {
+    ...chipBase,
+    background: 'rgba(124,58,237,0.25)',
+    border: '1px solid rgba(124,58,237,0.6)',
+    color: '#c4b5fd',
+    fontWeight: 700,
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
         {isVi
-          ? 'Nhập thông tin ngày sinh để AI có thể đối chiếu với lá số Tử Vi cơ bản của bạn.'
-          : 'Enter your birth info so AI can reference your basic natal chart.'}
+          ? 'AI sẽ đối chiếu bản mệnh cơ bản — không cần chính xác âm lịch.'
+          : 'AI will reference your basic natal element — solar date is fine.'}
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-        <div>
-          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
-            {isVi ? 'Năm sinh' : 'Birth Year'}
-          </label>
-          <input type="number" min="1900" max="2020" placeholder="1990" value={year}
-            onChange={e => setYear(e.target.value)} style={inputStyle} required />
+
+      {/* ── Năm sinh ── */}
+      <div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          {isVi ? 'Năm sinh' : 'Birth Year'}
         </div>
-        <div>
-          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
-            {isVi ? 'Tháng' : 'Month'}
-          </label>
-          <input type="number" min="1" max="12" placeholder="1-12" value={month}
-            onChange={e => setMonth(e.target.value)} style={inputStyle} required />
+        <input
+          type="text"
+          inputMode="numeric"
+          maxLength={4}
+          placeholder="1990"
+          value={year}
+          onChange={e => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          style={{
+            width: '100%',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: `2px solid ${year.length === 4 ? 'rgba(124,58,237,0.7)' : 'rgba(255,255,255,0.15)'}`,
+            color: '#fff',
+            fontSize: '28px',
+            fontWeight: 700,
+            fontFamily: "'Inter', sans-serif",
+            letterSpacing: '6px',
+            padding: '4px 0 8px',
+            outline: 'none',
+            boxSizing: 'border-box',
+            caretColor: '#a78bfa',
+          }}
+          required
+        />
+      </div>
+
+      {/* ── Tháng ── */}
+      <div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          {isVi ? 'Tháng' : 'Month'}
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
+          {months.map((m, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => { setMonth(i + 1); if (day > daysInMonth(i + 1, year)) setDay(0); }}
+              style={month === i + 1 ? chipActive : chipBase}
+              onMouseEnter={e => { if (month !== i + 1) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; } }}
+              onMouseLeave={e => { if (month !== i + 1) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; } }}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Ngày ── */}
+      {month > 0 && (
         <div>
-          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             {isVi ? 'Ngày' : 'Day'}
-          </label>
-          <input type="number" min="1" max="30" placeholder="1-30" value={day}
-            onChange={e => setDay(e.target.value)} style={inputStyle} required />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' }}>
+            {days.map(d => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setDay(d)}
+                style={day === d ? { ...chipActive, fontSize: '11px' } : { ...chipBase, fontSize: '11px' }}
+                onMouseEnter={e => { if (day !== d) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; } }}
+                onMouseLeave={e => { if (day !== d) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; } }}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      )}
+
+      {/* ── Giới tính + Tên ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '12px', alignItems: 'end' }}>
+        {/* Giới tính — button group */}
         <div>
-          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
-            {isVi ? 'Họ tên (tuỳ chọn)' : 'Name (optional)'}
-          </label>
-          <input type="text" placeholder={isVi ? 'Tên của bạn' : 'Your name'} value={name}
-            onChange={e => setName(e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             {isVi ? 'Giới tính' : 'Gender'}
-          </label>
-          <select value={gender} onChange={e => setGender(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-            <option value="nam">{isVi ? 'Nam' : 'Male'}</option>
-            <option value="nu">{isVi ? 'Nữ' : 'Female'}</option>
-          </select>
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {[
+              { val: 'nam', icon: '♂', label: isVi ? 'Nam' : 'Male' },
+              { val: 'nu',  icon: '♀', label: isVi ? 'Nữ'  : 'Female' },
+            ].map(({ val, icon, label }) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setGender(val)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  border: `1px solid ${gender === val ? 'rgba(124,58,237,0.6)' : 'rgba(255,255,255,0.08)'}`,
+                  background: gender === val ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
+                  color: gender === val ? '#c4b5fd' : 'rgba(255,255,255,0.45)',
+                  cursor: 'pointer',
+                  fontFamily: "'Inter', sans-serif",
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span>
+                <span style={{ fontSize: '11px', fontWeight: 600 }}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tên */}
+        <div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {isVi ? 'Tên (tuỳ chọn)' : 'Name (optional)'}
+          </div>
+          <input
+            type="text"
+            placeholder={isVi ? 'Nguyễn Văn A' : 'Your name'}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '10px',
+              color: '#fff',
+              fontSize: '14px',
+              fontFamily: "'Inter', sans-serif",
+              padding: '10px 14px',
+              outline: 'none',
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'rgba(124,58,237,0.5)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+          />
         </div>
       </div>
-      <button type="submit" style={{
-        background: 'linear-gradient(135deg, rgba(229,193,88,0.25), rgba(229,193,88,0.12))',
-        border: '1px solid rgba(229,193,88,0.5)',
-        borderRadius: '10px',
-        color: '#e5c158',
-        padding: '10px',
-        fontSize: '14px',
-        fontWeight: 600,
-        fontFamily: "'Inter', sans-serif",
-        cursor: 'pointer',
-      }}>
-        {isVi ? '✓ Xác nhận thông tin' : '✓ Confirm Birth Info'}
+
+      {/* ── CTA ── */}
+      <button
+        type="submit"
+        disabled={!canSubmit}
+        style={{
+          background: canSubmit
+            ? 'linear-gradient(135deg, #7c3aed, #4f46e5)'
+            : 'rgba(255,255,255,0.05)',
+          border: 'none',
+          borderRadius: '12px',
+          color: canSubmit ? '#fff' : 'rgba(255,255,255,0.25)',
+          padding: '13px',
+          fontSize: '14px',
+          fontWeight: 700,
+          fontFamily: "'Inter', sans-serif",
+          cursor: canSubmit ? 'pointer' : 'not-allowed',
+          transition: 'all 0.2s',
+          boxShadow: canSubmit ? '0 4px 20px rgba(124,58,237,0.4)' : 'none',
+          letterSpacing: '0.3px',
+        }}
+      >
+        {canSubmit
+          ? `${isVi ? 'Xác nhận' : 'Confirm'} — ${day}/${month}/${year} · ${gender === 'nam' ? '♂' : '♀'}`
+          : (isVi ? 'Chọn đủ năm · tháng · ngày để tiếp tục' : 'Select year · month · day to continue')}
       </button>
     </form>
   );
