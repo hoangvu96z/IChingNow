@@ -340,13 +340,17 @@ export function buildCombinedPrompt({ topic, question, birthInfo, relevantPalace
   const isVi = language !== 'en';
   const topicLabel = TOPIC_LABELS[topic]?.[isVi ? 'vi' : 'en'] || topic;
 
-  const palaceSection = relevantPalaces?.map(p =>
-    `  - Cung ${p.name} (${p.chi}): ${p.stars || '(chưa có sao chiếu)'}`
-    + (p.isMenh ? ' [Cung Mệnh]' : '')
-    + (p.isThan ? ' [Cung Thân]' : '')
-    + (p.isTuan ? ' [bị Tuần]' : '')
-    + (p.isTriet ? ' [bị Triệt]' : '')
-  ).join('\n') || '  (chưa có dữ liệu lá số)';
+  const palaceSection = relevantPalaces?.length > 0
+    ? relevantPalaces.map(p =>
+        `  - Cung ${p.name} (${p.chi}): ${p.stars || '(Vô chính diệu)'}`
+        + (p.isMenh ? ' [Cung Mệnh]' : '')
+        + (p.isThan ? ' [Cung Thân]' : '')
+        + (p.isTuan ? ' [bị Tuần]' : '')
+        + (p.isTriet ? ' [bị Triệt]' : '')
+      ).join('\n')
+    : (chartResult?.palates?.length
+        ? chartResult.palates.slice(0, 3).map(p => `  - Cung ${p.chucNang} (${p.chiName}): ${p.chinhTinh?.join(', ') || 'Vô chính diệu'}`).join('\n')
+        : '  - Bản mệnh: ' + (birthInfo?.menh || '') + (birthInfo?.canChi ? ` (Năm ${birthInfo.canChi})` : ''));
 
   let birthDesc = 'Chưa có thông tin cá nhân.';
   if (birthInfo) {
@@ -361,10 +365,18 @@ export function buildCombinedPrompt({ topic, question, birthInfo, relevantPalace
     if (birthInfo.gender) {
       parts.push(`Giới tính: ${birthInfo.gender === 'nam' ? 'Nam' : 'Nữ'}`);
     }
-    const canChi = birthInfo.canChi || (birthInfo.yearCan ? `${birthInfo.yearCan} ${birthInfo.yearChi || ''}` : '');
+    const canChi = birthInfo.canChi || (birthInfo.yearCan ? `${birthInfo.yearCan} ${birthInfo.yearChi || ''}` : '') || chartResult?.canChiNam;
     if (canChi) parts.push(`Năm Can Chi: ${canChi}`);
-    if (birthInfo.menh) parts.push(`Mệnh Nạp Âm: ${birthInfo.menh}`);
-    if (birthInfo.cuc) parts.push(`Cục: ${birthInfo.cuc}`);
+    const menh = birthInfo.menh || chartResult?.banMenhNapAm;
+    if (menh) parts.push(`Mệnh Nạp Âm: ${menh}`);
+    const cuc = birthInfo.cuc || chartResult?.cucName;
+    if (cuc) parts.push(`Cục: ${cuc}`);
+    if (chartResult?.menhCung) parts.push(`Cung Mệnh tại ${chartResult.menhCung}`);
+    if (chartResult?.thanCung) parts.push(`Cung Thân tại ${chartResult.thanCung}`);
+    if (chartResult?.chuMenh) parts.push(`Chủ Mệnh: ${chartResult.chuMenh}`);
+    if (chartResult?.chuThan) parts.push(`Chủ Thân: ${chartResult.chuThan}`);
+    if (chartResult?.tuanCung?.length) parts.push(`Tuần tại: ${chartResult.tuanCung.join(', ')}`);
+    if (chartResult?.trietCung?.length) parts.push(`Triệt tại: ${chartResult.trietCung.join(', ')}`);
     birthDesc = parts.length > 0 ? `Người hỏi: ${parts.join(', ')}` : birthDesc;
   }
 
@@ -397,7 +409,7 @@ export function buildCombinedPrompt({ topic, question, birthInfo, relevantPalace
   }
 
   if (isVi) {
-    return `Bạn là chuyên gia phương Đông tổng hợp hai hệ thống chiêm tinh: Tử Vi Đẩu Số và Kinh Dịch.
+    return `Bạn là chuyên gia phương Đông tổng hợp hai hệ thống: Tử Vi Đẩu Số và Kinh Dịch.
 
 CHỦ ĐỀ HỎI: ${topicLabel}
 CÂU HỎI CỤ THỂ: "${question}"
@@ -412,13 +424,13 @@ ${chartResult?.daiHan ? `Đại hạn hiện tại: ${chartResult.daiHan}` : ''}
 ${hexSection}
 
 --- YÊU CẦU LUẬN GIẢI ---
-Kết hợp cả hai nguồn để đưa ra luận giải toàn diện:
+QUAN TRỌNG: Bạn PHẢI đối chiếu và phân tích cụ thể các dữ liệu lá số Tử Vi (Cung Mệnh, Cung Thân, các Cung vị liên quan cùng các chính tinh miếu/hãm, phụ tinh trợ lực hay hung sát đã cung cấp ở trên) và kết hợp chặt chẽ với Quẻ Kinh Dịch. Tuyệt đối KHÔNG được nói 'không có dữ liệu lá số Tử Vi'.
 
-**1. Tử Vi nói gì?** — Từ bản mệnh, các cung liên quan và sao chiếu, cho biết xu hướng nền tảng, căn cơ của người hỏi.
+**1. Tử Vi nói gì?** — Phân tích chi tiết các sao chiếu và cung vị Tử Vi liên quan đến chủ đề "${topicLabel}" (nêu rõ ảnh hưởng của các chính tinh, phụ tinh, Mệnh/Thân, Tuần/Triệt) để thấy rõ xu hướng nền tảng, căn cơ, tiềm năng và trở ngại của người hỏi.
 
-**2. Kinh Dịch nói gì?** — Từ quẻ chủ, hào động và quẻ biến, cho biết thời điểm hiện tại, diễn biến sắp tới và thời cơ.
+**2. Kinh Dịch nói gì?** — Từ quẻ chủ, hào động và quẻ biến, cho biết thời điểm hiện tại, biến chuyển sắp tới và thời cơ hành động.
 
-**3. Tổng hợp** — Khi kết hợp, hai hệ thống có đồng thuận không? Thời vận hiện tại đang mở ra hay cần ẩn nhẫn?
+**3. Luận giải kết hợp** — Tử Vi định hướng căn cơ nền tảng, Kinh Dịch phân định thời điểm hiện tại. Hai hệ thống có đồng thuận không? Thời vận hiện tại đang mở ra hay cần ẩn nhẫn?
 
 **4. Lời khuyên cụ thể** — 3 hành động thực tế người hỏi nên làm ngay lúc này.
 

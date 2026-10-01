@@ -22,6 +22,7 @@ import {
   getHourIndexFromTimeStr,
   getResolvedAiEndpoint,
 } from './useCombinedReading.js';
+import { calculateChartFromBirthInfo } from '../../utils/tuViCalculator.js';
 
 const STORAGE_KEY = 'ichingnow_user_birth';
 
@@ -775,6 +776,15 @@ export default function CombinedReadingModal({
     setStep(3);
   };
 
+  // Tự động an lá số Tử Vi hoàn chỉnh từ thông tin ngày/giờ sinh nếu chưa có lá số sẵn
+  const calculatedChart = useMemo(() => {
+    if (chartResult) return null;
+    if (!localBirthInfo?.day || !localBirthInfo?.month || !localBirthInfo?.year) return null;
+    return calculateChartFromBirthInfo(localBirthInfo);
+  }, [chartResult, localBirthInfo]);
+
+  const effectiveChart = chartResult || calculatedChart;
+
   const effectiveBirthInfo = useMemo(() => {
     if (inputData) {
       const hIdx = inputData.lunarHourIndex !== undefined ? inputData.lunarHourIndex : 6;
@@ -786,8 +796,12 @@ export default function CombinedReadingModal({
         yearCan: inputData.yearCan || '',
         yearChi: inputData.yearChi || '',
         canChi: (inputData.yearCan && inputData.yearChi) ? `${inputData.yearCan} ${inputData.yearChi}` : '',
-        menh: chartResult?.nguHanh || '',
-        cuc: chartResult?.cuc || '',
+        menh: chartResult?.banMenhNapAm || chartResult?.nguHanh || '',
+        cuc: chartResult?.cucName || chartResult?.cuc || '',
+        chuMenh: chartResult?.chuMenh || '',
+        chuThan: chartResult?.chuThan || '',
+        menhCung: chartResult?.menhCung || '',
+        thanCung: chartResult?.thanCung || '',
         name: inputData.name || '',
         gender: (inputData.gender === 1 || inputData.gender === 'nam') ? 'nam' : 'nu',
         day: sDay,
@@ -808,10 +822,17 @@ export default function CombinedReadingModal({
         hourIndex: hIdx,
         hourName: localBirthInfo.hourName || hOpt.name,
         hourLabel: localBirthInfo.hourLabel || hOpt.label,
+        canChi: calculatedChart?.canChiNam || localBirthInfo.canChi || '',
+        menh: calculatedChart?.banMenhNapAm || localBirthInfo.menh || '',
+        cuc: calculatedChart?.cucName || localBirthInfo.cuc || '',
+        chuMenh: calculatedChart?.chuMenh || '',
+        chuThan: calculatedChart?.chuThan || '',
+        menhCung: calculatedChart?.menhCung || '',
+        thanCung: calculatedChart?.thanCung || '',
       };
     }
     return null;
-  }, [inputData, chartResult, localBirthInfo]);
+  }, [inputData, chartResult, localBirthInfo, calculatedChart]);
 
   const handleCastAndAsk = () => {
     // Chỉ tự gieo quẻ nếu quẻ hoàn toàn chưa có
@@ -822,7 +843,7 @@ export default function CombinedReadingModal({
 
     setTimeout(() => {
       queryAi({
-        chartResult: chartResult || null,
+        chartResult: effectiveChart,
         birthInfo: effectiveBirthInfo,
         language,
       });
@@ -831,7 +852,7 @@ export default function CombinedReadingModal({
 
   if (!isOpen) return null;
 
-  const relevantPalaces = chartResult ? summarizeRelevantPalaces(chartResult, topic) : null;
+  const relevantPalaces = effectiveChart ? summarizeRelevantPalaces(effectiveChart, topic) : null;
 
   return (
     <>
@@ -1646,7 +1667,7 @@ export default function CombinedReadingModal({
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     type="button"
-                    onClick={() => queryAi({ chartResult, birthInfo: effectiveBirthInfo, language })}
+                    onClick={() => queryAi({ chartResult: effectiveChart, birthInfo: effectiveBirthInfo, language })}
                     style={{
                       background: 'rgba(239,68,68,0.25)',
                       border: '1px solid rgba(239,68,68,0.6)',
