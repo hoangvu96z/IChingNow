@@ -915,7 +915,7 @@ export default function CombinedReadingModal({
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
                     👤 {effectiveBirthInfo.name && effectiveBirthInfo.name !== 'Người hỏi' ? `${effectiveBirthInfo.name} · ` : ''}
                     {isVi ? 'Sinh ngày' : 'Born:'} {effectiveBirthInfo.day}/{effectiveBirthInfo.month}/{effectiveBirthInfo.year}
-                    {effectiveBirthInfo.hourName ? ` · Giờ ${effectiveBirthInfo.hourName} (${effectiveBirthInfo.hourLabel})` : ''} · {effectiveBirthInfo.gender === 'nam' ? '♂ Nam' : '♀ Nữ'}
+                    {effectiveBirthInfo.hourLabel ? ` · Giờ ${effectiveBirthInfo.hourLabel}` : (effectiveBirthInfo.hourName ? ` · Giờ ${effectiveBirthInfo.hourName}` : '')} · {effectiveBirthInfo.gender === 'nam' ? '♂ Nam' : '♀ Nữ'}
                   </div>
                 )}
                 {relevantPalaces && relevantPalaces.length > 0 && (

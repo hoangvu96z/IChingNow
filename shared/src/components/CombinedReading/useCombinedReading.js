@@ -330,8 +330,8 @@ export function buildCombinedPrompt({ topic, question, birthInfo, relevantPalace
     if (birthInfo.day && birthInfo.month && birthInfo.year) {
       parts.push(`Sinh ngày ${birthInfo.day}/${birthInfo.month}/${birthInfo.year}`);
     }
-    if (birthInfo.hourName || birthInfo.hourLabel) {
-      parts.push(`Giờ sinh: Giờ ${birthInfo.hourName || ''} (${birthInfo.hourLabel || ''})`);
+    if (birthInfo.hourLabel || birthInfo.hourName) {
+      parts.push(`Giờ sinh: Giờ ${birthInfo.hourLabel || birthInfo.hourName}`);
     }
     if (birthInfo.gender) {
       parts.push(`Giới tính: ${birthInfo.gender === 'nam' ? 'Nam' : 'Nữ'}`);
