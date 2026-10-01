@@ -305,13 +305,14 @@ function CoinCastResultSection({ result, onChangeMethod, activeReadingId, update
         </div>
       </section>
 
-      {/* Combined Reading Modal — tự điền câu hỏi từ result */}
+      {/* Combined Reading Modal — tự điền câu hỏi và quẻ đã lập từ result */}
       <CombinedReadingModal
         isOpen={showCombinedModal}
         onClose={() => setShowCombinedModal(false)}
         chartResult={null}
         inputData={null}
         initialQuestion={result.question || ''}
+        initialHexResult={result}
         sourceApp="iching"
         language={language}
       />
@@ -376,6 +377,7 @@ function CoinCastResultSection({ result, onChangeMethod, activeReadingId, update
 
 function MaiHoaResultSection({ result, onChangeMethod, activeReadingId, updateReadingData }) {
   const { t, language } = useLanguage();
+  const [showCombinedModal, setShowCombinedModal] = useState(false);
   if (!result) return null;
   const plainText = buildMaiHoaPlainText(result, language);
 
@@ -390,13 +392,64 @@ function MaiHoaResultSection({ result, onChangeMethod, activeReadingId, updateRe
   return (
     <>
       <section className="card" style={{ padding: 20 }}>
-        <div className="section-title" style={{ marginBottom: 16 }}>
-          {t('maihoa.result_card_title', 'Kết quả quẻ Mai Hoa')}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: '12px', flexWrap: 'wrap' }}>
+          <div className="section-title" style={{ margin: 0 }}>
+            {t('maihoa.result_card_title', 'Kết quả quẻ Mai Hoa')}
+          </div>
+          {/* Nút kết hợp Tử Vi — Mai Hoa */}
+          <button
+            type="button"
+            onClick={() => setShowCombinedModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #b8860b 100%)',
+              border: 'none',
+              borderRadius: '24px',
+              color: '#fff',
+              padding: '9px 20px',
+              fontSize: '13px',
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              boxShadow: '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)',
+              transition: 'all 0.2s',
+              animation: 'tuvi-btn-pulse 2.5s ease-in-out infinite',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
+              e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124,58,237,0.28), 0 8px 28px rgba(124,58,237,0.5)';
+              e.currentTarget.style.animation = 'none';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = '';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)';
+              e.currentTarget.style.animation = 'tuvi-btn-pulse 2.5s ease-in-out infinite';
+            }}
+          >
+            <span style={{ fontSize: '15px' }}>🌟</span>
+            {t('combined.btn_label', 'Kết hợp Tử Vi')}
+          </button>
         </div>
         <div className="animate-in">
           <MaiHoaResultCard result={result} />
         </div>
       </section>
+
+      {/* Combined Reading Modal cho Mai Hoa */}
+      <CombinedReadingModal
+        isOpen={showCombinedModal}
+        onClose={() => setShowCombinedModal(false)}
+        chartResult={null}
+        inputData={null}
+        initialQuestion={result.question || ''}
+        initialHexResult={result}
+        sourceApp="iching"
+        language={language}
+      />
 
       {/* Câu hỏi + thời gian */}
       <section className="card animate-in" style={{ padding: 20 }}>

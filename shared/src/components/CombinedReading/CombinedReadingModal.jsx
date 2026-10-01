@@ -11,44 +11,86 @@
  *   language          — 'vi' | 'en'
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { useCombinedReading, TOPIC_LABELS, TOPIC_CUNG_MAP, summarizeRelevantPalaces } from './useCombinedReading.js';
+import {
+  useCombinedReading,
+  TOPIC_LABELS,
+  TOPIC_CUNG_MAP,
+  summarizeRelevantPalaces,
+  getBirthCanChiAndMenh,
+  normalizeHexResult,
+} from './useCombinedReading.js';
+
+const STORAGE_KEY = 'ichingnow_user_birth';
 
 // ─── Mini BirthInputForm (dùng khi không có lá số sẵn) ─────────────────
 function QuickBirthForm({ onSubmit, language }) {
-  const [name, setName] = useState('');
-  const [year, setYear] = useState('');
-  const [month, setMonth] = useState(0);   // 0 = chưa chọn
-  const [day, setDay] = useState(0);        // 0 = chưa chọn
-  const [gender, setGender] = useState('nam');
   const isVi = language !== 'en';
+
+  const [name, setName] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return saved.name || '';
+    } catch { return ''; }
+  });
+  const [year, setYear] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return saved.year ? String(saved.year) : '';
+    } catch { return ''; }
+  });
+  const [month, setMonth] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return saved.month ? Number(saved.month) : 0;
+    } catch { return 0; }
+  });
+  const [day, setDay] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return saved.day ? Number(saved.day) : 0;
+    } catch { return 0; }
+  });
+  const [gender, setGender] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return saved.gender || 'nam';
+    } catch { return 'nam'; }
+  });
 
   const MONTHS_VI = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
   const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const months = isVi ? MONTHS_VI : MONTHS_EN;
 
-  // Số ngày theo tháng (dùng năm hiện tại nếu chưa nhập năm)
   const daysInMonth = (m, y) => {
     if (!m) return 31;
-    const yr = parseInt(y) || 2000;
+    const yr = parseInt(y, 10) || 2000;
     return new Date(yr, m, 0).getDate();
   };
   const totalDays = daysInMonth(month, year);
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
 
   const canSubmit = year.length === 4 && month > 0 && day > 0;
+  const canChiMenh = year.length === 4 ? getBirthCanChiAndMenh(year) : null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!canSubmit) return;
-    onSubmit({
-      birthInfo: {
-        year: parseInt(year),
-        month,
-        day,
-        gender,
-        name: name.trim() || (isVi ? 'Người hỏi' : 'Querent'),
-      }
-    });
+    const canChiInfo = getBirthCanChiAndMenh(year);
+    const birthInfo = {
+      year: parseInt(year, 10),
+      month,
+      day,
+      gender,
+      name: name.trim() || (isVi ? 'Người hỏi' : 'Querent'),
+      yearCan: canChiInfo?.yearCan || '',
+      yearChi: canChiInfo?.yearChi || '',
+      canChi: canChiInfo?.canChi || '',
+      menh: canChiInfo?.menh || '',
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(birthInfo));
+    } catch { /* ignore storage errors */ }
+    onSubmit({ birthInfo });
   };
 
   const chipBase = {
@@ -77,14 +119,21 @@ function QuickBirthForm({ onSubmit, language }) {
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
         {isVi
-          ? 'AI sẽ đối chiếu bản mệnh cơ bản — không cần chính xác âm lịch.'
-          : 'AI will reference your basic natal element — solar date is fine.'}
+          ? 'Nhập ngày sinh để hệ thống đối chiếu bản mệnh và các cung liên quan trên lá số Tử Vi.'
+          : 'Enter your birth date so AI can reference your natal chart and relevant palaces.'}
       </p>
 
       {/* ── Năm sinh ── */}
       <div>
-        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          {isVi ? 'Năm sinh' : 'Birth Year'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {isVi ? 'Năm sinh' : 'Birth Year'}
+          </div>
+          {year.length === 4 && canChiMenh && (
+            <div style={{ fontSize: '12px', color: '#c4b5fd', fontWeight: 600 }}>
+              ✨ Năm {canChiMenh.canChi} {canChiMenh.menh ? `· Mệnh ${canChiMenh.menh}` : ''}
+            </div>
+          )}
         </div>
         <input
           type="text"
@@ -245,7 +294,7 @@ function QuickBirthForm({ onSubmit, language }) {
         }}
       >
         {canSubmit
-          ? `${isVi ? 'Xác nhận' : 'Confirm'} — ${day}/${month}/${year} · ${gender === 'nam' ? '♂' : '♀'}`
+          ? `${isVi ? 'Xác nhận' : 'Confirm'} — ${day}/${month}/${year} · ${gender === 'nam' ? '♂' : '♀'}${canChiMenh ? ` (${canChiMenh.canChi})` : ''}`
           : (isVi ? 'Chọn đủ năm · tháng · ngày để tiếp tục' : 'Select year · month · day to continue')}
       </button>
     </form>
@@ -256,26 +305,63 @@ function QuickBirthForm({ onSubmit, language }) {
 function HexLines({ lines }) {
   if (!lines || lines.length === 0) return null;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '3px', alignItems: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '4px', alignItems: 'center' }}>
       {lines.map((line, i) => {
-        const isYang = line === 7 || line === 9;
-        const isMoving = line === 6 || line === 9;
+        const isYang = typeof line === 'object' ? line.yinYang === 'yang' : (line === 7 || line === 9);
+        const isMoving = typeof line === 'object' ? !!line.moving : (line === 6 || line === 9);
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {isYang ? (
-              <div style={{ width: '40px', height: '5px', background: isMoving ? '#e5c158' : 'rgba(229,193,88,0.7)', borderRadius: '2px' }} />
+              <div style={{
+                width: '42px',
+                height: '5px',
+                background: isMoving ? '#ef4444' : '#e5c158',
+                borderRadius: '2px',
+                boxShadow: isMoving ? '0 0 8px rgba(239,68,68,0.6)' : 'none',
+              }} />
             ) : (
               <div style={{ display: 'flex', gap: '4px' }}>
-                <div style={{ width: '17px', height: '5px', background: isMoving ? '#e5c158' : 'rgba(229,193,88,0.5)', borderRadius: '2px' }} />
-                <div style={{ width: '17px', height: '5px', background: isMoving ? '#e5c158' : 'rgba(229,193,88,0.5)', borderRadius: '2px' }} />
+                <div style={{
+                  width: '19px',
+                  height: '5px',
+                  background: isMoving ? '#ef4444' : '#e5c158',
+                  borderRadius: '2px',
+                  boxShadow: isMoving ? '0 0 8px rgba(239,68,68,0.6)' : 'none',
+                }} />
+                <div style={{
+                  width: '19px',
+                  height: '5px',
+                  background: isMoving ? '#ef4444' : '#e5c158',
+                  borderRadius: '2px',
+                  boxShadow: isMoving ? '0 0 8px rgba(239,68,68,0.6)' : 'none',
+                }} />
               </div>
             )}
-            {isMoving && <span style={{ fontSize: '10px', color: '#e5c158' }}>●</span>}
+            {isMoving && <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 'bold' }}>●</span>}
           </div>
         );
       })}
     </div>
   );
+}
+
+function resolveChangedLines(hexResult) {
+  if (!hexResult) return [];
+  if (hexResult.changedLines && hexResult.changedLines.length === 6) {
+    return hexResult.changedLines;
+  }
+  if (!hexResult.lines) return [];
+  return hexResult.lines.map(line => {
+    if (typeof line === 'object') {
+      if (line.moving) {
+        return { ...line, yinYang: line.yinYang === 'yang' ? 'yin' : 'yang', moving: false };
+      }
+      return { ...line, moving: false };
+    }
+    if (line === 6) return 7;
+    if (line === 9) return 8;
+    return line;
+  });
 }
 
 // ─── Markdown renderer (đơn giản) ──────────────────────────────────────
@@ -309,6 +395,7 @@ export default function CombinedReadingModal({
   chartResult = null,
   inputData = null,
   initialQuestion = '',
+  initialHexResult = null,
   sourceApp = 'iching',
   language = 'vi',
 }) {
@@ -320,37 +407,56 @@ export default function CombinedReadingModal({
   const {
     topic, setTopic,
     question, setQuestion,
-    hexResult, isCasting, castHexagram,
+    hexResult, setHexResult, isCasting, castHexagram,
     aiResponse, isLoadingAi, aiError,
     queryAi,
   } = useCombinedReading({ apiBaseUrl, apiKey, model: aiModel });
 
   // Local birth info (khi không có chartResult từ TuViNow)
-  const [localBirthInfo, setLocalBirthInfo] = useState(null);
-  const hasChart = !!chartResult;
-  const birthInfoReady = hasChart || !!localBirthInfo;
+  const [localBirthInfo, setLocalBirthInfo] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return (saved.year && saved.month && saved.day) ? saved : null;
+    } catch {
+      return null;
+    }
+  });
 
-  // Step 1: topic, Step 2: birth info (if needed), Step 3: question+cast, Step 4: AI result
+  const hasChart = !!chartResult;
+  const isFromIChing = sourceApp === 'iching' || !!initialHexResult;
+  const hasPrecastHex = !!initialHexResult || (isFromIChing && !!hexResult);
+
+  // Step 1: topic, Step 2: birth info (if needed), Step 3: question+review hex, Step 4: AI result
   const [step, setStep] = useState(1);
 
-  // Pre-fill câu hỏi từ caller (ví dụ: result.question từ IChingNow)
+  // Pre-fill question và hexResult khi mở modal
   useEffect(() => {
-    if (isOpen && initialQuestion && !question) {
-      setQuestion(initialQuestion);
-    }
-    if (!isOpen) {
+    if (isOpen) {
+      if (initialQuestion && !question) {
+        setQuestion(initialQuestion);
+      }
+      if (initialHexResult) {
+        const normalized = normalizeHexResult(initialHexResult);
+        if (normalized) {
+          setHexResult(normalized);
+        }
+      }
+    } else {
       setStep(1);
-      setLocalBirthInfo(null);
-      // Không reset question — để giữ lại khi mở lại
+      if (!initialHexResult) {
+        setHexResult(null);
+      }
     }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, initialQuestion, initialHexResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTopicSelect = (t) => {
     setTopic(t);
     if (hasChart) {
-      setStep(3); // Đã có lá số → bỏ qua step 2
+      // Đã có lá số sẵn (từ TuViNow) → bỏ qua bước nhập ngày sinh
+      setStep(3);
     } else {
-      setStep(2); // Cần nhập ngày sinh
+      // Chưa có lá số (từ IChingNow) → sang bước nhập ngày sinh
+      setStep(2);
     }
   };
 
@@ -359,18 +465,25 @@ export default function CombinedReadingModal({
     setStep(3);
   };
 
+  const effectiveBirthInfo = inputData ? {
+    yearCan: inputData.yearCan || '',
+    yearChi: inputData.yearChi || '',
+    canChi: (inputData.yearCan && inputData.yearChi) ? `${inputData.yearCan} ${inputData.yearChi}` : '',
+    menh: chartResult?.nguHanh || '',
+    cuc: chartResult?.cuc || '',
+    name: inputData.name || '',
+    gender: inputData.gender || '',
+    day: inputData.day || '',
+    month: inputData.month || '',
+    year: inputData.year || '',
+  } : localBirthInfo;
+
   const handleCastAndAsk = () => {
+    // Chỉ tự gieo quẻ nếu quẻ hoàn toàn chưa có
     if (!hexResult) {
       castHexagram();
     }
     setStep(4);
-    const effectiveBirthInfo = inputData ? {
-      yearCan: inputData.yearCan || '',
-      yearChi: inputData.yearChi || '',
-      menh: chartResult?.nguHanh || '',
-      cuc: chartResult?.cuc || '',
-      name: inputData.name || '',
-    } : localBirthInfo;
 
     setTimeout(() => {
       queryAi({
@@ -378,7 +491,7 @@ export default function CombinedReadingModal({
         birthInfo: effectiveBirthInfo,
         language,
       });
-    }, 900);
+    }, 400);
   };
 
   if (!isOpen) return null;
@@ -449,9 +562,18 @@ export default function CombinedReadingModal({
         {/* Step indicator */}
         <div style={{ display: 'flex', gap: '6px', marginBottom: '24px' }}>
           {[1, hasChart ? null : 2, 3, 4].filter(Boolean).map((s, idx) => {
-            const labels = hasChart
-              ? ['Chủ đề', 'Câu hỏi & Quẻ', 'Luận giải AI']
-              : ['Chủ đề', 'Ngày sinh', 'Câu hỏi & Quẻ', 'Luận giải AI'];
+            let label = '';
+            if (hasChart) {
+              const labelsTuVi = isVi
+                ? ['Chủ đề', 'Hỏi & Gieo quẻ', 'Luận giải AI']
+                : ['Topic', 'Ask & Cast', 'AI Reading'];
+              label = labelsTuVi[idx];
+            } else {
+              const labelsIChing = isVi
+                ? ['Chủ đề', 'Ngày sinh', hasPrecastHex ? 'Xác nhận & Quẻ' : 'Hỏi & Quẻ', 'Luận giải AI']
+                : ['Topic', 'Birth Info', hasPrecastHex ? 'Confirm & Hex' : 'Ask & Hex', 'AI Reading'];
+              label = labelsIChing[idx];
+            }
             const actualStep = hasChart ? [1, 3, 4][idx] : s;
             const isActive = step === actualStep;
             const isDone = step > actualStep;
@@ -468,9 +590,9 @@ export default function CombinedReadingModal({
                   {isDone ? '✓' : idx + 1}
                 </div>
                 <span style={{ fontSize: '11px', color: isActive ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>
-                  {labels[idx]}
+                  {label}
                 </span>
-                {idx < labels.length - 1 && (
+                {idx < (hasChart ? 2 : 3) && (
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
                 )}
               </div>
@@ -532,8 +654,8 @@ export default function CombinedReadingModal({
               color: 'rgba(255,255,255,0.5)',
             }}>
               💡 {isVi
-                ? 'Để có lá số chính xác nhất, hãy lập lá số trên TuViNow rồi bấm "Hỏi Kinh Dịch" từ đó. Hoặc nhập nhanh ngày sinh âm lịch bên dưới.'
-                : 'For best accuracy, create your chart on TuViNow then tap "Ask I Ching" from there. Or enter your lunar birth date below.'}
+                ? 'Để có lá số chi tiết đầy đủ 12 cung, hãy lập lá số trên TuViNow rồi bấm "Hỏi Kinh Dịch". Hoặc nhập ngày sinh để AI đối chiếu bản mệnh cơ bản.'
+                : 'For full 12 palaces, create your chart on TuViNow and tap "Ask I Ching". Or enter birth date below for natal baseline.'}
             </div>
             <QuickBirthForm onSubmit={handleBirthSubmit} language={language} />
             <button onClick={() => setStep(3)} style={{
@@ -546,34 +668,67 @@ export default function CombinedReadingModal({
           </div>
         )}
 
-        {/* ── STEP 3: Câu hỏi + Gieo quẻ ── */}
+        {/* ── STEP 3: Câu hỏi + Quẻ ── */}
         {step === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 style={{ margin: 0, color: '#e5c158', fontSize: '14px', fontFamily: "'Cinzel', serif", textTransform: 'uppercase', letterSpacing: '1px' }}>
-              {isVi ? '2. Câu hỏi & Gieo quẻ Kinh Dịch' : '2. Your Question & I Ching Cast'}
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 style={{ margin: 0, color: '#e5c158', fontSize: '14px', fontFamily: "'Cinzel', serif", textTransform: 'uppercase', letterSpacing: '1px' }}>
+                {hasPrecastHex
+                  ? (isVi ? `${hasChart ? '2' : '3'}. Xác nhận câu hỏi & Quẻ Kinh Dịch` : `${hasChart ? '2' : '3'}. Confirm Question & Hexagram`)
+                  : (isVi ? `${hasChart ? '2' : '3'}. Câu hỏi & Gieo quẻ Kinh Dịch` : `${hasChart ? '2' : '3'}. Question & Cast Hexagram`)}
+              </h3>
+              {hasPrecastHex && (
+                <span style={{
+                  fontSize: '11px',
+                  background: 'rgba(34,197,94,0.15)',
+                  border: '1px solid rgba(34,197,94,0.4)',
+                  color: '#86efac',
+                  padding: '3px 10px',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                }}>
+                  ✓ {isVi ? 'Đã lấy quẻ từ Kinh Dịch' : 'Hexagram loaded'}
+                </span>
+              )}
+            </div>
 
             {/* Tử Vi context preview */}
-            {relevantPalaces && relevantPalaces.length > 0 && (
+            {(effectiveBirthInfo || relevantPalaces) && (
               <div style={{
-                background: 'rgba(139,92,246,0.06)',
-                border: '1px solid rgba(139,92,246,0.2)',
+                background: 'linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(79,70,229,0.06) 100%)',
+                border: '1px solid rgba(139,92,246,0.3)',
                 borderRadius: '12px',
                 padding: '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
               }}>
-                <div style={{ fontSize: '11px', color: 'rgba(139,92,246,0.8)', fontWeight: 700, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  🔭 {isVi ? 'Tử Vi — Cung liên quan' : 'Zi Wei — Relevant Palaces'}
-                </div>
-                {relevantPalaces.map((p, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '12px', alignItems: 'flex-start' }}>
-                    <span style={{ color: 'rgba(139,92,246,0.7)', flexShrink: 0, fontWeight: 600 }}>
-                      {p.isMenh ? '⭐ ' : ''}{p.name}:
-                    </span>
-                    <span style={{ color: 'rgba(255,255,255,0.55)' }}>
-                      {p.stars || (isVi ? '(chưa có sao chiếu)' : '(no stars)')}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ fontSize: '11px', color: '#c4b5fd', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    🔭 {isVi ? 'Tử Vi — Thông tin bản mệnh' : 'Zi Wei Natal Context'}
                   </div>
-                ))}
+                  {effectiveBirthInfo?.canChi && (
+                    <span style={{ fontSize: '11px', background: 'rgba(124,58,237,0.25)', border: '1px solid rgba(124,58,237,0.5)', padding: '2px 8px', borderRadius: '12px', color: '#ddd6fe' }}>
+                      Năm {effectiveBirthInfo.canChi} {effectiveBirthInfo.menh ? `· Mệnh ${effectiveBirthInfo.menh}` : ''}
+                    </span>
+                  )}
+                </div>
+                {effectiveBirthInfo?.day && (
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+                    👤 {effectiveBirthInfo.name && effectiveBirthInfo.name !== 'Người hỏi' ? `${effectiveBirthInfo.name} · ` : ''}
+                    {isVi ? 'Sinh ngày' : 'Born:'} {effectiveBirthInfo.day}/{effectiveBirthInfo.month}/{effectiveBirthInfo.year} · {effectiveBirthInfo.gender === 'nam' ? '♂ Nam' : '♀ Nữ'}
+                  </div>
+                )}
+                {relevantPalaces && relevantPalaces.length > 0 && (
+                  <div style={{ marginTop: '2px', borderTop: '1px solid rgba(139,92,246,0.15)', paddingTop: '8px' }}>
+                    {relevantPalaces.map((p, i) => (
+                      <div key={i} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginBottom: '3px' }}>
+                        <span style={{ color: '#c4b5fd', fontWeight: 600 }}>{p.isMenh ? '⭐ ' : ''}{p.name}: </span>
+                        {p.stars || (isVi ? '(chưa có sao chiếu)' : '(no stars)')}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -590,7 +745,7 @@ export default function CombinedReadingModal({
                   : 'E.g.: Should I stay in my current job or change fields?'}
                 style={{
                   width: '100%',
-                  minHeight: '80px',
+                  minHeight: '76px',
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(229,193,88,0.2)',
                   borderRadius: '10px',
@@ -605,88 +760,165 @@ export default function CombinedReadingModal({
               />
             </div>
 
-            {/* Hexagram cast */}
-            <div style={{
-              background: 'rgba(229,193,88,0.04)',
-              border: '1px solid rgba(229,193,88,0.15)',
-              borderRadius: '12px',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '20px',
-            }}>
-              <div style={{ flexShrink: 0 }}>
-                {hexResult ? (
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            {/* Hexagram display: Quẻ đã có từ IChingNow vs Gieo quẻ từ TuViNow */}
+            {hasPrecastHex && hexResult ? (
+              /* TH1: Đã có quẻ từ IChingNow — Hiển thị nguyên vẹn, KHÔNG bắt gieo lại */
+              <div style={{
+                background: 'rgba(229,193,88,0.05)',
+                border: '1px solid rgba(229,193,88,0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px',
+              }}>
+                <div style={{ flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
                       <HexLines lines={hexResult.lines} />
-                      <div style={{ fontSize: '11px', color: '#e5c158', marginTop: '6px' }}>{hexResult.primary?.name}</div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#e5c158', marginTop: '6px' }}>
+                        {hexResult.primary?.name}
+                      </div>
+                      {hexResult.primary?.chineseName && (
+                        <div style={{ fontSize: '10px', color: 'rgba(229,193,88,0.6)' }}>
+                          {hexResult.primary.chineseName}
+                        </div>
+                      )}
                     </div>
                     {hexResult.changed && (
                       <>
-                        <div style={{ color: 'rgba(229,193,88,0.3)', fontSize: '18px' }}>→</div>
+                        <div style={{ color: 'rgba(229,193,88,0.4)', fontSize: '20px' }}>→</div>
                         <div style={{ textAlign: 'center' }}>
-                          <HexLines lines={hexResult.changedLines || hexResult.lines} />
-                          <div style={{ fontSize: '11px', color: 'rgba(229,193,88,0.6)', marginTop: '6px' }}>{hexResult.changed?.name}</div>
+                          <HexLines lines={resolveChangedLines(hexResult)} />
+                          <div style={{ fontSize: '12px', fontWeight: 600, color: '#e5c158', marginTop: '6px' }}>
+                            {hexResult.changed?.name}
+                          </div>
+                          {hexResult.changed?.chineseName && (
+                            <div style={{ fontSize: '10px', color: 'rgba(229,193,88,0.6)' }}>
+                              {hexResult.changed.chineseName}
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
                   </div>
-                ) : (
-                  <div style={{
-                    width: '48px', height: '64px',
-                    border: '1px dashed rgba(229,193,88,0.2)',
-                    borderRadius: '8px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '24px', opacity: 0.4,
-                  }}>☯</div>
-                )}
-              </div>
-              <div style={{ flexGrow: 1 }}>
-                {hexResult ? (
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#e5c158' }}>
-                      {isVi ? 'Quẻ đã gieo' : 'Hexagram Cast'}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
-                      {hexResult.primary?.name} {hexResult.primary?.chineseName && `(${hexResult.primary.chineseName})`}
-                      {hexResult.changed && ` → ${hexResult.changed.name}`}
-                    </div>
-                    <button onClick={castHexagram} style={{
-                      background: 'transparent', border: 'none', color: 'rgba(229,193,88,0.5)',
-                      fontSize: '11px', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                      marginTop: '6px', padding: 0, textDecoration: 'underline',
-                    }}>
-                      {isVi ? 'Gieo lại' : 'Recast'}
-                    </button>
+                </div>
+
+                <div style={{ flexGrow: 1, borderLeft: '1px solid rgba(229,193,88,0.15)', paddingLeft: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#f3e5ab' }}>
+                      {hexResult.primary?.name}
+                      {hexResult.changed ? ` → ${hexResult.changed.name}` : ''}
+                    </span>
                   </div>
-                ) : (
-                  <div>
-                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>
-                      {isVi ? 'Gieo 3 xu để hỏi Kinh Dịch' : 'Cast 3 coins to consult I Ching'}
-                    </div>
-                    <button
-                      onClick={castHexagram}
-                      disabled={isCasting}
-                      style={{
-                        background: 'rgba(229,193,88,0.12)',
-                        border: '1px solid rgba(229,193,88,0.3)',
-                        borderRadius: '8px',
-                        color: '#e5c158',
-                        padding: '8px 16px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        fontFamily: "'Inter', sans-serif",
-                        cursor: isCasting ? 'not-allowed' : 'pointer',
-                        opacity: isCasting ? 0.6 : 1,
-                      }}
-                    >
-                      {isCasting ? '🎲 ...' : `🎲 ${isVi ? 'Gieo quẻ' : 'Cast Hexagram'}`}
-                    </button>
+
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
+                    {hexResult.movingLines?.length > 0 ? (
+                      <span style={{ color: '#ef4444', fontWeight: 600 }}>
+                        ⚡ {isVi ? `Động hào ${hexResult.movingLines.join(', ')}` : `Moving lines ${hexResult.movingLines.join(', ')}`}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'rgba(255,255,255,0.45)' }}>
+                        {isVi ? 'Quẻ thuần tĩnh (không có hào động)' : 'Static hexagram'}
+                      </span>
+                    )}
+                    {hexResult.raw?.palaceName && (
+                      <div style={{ color: 'rgba(229,193,88,0.8)', marginTop: '2px' }}>
+                        🏛️ Cung {hexResult.raw.palaceName} ({hexResult.raw.palaceElement})
+                        {hexResult.raw.theHao ? ` · Hào Thế: ${hexResult.raw.theHao} · Hào Ứng: ${hexResult.raw.ungHao}` : ''}
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '8px' }}>
+                    💡 {isVi ? 'Quẻ đã lập sẵn từ Kinh Dịch, sẵn sàng kết hợp cùng lá số Tử Vi.' : 'Pre-cast hexagram ready for synthesis.'}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* TH2: Chưa có quẻ (từ TuViNow) — Cho gieo 3 xu */
+              <div style={{
+                background: 'rgba(229,193,88,0.04)',
+                border: '1px solid rgba(229,193,88,0.15)',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px',
+              }}>
+                <div style={{ flexShrink: 0 }}>
+                  {hexResult ? (
+                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <HexLines lines={hexResult.lines} />
+                        <div style={{ fontSize: '11px', color: '#e5c158', marginTop: '6px' }}>{hexResult.primary?.name}</div>
+                      </div>
+                      {hexResult.changed && (
+                        <>
+                          <div style={{ color: 'rgba(229,193,88,0.3)', fontSize: '18px' }}>→</div>
+                          <div style={{ textAlign: 'center' }}>
+                            <HexLines lines={resolveChangedLines(hexResult)} />
+                            <div style={{ fontSize: '11px', color: 'rgba(229,193,88,0.6)', marginTop: '6px' }}>{hexResult.changed?.name}</div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{
+                      width: '48px', height: '64px',
+                      border: '1px dashed rgba(229,193,88,0.2)',
+                      borderRadius: '8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '24px', opacity: 0.4,
+                    }}>☯</div>
+                  )}
+                </div>
+                <div style={{ flexGrow: 1 }}>
+                  {hexResult ? (
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#e5c158' }}>
+                        {isVi ? 'Quẻ đã gieo' : 'Hexagram Cast'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                        {hexResult.primary?.name} {hexResult.primary?.chineseName && `(${hexResult.primary.chineseName})`}
+                        {hexResult.changed && ` → ${hexResult.changed.name}`}
+                      </div>
+                      <button onClick={castHexagram} style={{
+                        background: 'transparent', border: 'none', color: 'rgba(229,193,88,0.5)',
+                        fontSize: '11px', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                        marginTop: '6px', padding: 0, textDecoration: 'underline',
+                      }}>
+                        {isVi ? 'Gieo lại' : 'Recast'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>
+                        {isVi ? 'Gieo 3 xu để hỏi Kinh Dịch' : 'Cast 3 coins to consult I Ching'}
+                      </div>
+                      <button
+                        onClick={castHexagram}
+                        disabled={isCasting}
+                        style={{
+                          background: 'rgba(229,193,88,0.12)',
+                          border: '1px solid rgba(229,193,88,0.3)',
+                          borderRadius: '8px',
+                          color: '#e5c158',
+                          padding: '8px 16px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          fontFamily: "'Inter', sans-serif",
+                          cursor: isCasting ? 'not-allowed' : 'pointer',
+                          opacity: isCasting ? 0.6 : 1,
+                        }}
+                      >
+                        {isCasting ? '🎲 ...' : `🎲 ${isVi ? 'Gieo quẻ' : 'Cast Hexagram'}`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* CTA */}
             <button
@@ -708,7 +940,9 @@ export default function CombinedReadingModal({
                 transition: 'all 0.2s',
               }}
             >
-              {isVi ? '🔮 Luận giải kết hợp AI' : '🔮 Combined AI Reading'}
+              {isLoadingAi
+                ? (isVi ? '⏳ Đang tổng hợp luận giải...' : '⏳ Synthesizing reading...')
+                : (isVi ? '🔮 Luận giải kết hợp AI' : '🔮 Combined AI Reading')}
             </button>
           </div>
         )}

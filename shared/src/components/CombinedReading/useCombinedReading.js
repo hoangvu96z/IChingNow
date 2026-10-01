@@ -126,6 +126,96 @@ function buildSimpleResult(lines) {
   };
 }
 
+// ─── Can Chi & Nạp Âm Helpers ──────────────────────────────────────────────
+const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
+const CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+
+const NAP_AM_MAP = {
+  'Giáp Tý': 'Hải Trung Kim', 'Ất Sửu': 'Hải Trung Kim',
+  'Bính Dần': 'Lư Trung Hỏa', 'Đinh Mão': 'Lư Trung Hỏa',
+  'Mậu Thìn': 'Đại Lâm Mộc', 'Kỷ Tỵ': 'Đại Lâm Mộc',
+  'Canh Ngọ': 'Lộ Bàng Thổ', 'Tân Mùi': 'Lộ Bàng Thổ',
+  'Nhâm Thân': 'Kiếm Phong Kim', 'Quý Dậu': 'Kiếm Phong Kim',
+  'Giáp Tuất': 'Sơn Đầu Hỏa', 'Ất Hợi': 'Sơn Đầu Hỏa',
+  'Bính Tý': 'Giản Hạ Thủy', 'Đinh Sửu': 'Giản Hạ Thủy',
+  'Mậu Dần': 'Thành Đầu Thổ', 'Kỷ Mão': 'Thành Đầu Thổ',
+  'Canh Thìn': 'Bạch Lạp Kim', 'Tân Tỵ': 'Bạch Lạp Kim',
+  'Nhâm Ngọ': 'Dương Liễu Mộc', 'Quý Mùi': 'Dương Liễu Mộc',
+  'Giáp Thân': 'Tuyền Trung Thủy', 'Ất Dậu': 'Tuyền Trung Thủy',
+  'Bính Tuất': 'Ốc Thượng Thổ', 'Đinh Hợi': 'Ốc Thượng Thổ',
+  'Mậu Tý': 'Tích Lịch Hỏa', 'Kỷ Sửu': 'Tích Lịch Hỏa',
+  'Canh Dần': 'Tùng Bách Mộc', 'Tân Mão': 'Tùng Bách Mộc',
+  'Nhâm Thìn': 'Trường Lưu Thủy', 'Quý Tỵ': 'Trường Lưu Thủy',
+  'Giáp Ngọ': 'Sa Trung Kim', 'Ất Mùi': 'Sa Trung Kim',
+  'Bính Thân': 'Sơn Hạ Hỏa', 'Đinh Dậu': 'Sơn Hạ Hỏa',
+  'Mậu Tuất': 'Bình Địa Mộc', 'Kỷ Hợi': 'Bình Địa Mộc',
+  'Canh Tý': 'Bích Thượng Thổ', 'Tân Sửu': 'Bích Thượng Thổ',
+  'Nhâm Dần': 'Kim Bạch Kim', 'Quý Mão': 'Kim Bạch Kim',
+  'Giáp Thìn': 'Phúc Đăng Hỏa', 'Ất Tỵ': 'Phúc Đăng Hỏa',
+  'Bính Ngọ': 'Thiên Hà Thủy', 'Đinh Mùi': 'Thiên Hà Thủy',
+  'Mậu Thân': 'Đại Trạch Thổ', 'Kỷ Dậu': 'Đại Trạch Thổ',
+  'Canh Tuất': 'Thoa Xuyến Kim', 'Tân Hợi': 'Thoa Xuyến Kim',
+  'Nhâm Tý': 'Tang Đố Mộc', 'Quý Sửu': 'Tang Đố Mộc',
+  'Giáp Dần': 'Đại Khê Thủy', 'Ất Mão': 'Đại Khê Thủy',
+  'Bính Thìn': 'Sa Trung Thổ', 'Đinh Tỵ': 'Sa Trung Thổ',
+  'Mậu Ngọ': 'Thiên Thượng Hỏa', 'Kỷ Mùi': 'Thiên Thượng Hỏa',
+  'Canh Thân': 'Thạch Lựu Mộc', 'Tân Dậu': 'Thạch Lựu Mộc',
+  'Nhâm Tuất': 'Đại Hải Thủy', 'Quý Hợi': 'Đại Hải Thủy',
+};
+
+/**
+ * Tính Can Chi và Mệnh Nạp Âm từ năm sinh dương lịch
+ */
+export function getBirthCanChiAndMenh(year) {
+  const y = parseInt(year, 10);
+  if (!y || isNaN(y) || y < 1900 || y > 2100) return null;
+  const canIndex = (y + 6) % 10;
+  const chiIndex = (y + 8) % 12;
+  const yearCan = CAN[canIndex >= 0 ? canIndex : canIndex + 10];
+  const yearChi = CHI[chiIndex >= 0 ? chiIndex : chiIndex + 12];
+  const canChi = `${yearCan} ${yearChi}`;
+  const menh = NAP_AM_MAP[canChi] || '';
+  return { yearCan, yearChi, canChi, menh };
+}
+
+/**
+ * Chuẩn hóa kết quả quẻ từ IChingNow hoặc các nguồn khác
+ */
+export function normalizeHexResult(raw) {
+  if (!raw) return null;
+  // Đã ở dạng chuẩn của useCombinedReading
+  if (raw.primary && raw.lines && typeof raw.primary.name === 'string' && !raw.primaryHexagram) {
+    return raw;
+  }
+  // Từ buildLucHaoResult / buildResult / maiHoaResult của IChingNow
+  const primary = raw.primaryHexagram || raw.primary || null;
+  const changed = raw.changedHexagram || raw.changed || null;
+  const lines = raw.lines || [];
+  const changedLines = raw.changedLines || null;
+  const movingLines = raw.movingLines || (lines.filter ? lines.filter(l => l?.moving).map(l => l.index) : []);
+  const hasMoving = movingLines.length > 0 || lines.some(l => (typeof l === 'object' ? !!l.moving : (l === 6 || l === 9)));
+
+  return {
+    lines,
+    changedLines,
+    movingLines,
+    primary: primary ? {
+      ...primary,
+      name: primary.nameVi || primary.name || '',
+      chineseName: primary.nameZh || primary.chineseName || '',
+      description: primary.description || '',
+    } : null,
+    changed: changed ? {
+      ...changed,
+      name: changed.nameVi || changed.name || '',
+      chineseName: changed.nameZh || changed.chineseName || '',
+      description: changed.description || '',
+    } : null,
+    hasMoving,
+    raw,
+  };
+}
+
 // ─── Topic → Cung mapping ──────────────────────────────────────────────────
 export const TOPIC_CUNG_MAP = {
   career:       ['Quan Lộc', 'Mệnh', 'Tài Bạch'],
@@ -180,10 +270,50 @@ export function buildCombinedPrompt({ topic, question, birthInfo, relevantPalace
     + (p.isTriet ? ' [bị Triệt]' : '')
   ).join('\n') || '  (chưa có dữ liệu lá số)';
 
-  const hexSection = hexResult?.primary
-    ? `- Quẻ chủ: ${hexResult.primary.name} (${hexResult.primary.chineseName})\n`
-      + (hexResult.changed ? `- Quẻ biến: ${hexResult.changed.name} (${hexResult.changed.chineseName}) — hướng chuyển hóa` : '- Không có hào động')
-    : '(chưa gieo quẻ)';
+  let birthDesc = 'Chưa có thông tin cá nhân.';
+  if (birthInfo) {
+    const parts = [];
+    if (birthInfo.name && birthInfo.name !== 'Người hỏi') parts.push(`Họ tên: ${birthInfo.name}`);
+    if (birthInfo.day && birthInfo.month && birthInfo.year) {
+      parts.push(`Sinh ngày ${birthInfo.day}/${birthInfo.month}/${birthInfo.year}`);
+    }
+    if (birthInfo.gender) {
+      parts.push(`Giới tính: ${birthInfo.gender === 'nam' ? 'Nam' : 'Nữ'}`);
+    }
+    const canChi = birthInfo.canChi || (birthInfo.yearCan ? `${birthInfo.yearCan} ${birthInfo.yearChi || ''}` : '');
+    if (canChi) parts.push(`Năm Can Chi: ${canChi}`);
+    if (birthInfo.menh) parts.push(`Mệnh Nạp Âm: ${birthInfo.menh}`);
+    if (birthInfo.cuc) parts.push(`Cục: ${birthInfo.cuc}`);
+    birthDesc = parts.length > 0 ? `Người hỏi: ${parts.join(', ')}` : birthDesc;
+  }
+
+  let hexSection = '(chưa gieo quẻ)';
+  if (hexResult?.primary) {
+    const hexParts = [
+      `- Quẻ chủ: ${hexResult.primary.name} (${hexResult.primary.chineseName || ''})`,
+    ];
+    if (hexResult.changed) {
+      hexParts.push(`- Quẻ biến: ${hexResult.changed.name} (${hexResult.changed.chineseName || ''}) — hướng chuyển hóa / kết quả`);
+    } else {
+      hexParts.push('- Quẻ thuần (không có hào động)');
+    }
+    if (hexResult.movingLines?.length > 0) {
+      hexParts.push(`- Hào động: Hào ${hexResult.movingLines.join(', ')}`);
+    }
+    if (hexResult.raw?.palaceName) {
+      hexParts.push(`- Cung quẻ: ${hexResult.raw.palaceName} (Hành ${hexResult.raw.palaceElement || ''})`);
+    }
+    if (hexResult.raw?.theHao) {
+      hexParts.push(`- Hào Thế: Hào ${hexResult.raw.theHao}, Hào Ứng: Hào ${hexResult.raw.ungHao}`);
+    }
+    if (hexResult.raw?.canChi?.ngayCan) {
+      hexParts.push(`- Thời điểm lập quẻ: Ngày ${hexResult.raw.canChi.ngayCan} ${hexResult.raw.canChi.ngayChi} (Tháng ${hexResult.raw.canChi.thangCan} ${hexResult.raw.canChi.thangChi})`);
+    }
+    if (hexResult.primary.description) {
+      hexParts.push(`- Thoán từ / Ý nghĩa: ${hexResult.primary.description}`);
+    }
+    hexSection = hexParts.join('\n');
+  }
 
   if (isVi) {
     return `Bạn là chuyên gia phương Đông tổng hợp hai hệ thống chiêm tinh: Tử Vi Đẩu Số và Kinh Dịch.
@@ -192,26 +322,26 @@ CHỦ ĐỀ HỎI: ${topicLabel}
 CÂU HỎI CỤ THỂ: "${question}"
 
 --- THÔNG TIN LÁ SỐ TỬ VI ---
-${birthInfo ? `Người hỏi: sinh năm ${birthInfo.yearCan || ''} ${birthInfo.yearChi || ''}, mệnh ${birthInfo.menh || ''}, cục ${birthInfo.cuc || ''}` : 'Chưa có thông tin cá nhân.'}
+${birthDesc}
 Các cung liên quan đến chủ đề "${topicLabel}":
 ${palaceSection}
 ${chartResult?.daiHan ? `Đại hạn hiện tại: ${chartResult.daiHan}` : ''}
 
---- KẾT QUẢ KINH DỊCH (GIEO QUẺ 3 XU) ---
+--- KẾT QUẢ KINH DỊCH ---
 ${hexSection}
 
 --- YÊU CẦU LUẬN GIẢI ---
 Kết hợp cả hai nguồn để đưa ra luận giải toàn diện:
 
-**1. Tử Vi nói gì?** — Từ các cung liên quan và sao chiếu, cho biết xu hướng nền tảng của người hỏi.
+**1. Tử Vi nói gì?** — Từ bản mệnh, các cung liên quan và sao chiếu, cho biết xu hướng nền tảng, căn cơ của người hỏi.
 
-**2. Kinh Dịch nói gì?** — Từ quẻ chủ và quẻ biến (nếu có), cho biết thời điểm hiện tại.
+**2. Kinh Dịch nói gì?** — Từ quẻ chủ, hào động và quẻ biến, cho biết thời điểm hiện tại, diễn biến sắp tới và thời cơ.
 
-**3. Tổng hợp** — Khi kết hợp, hai hệ thống có đồng thuận không? Vận mệnh tổng thể ra sao?
+**3. Tổng hợp** — Khi kết hợp, hai hệ thống có đồng thuận không? Thời vận hiện tại đang mở ra hay cần ẩn nhẫn?
 
-**4. Lời khuyên cụ thể** — 3 hành động thực tế nên làm ngay.
+**4. Lời khuyên cụ thể** — 3 hành động thực tế người hỏi nên làm ngay lúc này.
 
-Viết tiếng Việt, ân cần nhưng thẳng thắn, tránh sáo rỗng.`;
+Viết tiếng Việt, ân cần nhưng sâu sắc, thẳng thắn, tránh sáo rỗng.`;
   }
 
   return `You are an Eastern wisdom expert synthesizing Zi Wei Dou Shu astrology and I Ching divination.
@@ -220,15 +350,15 @@ TOPIC: ${topicLabel}
 QUESTION: "${question}"
 
 --- ZI WEI DOU SHU ---
-${birthInfo ? `Born: ${birthInfo.year}/${birthInfo.month}/${birthInfo.day}, gender: ${birthInfo.gender}` : 'No birth data.'}
+${birthDesc}
 Relevant palaces:
 ${palaceSection}
 
 --- I CHING ---
 ${hexSection}
 
-Provide: (1) What Zi Wei reveals, (2) What I Ching shows, (3) Synthesized verdict, (4) 3 practical actions.
-Write in English, warm but direct.`;
+Provide: (1) What Zi Wei reveals about the foundation, (2) What I Ching shows about current timing, (3) Synthesized verdict, (4) 3 practical actions.
+Write in English, warm and insightful.`;
 }
 
 // ─── Main hook ─────────────────────────────────────────────────────────────
