@@ -262,31 +262,42 @@ function CoinCastResultSection({ result, onChangeMethod, activeReadingId, update
       <section className="card" style={{ padding: 20 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: '12px', flexWrap: 'wrap' }}>
           <div className="section-title" style={{ margin: 0 }}>{t('result.hex_title', 'Kết quả quẻ')}</div>
-          {/* Nút kết hợp Tử Vi */}
+          {/* Nút kết hợp Tử Vi — nổi bật */}
           <button
             type="button"
             onClick={() => setShowCombinedModal(true)}
             style={{
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(184,134,11,0.1))',
-              border: '1px solid rgba(139,92,246,0.35)',
-              borderRadius: '20px',
-              color: '#a78bfa',
-              padding: '6px 14px',
-              fontSize: '12px',
-              fontWeight: 600,
+              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #b8860b 100%)',
+              border: 'none',
+              borderRadius: '24px',
+              color: '#fff',
+              padding: '9px 20px',
+              fontSize: '13px',
+              fontWeight: 700,
               fontFamily: "'Inter', sans-serif",
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '7px',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+              boxShadow: '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)',
               transition: 'all 0.2s',
+              animation: 'tuvi-btn-pulse 2.5s ease-in-out infinite',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.28), rgba(184,134,11,0.18))'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(184,134,11,0.1))'; }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
+              e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124,58,237,0.28), 0 8px 28px rgba(124,58,237,0.5)';
+              e.currentTarget.style.animation = 'none';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = '';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)';
+              e.currentTarget.style.animation = 'tuvi-btn-pulse 2.5s ease-in-out infinite';
+            }}
           >
-            ⭐ Kết hợp Tử Vi
+            <span style={{ fontSize: '15px' }}>🌟</span>
+            {t('combined.btn_label', 'Kết hợp Tử Vi')}
           </button>
         </div>
         <div className="animate-in">
@@ -294,12 +305,13 @@ function CoinCastResultSection({ result, onChangeMethod, activeReadingId, update
         </div>
       </section>
 
-      {/* Combined Reading Modal */}
+      {/* Combined Reading Modal — tự điền câu hỏi từ result */}
       <CombinedReadingModal
         isOpen={showCombinedModal}
         onClose={() => setShowCombinedModal(false)}
         chartResult={null}
         inputData={null}
+        initialQuestion={result.question || ''}
         sourceApp="iching"
         language={language}
       />

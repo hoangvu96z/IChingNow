@@ -170,6 +170,7 @@ export default function CombinedReadingModal({
   onClose,
   chartResult = null,
   inputData = null,
+  initialQuestion = '',
   sourceApp = 'iching',
   language = 'vi',
 }) {
@@ -194,12 +195,17 @@ export default function CombinedReadingModal({
   // Step 1: topic, Step 2: birth info (if needed), Step 3: question+cast, Step 4: AI result
   const [step, setStep] = useState(1);
 
+  // Pre-fill câu hỏi từ caller (ví dụ: result.question từ IChingNow)
   useEffect(() => {
+    if (isOpen && initialQuestion && !question) {
+      setQuestion(initialQuestion);
+    }
     if (!isOpen) {
       setStep(1);
       setLocalBirthInfo(null);
+      // Không reset question — để giữ lại khi mở lại
     }
-  }, [isOpen]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTopicSelect = (t) => {
     setTopic(t);

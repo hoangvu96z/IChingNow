@@ -777,3 +777,9 @@ body {
   }
 }
 
+
+/* ─── Combined Reading button pulse ───────────────────────────────────── */
+@keyframes tuvi-btn-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(124,58,237,0.28), 0 6px 26px rgba(124,58,237,0.55); }
+}
