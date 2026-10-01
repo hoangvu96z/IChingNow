@@ -309,6 +309,31 @@ export function getHourIndexFromTimeStr(timeStr) {
 }
 
 /**
+ * Chuyển đổi endpoint AI sang proxy nội bộ tương thích trình duyệt (chống CORS & Mixed Content)
+ */
+export function getResolvedAiEndpoint(endpoint) {
+  if (!endpoint) return '/kinhdich/api-vps/v1';
+  let clean = endpoint.replace(/\/$/, '');
+  if (typeof window === 'undefined') return clean;
+
+  const isHttp = clean.startsWith('http://');
+  const isSecureCtx = window.location.protocol === 'https:' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+
+  if (isHttp && isSecureCtx) {
+    const path = window.location.pathname;
+    let base = '/';
+    if (path.startsWith('/kinhdich')) base = '/kinhdich/';
+    else if (path.startsWith('/tuvi')) base = '/tuvi/';
+    else if (path.startsWith('/tarot')) base = '/tarot/';
+    const suffix = clean.replace(/^http:\/\/[^/]+/, '');
+    clean = base + 'api-vps' + (suffix || '/v1');
+  }
+  return clean;
+}
+
+/**
  * Build AI prompt kết hợp Tử Vi + Kinh Dịch
  */
 export function buildCombinedPrompt({ topic, question, birthInfo, relevantPalaces, hexResult, language, chartResult }) {
@@ -454,28 +479,71 @@ export function useCombinedReading({ apiBaseUrl, apiKey, model = 'combo1' }) {
       topic, question, birthInfo, relevantPalaces, hexResult, language, chartResult,
     });
 
-    try {
-      const res = await fetch(`${apiBaseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model,
-          stream: true,
-          messages: [
-            { role: 'system', content: 'Bạn là chuyên gia tổng hợp Tử Vi Đẩu Số và Kinh Dịch phương Đông.' },
-            { role: 'user', content: prompt },
-          ],
-          max_tokens: 2000,
-          temperature: 0.75,
-        }),
-      });
+    const activeKey = apiKey || 'sk-07c9f002b12e445e-luaxyd-d0592739';
+    const activeModel = model || 'combo1';
 
-      if (!res.ok) throw new Error(`AI trả lỗi ${res.status}`);
-      const reader = res.body?.getReader();
+    // Danh sách candidate endpoints từ an toàn nhất (proxy nội bộ) tới trực tiếp
+    const resolved = getResolvedAiEndpoint(apiBaseUrl);
+    const candidateEndpoints = Array.from(new Set([
+      resolved,
+      '/kinhdich/api-vps/v1',
+      '/tuvi/api-vps/v1',
+      '/api-vps/v1',
+      apiBaseUrl,
+      'http://43.128.116.69/v1',
+      'http://43.128.116.69:20128/v1',
+    ])).filter(Boolean).map(e => e.replace(/\/$/, ''));
+
+    let response = null;
+    let lastError = null;
+
+    for (const ep of candidateEndpoints) {
+      if (controller.signal.aborted) break;
+      try {
+        const res = await fetch(`${ep}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(activeKey ? { 'Authorization': `Bearer ${activeKey}` } : {}),
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: activeModel,
+            stream: true,
+            messages: [
+              { role: 'system', content: 'Bạn là chuyên gia phương Đông tổng hợp hai hệ thống: Tử Vi Đẩu Số và Kinh Dịch.' },
+              { role: 'user', content: prompt },
+            ],
+            max_tokens: 2000,
+            temperature: 0.75,
+          }),
+        });
+
+        if (res.ok) {
+          response = res;
+          break;
+        } else {
+          const errText = await res.text().catch(() => '');
+          lastError = new Error(`AI HTTP ${res.status}: ${errText.slice(0, 100) || res.statusText}`);
+        }
+      } catch (err) {
+        lastError = err;
+        if (err.name === 'AbortError') break;
+      }
+    }
+
+    if (!response) {
+      if (lastError?.name === 'AbortError') {
+        setIsLoadingAi(false);
+        return;
+      }
+      setAiError(lastError?.message || 'Không thể kết nối máy chủ AI. Vui lòng kiểm tra lại mạng hoặc thử lại.');
+      setIsLoadingAi(false);
+      return;
+    }
+
+    try {
+      const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       let full = '';
@@ -498,8 +566,10 @@ export function useCombinedReading({ apiBaseUrl, apiKey, model = 'combo1' }) {
           } catch { /* skip malformed SSE */ }
         }
       }
-    } catch (err) {
-      if (err.name !== 'AbortError') setAiError(err.message || 'Lỗi kết nối AI');
+    } catch (streamErr) {
+      if (streamErr.name !== 'AbortError') {
+        setAiError(streamErr.message || 'Lỗi đọc luồng dữ liệu AI');
+      }
     } finally {
       setIsLoadingAi(false);
     }

@@ -20,6 +20,7 @@ import {
   normalizeHexResult,
   GIO_SINH_OPTIONS,
   getHourIndexFromTimeStr,
+  getResolvedAiEndpoint,
 } from './useCombinedReading.js';
 
 const STORAGE_KEY = 'ichingnow_user_birth';
@@ -473,43 +474,90 @@ function QuickBirthForm({ onSubmit, language }) {
   );
 }
 
-// ─── Mini Hexagram Display ──────────────────────────────────────────────
-function HexLines({ lines }) {
+// ─── Hexagram Display (Rõ ràng, kích thước lớn, chuẩn quẻ phương Đông) ───
+function HexLines({ lines, size = 'md' }) {
   if (!lines || lines.length === 0) return null;
+  const isLg = size === 'lg';
+  const isSm = size === 'sm';
+  const totalW = isLg ? 96 : (isSm ? 56 : 78);
+  const barH = isLg ? 8 : (isSm ? 5 : 7);
+  const gap = isLg ? 10 : (isSm ? 6 : 8);
+  const halfW = (totalW - gap) / 2;
+  const dotSize = barH + 5;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '4px', alignItems: 'center' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column-reverse',
+      gap: isLg ? '6px' : '5px',
+      alignItems: 'center',
+      padding: isLg ? '10px 14px' : (isSm ? '6px 8px' : '8px 10px'),
+      background: 'rgba(0,0,0,0.35)',
+      borderRadius: '12px',
+      border: '1px solid rgba(229,193,88,0.25)',
+      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)',
+    }}>
       {lines.map((line, i) => {
         const isYang = typeof line === 'object' ? line.yinYang === 'yang' : (line === 7 || line === 9);
         const isMoving = typeof line === 'object' ? !!line.moving : (line === 6 || line === 9);
+        const barColor = isMoving ? '#ef4444' : '#e5c158';
+
         return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {isYang ? (
               <div style={{
-                width: '42px',
-                height: '5px',
-                background: isMoving ? '#ef4444' : '#e5c158',
-                borderRadius: '2px',
-                boxShadow: isMoving ? '0 0 8px rgba(239,68,68,0.6)' : 'none',
-              }} />
+                width: `${totalW}px`,
+                height: `${barH}px`,
+                background: barColor,
+                borderRadius: '3px',
+                boxShadow: isMoving ? '0 0 10px rgba(239,68,68,0.8)' : '0 1px 4px rgba(229,193,88,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {isMoving && (
+                  <div style={{
+                    width: `${dotSize}px`,
+                    height: `${dotSize}px`,
+                    background: '#fff',
+                    borderRadius: '50%',
+                    border: '2px solid #ef4444',
+                    boxShadow: '0 0 6px #ef4444',
+                  }} />
+                )}
+              </div>
             ) : (
-              <div style={{ display: 'flex', gap: '4px' }}>
+              <div style={{ display: 'flex', gap: `${gap}px`, alignItems: 'center', width: `${totalW}px`, justifyContent: 'center' }}>
                 <div style={{
-                  width: '19px',
-                  height: '5px',
-                  background: isMoving ? '#ef4444' : '#e5c158',
-                  borderRadius: '2px',
-                  boxShadow: isMoving ? '0 0 8px rgba(239,68,68,0.6)' : 'none',
+                  width: `${halfW}px`,
+                  height: `${barH}px`,
+                  background: barColor,
+                  borderRadius: '3px',
+                  boxShadow: isMoving ? '0 0 10px rgba(239,68,68,0.8)' : '0 1px 4px rgba(229,193,88,0.3)',
                 }} />
+                {isMoving ? (
+                  <div style={{
+                    width: `${dotSize}px`,
+                    height: `${dotSize}px`,
+                    background: '#ef4444',
+                    borderRadius: '50%',
+                    border: '2px solid #fff',
+                    boxShadow: '0 0 6px #ef4444',
+                    flexShrink: 0,
+                  }} />
+                ) : null}
                 <div style={{
-                  width: '19px',
-                  height: '5px',
-                  background: isMoving ? '#ef4444' : '#e5c158',
-                  borderRadius: '2px',
-                  boxShadow: isMoving ? '0 0 8px rgba(239,68,68,0.6)' : 'none',
+                  width: `${halfW}px`,
+                  height: `${barH}px`,
+                  background: barColor,
+                  borderRadius: '3px',
+                  boxShadow: isMoving ? '0 0 10px rgba(239,68,68,0.8)' : '0 1px 4px rgba(229,193,88,0.3)',
                 }} />
               </div>
             )}
-            {isMoving && <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 'bold' }}>●</span>}
+            {isMoving && (
+              <span style={{ fontSize: isLg ? '12px' : '10px', color: '#ef4444', fontWeight: 'bold' }}>●</span>
+            )}
           </div>
         );
       })}
@@ -572,9 +620,18 @@ export default function CombinedReadingModal({
   language = 'vi',
 }) {
   const isVi = language !== 'en';
-  const apiBaseUrl = import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1';
-  const apiKey = import.meta.env.VITE_AI_API_KEY || '';
-  const aiModel = import.meta.env.VITE_AI_MODEL || 'combo1';
+  const userAiSettings = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('iching_ai_settings') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+
+  const rawBaseUrl = import.meta.env.VITE_AI_BASE_URL || userAiSettings.endpoint || 'http://43.128.116.69:20128/v1';
+  const apiBaseUrl = useMemo(() => getResolvedAiEndpoint(rawBaseUrl), [rawBaseUrl]);
+  const apiKey = import.meta.env.VITE_AI_API_KEY || userAiSettings.apiKey || 'sk-07c9f002b12e445e-luaxyd-d0592739';
+  const aiModel = import.meta.env.VITE_AI_MODEL || userAiSettings.model || 'combo1';
 
   const {
     topic, setTopic,
@@ -972,28 +1029,28 @@ export default function CombinedReadingModal({
                 gap: '20px',
               }}>
                 <div style={{ flexShrink: 0 }}>
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
-                      <HexLines lines={hexResult.lines} />
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#e5c158', marginTop: '6px' }}>
+                      <HexLines lines={hexResult.lines} size="lg" />
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3e5ab', marginTop: '8px' }}>
                         {hexResult.primary?.name}
                       </div>
                       {hexResult.primary?.chineseName && (
-                        <div style={{ fontSize: '10px', color: 'rgba(229,193,88,0.6)' }}>
+                        <div style={{ fontSize: '18px', color: 'rgba(229,193,88,0.85)', fontFamily: "'Cinzel', serif", fontWeight: 700 }}>
                           {hexResult.primary.chineseName}
                         </div>
                       )}
                     </div>
                     {hexResult.changed && (
                       <>
-                        <div style={{ color: 'rgba(229,193,88,0.4)', fontSize: '20px' }}>→</div>
+                        <div style={{ color: 'rgba(229,193,88,0.5)', fontSize: '24px', fontWeight: 'bold' }}>→</div>
                         <div style={{ textAlign: 'center' }}>
-                          <HexLines lines={resolveChangedLines(hexResult)} />
-                          <div style={{ fontSize: '12px', fontWeight: 600, color: '#e5c158', marginTop: '6px' }}>
+                          <HexLines lines={resolveChangedLines(hexResult)} size="lg" />
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3e5ab', marginTop: '8px' }}>
                             {hexResult.changed?.name}
                           </div>
                           {hexResult.changed?.chineseName && (
-                            <div style={{ fontSize: '10px', color: 'rgba(229,193,88,0.6)' }}>
+                            <div style={{ fontSize: '18px', color: 'rgba(229,193,88,0.85)', fontFamily: "'Cinzel', serif", fontWeight: 700 }}>
                               {hexResult.changed.chineseName}
                             </div>
                           )}
@@ -1153,30 +1210,69 @@ export default function CombinedReadingModal({
               {isVi ? '3. Luận giải tổng hợp' : '3. Combined Reading'}
             </h3>
 
-            {/* Summary bar */}
+            {/* Hexagram & Natal Banner in Step 4 — Rõ ràng, đầy đủ quẻ và thông tin */}
             <div style={{
-              display: 'flex', gap: '12px', marginBottom: '20px',
-              padding: '12px 14px',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '10px',
-              fontSize: '12px',
+              background: 'rgba(229,193,88,0.06)',
+              border: '1px solid rgba(229,193,88,0.25)',
+              borderRadius: '14px',
+              padding: '14px 18px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '14px',
             }}>
-              <div style={{ color: 'rgba(255,255,255,0.4)' }}>
-                {isVi ? 'Chủ đề:' : 'Topic:'}
-                <span style={{ color: '#e5c158', marginLeft: '4px' }}>
-                  {TOPIC_LABELS[topic]?.[isVi ? 'vi' : 'en']}
-                </span>
-              </div>
-              {hexResult?.primary && (
-                <div style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  {isVi ? 'Quẻ:' : 'Hex:'}
-                  <span style={{ color: 'rgba(229,193,88,0.7)', marginLeft: '4px' }}>
-                    {hexResult.primary.name}
-                    {hexResult.changed && ` → ${hexResult.changed.name}`}
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                <HexLines lines={hexResult?.lines} size="sm" />
+                {hexResult?.changed && (
+                  <>
+                    <span style={{ color: 'rgba(229,193,88,0.5)', fontSize: '18px' }}>→</span>
+                    <HexLines lines={resolveChangedLines(hexResult)} size="sm" />
+                  </>
+                )}
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#f3e5ab' }}>
+                    {hexResult?.primary?.name}
+                    {hexResult?.primary?.chineseName && (
+                      <span style={{ marginLeft: '6px', color: 'rgba(229,193,88,0.85)', fontSize: '16px', fontFamily: "'Cinzel', serif" }}>
+                        ({hexResult.primary.chineseName})
+                      </span>
+                    )}
+                    {hexResult?.changed && (
+                      <span style={{ color: '#e5c158', fontWeight: 600 }}>
+                        {' → '}{hexResult.changed.name}
+                        {hexResult.changed.chineseName && (
+                          <span style={{ marginLeft: '4px', fontSize: '14px', fontFamily: "'Cinzel', serif" }}>
+                            ({hexResult.changed.chineseName})
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)', marginTop: '3px' }}>
+                    {hexResult?.movingLines?.length > 0 ? (
+                      <span style={{ color: '#ef4444', fontWeight: 600 }}>⚡ {isVi ? `Động hào ${hexResult.movingLines.join(', ')}` : `Moving lines ${hexResult.movingLines.join(', ')}`}</span>
+                    ) : (
+                      <span>{isVi ? 'Quẻ thuần tĩnh (không có hào động)' : 'Static hexagram'}</span>
+                    )}
+                    {hexResult?.raw?.palaceName && (
+                      <span style={{ color: 'rgba(229,193,88,0.8)', marginLeft: '8px' }}>· Cung {hexResult.raw.palaceName} ({hexResult.raw.palaceElement})</span>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <div style={{ textAlign: 'right', fontSize: '12px', color: '#c4b5fd' }}>
+                <div style={{ fontWeight: 600 }}>{TOPIC_LABELS[topic]?.[isVi ? 'vi' : 'en']}</div>
+                {effectiveBirthInfo?.day && (
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                    {effectiveBirthInfo.day}/{effectiveBirthInfo.month}/{effectiveBirthInfo.year}
+                    {effectiveBirthInfo.hourName ? ` · Giờ ${effectiveBirthInfo.hourName}` : ''}
+                    {effectiveBirthInfo.canChi ? ` · ${effectiveBirthInfo.canChi}` : ''}
+                  </div>
+                )}
+              </div>
             </div>
 
             {isLoadingAi && (
@@ -1202,14 +1298,55 @@ export default function CombinedReadingModal({
 
             {aiError && (
               <div style={{
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.3)',
-                borderRadius: '10px',
-                padding: '14px',
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.4)',
+                borderRadius: '12px',
+                padding: '16px',
                 color: '#f87171',
                 fontSize: '13px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
               }}>
-                ⚠️ {aiError}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+                  <span>⚠️</span>
+                  <span>{aiError}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => queryAi({ chartResult, birthInfo: effectiveBirthInfo, language })}
+                    style={{
+                      background: 'rgba(239,68,68,0.25)',
+                      border: '1px solid rgba(239,68,68,0.6)',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    🔄 {isVi ? 'Thử lại kết nối AI' : 'Retry AI Connection'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: '8px',
+                      color: 'rgba(255,255,255,0.7)',
+                      padding: '8px 14px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    ← {isVi ? 'Quay lại câu hỏi' : 'Back to question'}
+                  </button>
+                </div>
               </div>
             )}
 
