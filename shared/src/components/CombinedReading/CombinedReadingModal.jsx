@@ -21,6 +21,7 @@ import {
   GIO_SINH_OPTIONS,
   getHourIndexFromTimeStr,
   getResolvedAiEndpoint,
+  buildCombinedPrompt,
 } from './useCombinedReading.js';
 import { calculateChartFromBirthInfo } from '../../utils/tuViCalculator.js';
 
@@ -732,6 +733,8 @@ export default function CombinedReadingModal({
   const [step, setStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [hoveredStep, setHoveredStep] = useState(null);
+  const [showPromptPreview, setShowPromptPreview] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
 
   useEffect(() => {
     if (step > maxStepReached) {
@@ -1532,6 +1535,126 @@ export default function CombinedReadingModal({
                 </div>
               </div>
             )}
+
+            {/* Prompt Preview & Copy */}
+            {question.trim() && (() => {
+              const previewPrompt = buildCombinedPrompt({
+                topic,
+                question,
+                birthInfo: effectiveBirthInfo,
+                relevantPalaces: effectiveChart ? summarizeRelevantPalaces(effectiveChart, topic) : null,
+                hexResult,
+                language,
+                chartResult: effectiveChart,
+              });
+              return (
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(229,193,88,0.15)',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowPromptPreview(!showPromptPreview); setPromptCopied(false); }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    <span style={{ fontSize: '12px', color: 'rgba(229,193,88,0.7)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{showPromptPreview ? '▼' : '▶'}</span>
+                      📋 {isVi ? 'Xem & Copy Prompt AI' : 'View & Copy AI Prompt'}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>
+                      {isVi ? `${previewPrompt.length} ký tự` : `${previewPrompt.length} chars`}
+                    </span>
+                  </button>
+
+                  {showPromptPreview && (
+                    <div style={{ padding: '0 14px 14px' }}>
+                      <div style={{
+                        position: 'relative',
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '1px solid rgba(229,193,88,0.12)',
+                        borderRadius: '10px',
+                        padding: '14px',
+                        maxHeight: '240px',
+                        overflowY: 'auto',
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(229,193,88,0.2) transparent',
+                      }}>
+                        <pre style={{
+                          margin: 0,
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          fontSize: '11.5px',
+                          lineHeight: '1.6',
+                          color: 'rgba(255,255,255,0.75)',
+                          fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+                        }}>
+                          {previewPrompt}
+                        </pre>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(previewPrompt);
+                            setPromptCopied(true);
+                            setTimeout(() => setPromptCopied(false), 2500);
+                          } catch {
+                            // Fallback
+                            const ta = document.createElement('textarea');
+                            ta.value = previewPrompt;
+                            ta.style.cssText = 'position:fixed;opacity:0';
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(ta);
+                            setPromptCopied(true);
+                            setTimeout(() => setPromptCopied(false), 2500);
+                          }
+                        }}
+                        style={{
+                          marginTop: '10px',
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '10px',
+                          borderRadius: '10px',
+                          border: promptCopied
+                            ? '1px solid rgba(34,197,94,0.5)'
+                            : '1px solid rgba(229,193,88,0.35)',
+                          background: promptCopied
+                            ? 'rgba(34,197,94,0.15)'
+                            : 'rgba(229,193,88,0.08)',
+                          color: promptCopied ? '#86efac' : '#e5c158',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          fontFamily: "'Inter', sans-serif",
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {promptCopied
+                          ? (isVi ? '✅ Đã copy prompt!' : '✅ Prompt copied!')
+                          : (isVi ? '📋 Copy toàn bộ Prompt' : '📋 Copy Full Prompt')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* CTA */}
             <button

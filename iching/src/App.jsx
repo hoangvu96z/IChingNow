@@ -767,7 +767,7 @@ export default function App() {
         title="易 IChingNow"
         subtitle={t('app.subtitle', 'Lập Quẻ Kinh Dịch')}
         onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
-        languageLabel={language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}
+        languageLabel={language === 'vi' ? 'VI' : 'EN'}
         primaryAction={
           (result || maiHoaResult) ? (
             <button

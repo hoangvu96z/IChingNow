@@ -440,7 +440,7 @@ ${summaryObj.advice}
         title="TarotNow"
         subtitle={t('app.subtitle', 'Trải Bài Tarot & Luận Giải AI')}
         onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
-        languageLabel={language === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
+        languageLabel={language === 'vi' ? 'VI' : 'EN'}
         primaryAction={
           drawnCards.length > 0 ? (
             <button
