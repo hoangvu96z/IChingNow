@@ -739,10 +739,15 @@ export default function CombinedReadingModal({
     }
   }, [step, maxStepReached]);
 
-  // Pre-fill question và hexResult khi mở modal
+  // Pre-fill question và hexResult khi mở modal — luôn đồng bộ state khi open/close
+  const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (isOpen) {
-      if (initialQuestion && !question) {
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = isOpen;
+
+    if (isOpen && !wasOpen) {
+      // Modal vừa mở: Luôn đồng bộ question và hexResult từ props (kể cả khi xem lại quẻ cũ khác)
+      if (initialQuestion) {
         setQuestion(initialQuestion);
       }
       if (initialHexResult) {
@@ -751,12 +756,12 @@ export default function CombinedReadingModal({
           setHexResult(normalized);
         }
       }
-    } else {
+    } else if (!isOpen && wasOpen) {
+      // Modal vừa đóng: Reset toàn bộ state về ban đầu
       setStep(1);
       setMaxStepReached(1);
-      if (!initialHexResult) {
-        setHexResult(null);
-      }
+      setHexResult(null);
+      setQuestion('');
     }
   }, [isOpen, initialQuestion, initialHexResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -949,7 +954,7 @@ export default function CombinedReadingModal({
               actualStep === 1 ||
               (actualStep === 2 && !hasChart && !!topic) ||
               (actualStep === 3 && !!topic && (hasChart || !!localBirthInfo || maxStepReached >= 3)) ||
-              (actualStep === 4 && (maxStepReached >= 4 || !!aiReading))
+              (actualStep === 4 && (maxStepReached >= 4 || !!aiResponse))
             );
             const isHovered = hoveredStep === actualStep;
 
