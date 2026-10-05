@@ -22,6 +22,7 @@ import { ichingTheme } from '@shared/themes/iching.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
 import DailyStreakBar from './components/DailyStreakBar.jsx';
 import { useStreak } from '@shared/utils/useStreak.js';
+import GameShell from './game/GameShell.jsx';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -527,6 +528,7 @@ function MaiHoaResultSection({ result, onChangeMethod, activeReadingId, updateRe
 export default function App() {
   const { t, language, setLanguage } = useLanguage();
   const { streak, recordActivity } = useStreak('iching');
+  const [showGame, setShowGame] = useState(false);
   const [formData,         setFormData]         = useState(getDefaultForm());
   const [mode,             setMode]             = useState('quick');
   const [lines,            setLines]            = useState([]);
@@ -803,6 +805,27 @@ export default function App() {
             onStartDailyCast={handleStartDailyCast}
             hasActiveResult={Boolean(result || maiHoaResult)}
           />
+
+          {/* Game Luyện Dịch */}
+          <button
+            type="button"
+            id="open-game"
+            onClick={() => setShowGame(true)}
+            className="card"
+            style={{
+              padding: '14px 18px', cursor: 'pointer', textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 12, border: '1px solid rgba(184,134,11,0.35)',
+            }}
+          >
+            <span style={{ fontSize: '1.6rem' }}>🎮</span>
+            <span>
+              <strong style={{ display: 'block' }}>Luyện Dịch</strong>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)' }}>
+                Chơi game học Kinh Dịch &amp; Lục Hào · Thử thách hằng ngày
+              </span>
+            </span>
+          </button>
+          {showGame && <GameShell onExit={() => setShowGame(false)} />}
 
           {/* 1. Form nhập liệu (Ở TRÊN CÙNG / GIỮA) */}
           <section className="card" style={{ padding: 24 }}>
