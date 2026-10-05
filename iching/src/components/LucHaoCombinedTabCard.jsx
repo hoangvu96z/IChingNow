@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import LucHaoTable from './LucHaoTable.jsx';
 import DescriptionPanel from './DescriptionPanel.jsx';
+import LearnPanel from './LearnPanel.jsx';
+import GlossarySheet from './GlossarySheet.jsx';
 
 /**
  * Combined Section for Bảng Lục Hào & Luận Giải Cơ Bản (2 Tabs)
@@ -10,7 +12,9 @@ import DescriptionPanel from './DescriptionPanel.jsx';
  */
 export default function LucHaoCombinedTabCard({ result }) {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('table'); // 'table' | 'basic'
+  const [activeTab, setActiveTab] = useState('table'); // 'table' | 'basic' | 'learn'
+  const [highlight, setHighlight] = useState([]);
+  const [termKey, setTermKey] = useState(null);
 
   const evidence = useEvidence();
   useEffect(() => {
@@ -76,12 +80,49 @@ export default function LucHaoCombinedTabCard({ result }) {
         >
           📖 {t('result.basic_interpretation', 'Luận giải cơ bản')}
         </button>
+
+        <button
+          type="button"
+          id="tab-learn"
+          onClick={() => setActiveTab('learn')}
+          style={{
+            background: activeTab === 'learn' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.07)',
+            color: activeTab === 'learn' ? '#ffffff' : 'var(--color-ink, #2c2621)',
+            border: '1px solid ' + (activeTab === 'learn' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.3)'),
+            padding: '8px 18px',
+            borderRadius: 8,
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            boxShadow: activeTab === 'learn' ? '0 2px 8px rgba(184,134,11,0.25)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          🎓 Học xem quẻ
+        </button>
       </div>
 
       {/* Tab 1 Content: Bảng Lục Hào (Default) */}
-      {activeTab === 'table' && (
+      {(activeTab === 'table' || activeTab === 'learn') && (
         <div className="animate-in">
-          <LucHaoTable result={result} />
+          <LucHaoTable
+            result={result}
+            highlight={activeTab === 'learn' ? highlight : []}
+            onLearn={setTermKey}
+          />
+          {activeTab === 'table' && (
+            <p style={{ margin: '10px 0 0', fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>
+              💡 Chạm vào các mục có gạch chân (Thế/Ứng, Lục Thân, Tuần Không...) để xem giải nghĩa.
+            </p>
+          )}
+          {activeTab === 'learn' && (
+            <div style={{ marginTop: 16 }}>
+              <LearnPanel result={result} onHighlight={setHighlight} onLearn={setTermKey} />
+            </div>
+          )}
         </div>
       )}
 
@@ -102,6 +143,8 @@ export default function LucHaoCombinedTabCard({ result }) {
           )}
         </div>
       )}
+
+      <GlossarySheet termKey={termKey} onClose={() => setTermKey(null)} />
     </section>
   );
 }

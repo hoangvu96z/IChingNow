@@ -1,11 +1,12 @@
 import { useEvidence } from '../context/evidenceState';
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
+import { GLOSSARY } from '../data/glossary.js';
 
 /**
  * Bảng Lục Hào chính — render cả quẻ chủ và quẻ biến song song
  */
-export default function LucHaoTable({ result }) {
+export default function LucHaoTable({ result, highlight = [], onLearn }) {
   const { t, language } = useLanguage();
 
   if (!result || !result.lines || result.lines.length < 6) {
@@ -57,6 +58,8 @@ export default function LucHaoTable({ result }) {
               khongVong={result.khongVong || []}
               showLucThu={false}
               accentColor="var(--color-vermillion)"
+              highlight={highlight}
+              onLearn={onLearn}
             />
           </div>
 
@@ -71,6 +74,7 @@ export default function LucHaoTable({ result }) {
                   khongVong={result.khongVong || []}
                   showLucThu={true}
                   accentColor="var(--color-jade)"
+                  onLearn={onLearn}
                 />
               </div>
             </>
@@ -125,7 +129,7 @@ function HexNameHeader({ hexagram, palace, queType, isChanged, flex }) {
   );
 }
 
-function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentColor }) {
+function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentColor, highlight = [], onLearn }) {
   const evidence = useEvidence();
   const { t, language } = useLanguage();
 
@@ -170,10 +174,14 @@ function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentCol
 
           const lucThuLabel = line.lucThu ? t(`lucThu.${line.lucThu}`, line.lucThu) : '—';
 
+          const isHl = highlight.includes(line.index);
           return (
             <tr key={line.index} {...evidence?.targetProps(`line.${evidenceKind}.${line.index}`)} style={{
               borderBottom: '1px solid rgba(184,134,11,0.09)',
-              background: idx % 2 === 0 ? 'transparent' : 'rgba(184,134,11,0.03)',
+              background: isHl ? 'rgba(184,134,11,0.18)' : idx % 2 === 0 ? 'transparent' : 'rgba(184,134,11,0.03)',
+              outline: isHl ? '2px solid rgba(184,134,11,0.7)' : 'none',
+              outlineOffset: -2,
+              transition: 'background 0.25s ease',
             }}>
               {/* Vạch */}
               <Td>
@@ -183,27 +191,31 @@ function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentCol
               {/* Thế/Ứng */}
               <Td center>
                 {theUngLabel && (
-                  <span style={{
-                    fontWeight: 700,
-                    fontSize: '0.7rem',
-                    color: line.isThe ? 'var(--color-vermillion)' : 'var(--color-jade)',
-                    background: line.isThe ? 'rgba(192,57,43,0.1)' : 'rgba(26,107,74,0.1)',
-                    padding: '1px 5px',
-                    borderRadius: 4,
-                  }}>
-                    {theUngLabel}
-                  </span>
+                  <Tap k={line.isThe ? 'the' : 'ung'} onLearn={onLearn}>
+                    <span style={{
+                      fontWeight: 700,
+                      fontSize: '0.7rem',
+                      color: line.isThe ? 'var(--color-vermillion)' : 'var(--color-jade)',
+                      background: line.isThe ? 'rgba(192,57,43,0.1)' : 'rgba(26,107,74,0.1)',
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                    }}>
+                      {theUngLabel}
+                    </span>
+                  </Tap>
                 )}
               </Td>
 
               {/* Lục Thân */}
               <Td>
-                <span style={{
-                  color: isMoving ? accentColor : 'var(--color-ink)',
-                  fontWeight: isMoving ? 700 : 500,
-                }}>
-                  {lucThanLabel || '—'}
-                </span>
+                <Tap k={line.lucThan} onLearn={onLearn}>
+                  <span style={{
+                    color: isMoving ? accentColor : 'var(--color-ink)',
+                    fontWeight: isMoving ? 700 : 500,
+                  }}>
+                    {lucThanLabel || '—'}
+                  </span>
+                </Tap>
               </Td>
 
               {/* Can Chi + Ngũ Hành */}
@@ -221,35 +233,41 @@ function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentCol
               {/* Phục Thần */}
               <Td>
                 {line.phucThan && (
-                  <div style={{ fontSize: '0.75rem' }}>
-                    <div style={{ color: '#7b6f3a', fontWeight: 600 }}>{phucThanLabel}</div>
-                    <div style={{ color: 'var(--color-ink-muted)' }}>{ptChiTrans}-{ptElementTrans}</div>
-                  </div>
+                  <Tap k="phucThan" onLearn={onLearn}>
+                    <div style={{ fontSize: '0.75rem' }}>
+                      <div style={{ color: '#7b6f3a', fontWeight: 600 }}>{phucThanLabel}</div>
+                      <div style={{ color: 'var(--color-ink-muted)' }}>{ptChiTrans}-{ptElementTrans}</div>
+                    </div>
+                  </Tap>
                 )}
               </Td>
 
               {/* Tuần Không */}
               <Td center>
                 {isKV && (
-                  <span style={{
-                    color: '#7b6f3a',
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    border: '1px solid #b8860b55',
-                    borderRadius: 3,
-                    padding: '1px 4px',
-                  }}>
-                    {language === 'en' ? 'V' : 'K'}
-                  </span>
+                  <Tap k="khongVong" onLearn={onLearn}>
+                    <span style={{
+                      color: '#7b6f3a',
+                      fontWeight: 700,
+                      fontSize: '0.75rem',
+                      border: '1px solid #b8860b55',
+                      borderRadius: 3,
+                      padding: '1px 4px',
+                    }}>
+                      {language === 'en' ? 'V' : 'K'}
+                    </span>
+                  </Tap>
                 )}
               </Td>
 
               {/* Lục Thú (chỉ quẻ biến) */}
               {showLucThu && (
                 <Td>
-                  <span style={{ fontSize: '0.75rem', color: getLucThuColor(line.lucThu) }}>
-                    {lucThuLabel}
-                  </span>
+                  <Tap k={line.lucThu} onLearn={onLearn}>
+                    <span style={{ fontSize: '0.75rem', color: getLucThuColor(line.lucThu) }}>
+                      {lucThuLabel}
+                    </span>
+                  </Tap>
                 </Td>
               )}
             </tr>
@@ -299,6 +317,23 @@ function InfoFooter({ result }) {
 }
 
 // ── Primitives ─────────────────────────────────────────────────────────────
+
+/** Bọc ô có thể chạm để học (chỉ bật khi có onLearn và có mục glossary) */
+function Tap({ k, onLearn, children }) {
+  if (!onLearn || !k || !GLOSSARY[k]) return children;
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      title="Chạm để học"
+      onClick={() => onLearn(k)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLearn(k); } }}
+      style={{ cursor: 'help', borderBottom: '1px dotted rgba(184,134,11,0.6)' }}
+    >
+      {children}
+    </span>
+  );
+}
 
 function Th({ children }) {
   return (

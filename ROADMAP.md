@@ -1,7 +1,7 @@
 # 🔮 Kế Hoạch & Roadmap Phát Triển: TuViNow · IChingNow · TarotNow
 
 > **Tài liệu chiến lược & lộ trình tính năng hệ sinh thái SpiritNow**  
-> Cập nhật lần cuối: 01/10/2026
+> Cập nhật lần cuối: 05/10/2026
 
 ---
 
@@ -18,6 +18,10 @@
 | **Quick Win #4: Social Share Card cho Kinh Dịch** | IChingNow | ⏳ **Kế tiếp** | Thẻ ảnh đồ họa Quẻ Chủ, Quẻ Biến, Lời Thoán để share FB/Zalo |
 | **Quick Win #5: Tap-to-learn (Tra cứu nhanh)** | Cả 3 apps | ⏳ **Kế tiếp** | Chạm vào sao/lá bài/quẻ hiển thị popup giải nghĩa nhanh |
 | **Hợp Hôn Chuyên Sâu (4 tiêu chí + AI)** | TuViNow | ⏳ **Đang chờ thuật toán** | Đã có `HOP_HON_PLAN.md`, cần nguồn thuật toán đầy đủ |
+| **Học xem quẻ Lục Hào — Engine phân tích + Glossary (Tuần 1)** | IChingNow | ✅ **Đã xong** | `lucHaoAnalysis.js` (6 bước: Dụng Thần → Nguyệt/Nhật → Vượng/Suy → Hào động → Tuần Không → Kết luận), `lucHaoRules.js`, `glossary.js` (22 thuật ngữ), 39 test pass |
+| **Học xem quẻ — Tab Học + Tap-to-learn (Tuần 2)** | IChingNow | ✅ **Đã xong** | `LearnPanel` (stepper 6 bước + "Đọc thử trước"), `GlossarySheet`, highlight hào & chạm Thế/Ứng/Lục Thân/Lục Thú/Tuần Không/Phục Thần trong `LucHaoTable`; tab "🎓 Học xem quẻ" |
+| **Game "Luyện Dịch"** | IChingNow | 📋 **Đã lên plan** | Đoán quẻ, Ngũ Hành, Nạp Giáp, Lục Thân, Dụng Thần, Xem quẻ thử; Thử thách hằng ngày |
+| **Thẻ kiến thức "Dịch Học mỗi ngày"** | IChingNow | 📋 **Đã lên plan** | Thẻ ảnh share, 60→365 thẻ, trang `/hoc/:slug` SEO |
 | **Spiritual Journal (Nhật ký tâm linh)** | Cả 3 apps | 📋 **Kế hoạch Q4/2026** | Ghi chép chiêm nghiệm sau mỗi lần xem, AI phân tích xu hướng |
 | **Unified SpiritNow Dashboard** | Chung | 📋 **Kế hoạch Q1/2027** | Trang chủ chung gom cả 3 app, đăng nhập 1 lần (SSO) |
 
@@ -98,6 +102,69 @@ Shared module cho cả 3 app:
    - Nhận diện số tự động từ camera (biển số xe, số tài khoản).
    - Phân tích tương sinh tương khắc Ngũ Hành chuyên sâu.
 
+### 🎓 Trọng Tâm Mới (05/10/2026): IChingNow = App Dạy Xem Quẻ
+Mục tiêu: người dùng xem quẻ xong **biết tự xem**. Nội dung **Lục Hào trước**, rồi Kinh Dịch cổ điển (Thoán/Hào từ). Plan chi tiết: artifact `ichingnow_learn_plan.md`.
+
+**Tái dùng code sẵn có (`iching/src`):** `hexagrams.js`, `hexagramDescriptions.js`, `napGiap.js`, `lucThan.js`, `lucThu.js`, `phucThan.js`, `canChi.js`, `buildHexagram.js`, `LucHaoTable.jsx`, `AiInterpretationPanel`, `useStreak`, `ShareCard` (TuViNow, làm mẫu). Lưu ý `LucHaoTable`, `lucThan`, `lucThu` chưa có test.
+
+#### Phần 1 — Chế độ Học khi xem quẻ
+- **Engine `analyzeLucHao(result, topic)`** ✅ — chủ đề → Dụng Thần; Nguyệt kiến/Nhật thần; Vượng/Suy (Nguyệt Phá, Nhật xung); hào động (Hồi Đầu Sinh/Khắc, Tiến/Thoái Thần); Tuần Không; kết luận Cát/Bình/Hung.
+- **Tab "Học"** trong kết quả Lục Hào: stepper từng bước, highlight hào liên quan.
+- **Tap-to-learn**: chạm hào / Lục Thân / Lục Thú / Thế-Ứng / Tuần Không → bottom sheet giải nghĩa + ví dụ.
+- **"Đọc thử trước"**: người dùng chọn Cát/Hung/Bình + Dụng Thần trước, app so đáp án và cho điểm.
+- **AI giảng như thầy**: prompt yêu cầu giải thích theo đúng các bước engine (truyền kết quả engine vào để AI không bịa).
+
+#### Phần 2 — Game "Luyện Dịch" (tab/route mới)
+| Mode | Sinh câu hỏi bằng | Giai đoạn |
+|:---|:---|:-:|
+| Đoán quẻ (hình → tên) | `hexagrams.js` | MVP |
+| Ngũ Hành sinh/khắc (kéo thả) | bảng Ngũ Hành | MVP |
+| Nạp Giáp (điền Can Chi từng hào) | `napGiap.js` | MVP |
+| Lục Thân (điền tên hào) | `lucThan.js` | 2 |
+| Chọn Dụng Thần theo tình huống | `lucHaoRules.js` | 2 |
+| Xem quẻ thử (có đáp án, AI chấm) | `analyzeLucHao` | 2 |
+- **Thử thách hằng ngày**: 5 câu, seed theo ngày, chia sẻ kết quả kiểu Wordle (🟩🟥).
+- **Tiến trình**: cấp bậc Sơ học → Tông sư, huy hiệu, streak dùng `useStreak`; lưu `localStorage`, đồng bộ SSO ở giai đoạn 3; leaderboard sau.
+- Code dự kiến: `game/questionGenerators.js` (thuần, có test), `GameShell.jsx`, mỗi mode một component.
+
+#### Phần 3 — Thẻ kiến thức "Dịch Học mỗi ngày"
+- Thẻ ảnh dọc 1080×1350 (và 9:16): Quẻ của ngày, Khái niệm, Mẹo xem quẻ, Quiz mini; watermark IChingNow.
+- Nội dung `data/knowledgePosts.json`: AI sinh hàng loạt, **duyệt tay trước khi dùng**; bắt đầu 60 thẻ Lục Hào → 365 thẻ.
+- Xuất ảnh bằng `html-to-image` + Web Share API + copy ảnh (như ShareCard TuViNow). Gộp với Quick Win #4 (Share Card quẻ).
+- Trang web `/hoc/:slug` có meta/OG riêng + nút "Gieo quẻ"/"Chơi thử" để lấy SEO; thẻ "Kiến thức hôm nay" ở `DailyStreakBar`.
+
+#### Lộ trình 7 tuần
+| Tuần | Việc | Trạng thái |
+|:-:|:---|:-:|
+| 1 | `analyzeLucHao` + test, glossary Lục Hào | ✅ |
+| 2 | Tab Học + tap-to-learn trên `LucHaoTable` | ✅ |
+| 3 | Game MVP (3 mode) + progress + streak | ⏳ |
+| 4 | Thẻ kiến thức: template, xuất ảnh, 60 thẻ đầu | 📋 |
+| 5 | AI giảng + "Đọc thử trước" + Thử thách hằng ngày | 📋 |
+| 6 | Mode game giai đoạn 2, trang `/hoc/:slug` SEO | 📋 |
+| 7+ | Kinh Dịch cổ điển (Thoán/Hào từ), leaderboard, thẻ 365 | 📋 |
+
+#### Rủi ro / quyết định cần chốt
+- **Quy tắc Lục Hào** mỗi trường phái khác nhau: điểm số/ngưỡng trong `lucHaoRules.js` mới là bộ phổ biến tạm đặt, cần đối chiếu nguồn hoặc quẻ mẫu có đáp án của thầy.
+- **Bản quyền** nội dung dịch Kinh Dịch khi sang phần cổ điển.
+- **Chi phí AI**: nội dung sinh sẵn + duyệt một lần; game dùng engine nên không tốn AI.
+- **Phân gói đề xuất**: Học + Game miễn phí (thu hút người dùng); AI giảng thuộc gói trả phí.
+
+---
+
+## 💡 Ý Tưởng App Tiếp Theo (phân tích codebase bằng codegraph, 05/10/2026)
+**Hiện trạng:** monorepo có `iching`, `tarotnow`, `tuvinow`, `talkwithme`, `shared`; cả 3 app dùng chung SSO. Nhiều module bị **copy lặp** giữa các app: `AuthContext`, `usePlan`, `useReadingsApi`, `cryptoUtils`, `PricingModal`, `lunarConverter` → nên tách vào `shared` trước khi làm app mới.
+
+| # | Ý tưởng | Tận dụng | Ghi chú |
+|:-:|:---|:---|:---|
+| 1 | **LịchNow** — lịch vạn niên, ngày tốt xấu cá nhân hóa, chọn ngày cưới/khai trương/xuất hành, push hằng ngày | `lunarConverter`, `canChi`, `solarTerms`, `hourBranches`, Tử Vi engine | Đề xuất số 1, giữ chân người dùng tốt nhất |
+| 2 | **PhongThuyNow** — hướng nhà/bàn làm việc/màu hợp mệnh | Ngũ Hành, `maiHoa`, `napGiap` | Đã có trong roadmap |
+| 3 | **SpiritNow Journal** — gom reading cả 3 app, AI phân tích xu hướng | `useReadingsApi`, SSO | Bước đệm Dashboard |
+| 4 | **TenNow** — đặt/xem tên theo Ngũ Hành | Can Chi, Ngũ Hành, AI | Nhu cầu cao, ít đối thủ |
+| 5 | **Số điện thoại / biển số** theo Mai Hoa | `maiHoa.js` | Mở rộng "Mai Hoa Pro" |
+
+**Việc nền tảng nên làm trước:** refactor module lặp vào `shared`; thêm test cho `PricingModal`.
+
 ---
 
 ## 🃏 IV. TarotNow — Kế Hoạch Tính Năng
@@ -159,6 +226,9 @@ gantt
     section IChingNow
         Daily Streak Bar                  :done, 2026-09, 2026-10
         Social Share Card Đồ Họa          :2026-10, 2026-11
+        Học xem quẻ Lục Hào (Tab Học)     :2026-10, 2026-11
+        Game Luyện Dịch                   :2026-11, 2026-12
+        Thẻ kiến thức Dịch Học mỗi ngày   :2026-11, 2026-12
         Multi-Translation Engine          :2026-11, 2026-12
         Yarrow Stalk Simulation           :2026-12, 2027-01
     section TarotNow
