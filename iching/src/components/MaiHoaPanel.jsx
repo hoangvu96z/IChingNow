@@ -107,45 +107,278 @@ function SerialPreview({ serial }) {
   );
 }
 
-// ─── Số gợi ý ngẫu nhiên ──────────────────────────────────────────────────────
+// ─── Tờ tiền có số seri gợi ý (Banknote Card) ──────────────────────────────────
+const SERIES_CODES = ['AA', 'VN', 'LK', 'QT', 'AB', 'KP', 'DL', 'MH'];
+
+function BanknoteCard({ serial, index, onSelect }) {
+  const series = SERIES_CODES[index % SERIES_CODES.length];
+  const firstFour = serial.slice(0, 4);
+  const lastFour = serial.slice(4);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(serial)}
+      title={`Chọn tờ tiền số seri: ${series} ${firstFour} ${lastFour}`}
+      className="banknote-bill"
+    >
+      {/* Khung viền hoa văn an ninh kép bên trong */}
+      <div className="banknote-inner-border" />
+
+      {/* Dải chỉ kim tuyến bảo an (Security metallic strip) */}
+      <div className="banknote-security-strip" />
+
+      {/* Dấu mộc tròn đỏ mờ chìm (Watermark seal) */}
+      <div className="banknote-watermark">
+        <span>☯</span>
+      </div>
+
+      {/* Hàng trên: Series 2 chữ cái & Ký hiệu tiền tệ */}
+      <div className="banknote-header">
+        <div className="banknote-series">
+          <span className="series-code">{series}</span>
+          <span className="series-star">★</span>
+        </div>
+        <span className="banknote-currency">₫ VNĐ</span>
+      </div>
+
+      {/* Giữa tờ tiền: Số Seri màu đỏ dập nổi đặc trưng */}
+      <div className="banknote-serial">
+        <span>{firstFour}</span>
+        <span className="serial-dot">·</span>
+        <span>{lastFour}</span>
+      </div>
+
+      {/* Hàng dưới: Nhãn nhỏ Mai Hoa & nút chọn */}
+      <div className="banknote-footer">
+        <span className="banknote-tag">MAI HOA #{index + 1}</span>
+        <span className="banknote-action">CHỌN ↵</span>
+      </div>
+    </button>
+  );
+}
+
+// ─── Số gợi ý ngẫu nhiên dạng tờ tiền (2 hàng x 4 tờ) ──────────────────────────
 function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
   const { t } = useLanguage();
   return (
-    <div style={{ marginTop: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContainer: 'space-between', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-muted)' }}>{t('maihoa.serial_tip', 'Số gợi ý ngẫu nhiên')}</span>
+    <div style={{ marginTop: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: '1rem' }}>💵</span>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-ink)' }}>
+            {t('maihoa.serial_tip', 'Gợi ý từ số hiện tại:')}
+          </span>
+          <span style={{ fontSize: '0.725rem', color: 'var(--color-ink-muted)', opacity: 0.85 }}>
+            (8 tờ tiền ngẫu nhiên)
+          </span>
+        </div>
         <button
+          type="button"
           onClick={onRefresh}
-          style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8125rem', color: 'var(--color-gold)', fontWeight: 600, padding: '2px 6px', borderRadius: 4 }}
+          className="banknote-refresh-btn"
+          style={{
+            background: 'rgba(184, 134, 11, 0.08)',
+            border: '1px solid rgba(184, 134, 11, 0.25)',
+            cursor: 'pointer',
+            fontSize: '0.775rem',
+            color: 'var(--color-gold)',
+            fontWeight: 600,
+            padding: '3px 8px',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184, 134, 11, 0.18)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(184, 134, 11, 0.08)'; }}
         >
           🔄 {t('history.clear_all', 'Làm mới').replace('Xóa tất cả', 'Làm mới').replace('Clear All', 'Refresh')}
         </button>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+
+      {/* Lưới 2 hàng mỗi hàng 4 tờ tiền */}
+      <div className="banknote-grid">
         {suggestions.map((s, i) => (
-          <button
-            key={i}
-            onClick={() => onSelect(s)}
-            style={{
-              background: 'rgba(184,134,11,0.08)',
-              border: '1.5px solid rgba(184,134,11,0.3)',
-              borderRadius: 6,
-              padding: '5px 10px',
-              cursor: 'pointer',
-              fontFamily: "'Source Code Pro', monospace",
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--color-gold)',
-              letterSpacing: '0.08em',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184,134,11,0.2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(184,134,11,0.08)'; }}
-          >
-            {s.slice(0,4)} {s.slice(4)}
-          </button>
+          <BanknoteCard
+            key={`${s}-${i}`}
+            serial={s}
+            index={i}
+            onSelect={onSelect}
+          />
         ))}
       </div>
+
+      <style>{`
+        .banknote-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px 8px;
+        }
+
+        .banknote-bill {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 6px 8px;
+          min-height: 66px;
+          background: linear-gradient(135deg, #fefdfa 0%, #f6f1e5 50%, #eee6d4 100%);
+          border: 1.5px solid rgba(184, 134, 11, 0.45);
+          border-radius: 7px;
+          box-shadow: 0 2px 5px rgba(44, 24, 16, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+          cursor: pointer;
+          text-align: left;
+          overflow: hidden;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          user-select: none;
+        }
+
+        .banknote-bill:hover {
+          transform: translateY(-2px);
+          border-color: var(--color-gold, #b8860b);
+          box-shadow: 0 6px 14px rgba(184, 134, 11, 0.25), 0 2px 4px rgba(0, 0, 0, 0.08);
+          background: linear-gradient(135deg, #ffffff 0%, #faf6ee 50%, #f2ebdb 100%);
+        }
+
+        .banknote-bill:active {
+          transform: translateY(0) scale(0.98);
+        }
+
+        .banknote-inner-border {
+          position: absolute;
+          inset: 3px;
+          border: 1px dashed rgba(184, 134, 11, 0.28);
+          border-radius: 4px;
+          pointer-events: none;
+        }
+
+        .banknote-security-strip {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 26%;
+          width: 4px;
+          background: linear-gradient(180deg, rgba(212,160,23,0.12) 0%, rgba(212,160,23,0.45) 50%, rgba(212,160,23,0.12) 100%);
+          border-left: 0.5px solid rgba(184,134,11,0.2);
+          border-right: 0.5px solid rgba(184,134,11,0.2);
+          pointer-events: none;
+        }
+
+        .banknote-watermark {
+          position: absolute;
+          right: 4px;
+          bottom: -4px;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 1px solid rgba(192, 57, 43, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(192, 57, 43, 0.22);
+          font-size: 13px;
+          font-weight: 800;
+          pointer-events: none;
+          transform: rotate(-12deg);
+        }
+
+        .banknote-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 1;
+        }
+
+        .banknote-series {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+        }
+
+        .series-code {
+          font-size: 0.625rem;
+          font-weight: 800;
+          color: var(--color-ink-muted, #6b4c3b);
+          letter-spacing: 0.08em;
+          font-family: 'Source Code Pro', monospace;
+          line-height: 1;
+        }
+
+        .series-star {
+          font-size: 0.5rem;
+          color: rgba(184, 134, 11, 0.7);
+        }
+
+        .banknote-currency {
+          font-size: 0.6rem;
+          font-weight: 700;
+          color: var(--color-gold, #b8860b);
+          letter-spacing: 0.03em;
+          line-height: 1;
+        }
+
+        .banknote-serial {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 2px;
+          font-family: 'Source Code Pro', 'Courier New', monospace;
+          font-size: clamp(0.72rem, 1.25vw, 0.92rem);
+          font-weight: 700;
+          color: var(--color-vermillion, #c0392b);
+          letter-spacing: 0.06em;
+          text-shadow: 0 0.5px 1px rgba(192, 57, 43, 0.2);
+          z-index: 1;
+          margin: 1px 0;
+          white-space: nowrap;
+        }
+
+        .serial-dot {
+          font-size: 0.65rem;
+          opacity: 0.45;
+          margin: 0 1px;
+        }
+
+        .banknote-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 1;
+        }
+
+        .banknote-tag {
+          font-size: 0.5rem;
+          color: var(--color-ink-muted, #8c6d58);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          font-weight: 600;
+          line-height: 1;
+          opacity: 0.85;
+        }
+
+        .banknote-action {
+          font-size: 0.55rem;
+          color: var(--color-jade, #1a6b4a);
+          font-weight: 700;
+          line-height: 1;
+        }
+
+        @media (max-width: 480px) {
+          .banknote-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px 4px;
+          }
+          .banknote-bill {
+            padding: 4px 4px;
+            min-height: 58px;
+          }
+          .banknote-tag {
+            display: none;
+          }
+        }
+      `}</style>
     </div>
   );
 }

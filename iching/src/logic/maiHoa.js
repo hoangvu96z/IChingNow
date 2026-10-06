@@ -525,13 +525,16 @@ export function buildMaiHoaResult({ subMode, dateStr, timeStr, serial, question 
 // XI. TIỆN ÍCH
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Tạo 5 chuỗi 8 chữ số ngẫu nhiên để gợi ý */
-export function generateSerialSuggestions() {
+/** Tạo 8 chuỗi 8 chữ số ngẫu nhiên để gợi ý */
+export function generateSerialSuggestions(count = 8) {
   const results = [];
-  while (results.length < 5) {
+  while (results.length < count) {
     const digits = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10));
     if (digits[0] === 0) digits[0] = 1 + Math.floor(Math.random() * 9);
-    results.push(digits.join(''));
+    const val = digits.join('');
+    if (!results.includes(val)) {
+      results.push(val);
+    }
   }
   return results;
 }
