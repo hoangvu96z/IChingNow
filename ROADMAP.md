@@ -16,7 +16,7 @@
 | **Multiple Spread Layouts cho TarotNow** | TarotNow | ✅ **Đã xong** | Celtic Cross (10 lá), Horseshoe (7 lá), Relationship (7 lá), Career (5 lá), Yes/No — layout visualizer theo vị trí, SpreadSelector có category tabs |
 | **Kết hợp Tử Vi + Kinh Dịch (Combined Reading)** | IChingNow + TuViNow | ✅ **Đã xong** | Shared module `CombinedReadingModal` — chọn chủ đề (sự nghiệp/tình duyên/tài lộc...), gieo quẻ 3 xu, AI tổng hợp cả hai nguồn. Tích hợp nút "🔮 Hỏi Kinh Dịch" ở TuViNow và "⭐ Kết hợp Tử Vi" ở IChingNow |
 | **Quick Win #4: Social Share Card cho Kinh Dịch** | IChingNow | ⏳ **Kế tiếp** | Thẻ ảnh đồ họa Quẻ Chủ, Quẻ Biến, Lời Thoán để share FB/Zalo |
-| **Quick Win #5: Tap-to-learn (Tra cứu nhanh)** | Cả 3 apps | ⏳ **Kế tiếp** | Chạm vào sao/lá bài/quẻ hiển thị popup giải nghĩa nhanh |
+| **Quick Win #5: Tap-to-learn (Tra cứu nhanh)** | Cả 3 apps | ✅ **Đã xong** | Chạm vào sao/cung/Tuần/Triệt (TuViNow), lá bài 4 khía cạnh xuôi-ngược (TarotNow), và quẻ/quái/Lục Hào (IChingNow) hiển thị bottom sheet giải nghĩa chi tiết |
 | **Hợp Hôn Chuyên Sâu (4 tiêu chí + AI)** | TuViNow | ⏳ **Đang chờ thuật toán** | Đã có `HOP_HON_PLAN.md`, cần nguồn thuật toán đầy đủ |
 | **Học xem quẻ Lục Hào — Engine phân tích + Glossary (Tuần 1)** | IChingNow | ✅ **Đã xong** | `lucHaoAnalysis.js` (6 bước: Dụng Thần → Nguyệt/Nhật → Vượng/Suy → Hào động → Tuần Không → Kết luận), `lucHaoRules.js`, `glossary.js` (22 thuật ngữ), 39 test pass |
 | **Học xem quẻ — Tab Học + Tap-to-learn (Tuần 2)** | IChingNow | ✅ **Đã xong** | `LearnPanel` (stepper 6 bước + "Đọc thử trước"), `GlossarySheet`, highlight hào & chạm Thế/Ứng/Lục Thân/Lục Thú/Tuần Không/Phục Thần trong `LucHaoTable`; tab "🎓 Học xem quẻ" |
@@ -138,8 +138,8 @@ Mục tiêu: người dùng xem quẻ xong **biết tự xem**. Nội dung **L�
 |:-:|:---|:-:|
 | 1 | `analyzeLucHao` + test, glossary Lục Hào | ✅ |
 | 2 | Tab Học + tap-to-learn trên `LucHaoTable` | ✅ |
-| 3 | Game MVP (3 mode) + progress + streak | ⏳ |
-| 4 | Thẻ kiến thức: template, xuất ảnh, 60 thẻ đầu | 📋 |
+| 3 | Game MVP (3 mode) + progress + streak | ✅ |
+| 4 | Thẻ kiến thức: template, xuất ảnh, 60 thẻ đầu | ✅ |
 | 5 | AI giảng + "Đọc thử trước" + Thử thách hằng ngày | 📋 |
 | 6 | Mode game giai đoạn 2, trang `/hoc/:slug` SEO | 📋 |
 | 7+ | Kinh Dịch cổ điển (Thoán/Hào từ), leaderboard, thẻ 365 | 📋 |

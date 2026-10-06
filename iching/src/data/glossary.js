@@ -105,8 +105,126 @@ export const GLOSSARY = {
   'Đằng Xà': { title: 'Đằng Xà', short: 'Lo lắng, mơ mộng, lừa dối.', detail: 'Lục Thú Thổ. Chủ nỗi lo, ảo tưởng, việc rối rắm.', tip: 'Đằng Xà động: coi chừng thông tin không thật.' },
   'Bạch Hổ': { title: 'Bạch Hổ', short: 'Tang tóc, bệnh, tranh chấp mạnh.', detail: 'Lục Thú Kim. Chủ tai nạn, phẫu thuật, máu me.', tip: 'Bạch Hổ cũng là uy quyền khi gặp quan chức.' },
   'Huyền Vũ': { title: 'Huyền Vũ', short: 'Mờ ám, trộm cắp, che giấu.', detail: 'Lục Thú Thủy. Chủ việc kín, bí mật, thất thoát.', tip: 'Huyền Vũ ở Tài: coi chừng thất thoát.' },
+
+  // ── 8 BÁT QUÁI ĐƠN ─────────────────────────────────────────────
+  'Càn': {
+    title: 'Quái Càn ☰',
+    short: 'Trời (Thiên), Dương Kim, Cương kiện, sáng tạo, dẫn dắt.',
+    detail: 'Ba hào dương thuần khiết. Tượng trưng cho người cha, bậc lãnh đạo, trời xanh, năng lượng khởi nguyên mạnh mẽ, tính quyết đoán cao.',
+    tip: 'Gặp Càn là lúc cần giữ vững chính đạo, kiên định nhưng tránh tự phụ độc đoán.',
+  },
+  'Khôn': {
+    title: 'Quái Khôn ☷',
+    short: 'Đất (Địa), Âm Thổ, Nhu thuận, bao dung, tích lũy.',
+    detail: 'Ba hào âm thuần khiết. Tượng trưng cho người mẹ, đất đai, đức tính khiêm hạ, khả năng chịu đựng và nuôi dưỡng muôn loài.',
+    tip: 'Gặp Khôn nên theo sau thay vì đi đầu, lấy nhu thắng cương, thuận theo hoàn cảnh.',
+  },
+  'Chấn': {
+    title: 'Quái Chấn ☳',
+    short: 'Sấm (Lôi), Dương Mộc, Khởi động, chấn động, bứt phá.',
+    detail: 'Hào dương dưới 2 hào âm. Tượng trưng cho tiếng sấm đầu xuân, năng lượng thức tỉnh, người con trai trưởng, hành động dũng cảm.',
+    tip: 'Chấn động gây sợ hãi ban đầu nhưng mở ra cơ hội đổi mới mạnh mẽ.',
+  },
+  'Tốn': {
+    title: 'Quái Tốn ☴',
+    short: 'Gió / Cây (Phong), Âm Mộc, Thẩm thấu, uyển chuyển, tiến vào.',
+    detail: 'Hào âm dưới 2 hào dương. Tượng trưng cho ngọn gió thổi khắp nơi, rễ cây đâm sâu, người con gái cả, sự linh hoạt khéo léo.',
+    tip: 'Như gió thổi qua kẽ lá, dùng sự kiên trì và mềm mỏng để đạt mục tiêu.',
+  },
+  'Khảm': {
+    title: 'Quái Khảm ☵',
+    short: 'Nước (Thủy), Dương Thủy, Hiểm trở, sâu sắc, thử thách.',
+    detail: 'Hào dương kẹp giữa 2 hào âm. Tượng trưng cho dòng sông hiểm hóc, hố sâu thử thách, người con trai thứ, trí tuệ kiên định trong gian khó.',
+    tip: 'Gặp hiểm không nản lòng, giữ đức tin vững vàng như nước chảy không ngừng.',
+  },
+  'Ly': {
+    title: 'Quái Ly ☲',
+    short: 'Lửa (Hỏa), Âm Hỏa, Sáng tỏ, văn minh, gắn kết, bám tựa.',
+    detail: 'Hào âm kẹp giữa 2 hào dương. Tượng trưng cho ngọn lửa chiếu sáng, mặt trời, người con gái thứ, sự minh bạch và cái đẹp.',
+    tip: 'Lửa cần có củi để cháy, muốn sáng suốt phải biết gắn kết và dựa vào điều đúng đắn.',
+  },
+  'Cấn': {
+    title: 'Quái Cấn ☶',
+    short: 'Núi (Sơn), Dương Thổ, Ngưng nghỉ, tĩnh lặng, vững vàng.',
+    detail: 'Hào dương trên 2 hào âm. Tượng trưng cho ngọn núi sừng sững, sự dừng lại đúng lúc, người con trai út, nội tâm bất động trước cám dỗ.',
+    tip: 'Dừng lại khi cần dừng, giữ tâm tĩnh lặng để nhìn thấu bản chất vấn đề.',
+  },
+  'Đoài': {
+    title: 'Quái Đoài ☱',
+    short: 'Đầm nước (Trạch), Âm Kim, Vui vẻ, hòa nhã, trao đổi ngôn từ.',
+    detail: 'Hào âm trên 2 hào dương. Tượng trưng cho mặt đầm tươi mát, niềm vui giao tiếp, người con gái út, sự trao đổi cởi mở.',
+    tip: 'Lấy sự chân thành làm gốc của niềm vui, tránh buôn chuyện khẩu thiệt vô ích.',
+  },
+
+  // ── KHÁI NIỆM KINH DỊCH CỐT LÕI ─────────────────────────────────
+  'queChu': {
+    title: 'Quẻ Chủ (Quẻ Gốc)',
+    short: 'Quẻ ban đầu khi vừa gieo được, phản ánh thực trạng hiện tại.',
+    detail: 'Quẻ Chủ là xuất phát điểm của sự việc, thể hiện hoàn cảnh, tâm thế của người hỏi và nguồn cơn của vấn đề đang xét.',
+    tip: 'Xem kỹ quái trên và quái dưới của Quẻ Chủ để nắm bắt bức tranh toàn cảnh lúc này.',
+  },
+  'queBien': {
+    title: 'Quẻ Biến (Quẻ Chiêm)',
+    short: 'Quẻ sinh ra sau khi các hào động biến đổi, báo trước tương lai.',
+    detail: 'Khi các hào lão dương (9) biến thành âm, hoặc lão âm (6) biến thành dương, quẻ sẽ biến đổi sang hình thái mới, chỉ rõ kết quả và lời khuyên kết cục.',
+    tip: 'Nếu không có hào động, sự việc giữ nguyên tính chất của Quẻ Chủ.',
+  },
+  'thoanTu': {
+    title: 'Thoán Từ (Lời Thoán)',
+    short: 'Lời phán quyết tổng quan về toàn thể một quẻ do Chu Văn Vương đặt.',
+    detail: 'Thoán Từ đúc kết đạo lý lớn nhất của quẻ, cho biết tình thế chung là Hanh (thông suốt), Cát (tốt), Hung (xấu), hay Lợi kiến đại nhân.',
+    tip: 'Đọc Thoán Từ để định hướng chiến lược tổng thể trước khi soi chi tiết từng hào.',
+  },
+  'haoTu': {
+    title: 'Hào Từ (Lời Hào)',
+    short: 'Lời luận giải cho từng vị trí hào cụ thể do Chu Công đặt.',
+    detail: 'Mỗi quẻ có 6 hào từ Hào Sơ đến Hào Thượng. Hào Từ chỉ ra từng bước hành động phù hợp với vị trí và thời điểm.',
+    tip: 'Khi gieo quẻ, chỉ hào nào ĐỘNG mới cần đọc Hào Từ của hào đó.',
+  },
+  'hoQuai': {
+    title: 'Hỗ Quái (Quẻ Hỗ)',
+    short: 'Quẻ tiềm ẩn bên trong, lấy hào 2-3-4 làm dưới, hào 3-4-5 làm trên.',
+    detail: 'Hỗ Quái tiết lộ diễn biến ngầm ở giai đoạn giữa của sự việc mà mắt thường chưa thấy rõ ở bề mặt.',
+    tip: 'Hỗ Quái giúp nhìn thấy các yếu tố nội tại đang âm thầm chuyển dịch.',
+  },
+  'batThuan': {
+    title: 'Quẻ Bát Thuần',
+    short: 'Quẻ có quái trên và quái dưới giống nhau (cùng một hành).',
+    detail: 'Có 8 quẻ Bát Thuần: Càn, Khôn, Chấn, Tốn, Khảm, Ly, Cấn, Đoài. Quẻ Bát Thuần năng lượng thuần khiết nhưng thái quá, việc gì cũng diễn ra quyết liệt.',
+    tip: 'Bát Thuần chủ về sự kiên định, việc lặp đi lặp lại hoặc nội bộ tự giải quyết.',
+  },
+  'duHon': {
+    title: 'Quẻ Du Hồn',
+    short: 'Quẻ thế ở hào 4 của mỗi họ quẻ: tâm trí trôi dạt, dễ dời đổi.',
+    detail: 'Du Hồn mang tính chất trôi nổi, bất định, đi xa, chuyển nhà hoặc tâm lý hay thay đổi ý định.',
+    tip: 'Xem quẻ hỏi đi xa thì thuận, hỏi việc an cư thì bấp bênh.',
+  },
+  'quyHon': {
+    title: 'Quẻ Quy Hồn',
+    short: 'Quẻ thế ở hào 3 của mỗi họ quẻ: sự việc quay về nguồn cội.',
+    detail: 'Quy Hồn báo hiệu mọi sự xáo trộn sẽ kết thúc, người đi sẽ trở về, công việc quy về ổn định.',
+    tip: 'Hỏi đi xa thì khó đi, hỏi việc hòa giải hay kết thúc thì rất tốt.',
+  },
 };
 
 export function getGlossary(key) {
-  return GLOSSARY[key] || null;
+  if (!key) return null;
+  if (GLOSSARY[key]) return GLOSSARY[key];
+
+  // Tìm kiếm theo tên quái đơn (Càn, Khảm, Ly...)
+  for (const trigram of ['Càn', 'Khôn', 'Chấn', 'Tốn', 'Khảm', 'Ly', 'Cấn', 'Đoài']) {
+    if (key.includes(trigram) && GLOSSARY[trigram]) {
+      return GLOSSARY[trigram];
+    }
+  }
+
+  // Tìm kiếm linh hoạt
+  const normalized = key.toLowerCase();
+  for (const [k, v] of Object.entries(GLOSSARY)) {
+    if (k.toLowerCase() === normalized || v.title.toLowerCase().includes(normalized)) {
+      return v;
+    }
+  }
+
+  return null;
 }

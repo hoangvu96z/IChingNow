@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useStreak } from '@shared/utils/useStreak.js';
 import { drawTarotCards, getCardMeaning } from '../utils/tarotLogic';
+import TarotLearnModal from './TarotLearnModal';
 
 /**
  * DailyCardPull — Free daily card feature for TarotNow
@@ -31,6 +32,7 @@ export default function DailyCardPull({ tarotCards }) {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
   const [showInsight, setShowInsight] = useState(false);
+  const [learnCard, setLearnCard] = useState(null);
 
   // Check if already pulled today
   useEffect(() => {
@@ -182,7 +184,12 @@ export default function DailyCardPull({ tarotCards }) {
         ) : (
           /* Revealed card */
           <div className={`daily-card-revealed ${showInsight ? 'show-insight' : ''}`}>
-            <div className="daily-card-image-wrapper">
+            <div
+              className="daily-card-image-wrapper"
+              onClick={() => setLearnCard(dailyCard)}
+              title={language === 'en' ? 'Click to learn card details' : 'Chạm để xem giải nghĩa chi tiết lá bài'}
+              style={{ cursor: 'pointer' }}
+            >
               <img
                 src={import.meta.env.BASE_URL + dailyCard.image.replace(/^\//, '')}
                 alt={dailyCard.name}
@@ -197,7 +204,14 @@ export default function DailyCardPull({ tarotCards }) {
                   ? (language === 'en' ? '↕ Reversed' : '↕ Lá Ngược')
                   : (language === 'en' ? '↑ Upright' : '↑ Lá Xuôi')}
               </span>
-              <h3 className="daily-card-name">{dailyCard.name}</h3>
+              <h3
+                className="daily-card-name"
+                onClick={() => setLearnCard(dailyCard)}
+                style={{ cursor: 'pointer' }}
+                title={language === 'en' ? 'Click to learn' : 'Chạm để tra cứu'}
+              >
+                {dailyCard.name}
+              </h3>
               <p className="daily-card-type">
                 {dailyCard.arcana} Arcana{dailyCard.suit ? ` • ${dailyCard.suit}` : ''}
               </p>
@@ -221,10 +235,42 @@ export default function DailyCardPull({ tarotCards }) {
                   <p className="daily-insight-text">{dailyInsight}</p>
                 </div>
               )}
+
+              {/* CTA Tap-to-learn button */}
+              <button
+                type="button"
+                onClick={() => setLearnCard(dailyCard)}
+                style={{
+                  marginTop: 8,
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(229, 193, 88, 0.12)',
+                  border: '1px solid rgba(229, 193, 88, 0.35)',
+                  color: 'var(--gold-color, #e5c158)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  alignSelf: 'flex-start',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span>🔍</span>
+                <span>{language === 'en' ? 'Tap to Learn Card Meaning' : 'Tra cứu ý nghĩa lá bài'}</span>
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Tap-to-learn Modal for Daily Card */}
+      <TarotLearnModal
+        card={learnCard}
+        onClose={() => setLearnCard(null)}
+        language={language}
+      />
 
       {/* Stats Bar */}
       {totalReadings > 0 && (

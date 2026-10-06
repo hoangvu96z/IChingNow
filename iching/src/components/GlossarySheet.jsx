@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { GLOSSARY } from '../data/glossary.js';
+import { GLOSSARY, getGlossary } from '../data/glossary.js';
 
 /**
  * Bottom sheet giải nghĩa thuật ngữ (tap-to-learn).
  * Props: termKey (khóa trong GLOSSARY hoặc null), onClose
  */
 export default function GlossarySheet({ termKey, onClose }) {
-  const item = termKey ? GLOSSARY[termKey] : null;
+  const item = termKey ? (GLOSSARY[termKey] || getGlossary(termKey)) : null;
 
   useEffect(() => {
     if (!item) return undefined;

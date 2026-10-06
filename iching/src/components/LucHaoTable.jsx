@@ -33,6 +33,7 @@ export default function LucHaoTable({ result, highlight = [], onLearn }) {
           palace={result.palaceName}
           queType={result.queType}
           flex={hasChanged ? 1 : undefined}
+          onLearn={onLearn}
         />
         {hasChanged && (
           <>
@@ -42,6 +43,7 @@ export default function LucHaoTable({ result, highlight = [], onLearn }) {
               palace={result.changedLines ? findPalaceLabel(result.changedLines, result) : ''}
               isChanged
               flex={1}
+              onLearn={onLearn}
             />
           </>
         )}
@@ -90,7 +92,7 @@ export default function LucHaoTable({ result, highlight = [], onLearn }) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function HexNameHeader({ hexagram, palace, queType, isChanged, flex }) {
+function HexNameHeader({ hexagram, palace, queType, isChanged, flex, onLearn }) {
   const { t, language } = useLanguage();
   
   if (!hexagram) return null;
@@ -110,18 +112,32 @@ function HexNameHeader({ hexagram, palace, queType, isChanged, flex }) {
         ? 'rgba(26,107,74,0.06)'
         : 'rgba(192,57,43,0.06)',
     }}>
-      <div style={{
-        fontFamily: "'Noto Serif', serif",
-        fontSize: '1rem',
-        fontWeight: 800,
-        color: isChanged ? 'var(--color-jade)' : 'var(--color-vermillion)',
-        letterSpacing: '0.04em',
-        marginBottom: 2,
-      }}>
+      <div
+        onClick={() => onLearn && onLearn(isChanged ? 'queBien' : 'queChu')}
+        title={onLearn ? 'Chạm để xem khái niệm Quẻ ' + (isChanged ? 'Biến' : 'Chủ') : undefined}
+        style={{
+          fontFamily: "'Noto Serif', serif",
+          fontSize: '1rem',
+          fontWeight: 800,
+          color: isChanged ? 'var(--color-jade)' : 'var(--color-vermillion)',
+          letterSpacing: '0.04em',
+          marginBottom: 2,
+          cursor: onLearn ? 'pointer' : 'default',
+        }}
+      >
         {hexName.toUpperCase()}
       </div>
       {palace && (
-        <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', marginBottom: 2 }}>
+        <div
+          onClick={() => onLearn && onLearn(palace)}
+          title={onLearn ? `Chạm để tra cứu Cung ${palaceLabel}` : undefined}
+          style={{
+            fontSize: '0.7rem',
+            color: 'var(--color-ink-muted)',
+            marginBottom: 2,
+            cursor: onLearn ? 'pointer' : 'default',
+          }}
+        >
           {palaceLabel}
         </div>
       )}

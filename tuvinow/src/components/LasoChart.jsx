@@ -3,6 +3,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import PalateCard from './PalateCard';
 import { GIO_SINH_OPTIONS } from '../utils/lunarConverter';
+import TuViGlossaryModal from './TuViGlossaryModal';
 
 /**
  * LasoChart — renders the full 4×4 TuVi chart grid with center info panel
@@ -13,6 +14,7 @@ export default function LasoChart({ result, inputData }) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState(null); // 'png' | 'pdf' | null
   const [exportMessage, setExportMessage] = useState(null);
+  const [selectedLearnTerm, setSelectedLearnTerm] = useState(null);
 
   if (!result || !result.palates) return null;
 
@@ -178,12 +180,31 @@ export default function LasoChart({ result, inputData }) {
         </div>
       </div>
 
+      {/* Tap-to-learn hint banner */}
+      <div style={{
+        margin: '0 0 10px',
+        padding: '8px 14px',
+        borderRadius: 8,
+        background: 'rgba(229, 193, 88, 0.08)',
+        border: '1px dashed rgba(229, 193, 88, 0.3)',
+        color: 'var(--color-gold, #e5c158)',
+        fontSize: '0.85rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}>
+        <span>💡</span>
+        <span>
+          <strong>Tra cứu nhanh (Tap-to-learn):</strong> Chạm vào bất kỳ <strong>sao</strong>, <strong>tên cung</strong>, hoặc <strong>Tuần / Triệt</strong> trên lá số để xem giải nghĩa chi tiết.
+        </span>
+      </div>
+
       {/* Captured Export Wrapper */}
       <div ref={chartRef} className="chart-export-wrapper" id="tuvi-chart-capture">
         <div className="chart-grid">
           {/* Render 12 palace cards */}
           {palates.map((palace, i) => (
-            <PalateCard key={i} palace={palace} />
+            <PalateCard key={i} palace={palace} onSelectTerm={setSelectedLearnTerm} />
           ))}
 
           {/* Center Info Panel */}
@@ -235,30 +256,92 @@ export default function LasoChart({ result, inputData }) {
             <div className="center-divider" />
 
             <div className="center-info-row">
-              <span className="label">Mệnh:</span>
-              <span className="value menh-highlight">{menhCung}</span>
-              <span className="label">Thân:</span>
-              <span className="value than-highlight">{thanCung}</span>
+              <span
+                className="label"
+                onClick={() => setSelectedLearnTerm('Cung Mệnh')}
+                style={{ cursor: 'pointer' }}
+                title="Tra cứu Cung Mệnh"
+              >
+                Mệnh:
+              </span>
+              <span
+                className="value menh-highlight"
+                onClick={() => setSelectedLearnTerm('Cung Mệnh')}
+                style={{ cursor: 'pointer' }}
+                title="Tra cứu Cung Mệnh"
+              >
+                {menhCung}
+              </span>
+              <span
+                className="label"
+                onClick={() => setSelectedLearnTerm('Thân')}
+                style={{ cursor: 'pointer' }}
+                title="Tra cứu Cung Thân"
+              >
+                Thân:
+              </span>
+              <span
+                className="value than-highlight"
+                onClick={() => setSelectedLearnTerm('Thân')}
+                style={{ cursor: 'pointer' }}
+                title="Tra cứu Cung Thân"
+              >
+                {thanCung}
+              </span>
             </div>
 
             <div className="center-info-row">
               <span className="label">Chủ Mệnh:</span>
-              <span className="value">{chuMenh}</span>
+              <span
+                className="value"
+                onClick={() => setSelectedLearnTerm(chuMenh)}
+                style={{ cursor: 'pointer' }}
+                title={`Tra cứu sao Chủ Mệnh ${chuMenh}`}
+              >
+                {chuMenh}
+              </span>
             </div>
             <div className="center-info-row">
               <span className="label">Chủ Thân:</span>
-              <span className="value">{chuThan}</span>
+              <span
+                className="value"
+                onClick={() => setSelectedLearnTerm(chuThan)}
+                style={{ cursor: 'pointer' }}
+                title={`Tra cứu sao Chủ Thân ${chuThan}`}
+              >
+                {chuThan}
+              </span>
             </div>
 
             <div className="center-divider" />
 
             <div className="center-info-row">
-              <span className="center-badge badge-tuan">Tuần: {tuanCung.join(', ')}</span>
-              <span className="center-badge badge-triet">Triệt: {trietCung.join(', ')}</span>
+              <span
+                className="center-badge badge-tuan"
+                onClick={() => setSelectedLearnTerm('Tuần')}
+                style={{ cursor: 'pointer' }}
+                title="Tra cứu Tuần Không"
+              >
+                Tuần: {tuanCung.join(', ')}
+              </span>
+              <span
+                className="center-badge badge-triet"
+                onClick={() => setSelectedLearnTerm('Triệt')}
+                style={{ cursor: 'pointer' }}
+                title="Tra cứu Triệt Lộ"
+              >
+                Triệt: {trietCung.join(', ')}
+              </span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Tap-to-learn Glossary Bottom Sheet Modal */}
+      <TuViGlossaryModal
+        term={selectedLearnTerm}
+        onClose={() => setSelectedLearnTerm(null)}
+      />
     </div>
   );
 }

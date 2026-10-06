@@ -35,7 +35,7 @@ const HOA_SYMBOLS = {
   'Hóa Kỵ': 'Kỵ',
 };
 
-export default function PalateCard({ palace }) {
+export default function PalateCard({ palace, onSelectTerm }) {
   const evidence = useTuViEvidence();
   if (!palace) return null;
 
@@ -57,12 +57,24 @@ export default function PalateCard({ palace }) {
   const funcLabel = (chucNang || '').replace(' <THÂN>', '');
   const isMenhCung = funcLabel.includes('Mệnh') && !funcLabel.includes('Phụ Mẫu');
 
+  const handleLearn = (e, term) => {
+    if (onSelectTerm) {
+      e.stopPropagation();
+      onSelectTerm(term);
+    }
+  };
+
   return (
     <div className={cardClass} {...evidence?.targetProps(`palace.${chiIndex}`)}>
       {/* Header */}
       <div className="palace-header">
         <div>
-          <div className={`palace-name ${isMenhCung ? 'menh-label' : ''}`}>
+          <div
+            className={`palace-name ${isMenhCung ? 'menh-label' : ''}`}
+            onClick={(e) => handleLearn(e, funcLabel)}
+            title="Chạm để xem ý nghĩa cung này"
+            style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+          >
             {funcLabel}
           </div>
           <div className="palace-canchi">{canName} {chiName}</div>
@@ -79,7 +91,13 @@ export default function PalateCard({ palace }) {
         {chinhTinh.map((star, i) => {
           const statusClass = getStarStatusClass(star);
           return (
-            <div key={i} className={`chinh-tinh ${statusClass}`}>
+            <div
+              key={i}
+              className={`chinh-tinh ${statusClass}`}
+              onClick={(e) => handleLearn(e, star)}
+              title="Chạm để xem giải nghĩa sao"
+              style={{ cursor: onSelectTerm ? 'pointer' : 'default', transition: 'transform 0.15s ease' }}
+            >
               {star}
             </div>
           );
@@ -89,31 +107,101 @@ export default function PalateCard({ palace }) {
         {hoaStars.length > 0 && (
           <div className="hoa-badge-container">
             {hoaStars.map((h, i) => (
-              <span key={i} className={`hoa-pill ${getHoaClass(h)}`}>
+              <span
+                key={i}
+                className={`hoa-pill ${getHoaClass(h)}`}
+                onClick={(e) => handleLearn(e, h)}
+                title={`Chạm để xem giải nghĩa ${h}`}
+                style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+              >
                 {HOA_SYMBOLS[h] || h}
               </span>
             ))}
           </div>
         )}
 
-        {/* Other Phụ Tinh */}
+        {/* Other Phụ Tinh - chia thành từng sao có thể click tra cứu */}
         {otherPhuTinh.length > 0 && (
           <div className="phu-tinh">
-            {otherPhuTinh.join(' · ')}
+            {otherPhuTinh.map((starName, idx) => (
+              <React.Fragment key={idx}>
+                {idx > 0 && ' · '}
+                <span
+                  onClick={(e) => handleLearn(e, starName)}
+                  title={`Tra cứu sao ${starName}`}
+                  style={{
+                    cursor: onSelectTerm ? 'pointer' : 'default',
+                    display: 'inline-block',
+                    borderRadius: 3,
+                  }}
+                  className="interactive-star"
+                >
+                  {starName}
+                </span>
+              </React.Fragment>
+            ))}
           </div>
         )}
       </div>
 
-      {annualStars.length > 0 && <div className="palace-annual-stars" aria-label="Sao lưu niên">
-        {annualStars.join(' · ')}
-      </div>}
+      {annualStars.length > 0 && (
+        <div className="palace-annual-stars" aria-label="Sao lưu niên">
+          {annualStars.map((starName, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && ' · '}
+              <span
+                onClick={(e) => handleLearn(e, starName)}
+                title={`Tra cứu ${starName}`}
+                style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+              >
+                {starName}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+
       {/* Footer */}
       <div className="palace-footer">
-        <div className="palace-trangsinh">{trangSinh}</div>
+        <div
+          className="palace-trangsinh"
+          onClick={(e) => handleLearn(e, trangSinh)}
+          title={`Tra cứu trạng thái ${trangSinh}`}
+          style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+        >
+          {trangSinh}
+        </div>
         <div className="palace-badges">
-          {isTuan && <span className="mini-badge tuan">Tuần</span>}
-          {isTriet && <span className="mini-badge triet">Triệt</span>}
-          {isThan && <span className="mini-badge than">Thân</span>}
+          {isTuan && (
+            <span
+              className="mini-badge tuan"
+              onClick={(e) => handleLearn(e, 'Tuần')}
+              title="Tra cứu Tuần Không"
+              style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+            >
+              Tuần
+            </span>
+          )}
+          {isTriet && (
+            <span
+              className="mini-badge triet"
+              onClick={(e) => handleLearn(e, 'Triệt')}
+              title="Tra cứu Triệt Lộ"
+              style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+            >
+              Triệt
+            </span>
+          )}
+          {isThan && (
+            <span
+              className="mini-badge than"
+              onClick={(e) => handleLearn(e, 'Thân')}
+              title="Tra cứu Cung Thân"
+              style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+            >
+              Thân
+            </span>
+          )}
         </div>
       </div>
     </div>

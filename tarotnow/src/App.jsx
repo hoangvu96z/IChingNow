@@ -23,6 +23,7 @@ import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import DailyCardPull from './components/DailyCardPull.jsx';
 import SpreadSelector from './components/SpreadSelector.jsx';
 import SpreadLayoutVisualizer from './components/SpreadLayoutVisualizer.jsx';
+import TarotLearnModal from './components/TarotLearnModal.jsx';
 import { useLanguage } from './context/LanguageContext';
 
 export default function App() {
@@ -954,61 +955,12 @@ ${summaryObj.advice}
         </section>
       </main>
 
-      {/* Card Detail Modal */}
-      {selectedModalCard && (
-        <div className="card-modal-overlay" onClick={() => setSelectedModalCard(null)}>
-          <div className="card-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={() => setSelectedModalCard(null)}>×</button>
-
-            <div className="modal-left-col">
-              <div className="modal-card-wrapper">
-                <img
-                  src={import.meta.env.BASE_URL + selectedModalCard.image.replace(/^\//, '')}
-                  alt={selectedModalCard.name}
-                  className={`modal-card-image ${selectedModalCard.orientation === 'reversed' ? 'reversed' : ''}`}
-                />
-              </div>
-            </div>
-
-            <div className="modal-right-col">
-              <span className="modal-type">{selectedModalCard.arcana} Arcana {selectedModalCard.suit ? `• ${selectedModalCard.suit}` : ''}</span>
-              <h2 className="modal-title">{selectedModalCard.name}</h2>
-
-              <div className="modal-section">
-                <h4 className="modal-section-title">{t('modal.status_label', 'Trạng thái hiện tại')}</h4>
-                <span className={`card-orientation-badge ${selectedModalCard.orientation}`}>
-                  {selectedModalCard.orientation === 'reversed' 
-                    ? t('modal.orientation_reversed', 'Lá Ngược (Reversed)') 
-                    : t('modal.orientation_upright', 'Lá Xuôi (Upright)')}
-                </span>
-              </div>
-
-              <div className="modal-section">
-                <h4 className="modal-section-title">{t('modal.keywords_label', 'Từ khóa của lá bài')}</h4>
-                <div className="modal-keywords-flex">
-                  {selectedModalCard.orientation === 'reversed'
-                    ? selectedModalCard.reversedKeywords.map((kw, i) => (
-                      <span key={i} className="modal-kw-badge">{kw}</span>
-                    ))
-                    : selectedModalCard.uprightKeywords.map((kw, i) => (
-                      <span key={i} className="modal-kw-badge">{kw}</span>
-                    ))
-                  }
-                </div>
-              </div>
-
-              <div className="modal-section">
-                <h4 className="modal-section-title">{t('modal.details_title', 'Chi tiết bộ bài')}</h4>
-                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
-                  {t('modal.details_desc', 'Lá bài thứ {number} thuộc nhóm {arcana} Arcana. Rider-Waite-Smith Tarot Deck chuẩn 78 lá.')
-                    .replace('{number}', selectedModalCard.number)
-                    .replace('{arcana}', selectedModalCard.arcana)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Tap-to-learn Card Detail Modal */}
+      <TarotLearnModal
+        card={selectedModalCard}
+        onClose={() => setSelectedModalCard(null)}
+        language={language}
+      />
 
       <AppFooter
         appId="tarot"
