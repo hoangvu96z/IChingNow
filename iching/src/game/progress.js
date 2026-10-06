@@ -17,6 +17,10 @@ export const BADGES = {
   'perfect':    { label: 'Hoàn hảo',   emoji: '💯', desc: 'Đúng tất cả câu trong một ván' },
   'daily':      { label: 'Siêng năng', emoji: '📅', desc: 'Hoàn thành Thử thách hằng ngày' },
   'veteran':    { label: 'Lão luyện',  emoji: '🏅', desc: 'Trả lời đúng 100 câu' },
+  'bq-first':   { label: 'Nhập môn Biến Quẻ', emoji: '🌙', desc: 'Giải màn Biến Quẻ đầu tiên' },
+  'bq-perfect': { label: 'Biến hóa vô song',  emoji: '✨', desc: 'Đạt 3 sao một màn Biến Quẻ' },
+  'bq-daily':   { label: 'Kỳ thủ hằng ngày',  emoji: '📜', desc: 'Giải đề Biến Quẻ hằng ngày' },
+  'bq-master':  { label: 'Thông Hỗ quái',     emoji: '🐉', desc: 'Hoàn thành Chương IV Biến Quẻ' },
 };
 
 export const XP_PER_CORRECT = 10;
@@ -90,6 +94,16 @@ export function applyResult(p, { results, daily = false, date }) {
   next.badges = [...earned];
 
   return { progress: next, gainedXp: gained, newBadges };
+}
+
+/** Cộng XP + huy hiệu từ game bất kỳ (Biến Quẻ...) */
+export function addReward(p, { xp = 0, badges = [] }) {
+  const earned = new Set(p.badges);
+  const newBadges = badges.filter((b) => !earned.has(b));
+  return {
+    progress: { ...p, xp: p.xp + xp, badges: [...earned, ...newBadges] },
+    newBadges,
+  };
 }
 
 export function todayStr(d = new Date()) {

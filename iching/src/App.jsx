@@ -20,9 +20,10 @@ import AppHeader from './components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { ichingTheme } from '@shared/themes/iching.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
-import DailyStreakBar from './components/DailyStreakBar.jsx';
+
 import { useStreak } from '@shared/utils/useStreak.js';
 import GameShell from './game/GameShell.jsx';
+import KnowledgeFeed from './components/KnowledgeFeed.jsx';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
@@ -529,6 +530,7 @@ export default function App() {
   const { t, language, setLanguage } = useLanguage();
   const { streak, recordActivity } = useStreak('iching');
   const [showGame, setShowGame] = useState(false);
+  const [showKnowledge, setShowKnowledge] = useState(false);
   const [formData,         setFormData]         = useState(getDefaultForm());
   const [mode,             setMode]             = useState('quick');
   const [lines,            setLines]            = useState([]);
@@ -800,32 +802,79 @@ export default function App() {
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           
-          {/* Daily Streak & Wisdom Bar */}
-          <DailyStreakBar
-            onStartDailyCast={handleStartDailyCast}
-            hasActiveResult={Boolean(result || maiHoaResult)}
-          />
-
-          {/* Game Luyện Dịch */}
-          <button
-            type="button"
-            id="open-game"
-            onClick={() => setShowGame(true)}
-            className="card"
-            style={{
-              padding: '14px 18px', cursor: 'pointer', textAlign: 'left',
-              display: 'flex', alignItems: 'center', gap: 12, border: '1px solid rgba(184,134,11,0.35)',
-            }}
-          >
-            <span style={{ fontSize: '1.6rem' }}>🎮</span>
-            <span>
-              <strong style={{ display: 'block' }}>Luyện Dịch</strong>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)' }}>
-                Chơi game học Kinh Dịch &amp; Lục Hào · Thử thách hằng ngày
-              </span>
+          {/* ── Thanh công cụ gọn: Streak · Game · Kiến thức · Gieo nhanh ── */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+            padding: '8px 0',
+          }}>
+            {/* Streak */}
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '5px 12px', borderRadius: 20,
+              background: 'rgba(184,134,11,0.08)', border: '1px solid rgba(184,134,11,0.25)',
+              fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-gold, #b8860b)',
+              whiteSpace: 'nowrap',
+            }}>
+              🔥 {streak} {language === 'vi' ? 'ngày' : 'days'}
             </span>
-          </button>
+
+            {/* Game */}
+            <button
+              type="button" id="open-game"
+              onClick={() => setShowGame(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                background: 'rgba(184,134,11,0.08)', border: '1px solid rgba(184,134,11,0.25)',
+                fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-ink, #2c2621)',
+                whiteSpace: 'nowrap', transition: 'all 0.2s',
+              }}
+            >
+              🎮 {language === 'vi' ? 'Luyện Dịch' : 'Practice'}
+            </button>
+
+            {/* Kiến thức */}
+            <button
+              type="button" id="open-knowledge"
+              onClick={() => setShowKnowledge(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                background: 'rgba(184,134,11,0.08)', border: '1px solid rgba(184,134,11,0.25)',
+                fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-ink, #2c2621)',
+                whiteSpace: 'nowrap', transition: 'all 0.2s',
+              }}
+            >
+              📖 {language === 'vi' ? 'Kiến thức' : 'Learn'}
+            </button>
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
+
+            {/* Gieo nhanh hôm nay */}
+            {!result && !maiHoaResult && (
+              <button
+                type="button" id="daily-cast-quick"
+                onClick={() => handleStartDailyCast(
+                  language === 'vi' ? 'Định hướng và vận trình ngày hôm nay' : 'Guidance and energy for today'
+                )}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '5px 14px', borderRadius: 20, cursor: 'pointer',
+                  background: 'var(--color-gold, #b8860b)', border: '1px solid var(--color-gold, #b8860b)',
+                  fontSize: '0.8rem', fontWeight: 700, color: '#fff',
+                  whiteSpace: 'nowrap', transition: 'all 0.2s',
+                  boxShadow: '0 2px 8px rgba(184,134,11,0.3)',
+                }}
+              >
+                ☯ {language === 'vi' ? 'Gieo quẻ hôm nay' : 'Daily Reading'}
+              </button>
+            )}
+          </div>
+
+          {/* Modals */}
           {showGame && <GameShell onExit={() => setShowGame(false)} />}
+          {showKnowledge && <KnowledgeFeed onExit={() => setShowKnowledge(false)} />}
 
           {/* 1. Form nhập liệu (Ở TRÊN CÙNG / GIỮA) */}
           <section className="card" style={{ padding: 24 }}>

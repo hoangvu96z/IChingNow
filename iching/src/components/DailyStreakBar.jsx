@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { useStreak } from '@shared/utils/useStreak.js';
+import { postOfTheDay } from '../data/knowledgePosts.js';
 
 export default function DailyStreakBar({ onStartDailyCast, hasActiveResult }) {
   const { language } = useLanguage();
@@ -101,6 +102,33 @@ export default function DailyStreakBar({ onStartDailyCast, hasActiveResult }) {
             </button>
           </div>
         )}
+
+        {/* Kiến thức hôm nay teaser */}
+        {(() => {
+          const todayPost = postOfTheDay(new Date().toISOString().slice(0, 10));
+          const TYPE_EMOJI = { concept: '📚', tip: '💡', quiz: '🎯', hexOfDay: '☯' };
+          return (
+            <div style={{
+              marginTop: 10, padding: '10px 14px', borderRadius: 10,
+              background: 'rgba(184,134,11,0.06)',
+              border: '1px solid rgba(184,134,11,0.2)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: '1.3rem' }}>{TYPE_EMOJI[todayPost.type] || '📖'}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-gold, #b8860b)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {language === 'vi' ? 'Kiến thức hôm nay' : "Today's Insight"}
+                </div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {todayPost.title}
+                </div>
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', flexShrink: 0 }}>
+                {todayPost.tag}
+              </span>
+            </div>
+          );
+        })()}
       </div>
     </section>
   );

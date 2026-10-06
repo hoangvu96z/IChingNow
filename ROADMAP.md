@@ -1,7 +1,7 @@
 # 🔮 Kế Hoạch & Roadmap Phát Triển: TuViNow · IChingNow · TarotNow
 
 > **Tài liệu chiến lược & lộ trình tính năng hệ sinh thái SpiritNow**  
-> Cập nhật lần cuối: 05/10/2026
+> Cập nhật lần cuối: 06/10/2026
 
 ---
 
@@ -20,8 +20,8 @@
 | **Hợp Hôn Chuyên Sâu (4 tiêu chí + AI)** | TuViNow | ⏳ **Đang chờ thuật toán** | Đã có `HOP_HON_PLAN.md`, cần nguồn thuật toán đầy đủ |
 | **Học xem quẻ Lục Hào — Engine phân tích + Glossary (Tuần 1)** | IChingNow | ✅ **Đã xong** | `lucHaoAnalysis.js` (6 bước: Dụng Thần → Nguyệt/Nhật → Vượng/Suy → Hào động → Tuần Không → Kết luận), `lucHaoRules.js`, `glossary.js` (22 thuật ngữ), 39 test pass |
 | **Học xem quẻ — Tab Học + Tap-to-learn (Tuần 2)** | IChingNow | ✅ **Đã xong** | `LearnPanel` (stepper 6 bước + "Đọc thử trước"), `GlossarySheet`, highlight hào & chạm Thế/Ứng/Lục Thân/Lục Thú/Tuần Không/Phục Thần trong `LucHaoTable`; tab "🎓 Học xem quẻ" |
-| **Game "Luyện Dịch"** | IChingNow | 📋 **Đã lên plan** | Đoán quẻ, Ngũ Hành, Nạp Giáp, Lục Thân, Dụng Thần, Xem quẻ thử; Thử thách hằng ngày |
-| **Thẻ kiến thức "Dịch Học mỗi ngày"** | IChingNow | 📋 **Đã lên plan** | Thẻ ảnh share, 60→365 thẻ, trang `/hoc/:slug` SEO |
+| **Game "Luyện Dịch" (Tuần 3)** | IChingNow | ✅ **Đã xong** | 3 mode trắc nghiệm (Đoán quẻ, Ngũ Hành, Nạp Giáp) + game Biến Quẻ (puzzle), XP/rank/huy hiệu, Thử thách hằng ngày, share kết quả kiểu Wordle |
+| **Thẻ kiến thức "Dịch Học mỗi ngày" (Tuần 4)** | IChingNow | ✅ **Đã xong** | 60 thẻ kiến thức (concept/tip/quiz/hexOfDay), KnowledgeCard xuất ảnh PNG + Web Share API, KnowledgeFeed modal, teaser "Kiến thức hôm nay" trên DailyStreakBar |
 | **Spiritual Journal (Nhật ký tâm linh)** | Cả 3 apps | 📋 **Kế hoạch Q4/2026** | Ghi chép chiêm nghiệm sau mỗi lần xem, AI phân tích xu hướng |
 | **Unified SpiritNow Dashboard** | Chung | 📋 **Kế hoạch Q1/2027** | Trang chủ chung gom cả 3 app, đăng nhập 1 lần (SSO) |
 

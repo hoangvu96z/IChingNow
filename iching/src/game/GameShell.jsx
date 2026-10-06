@@ -4,8 +4,10 @@ import {
   MODES, buildSession, dailySession, buildShareText,
 } from './questionGenerators.js';
 import {
-  loadProgress, saveProgress, applyResult, rankFor, todayStr, BADGES,
+  loadProgress, saveProgress, applyResult, rankFor, todayStr, BADGES, addReward,
 } from './progress.js';
+import BienQueGame from './bienQue/BienQueGame.jsx';
+import { dailyPuzzle, loadStore as loadBQ, glyph } from './bienQue/bienQueLogic.js';
 
 const gold = 'var(--color-gold, #b8860b)';
 
@@ -106,6 +108,15 @@ export default function GameShell({ onExit }) {
   const [results, setResults] = useState([]);
   const [summary, setSummary] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showBQ, setShowBQ] = useState(false);
+
+  const reward = useCallback(({ xp, badges }) => {
+    const out = addReward(progress, { xp, badges });
+    setProgress(out.progress);
+    saveProgress(out.progress);
+    if (xp > 0) recordActivity();
+    return out.newBadges;
+  }, [progress, recordActivity]);
 
   const today = todayStr();
   const dailyDone = progress.daily[today];
@@ -181,19 +192,43 @@ export default function GameShell({ onExit }) {
               )}
             </div>
 
-            <div style={panel}>
-              <div style={{ fontWeight: 800, marginBottom: 4 }}>📅 Thử thách hôm nay</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-ink-muted)', marginBottom: 10 }}>
-                5 câu, cả nước chơi cùng một đề.
-                {dailyDone && ` Bạn đã đạt ${dailyDone.score}/${dailyDone.total} hôm nay (chơi lại không tính XP).`}
-              </div>
-              <button type="button" id="game-daily" style={btn(true, { width: '100%' })} onClick={() => start('mix', true)}>
-                {dailyDone ? 'Chơi lại đề hôm nay' : 'Bắt đầu thử thách'}
-              </button>
-            </div>
+            <button
+              type="button" id="game-open-bienque" onClick={() => setShowBQ(true)}
+              style={{
+                position: 'relative', overflow: 'hidden', textAlign: 'left', cursor: 'pointer',
+                borderRadius: 20, padding: 20, color: '#ece6d2',
+                border: '1px solid rgba(242,200,107,0.55)',
+                background: 'radial-gradient(ellipse at 20% -10%, #3a40a0 0%, transparent 60%), linear-gradient(160deg, #1d2160, #0b0e2a)',
+                boxShadow: '0 10px 40px rgba(11,14,42,0.6), 0 0 30px rgba(242,200,107,0.15)',
+              }}
+            >
+              <span aria-hidden="true" style={{ position: 'absolute', right: 10, top: -18, fontSize: '7rem', color: 'rgba(242,200,107,0.1)', fontFamily: "'Noto Serif', serif" }}>
+                {glyph(bqDaily.target)}
+              </span>
+              <span style={{ fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#f2c86b' }}>Game mới</span>
+              <span style={{ display: 'block', fontFamily: "'Noto Serif', serif", fontSize: '1.6rem', fontWeight: 800, color: '#ffe7a8', margin: '2px 0 4px' }}>
+                🌙 Biến Quẻ
+              </span>
+              <span style={{ display: 'block', fontSize: '0.85rem', color: '#a9a6c9', lineHeight: 1.5 }}>
+                Biến quẻ này thành quẻ kia bằng Động hào, Thác, Tổng, Hỗ. Phá phong ấn, giành 3 sao, thuộc 64 quẻ lúc nào không hay.
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, fontSize: '0.85rem' }}>
+                <span style={{ fontSize: '1.5rem', color: '#f2c86b' }}>{glyph(bqDaily.start)} ➜ {glyph(bqDaily.target)}</span>
+                <span>
+                  Đề hôm nay #{bqDaily.number}
+                  {bqDone ? ` · đã giải ${'⭐'.repeat(bqDone.stars)}` : ` · tối ưu ${bqDaily.optimal} nước`}
+                </span>
+              </span>
+              <span style={{ display: 'inline-block', marginTop: 14, padding: '10px 18px', borderRadius: 12, fontWeight: 800, color: '#2a1b05', background: 'linear-gradient(180deg,#ffe7a8,#f2c86b 50%,#b9852a)' }}>
+                Chơi ngay →
+              </span>
+            </button>
 
             <div style={panel}>
-              <div style={{ fontWeight: 800, marginBottom: 10 }}>🎯 Luyện tập (10 câu)</div>
+              <div style={{ fontWeight: 800, marginBottom: 4 }}>📝 Ôn nhanh</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)', marginBottom: 10 }}>
+                Trắc nghiệm 10 câu để ôn tên quẻ, Ngũ Hành, Nạp Giáp.
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {Object.values(MODES).map((m) => (
                   <button key={m.id} type="button" id={`game-mode-${m.id}`} style={btn(false, { textAlign: 'left' })} onClick={() => start(m.id)}>
@@ -202,6 +237,11 @@ export default function GameShell({ onExit }) {
                     <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 400, color: 'var(--color-ink-muted)', marginLeft: 28 }}>{m.desc}</span>
                   </button>
                 ))}
+                <button type="button" id="game-daily" style={btn(false, { textAlign: 'left' })} onClick={() => start('mix', true)}>
+                  <span style={{ fontSize: '1.1rem', marginRight: 8 }}>📅</span>
+                  Ôn nhanh hôm nay (5 câu)
+                  {dailyDone && <span style={{ fontWeight: 400 }}> · {dailyDone.score}/{dailyDone.total}</span>}
+                </button>
               </div>
             </div>
           </>
