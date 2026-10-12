@@ -10,7 +10,10 @@ function Toast({ toasts }) {
     <div className="nn-toast-container" aria-live="polite" aria-atomic="false">
       {toasts.map((t) => (
         <div key={t.id} className={`nn-toast nn-toast-${t.type}`}>
-          {t.message}
+          <span className="nn-toast-icon">
+            {t.type === 'error' ? '✕' : t.type === 'info' ? 'ℹ' : '✓'}
+          </span>
+          <span className="nn-toast-msg">{t.message}</span>
         </div>
       ))}
     </div>
@@ -75,26 +78,30 @@ export default function NoteBoard({ user }) {
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
-  const handleCreateNote = async (dto) => {
+  const handleCreateNote = async (dto, silent = false) => {
     try {
       const note = await notesApi.create(dto);
       setNotes((prev) => [note, ...prev]);
-      addToast('📝 Ghi chú đã được tạo');
+      if (!silent) {
+        addToast('✓ Đã lưu ghi chú thành công!');
+      }
       return note;
     } catch (e) {
-      addToast(e.message, 'error');
+      addToast(e.message || 'Lỗi khi tạo ghi chú', 'error');
       throw e;
     }
   };
 
-  const handleUpdateNote = async (id, dto) => {
+  const handleUpdateNote = async (id, dto, silent = false) => {
     try {
       const updated = await notesApi.update(id, dto);
       setNotes((prev) => prev.map((n) => n.id === id ? updated : n));
-      addToast('✓ Đã lưu thay đổi');
+      if (!silent) {
+        addToast('✓ Đã lưu ghi chú thành công!');
+      }
       return updated;
     } catch (e) {
-      addToast(e.message, 'error');
+      addToast(e.message || 'Lỗi khi lưu ghi chú', 'error');
       throw e;
     }
   };
@@ -113,19 +120,20 @@ export default function NoteBoard({ user }) {
     try {
       await notesApi.update(id, { isPinned: pin });
       setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPinned: pin } : n));
-      addToast(pin ? '📌 Đã ghim' : '📌 Đã bỏ ghim');
+      addToast(pin ? '📌 Đã ghim ghi chú' : '📌 Đã bỏ ghim ghi chú');
     } catch (e) {
       addToast(e.message, 'error');
     }
   };
 
-  const handleEditorSave = async (dto, explicitId) => {
+  const handleEditorSave = async (dto, explicitId, options = {}) => {
+    const isSilent = options?.silent === true;
     const idToUpdate = explicitId || (editingNote && !editingNote._isNew ? editingNote.id : null);
     if (idToUpdate) {
-      const updated = await handleUpdateNote(idToUpdate, dto);
+      const updated = await handleUpdateNote(idToUpdate, dto, isSilent);
       return updated;
     } else {
-      const created = await handleCreateNote(dto);
+      const created = await handleCreateNote(dto, isSilent);
       return created;
     }
   };

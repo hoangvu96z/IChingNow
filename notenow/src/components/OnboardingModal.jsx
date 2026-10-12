@@ -4,7 +4,7 @@ export default function OnboardingModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="nn-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="nn-overlay">
       <div className="nn-modal nn-onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
         <div className="nn-onboarding-header">
           <div className="nn-onboarding-icon" aria-hidden="true">✨</div>

@@ -90,7 +90,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
         bgColor: finalBgColor,
         bgPattern: finalBgPattern,
       };
-      const result = await onSave(dto, activeNoteId);
+      const result = await onSave(dto, activeNoteId, { silent });
       if (result?.id) {
         setActiveNoteId(result.id);
       }
@@ -184,7 +184,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
   }, [onClose]);
 
   return (
-    <div className="nn-overlay" onClick={(e) => { if (e.target === e.currentTarget) { clearTimeout(autoSaveTimer.current); onClose(); } }}>
+    <div className="nn-overlay">
       <div
         className="nn-modal nn-editor-modal"
         role="dialog"

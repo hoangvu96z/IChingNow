@@ -6,12 +6,47 @@ const SSO_BASE = import.meta.env.DEV
 
 const GUEST_TOKEN_KEY = 'notenow_guest_token';
 
+// Safe localStorage wrapper (protect against Safari private browsing & cross-site restrictions)
+export const safeStorage = {
+  getItem: (key) => {
+    try { return localStorage.getItem(key); } catch { return null; }
+  },
+  setItem: (key, val) => {
+    try { localStorage.setItem(key, val); } catch {}
+  },
+  removeItem: (key) => {
+    try { localStorage.removeItem(key); } catch {}
+  },
+};
+
+/**
+ * Extracts and stores sso_token from URL query string if just redirected from SSO.
+ * Automatically cleans the address bar without page reload.
+ */
+export function extractSsoTokenFromUrl() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('sso_token');
+    if (tokenFromUrl) {
+      safeStorage.setItem('sso_token', tokenFromUrl);
+      safeStorage.removeItem('sso_logged_out');
+      urlParams.delete('sso_token');
+      const newSearch = urlParams.toString();
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+      window.history.replaceState({}, document.title, newUrl);
+      return tokenFromUrl;
+    }
+  } catch {}
+  return safeStorage.getItem('sso_token');
+}
+
 export function getOrCreateGuestToken() {
   try {
-    let token = localStorage.getItem(GUEST_TOKEN_KEY);
+    let token = safeStorage.getItem(GUEST_TOKEN_KEY);
     if (!token) {
       token = 'g_' + crypto.randomUUID().replace(/-/g, '');
-      localStorage.setItem(GUEST_TOKEN_KEY, token);
+      safeStorage.setItem(GUEST_TOKEN_KEY, token);
     }
     return token;
   } catch {
@@ -21,11 +56,16 @@ export function getOrCreateGuestToken() {
 
 function getHeaders(extraHeaders = {}) {
   const guestToken = getOrCreateGuestToken();
-  return {
+  const headers = {
     'Content-Type': 'application/json',
     'x-guest-token': guestToken,
     ...extraHeaders,
   };
+  const ssoToken = safeStorage.getItem('sso_token');
+  if (ssoToken) {
+    headers['Authorization'] = `Bearer ${ssoToken}`;
+  }
+  return headers;
 }
 
 async function apiFetch(path, options = {}) {
@@ -185,6 +225,19 @@ export const notesApi = {
   },
 
   updateShare: async (id, shareMode) => {
+    if (String(id).startsWith('local-')) {
+      const notes = getLocalNotes();
+      const idx = notes.findIndex((n) => n.id === id);
+      if (idx !== -1) {
+        const shareToken = shareMode !== 'none'
+          ? (notes[idx].shareToken || 's_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16))
+          : null;
+        notes[idx] = { ...notes[idx], shareMode, shareToken };
+        saveLocalNotes(notes);
+        return { shareToken };
+      }
+      throw new Error('Không tìm thấy ghi chú');
+    }
     try {
       return await apiFetch(`/notes/${id}/share`, {
         method: 'POST',
@@ -194,7 +247,9 @@ export const notesApi = {
       const notes = getLocalNotes();
       const idx = notes.findIndex((n) => n.id === id);
       if (idx !== -1) {
-        const shareToken = shareMode !== 'none' ? (notes[idx].shareToken || 's_' + crypto.randomUUID().slice(0, 12)) : null;
+        const shareToken = shareMode !== 'none'
+          ? (notes[idx].shareToken || 's_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16))
+          : null;
         notes[idx] = { ...notes[idx], shareMode, shareToken };
         saveLocalNotes(notes);
         return { shareToken };
@@ -215,18 +270,47 @@ export const notesApi = {
   removeSharedUser: (noteId, targetUserId) =>
     apiFetch(`/notes/${noteId}/share/user/${targetUserId}`, { method: 'DELETE' }),
 
-  claimGuestNotes: () =>
-    apiFetch('/notes/claim', { method: 'POST', body: '{}' }).catch(() => ({ claimed: 0 })),
+  claimGuestNotes: async () => {
+    try {
+      const res = await apiFetch('/notes/claim', { method: 'POST', body: '{}' });
+      // Also upload any local draft notes created offline or before login
+      const localNotes = getLocalNotes().filter((n) => String(n.id).startsWith('local-'));
+      for (const local of localNotes) {
+        try {
+          await apiFetch('/notes', {
+            method: 'POST',
+            body: JSON.stringify({
+              title: local.title,
+              content: local.content,
+              bgColor: local.bgColor,
+              bgPattern: local.bgPattern,
+            }),
+          });
+        } catch {}
+      }
+      if (localNotes.length > 0) {
+        saveLocalNotes([]);
+      }
+      return res;
+    } catch {
+      return { claimed: 0 };
+    }
+  },
 
   uploadImage: async (noteId, file) => {
     try {
       const guestToken = getOrCreateGuestToken();
+      const ssoToken = safeStorage.getItem('sso_token');
       const formData = new FormData();
       formData.append('image', file);
+      const headers = { 'x-guest-token': guestToken };
+      if (ssoToken) {
+        headers['Authorization'] = `Bearer ${ssoToken}`;
+      }
       const res = await fetch(`${SSO_BASE}/notes/${noteId}/images`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'x-guest-token': guestToken },
+        headers,
         body: formData,
       });
       if (res.ok) return await res.json();
@@ -265,9 +349,16 @@ export const notesApi = {
     try {
       const formData = new FormData();
       formData.append('image', file);
+      const guestToken = getOrCreateGuestToken();
+      const ssoToken = safeStorage.getItem('sso_token');
+      const headers = { 'x-guest-token': guestToken };
+      if (ssoToken) {
+        headers['Authorization'] = `Bearer ${ssoToken}`;
+      }
       const res = await fetch(`${SSO_BASE}/notes/share/${shareToken}/images`, {
         method: 'POST',
         credentials: 'include',
+        headers,
         body: formData,
       });
       if (res.ok) return await res.json();
@@ -306,11 +397,50 @@ export const notesApi = {
 // ─── SSO Auth ─────────────────────────────────────────────────
 
 export const ssoApi = {
-  getMe: () =>
-    apiFetch('/sso/me').catch(() => null),
+  getLoginUrl: (customRedirect) => {
+    const ssoBase = (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click').replace(/\/$/, '');
+    let returnUrl = 'https://vunph.id.vn/note/';
+    if (typeof window !== 'undefined') {
+      const url = new URL(customRedirect || window.location.href);
+      url.searchParams.delete('sso_token');
+      returnUrl = url.toString();
+    }
+    return `${ssoBase}/ui/sso?redirect=${encodeURIComponent(returnUrl)}`;
+  },
 
-  logout: () =>
-    apiFetch('/sso/logout', { method: 'POST', body: '{}' }).catch(() => null),
+  getMe: async () => {
+    extractSsoTokenFromUrl();
+    const token = safeStorage.getItem('sso_token');
+    const loggedOut = safeStorage.getItem('sso_logged_out');
+    if (loggedOut && !token) return null;
+
+    try {
+      const data = await apiFetch('/sso/me');
+      if (data?.user) {
+        safeStorage.removeItem('sso_logged_out');
+        if (data.token) {
+          safeStorage.setItem('sso_token', data.token);
+        }
+        return data;
+      } else {
+        if (token) {
+          safeStorage.removeItem('sso_token');
+        }
+        return null;
+      }
+    } catch {
+      return null;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await apiFetch('/sso/logout', { method: 'POST', body: '{}' });
+    } catch {}
+    safeStorage.removeItem('sso_token');
+    safeStorage.setItem('sso_logged_out', '1');
+    safeStorage.setItem('vInfiSSO-state', JSON.stringify({ type: 'logout', t: Date.now() }));
+  },
 };
 
 // ─── Image compression (client-side preview before upload) ────

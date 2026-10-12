@@ -4,17 +4,10 @@ import InviteAcceptPage from './components/InviteAcceptPage.jsx';
 import NoteEditor from './components/NoteEditor.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
-import { ssoApi, notesApi } from './api.js';
+import { ssoApi, notesApi, safeStorage } from './api.js';
 import AppFooter from '@shared/components/AppFooter.jsx';
 
 import { trackPageVisit } from '@shared/utils/analytics.js';
-
-const SSO_LOGIN_URL = (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click') +
-  `/ui/sso?redirect=${encodeURIComponent(
-    typeof window !== 'undefined'
-      ? window.location.href
-      : 'https://vunph.id.vn/note/'
-  )}`;
 
 // ─── Ambient stars ─────────────────────────────────────────────────────────
 
@@ -164,22 +157,49 @@ export default function App() {
     localStorage.setItem('nn_theme_v2', theme);
   }, [theme]);
 
-  useEffect(() => {
-    ssoApi.getMe().then(async (data) => {
+  const checkAuth = useCallback(async () => {
+    try {
+      const data = await ssoApi.getMe();
       const u = data?.user || null;
       setUser(u);
       setAuthLoading(false);
       if (u) {
         try {
-          const guestToken = localStorage.getItem('notenow_guest_token');
+          const guestToken = safeStorage.getItem('notenow_guest_token');
           if (guestToken) {
             await notesApi.claimGuestNotes();
-            localStorage.removeItem('notenow_guest_token');
+            safeStorage.removeItem('notenow_guest_token');
           }
         } catch {}
       }
-    });
+    } catch {
+      setUser(null);
+      setAuthLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    checkAuth();
+
+    // Sync auth status across tabs or when tab gains focus
+    const handleStorage = (e) => {
+      if (e.key === 'sso_token' || e.key === 'vInfiSSO-state' || e.key === 'sso_logged_out') {
+        checkAuth();
+      }
+    };
+    const handleFocus = () => {
+      if (!safeStorage.getItem('sso_logged_out')) {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [checkAuth]);
 
   const handleLogout = useCallback(async () => {
     await ssoApi.logout();
@@ -277,7 +297,7 @@ export default function App() {
             </div>
           ) : (
             <a
-              href={SSO_LOGIN_URL}
+              href={ssoApi.getLoginUrl()}
               className="nn-auth-btn"
               id="btn-login"
             >

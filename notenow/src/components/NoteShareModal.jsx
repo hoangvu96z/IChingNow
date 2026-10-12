@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { notesApi } from '../api.js';
 
-const SSO_BASE = import.meta.env.DEV
-  ? ''
-  : (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click').replace(/\/$/, '');
-
-const APP_BASE = import.meta.env.VITE_APP_URL || (
-  import.meta.env.DEV ? `http://localhost:5177` : 'https://vunph.id.vn'
-);
+const APP_BASE = typeof window !== 'undefined'
+  ? window.location.origin
+  : (import.meta.env.VITE_APP_URL || 'https://vunph.id.vn');
 
 export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) {
-  const [shareMode, setShareMode] = useState(note.shareMode || 'none');
+  const isGuest = !isLoggedIn;
+  const [shareMode, setShareMode] = useState(note.shareMode || (isGuest ? 'edit' : 'none'));
   const [shareToken, setShareToken] = useState(note.shareToken || '');
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePerm, setInvitePerm] = useState('view');
@@ -21,7 +18,6 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
   const [error, setError] = useState(null);
 
   const shareLink = shareToken ? `${APP_BASE}/note/s/${shareToken}` : null;
-  const isGuest = !isLoggedIn;
 
   const applyShareMode = async (mode) => {
     setLoading(true);
@@ -38,6 +34,13 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
     }
   };
 
+  // Automatically enable edit share link for guests on modal open
+  useEffect(() => {
+    if (isGuest && (!note.shareToken || note.shareMode === 'none')) {
+      applyShareMode('edit');
+    }
+  }, []);
+
   const copyLink = async () => {
     if (!shareLink) return;
     try {
@@ -45,7 +48,14 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
+      // Fallback
+      const input = document.getElementById('share-link-input');
+      if (input) {
+        input.select();
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     }
   };
 
@@ -81,7 +91,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
   };
 
   return (
-    <div className="nn-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="nn-overlay">
       <div
         className="nn-modal nn-modal-sm"
         role="dialog"
@@ -104,89 +114,152 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
 
         {/* Share by link */}
         <div className="nn-share-section">
-          <span className="nn-share-label">Chia sẻ qua link</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span className="nn-share-label" style={{ margin: 0, fontWeight: 600 }}>Chia sẻ qua liên kết</span>
+            <span style={{
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: shareMode !== 'none' ? 'var(--accent)' : 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}>
+              {shareMode !== 'none' ? '🟢 Đang bật' : '🔒 Đang tắt'}
+            </span>
+          </div>
 
-          {isGuest ? (
-            // Guest notes: always edit mode by default
+          {shareMode !== 'none' && shareLink ? (
             <div>
-              <div className="nn-share-mode-tabs">
+              {/* Link Input Row */}
+              <div className="nn-share-link-row" style={{ marginBottom: 10 }}>
+                <input
+                  className="nn-share-link-input"
+                  value={shareLink}
+                  readOnly
+                  onClick={(e) => e.target.select()}
+                  aria-label="Link chia sẻ"
+                  id="share-link-input"
+                />
                 <button
-                  id="share-mode-none"
-                  className={`nn-share-mode-tab${shareMode === 'none' ? ' active' : ''}`}
-                  onClick={() => applyShareMode('none')}
-                  disabled={loading}
+                  className="btn btn-primary"
+                  onClick={copyLink}
                   type="button"
+                  id="btn-copy-link"
+                  style={{ flexShrink: 0, minWidth: 95 }}
                 >
-                  🔒 Tắt
-                </button>
-                <button
-                  id="share-mode-edit"
-                  className={`nn-share-mode-tab${shareMode === 'edit' ? ' active' : ''}`}
-                  onClick={() => applyShareMode('edit')}
-                  disabled={loading}
-                  type="button"
-                >
-                  ✏️ Ai có link đều sửa được
+                  {copied ? '✓ Đã chép' : '📋 Copy Link'}
                 </button>
               </div>
-              {shareMode === 'edit' && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>
-                  ℹ️ Với note khách, link chia sẻ cho phép chỉnh sửa mặc định
-                </p>
+
+              {/* Status info */}
+              <div style={{
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-subtle)',
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)',
+                marginBottom: 12,
+                lineHeight: 1.45,
+              }}>
+                {shareMode === 'edit' ? (
+                  <span>✏️ <strong>Quyền chỉnh sửa:</strong> Bất kỳ ai có liên kết này đều có thể xem và sửa nội dung trực tiếp.</span>
+                ) : (
+                  <span>👁️ <strong>Chỉ xem:</strong> Bất kỳ ai có liên kết này chỉ có thể xem nội dung ghi chú.</span>
+                )}
+              </div>
+
+              {/* Mode switch */}
+              {isGuest ? (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ fontSize: '0.8rem', color: '#f87171' }}
+                    onClick={() => applyShareMode('none')}
+                    disabled={loading}
+                    type="button"
+                    id="btn-turn-off-share"
+                  >
+                    🔒 Tắt chia sẻ
+                  </button>
+                </div>
+              ) : (
+                <div className="nn-share-mode-tabs" style={{ marginBottom: 0 }}>
+                  <button
+                    id="share-mode-view"
+                    className={`nn-share-mode-tab${shareMode === 'view' ? ' active' : ''}`}
+                    onClick={() => applyShareMode('view')}
+                    disabled={loading}
+                    type="button"
+                  >
+                    👁️ Chỉ xem
+                  </button>
+                  <button
+                    id="share-mode-edit"
+                    className={`nn-share-mode-tab${shareMode === 'edit' ? ' active' : ''}`}
+                    onClick={() => applyShareMode('edit')}
+                    disabled={loading}
+                    type="button"
+                  >
+                    ✏️ Cho phép sửa
+                  </button>
+                  <button
+                    id="share-mode-none"
+                    className="nn-share-mode-tab"
+                    style={{ color: '#f87171' }}
+                    onClick={() => applyShareMode('none')}
+                    disabled={loading}
+                    type="button"
+                  >
+                    🔒 Tắt
+                  </button>
+                </div>
               )}
             </div>
           ) : (
-            // Logged-in user: choose view/edit
-            <div className="nn-share-mode-tabs">
-              <button
-                id="share-mode-none"
-                className={`nn-share-mode-tab${shareMode === 'none' ? ' active' : ''}`}
-                onClick={() => applyShareMode('none')}
-                disabled={loading}
-                type="button"
-              >
-                🔒 Riêng tư
-              </button>
-              <button
-                id="share-mode-view"
-                className={`nn-share-mode-tab${shareMode === 'view' ? ' active' : ''}`}
-                onClick={() => applyShareMode('view')}
-                disabled={loading}
-                type="button"
-              >
-                👁️ Xem
-              </button>
-              <button
-                id="share-mode-edit"
-                className={`nn-share-mode-tab${shareMode === 'edit' ? ' active' : ''}`}
-                onClick={() => applyShareMode('edit')}
-                disabled={loading}
-                type="button"
-              >
-                ✏️ Sửa
-              </button>
-            </div>
-          )}
-
-          {shareMode !== 'none' && shareLink && (
-            <div className="nn-share-link-row">
-              <input
-                className="nn-share-link-input"
-                value={shareLink}
-                readOnly
-                onClick={(e) => e.target.select()}
-                aria-label="Link chia sẻ"
-                id="share-link-input"
-              />
-              <button
-                className={`btn btn-primary`}
-                onClick={copyLink}
-                type="button"
-                id="btn-copy-link"
-                style={{ flexShrink: 0 }}
-              >
-                {copied ? '✓ Đã chép' : '📋 Copy'}
-              </button>
+            <div style={{
+              textAlign: 'center',
+              padding: '16px 12px',
+              background: 'var(--bg-elevated)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px dashed var(--border)',
+            }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                {isGuest
+                  ? 'Liên kết chia sẻ cho phép người nhận chỉnh sửa ghi chú trực tiếp.'
+                  : 'Tạo liên kết chia sẻ để gửi cho bất kỳ ai xem hoặc chỉnh sửa.'}
+              </p>
+              {isGuest ? (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => applyShareMode('edit')}
+                  disabled={loading}
+                  type="button"
+                  id="btn-enable-guest-share"
+                >
+                  {loading ? 'Đang tạo…' : '🔗 Bật link chia sẻ (Sửa mặc định)'}
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => applyShareMode('view')}
+                    disabled={loading}
+                    type="button"
+                  >
+                    👁️ Tạo link Chỉ xem
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)' }}
+                    onClick={() => applyShareMode('edit')}
+                    disabled={loading}
+                    type="button"
+                  >
+                    ✏️ Tạo link Xem & Sửa
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -194,7 +267,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
         {/* Share with specific SSO users — only for logged-in */}
         {isLoggedIn && (
           <div className="nn-share-section">
-            <span className="nn-share-label">Chia sẻ cho người dùng cụ thể</span>
+            <span className="nn-share-label" style={{ fontWeight: 600 }}>Chia sẻ cho người dùng cụ thể</span>
 
             <div className="nn-invite-row">
               <input

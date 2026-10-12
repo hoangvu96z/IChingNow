@@ -65,6 +65,14 @@ const APPS = [
     url: '/talk/',
     color: '#38bdf8',
   },
+  {
+    id: 'notenow',
+    icon: '📝',
+    name: 'NoteNow',
+    tagline: 'Ghi Chú Đa Năng',
+    url: '/note/',
+    color: '#10b981',
+  },
 ];
 
 // ─── Apps Dropdown ──────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { notesApi } from '../api.js';
+import { notesApi, ssoApi } from '../api.js';
 
 export default function InviteAcceptPage({ token, user, onAccepted }) {
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'success' | 'error'
@@ -25,7 +25,7 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
     }
   };
 
-  const loginUrl = `${import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click'}/ui/sso?redirect=${encodeURIComponent(window.location.href)}`;
+  const loginUrl = ssoApi.getLoginUrl();
 
   return (
     <div className="nn-invite-page">
