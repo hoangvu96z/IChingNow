@@ -1550,17 +1550,189 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
 
-/* ─── Responsive ─────────────────────────────────────────────── */
+/* ─── Mobile Helpers & Components ────────────────────────────── */
+.nn-search-mobile {
+  display: none;
+}
+
+.nn-fab {
+  display: none;
+}
+
+.nn-sheet-handle {
+  display: none;
+}
+
+/* ─── Responsive (Mobile & iPhone) ───────────────────────────── */
 @media (max-width: 640px) {
-  .nn-header-search { display: none; }
-  .nn-create-bar { padding: 0 12px; margin: 16px auto 12px; }
-  .nn-main { padding: 0 12px 80px; }
+  /* Header — compact, zero clipping */
+  .nn-header {
+    padding: 0 12px;
+    height: 52px;
+    gap: 6px;
+  }
+  .nn-logo {
+    gap: 8px;
+  }
+  .nn-logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  .nn-logo-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .nn-logo-sub {
+    display: none;
+  }
+  .nn-header-search {
+    display: none;
+  }
+  .nn-header-actions {
+    gap: 6px;
+  }
+  .nn-theme-toggle {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .nn-auth-btn {
+    padding: 5px 9px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  /* Top search bar on mobile */
+  .nn-create-bar {
+    padding: 0 12px;
+    margin: 12px auto 8px;
+  }
+  .nn-search-mobile {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 100%;
+  }
+  .nn-search-mobile-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .nn-search-mobile-input {
+    width: 100%;
+    height: 42px;
+    padding: 0 36px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-sm);
+    outline: none;
+    transition: all var(--transition-fast);
+  }
+  .nn-search-mobile-input:focus {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-accent);
+  }
+  .nn-search-mobile-clear {
+    position: absolute;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: var(--border);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .nn-create-box {
+    display: none; /* Mobile uses bottom-right FAB button! */
+  }
+
+  /* Floating Action Button (FAB) */
+  .nn-fab {
+    display: flex;
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #059669, #34d399);
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.45);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 95;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+    outline: none;
+  }
+  .nn-fab:active {
+    transform: scale(0.92);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+  }
+  .nn-fab-icon {
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  /* Main Workspace */
+  .nn-main {
+    padding: 0 12px 110px; /* leaves room so cards are never covered by the FAB */
+  }
+
+  /* Note cards on mobile */
+  .nn-card {
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+  }
+  .nn-card-title {
+    font-size: 1.05rem;
+  }
+  .nn-card-content {
+    font-size: 0.925rem;
+    line-height: 1.55;
+  }
+  /* On touch screens, always show action buttons */
+  .nn-card-actions {
+    opacity: 0.9;
+  }
+  .nn-card-action {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  /* Note Editor bottom-sheet on iPhone */
   .nn-overlay {
     padding: 0;
     align-items: flex-end;
   }
+  .nn-sheet-handle {
+    display: block;
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border-hover);
+    margin: 8px auto 4px;
+    opacity: 0.6;
+  }
   .nn-modal {
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-radius: 20px 20px 0 0;
     max-height: 92dvh;
     border-bottom: none;
     border-left: none;
@@ -1570,11 +1742,61 @@ body {
     max-width: 100%;
     margin-top: auto;
   }
-  .nn-tiptap-wrap {
-    min-height: 140px;
-    max-height: 42dvh;
+  .nn-editor-header {
+    padding: 6px 16px 10px;
   }
-  .nn-toast-container { right: 12px; bottom: 80px; }
+  .nn-editor-title {
+    font-size: 1.15rem;
+    padding: 12px 16px 8px;
+  }
+  /* TipTap toolbar — single smooth horizontal swipe row */
+  .nn-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 12px;
+    gap: 3px;
+  }
+  .nn-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .nn-tiptap-wrap {
+    padding: 12px 16px;
+    min-height: 140px;
+    max-height: 38dvh;
+  }
+  .nn-editor-footer {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .nn-color-picker {
+    padding: 10px 14px;
+  }
+  .nn-colors {
+    gap: 7px;
+  }
+  .nn-color-swatch {
+    width: 28px;
+    height: 28px;
+  }
+  .nn-patterns {
+    gap: 6px;
+  }
+  .nn-pattern-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  .nn-toast-container {
+    right: 12px;
+    bottom: 90px;
+  }
+
+  /* Compact footer on mobile */
+  footer {
+    margin-top: 24px !important;
+    padding: 20px 14px 44px !important;
+  }
 }
 
 /* ─── Misc Utilities ─────────────────────────────────────────── */

@@ -191,6 +191,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
         aria-modal="true"
         aria-label={isNew ? 'Tạo ghi chú mới' : 'Chỉnh sửa ghi chú'}
       >
+        <div className="nn-sheet-handle" aria-hidden="true" />
         <div className="nn-editor-header">
           <div className="nn-editor-badge">
             <span>{isNew ? '✏️ Ghi chú mới' : '📝 Chỉnh sửa ghi chú'}</span>

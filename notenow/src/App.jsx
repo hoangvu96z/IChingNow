@@ -281,7 +281,8 @@ export default function App() {
               className="nn-auth-btn"
               id="btn-login"
             >
-              🔐 Đăng nhập
+              <span>🔐</span>
+              <span className="nn-auth-text">Đăng nhập</span>
             </a>
           )}
         </div>

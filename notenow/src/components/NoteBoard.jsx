@@ -155,8 +155,32 @@ export default function NoteBoard({ user }) {
 
   return (
     <>
-      {/* Quick Create Bar */}
+      {/* Quick Create Bar & Search */}
       <div className="nn-create-bar">
+        {/* Mobile Search Bar */}
+        <div className="nn-search-mobile">
+          <span className="nn-search-mobile-icon" aria-hidden="true">🔍</span>
+          <input
+            className="nn-search-mobile-input"
+            type="search"
+            placeholder="Tìm kiếm ghi chú…"
+            aria-label="Tìm kiếm ghi chú"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              className="nn-search-mobile-clear"
+              onClick={() => setSearch('')}
+              type="button"
+              aria-label="Xoá tìm kiếm"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Create Box */}
         <div
           className="nn-create-box"
           onClick={openNewNoteEditor}
@@ -292,6 +316,18 @@ export default function NoteBoard({ user }) {
           onUpdate={(updates) => handleShareUpdate(sharingNote.id, updates)}
         />
       )}
+
+      {/* Mobile Floating Action Button (FAB) */}
+      <button
+        className="nn-fab"
+        onClick={openNewNoteEditor}
+        aria-label="Tạo ghi chú mới"
+        title="Tạo ghi chú mới"
+        type="button"
+        id="btn-fab-new-note"
+      >
+        <span className="nn-fab-icon">✏️</span>
+      </button>
 
       {/* Toasts */}
       <Toast toasts={toasts} />
