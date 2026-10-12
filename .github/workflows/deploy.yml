@@ -16,6 +16,7 @@ jobs:
       tarot: ${{ steps.filter.outputs.tarot }}
       tuvi: ${{ steps.filter.outputs.tuvi }}
       talkwithme: ${{ steps.filter.outputs.talkwithme }}
+      notenow: ${{ steps.filter.outputs.notenow }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -39,6 +40,10 @@ jobs:
               - '.github/workflows/deploy.yml'
             talkwithme:
               - 'talkwithme/**'
+              - 'shared/**'
+              - '.github/workflows/deploy.yml'
+            notenow:
+              - 'notenow/**'
               - 'shared/**'
               - '.github/workflows/deploy.yml'
 
@@ -245,6 +250,81 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./talkwithme_redirect/
           server-dir: ./talkwithme/
+          dangerous-clean-slate: true
+
+  # ─── Deploy NoteNow ───
+  deploy-notenow:
+    name: 📝 Deploy NoteNow
+    needs: changes
+    if: needs.changes.outputs.notenow == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: notenow/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm install
+        working-directory: notenow
+
+      - name: 🔨 Build
+        run: npm run build
+        working-directory: notenow
+
+      - name: 🗑️ Xóa file cũ & Upload lên hosting (./note/)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          port: 21
+          protocol: ftps
+          security: loose
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./notenow/dist/
+          server-dir: ./note/
+          dangerous-clean-slate: true
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+
+      - name: 🔀 Tạo trang chuyển hướng từ ./notenow/ sang ./note/
+        run: |
+          mkdir -p ./notenow_redirect
+          cat << 'EOF' > ./notenow_redirect/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=/note/">
+            <link rel="canonical" href="https://vunph.id.vn/note/">
+            <title>Chuyển hướng đến NoteNow...</title>
+            <script>window.location.replace('/note/' + window.location.search + window.location.hash);</script>
+          </head>
+          <body>
+            <p>Đang chuyển hướng sang <a href="/note/">/note/</a>...</p>
+          </body>
+          </html>
+          EOF
+
+      - name: 🚀 Upload trang chuyển hướng lên ./notenow/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          port: 21
+          protocol: ftps
+          security: loose
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./notenow_redirect/
+          server-dir: ./notenow/
           dangerous-clean-slate: true
 
 

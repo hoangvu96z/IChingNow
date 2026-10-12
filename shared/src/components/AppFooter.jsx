@@ -10,9 +10,10 @@ import React from 'react';
  */
 
 const APPS = [
-  { id: 'iching', icon: '☯️', name: 'IChingNow', url: '/kinhdich/' },
-  { id: 'tarot',  icon: '🃏', name: 'TarotNow',  url: '/tarot/' },
-  { id: 'tuvi',   icon: '🔮', name: 'TuViNow',   url: '/tuvi/' },
+  { id: 'iching',  icon: '☯️', name: 'IChingNow', url: '/kinhdich/' },
+  { id: 'tarot',   icon: '🃏', name: 'TarotNow',  url: '/tarot/' },
+  { id: 'tuvi',    icon: '🔮', name: 'TuViNow',   url: '/tuvi/' },
+  { id: 'notenow', icon: '📝', name: 'NoteNow',   url: '/note/' },
 ];
 
 export default function AppFooter({ colors = {}, appId, tagline }) {

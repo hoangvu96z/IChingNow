@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/note/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="NoteNow — Ghi chú nhanh, chia sẻ dễ dàng. Hỗ trợ định dạng văn bản, hình ảnh và chia sẻ qua link." />
+    <meta property="og:title" content="NoteNow — Ghi chú thông minh" />
+    <meta property="og:description" content="Tạo và chia sẻ ghi chú đẹp mắt, hỗ trợ định dạng văn bản phong phú." />
+    <title>NoteNow — Ghi chú thông minh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      (function() {
+        var theme = localStorage.getItem('nn_theme_v2') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
