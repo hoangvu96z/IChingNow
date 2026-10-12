@@ -1,11 +1,10 @@
+import { getSsoApiBase } from './ssoConfig.mjs';
 /**
  * Shared Traffic & Visitor Analytics Tracker
  * Reports lightweight page visit pings to vInfiSSO
  */
 
-const SSO_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? ''
-  : 'https://sso.vunph.click';
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 export function trackPageVisit(appId) {
   if (typeof window === 'undefined') return;

@@ -1,9 +1,8 @@
+import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './TalkWithMePage.css';
 
-const SSO_BASE = import.meta.env.DEV
-  ? ''
-  : (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click').replace(/\/$/, '');
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 const SESSION_KEY = 'talkwithme_session';
 const MAX_IMAGE_SIZE = 1.5 * 1024 * 1024; // 1.5MB raw

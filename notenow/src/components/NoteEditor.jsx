@@ -1,3 +1,4 @@
+import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState, useEffect, useRef } from 'react';
 import { notesApi, charCount, compressImageTo720p } from '../api.js';
 import NoteColorPicker from './NoteColorPicker.jsx';
@@ -11,9 +12,7 @@ import TextStyle from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 
-const SSO_BASE = import.meta.env.DEV
-  ? ''
-  : (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click').replace(/\/$/, '');
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 function ToolbarButton({ onClick, title, isActive, children, id }) {
   return (

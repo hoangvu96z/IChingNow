@@ -173,7 +173,7 @@ export default function App() {
         } catch {}
       }
     } catch {
-      setUser(null);
+      // A temporary API outage must not log an authenticated user out.
       setAuthLoading(false);
     }
   }, []);

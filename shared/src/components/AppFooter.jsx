@@ -1,4 +1,5 @@
 import React from 'react';
+import { getAppLink } from '../utils/appLinks.mjs';
 
 /**
  * Shared AppFooter — used by IChingNow, TarotNow, TuViNow, TalkWithMe
@@ -94,7 +95,7 @@ export default function AppFooter({ colors = {}, appId, tagline }) {
             return (
               <a
                 key={app.id}
-                href={app.url}
+                href={getAppLink(app.url, import.meta.env, typeof window !== 'undefined' ? window.location : null)}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -177,7 +178,7 @@ export default function AppFooter({ colors = {}, appId, tagline }) {
             </span>
           ) : (
             <a
-              href="/talk/"
+              href={getAppLink('/talk/', import.meta.env, typeof window !== 'undefined' ? window.location : null)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

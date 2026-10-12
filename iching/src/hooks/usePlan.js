@@ -1,6 +1,7 @@
+import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import { useState, useCallback, useEffect } from 'react';
 
-const SSO_BASE = import.meta.env.VITE_SSO_URL || '';
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 function getAuthHeaders() {
   try {

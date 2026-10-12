@@ -1,8 +1,9 @@
+import { getSsoApiBase, getSsoLoginUrl, fetchSsoSession, isSessionRejected } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 // Dev: VITE_SSO_URL trống → dùng relative path qua vite proxy (/sso/*)
 // Prod: VITE_SSO_URL=https://sso.vunph.click → gọi thẳng tới SSO server
-const SSO_BASE = import.meta.env.VITE_SSO_URL || '';
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 const AuthContext = createContext(null);
 
@@ -99,7 +100,10 @@ export function AuthProvider({ children }) {
   // Track nếu user đã từng đăng nhập thành công (để phân biệt với lần đầu vào app)
   const hadToken = useRef(!!localStorage.getItem('sso_token'));
 
+  const authRequest = useRef(0);
+
   const fetchUser = useCallback(async () => {
+    const requestId = ++authRequest.current;
     try {
       // 1. Tách sso_token từ URL query string nếu vừa redirect từ SSO về
       const urlParams = new URLSearchParams(window.location.search);
@@ -119,20 +123,15 @@ export function AuthProvider({ children }) {
         setSessionExpired(false);
       }
 
-      // 2. Đọc token từ localStorage
-      const storedToken = localStorage.getItem('sso_token');
-      const headers = {};
-      if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
+      if (localStorage.getItem('sso_logged_out') && !localStorage.getItem('sso_token')) {
+        setUser(null);
+        return;
       }
 
-      const res = await fetch(`${SSO_BASE}/sso/me`, {
-        headers,
-        credentials: 'include',
-      });
-
-      if (!res.ok) throw new Error('Not authenticated');
-      const data = await res.json();
+      // 2. Đọc token từ localStorage
+      const storedToken = localStorage.getItem('sso_token');
+      const data = await fetchSsoSession(SSO_BASE, storedToken);
+      if (requestId !== authRequest.current) return;
 
       if (data.user) {
         // Xóa flag logout khi xác thực thành công
@@ -155,17 +154,18 @@ export function AuthProvider({ children }) {
           hadToken.current = false;
         }
       }
-    } catch {
-      // Lỗi network hoặc server → nếu có token cũ thì coi như expired
-      const storedToken = localStorage.getItem('sso_token');
-      if (storedToken || hadToken.current) {
+    } catch (error) {
+      if (requestId !== authRequest.current) return;
+      // Only an explicit authentication rejection expires the session.
+      if (isSessionRejected(error)) {
+        const wasLoggedIn = !!localStorage.getItem('sso_token') || hadToken.current;
         localStorage.removeItem('sso_token');
-        setSessionExpired(true);
+        setUser(null);
+        setSessionExpired(wasLoggedIn);
         hadToken.current = false;
       }
-      setUser(null);
     } finally {
-      setIsLoading(false);
+      if (requestId === authRequest.current) setIsLoading(false);
     }
   }, []);
 
@@ -179,6 +179,7 @@ export function AuthProvider({ children }) {
           const payload = JSON.parse(e.newValue);
           if (payload?.type === 'logout') {
             // Tab khác đã logout → xóa local state, không gọi lại /sso/me
+            ++authRequest.current;
             localStorage.removeItem('sso_token');
             localStorage.setItem('sso_logged_out', '1');
             setUser(null);
@@ -214,13 +215,11 @@ export function AuthProvider({ children }) {
     // Ẩn toast khi user chủ động đăng nhập
     setSessionExpired(false);
     // Điều hướng sang trang đăng nhập SSO kèm theo URL trả về (redirect)
-    const url = new URL(window.location.href);
-    url.searchParams.delete('sso_token');
-    const returnUrl = encodeURIComponent(url.toString());
-    window.location.href = `${SSO_BASE}/ui/sso?redirect=${returnUrl}`;
+    window.location.href = getSsoLoginUrl(import.meta.env, window.location.href);
   };
 
   const logout = async () => {
+    ++authRequest.current;
     try {
       const storedToken = localStorage.getItem('sso_token');
       const headers = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
@@ -272,4 +271,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
   return ctx;
 }
-

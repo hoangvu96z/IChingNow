@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "test:sso": "node --test shared/test/*.test.mjs",
     "dev:iching": "npm run dev --prefix iching",
     "dev:tarot": "npm run dev --prefix tarotnow",
     "dev:tuvi": "npm run dev --prefix tuvinow",

@@ -1,8 +1,7 @@
+import { getSsoApiBase, getSsoLoginUrl, fetchSsoSession, isSessionRejected } from '../../shared/src/utils/ssoConfig.mjs';
 // NoteNow API utility
 
-const SSO_BASE = import.meta.env.DEV
-  ? ''
-  : (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click').replace(/\/$/, '');
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 const GUEST_TOKEN_KEY = 'notenow_guest_token';
 
@@ -398,14 +397,8 @@ export const notesApi = {
 
 export const ssoApi = {
   getLoginUrl: (customRedirect) => {
-    const ssoBase = (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click').replace(/\/$/, '');
-    let returnUrl = 'https://vunph.id.vn/note/';
-    if (typeof window !== 'undefined') {
-      const url = new URL(customRedirect || window.location.href);
-      url.searchParams.delete('sso_token');
-      returnUrl = url.toString();
-    }
-    return `${ssoBase}/ui/sso?redirect=${encodeURIComponent(returnUrl)}`;
+    const returnUrl = customRedirect || (typeof window !== 'undefined' ? window.location.href : 'https://vunph.id.vn/note/');
+    return getSsoLoginUrl(import.meta.env, returnUrl);
   },
 
   getMe: async () => {
@@ -415,7 +408,7 @@ export const ssoApi = {
     if (loggedOut && !token) return null;
 
     try {
-      const data = await apiFetch('/sso/me');
+      const data = await fetchSsoSession(SSO_BASE, token);
       if (data?.user) {
         safeStorage.removeItem('sso_logged_out');
         if (data.token) {
@@ -428,8 +421,12 @@ export const ssoApi = {
         }
         return null;
       }
-    } catch {
-      return null;
+    } catch (error) {
+      if (isSessionRejected(error)) {
+        safeStorage.removeItem('sso_token');
+        return null;
+      }
+      throw error;
     }
   },
 

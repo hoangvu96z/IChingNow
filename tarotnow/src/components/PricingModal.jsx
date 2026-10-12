@@ -1,7 +1,8 @@
+import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
-const SSO_BASE = import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click';
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 const DEFAULT_PLANS = [
   {

@@ -1,9 +1,8 @@
+import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState } from 'react';
 import { getDaysRemaining, stripHtml } from '../api.js';
 
-const SSO_BASE = import.meta.env.DEV
-  ? ''
-  : (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click').replace(/\/$/, '');
+const SSO_BASE = getSsoApiBase(import.meta.env);
 
 export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, isShared }) {
   const [deleting, setDeleting] = useState(false);

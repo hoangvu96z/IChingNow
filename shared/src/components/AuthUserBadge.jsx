@@ -1,8 +1,7 @@
+import { getSsoWebBase } from '../utils/ssoConfig.mjs';
 import React, { useState, useRef, useEffect } from 'react';
 
-const SSO_BASE = typeof import.meta !== 'undefined' && import.meta.env
-  ? (import.meta.env.VITE_SSO_URL || 'https://sso.vunph.click')
-  : 'https://sso.vunph.click';
+const SSO_BASE = getSsoWebBase(import.meta.env);
 
 /**
  * Shared AuthUserBadge component

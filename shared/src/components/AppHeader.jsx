@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SharedAuthUserBadge from './AuthUserBadge.jsx';
+import { getAppLink } from '../utils/appLinks.mjs';
 
 /**
  * ============================================================
@@ -207,7 +208,7 @@ function AppsDropdown({ appId, colors }) {
             ) : (
               <a
                 key={app.id}
-                href={app.url}
+                href={getAppLink(app.url, import.meta.env, typeof window !== 'undefined' ? window.location : null)}
                 onClick={() => setOpen(false)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
@@ -279,7 +280,7 @@ function MobileAppsList({ appId, colors }) {
             }}>ĐANG DÙNG</span>
           </div>
         ) : (
-          <a key={app.id} href={app.url} style={{
+          <a key={app.id} href={getAppLink(app.url, import.meta.env, typeof window !== 'undefined' ? window.location : null)} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '10px 0',
             borderBottom: `1px solid ${colors.border}`,

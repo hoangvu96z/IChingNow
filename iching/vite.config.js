@@ -1,31 +1,34 @@
-import { defineConfig } from 'vite'
+import { createSsoProxy } from '../shared/vite/ssoProxy.mjs';
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   base: '/kinhdich/',
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, '../shared/src'),
-      '@iching': path.resolve(__dirname, 'src'),
+      '@shared': path.resolve(import.meta.dirname, '../shared/src'),
+      '@iching': path.resolve(import.meta.dirname, 'src'),
       // Ensure only one instance of React is used even for files outside project root
-      'react': path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
-      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime'),
-      'lunar-javascript': path.resolve(__dirname, 'node_modules/lunar-javascript'),
+      'react': path.resolve(import.meta.dirname, 'node_modules/react'),
+      'react-dom': path.resolve(import.meta.dirname, 'node_modules/react-dom'),
+      'react/jsx-runtime': path.resolve(import.meta.dirname, 'node_modules/react/jsx-runtime'),
+      'lunar-javascript': path.resolve(import.meta.dirname, 'node_modules/lunar-javascript'),
     },
     dedupe: ['react', 'react-dom'],
   },
   server: {
+    strictPort: true,
     port: 5173,
     fs: {
       // Allow serving files from one level up (for shared/)
       allow: ['..'],
     },
     proxy: {
+      ...createSsoProxy(loadEnv(mode, import.meta.dirname, 'VITE_')),
       '/api-vps': {
         target: 'http://43.128.116.69',
         changeOrigin: true,
@@ -36,9 +39,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/kinhdich\/api-vps/, '')
       },
-      // SSO: VITE_SSO_URL=https://sso.vunph.click (xem .env)
-      // Proxy không cần thiết nữa
+      // API requests go through the shared SSO proxy.
     }
   }
-})
-
+}))
