@@ -6,8 +6,12 @@ import OnboardingModal from './components/OnboardingModal.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { ssoApi, notesApi, safeStorage } from './api.js';
 import AppFooter from '@shared/components/AppFooter.jsx';
-
 import { trackPageVisit } from '@shared/utils/analytics.js';
+import {
+  FileText, Search, Sun, Moon, LogIn,
+  Lock, Unlock, AlertCircle, Share2, Plus,
+  HelpCircle, Loader2, KeyRound,
+} from 'lucide-react';
 
 // ─── Ambient stars ─────────────────────────────────────────────────────────
 
@@ -97,7 +101,20 @@ function SharePasswordGate({ shareToken, onUnlocked }) {
         textAlign: 'center',
         boxShadow: 'var(--shadow-lg)',
       }}>
-        <div style={{ fontSize: '3rem', marginBottom: 16 }}>🔒</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            background: 'rgba(99, 102, 241, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent)',
+          }}>
+            <Lock size={32} strokeWidth={2} />
+          </div>
+        </div>
         <h2 style={{ marginBottom: 8, color: 'var(--text-primary)' }}>Ghi chú được bảo vệ</h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.9rem' }}>
           Nhập mật khẩu để xem ghi chú này.
@@ -114,15 +131,21 @@ function SharePasswordGate({ shareToken, onUnlocked }) {
             id="share-password-input"
           />
           {error && (
-            <p style={{ color: '#f87171', fontSize: '0.82rem', marginBottom: 12 }}>⚠ {error}</p>
+            <p style={{ color: '#f87171', fontSize: '0.82rem', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <AlertCircle size={14} /> {error}
+            </p>
           )}
           <button
             className="btn btn-primary"
             type="submit"
             disabled={verifying || !password.trim()}
-            style={{ width: '100%' }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            {verifying ? 'Đang kiểm tra…' : '🔓 Mở khoá'}
+            {verifying ? (
+              <><Loader2 size={15} className="nn-spin" /> Đang kiểm tra…</>
+            ) : (
+              <><KeyRound size={15} strokeWidth={2} /> Mở khoá</>
+            )}
           </button>
         </form>
       </div>
@@ -141,7 +164,6 @@ function ShareViewPage({ shareToken, user }) {
       setNote(data);
       setLoading(false);
     }).catch((e) => {
-      // Detect password-protected notes (401/403 or specific messages)
       if (e.message && (
         e.message.toLowerCase().includes('password') ||
         e.message.includes('401') ||
@@ -161,54 +183,70 @@ function ShareViewPage({ shareToken, user }) {
 
   const appBase = import.meta.env.BASE_URL || '/note/';
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-muted)' }}>
-        <span>Đang tải…</span>
-      </div>
-    );
-  }
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-muted)', gap: 8 }}>
+          <Loader2 size={20} className="nn-spin" />
+          <span>Đang tải…</span>
+        </div>
+      );
+    }
 
-  if (needsPassword) {
-    return <SharePasswordGate shareToken={shareToken} onUnlocked={(data) => { setNote(data); setNeedsPassword(false); }} />;
-  }
+    if (needsPassword) {
+      return <SharePasswordGate shareToken={shareToken} onUnlocked={(data) => { setNote(data); setNeedsPassword(false); }} />;
+    }
 
-  if (error) {
+    if (error) {
+      return (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <Lock size={44} color="#f87171" strokeWidth={1.8} />
+          </div>
+          <h2 style={{ marginBottom: 8 }}>Không thể xem ghi chú</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>{error}</p>
+          <a href={appBase} className="btn btn-ghost">← Về trang chính</a>
+        </div>
+      );
+    }
+
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
-        <div style={{ fontSize: '3rem', marginBottom: 12 }}>🔒</div>
-        <h2 style={{ marginBottom: 8 }}>Không thể xem ghi chú</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>{error}</p>
-        <a href={appBase} className="btn btn-ghost">← Về trang chính</a>
-      </div>
+      <>
+        <div className="nn-share-banner">
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Share2 size={15} strokeWidth={2.2} />
+            Đây là ghi chú được chia sẻ. {note?.canEdit ? 'Bạn có thể chỉnh sửa ghi chú này.' : 'Bạn chỉ có thể xem.'}
+          </span>
+          <a href={appBase} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={14} strokeWidth={2.5} /> Tạo ghi chú của bạn
+          </a>
+        </div>
+
+        {note && (
+          <ErrorBoundary>
+            <NoteEditor
+              note={note}
+              isNew={false}
+              isReadOnly={!note.canEdit}
+              userIsLoggedIn={!!user}
+              shareToken={shareToken}
+              onSave={async (dto) => {
+                if (!note.canEdit) return;
+                const res = await notesApi.updateByShareToken(shareToken, dto);
+                setNote(res);
+                return res;
+              }}
+              onClose={() => { window.location.href = appBase; }}
+            />
+          </ErrorBoundary>
+        )}
+      </>
     );
-  }
+  };
 
   return (
     <>
-      <div className="nn-share-banner">
-        📋 Đây là ghi chú được chia sẻ. {note?.canEdit ? 'Bạn có thể chỉnh sửa ghi chú này.' : 'Bạn chỉ có thể xem.'}
-        <a href={appBase}>✏️ Tạo ghi chú của bạn</a>
-      </div>
-
-      {note && (
-        <ErrorBoundary>
-          <NoteEditor
-            note={note}
-            isNew={false}
-            isReadOnly={!note.canEdit}
-            userIsLoggedIn={!!user}
-            shareToken={shareToken}
-            onSave={async (dto) => {
-              if (!note.canEdit) return;
-              const res = await notesApi.updateByShareToken(shareToken, dto);
-              setNote(res);
-              return res;
-            }}
-            onClose={() => { window.location.href = appBase; }}
-          />
-        </ErrorBoundary>
-      )}
+      {renderContent()}
 
       {/* FAB — Create own note */}
       <a
@@ -219,7 +257,9 @@ function ShareViewPage({ shareToken, user }) {
         id="btn-share-page-create-note"
         style={{ textDecoration: 'none' }}
       >
-        <span className="nn-fab-icon">✏️</span>
+        <span className="nn-fab-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Plus size={20} strokeWidth={2.5} />
+        </span>
         <span className="nn-fab-label">Tạo note</span>
       </a>
     </>
@@ -243,7 +283,6 @@ export default function App() {
 
   useEffect(() => {
     trackPageVisit('notenow');
-    // Only show onboarding on the main board, not on share/invite pages
     if (route.page === 'board' && !localStorage.getItem('notenow_onboarded_v2')) {
       setShowOnboarding(true);
     }
@@ -270,7 +309,6 @@ export default function App() {
         } catch {}
       }
     } catch {
-      // A temporary API outage must not log an authenticated user out.
       setAuthLoading(false);
     }
   }, []);
@@ -278,7 +316,6 @@ export default function App() {
   useEffect(() => {
     checkAuth();
 
-    // Sync auth status across tabs or when tab gains focus
     const handleStorage = (e) => {
       if (e.key === 'sso_token' || e.key === 'vInfiSSO-state' || e.key === 'sso_logged_out') {
         checkAuth();
@@ -322,7 +359,9 @@ export default function App() {
       {/* Header */}
       <header className="nn-header">
         <a href={import.meta.env.BASE_URL || '/note/'} className="nn-logo" aria-label="NoteNow — Về trang chính">
-          <div className="nn-logo-icon" aria-hidden="true">📝</div>
+          <div className="nn-logo-icon" aria-hidden="true">
+            <FileText size={20} strokeWidth={2.4} color="var(--accent)" />
+          </div>
           <div>
             <div className="nn-logo-text">NoteNow</div>
             <div className="nn-logo-sub">Ghi chú thông minh</div>
@@ -338,11 +377,12 @@ export default function App() {
               aria-label="Tìm kiếm ghi chú"
               id="search-notes"
               onChange={(e) => {
-                // Communicate to NoteBoard via a custom event
                 window.dispatchEvent(new CustomEvent('nn-search', { detail: e.target.value }));
               }}
             />
-            <span className="nn-search-icon" aria-hidden="true">🔍</span>
+            <span className="nn-search-icon" aria-hidden="true" style={{ display: 'flex', alignItems: 'center' }}>
+              <Search size={15} strokeWidth={2.2} />
+            </span>
           </div>
         )}
 
@@ -356,7 +396,7 @@ export default function App() {
             type="button"
             id="btn-help-guide"
           >
-            💡
+            <HelpCircle size={18} strokeWidth={2} />
           </button>
 
           {/* Theme toggle */}
@@ -368,7 +408,7 @@ export default function App() {
             type="button"
             id="btn-theme-toggle"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
           </button>
 
           {/* Auth */}
@@ -398,7 +438,7 @@ export default function App() {
               className="nn-auth-btn"
               id="btn-login"
             >
-              <span>🔐</span>
+              <LogIn size={15} strokeWidth={2.2} />
               <span className="nn-auth-text">Đăng nhập</span>
             </a>
           )}

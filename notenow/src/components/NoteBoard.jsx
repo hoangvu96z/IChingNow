@@ -4,6 +4,10 @@ import NoteEditor from './NoteEditor.jsx';
 import NoteShareModal from './NoteShareModal.jsx';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { notesApi, stripHtml } from '../api.js';
+import {
+  Check, X, Info, Pin, Users, Plus,
+  Search, FileText,
+} from 'lucide-react';
 
 function Toast({ toasts }) {
   return (
@@ -11,7 +15,13 @@ function Toast({ toasts }) {
       {toasts.map((t) => (
         <div key={t.id} className={`nn-toast nn-toast-${t.type}`}>
           <span className="nn-toast-icon">
-            {t.type === 'error' ? '✕' : t.type === 'info' ? 'ℹ' : '✓'}
+            {t.type === 'error' ? (
+              <X size={14} strokeWidth={2.5} />
+            ) : t.type === 'info' ? (
+              <Info size={14} strokeWidth={2.2} />
+            ) : (
+              <Check size={14} strokeWidth={2.5} />
+            )}
           </span>
           <span className="nn-toast-msg">{t.message}</span>
         </div>
@@ -184,7 +194,7 @@ export default function NoteBoard({ user }) {
       const note = await notesApi.create(dto);
       setNotes((prev) => [note, ...prev]);
       if (!silent) {
-        addToast('✓ Đã lưu ghi chú thành công!');
+        addToast('Đã lưu ghi chú thành công!');
       }
       return note;
     } catch (e) {
@@ -198,7 +208,7 @@ export default function NoteBoard({ user }) {
       const updated = await notesApi.update(id, dto);
       setNotes((prev) => prev.map((n) => n.id === id ? updated : n));
       if (!silent) {
-        addToast('✓ Đã lưu ghi chú thành công!');
+        addToast('Đã lưu ghi chú thành công!');
       }
       return updated;
     } catch (e) {
@@ -211,7 +221,7 @@ export default function NoteBoard({ user }) {
     try {
       await notesApi.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
-      addToast('🗑 Ghi chú đã bị xoá');
+      addToast('Ghi chú đã bị xoá');
     } catch (e) {
       addToast(e.message, 'error');
     }
@@ -221,7 +231,7 @@ export default function NoteBoard({ user }) {
     try {
       await notesApi.update(id, { isPinned: pin });
       setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPinned: pin } : n));
-      addToast(pin ? '📌 Đã ghim ghi chú' : '📌 Đã bỏ ghim ghi chú');
+      addToast(pin ? 'Đã ghim ghi chú' : 'Đã bỏ ghim ghi chú');
     } catch (e) {
       addToast(e.message, 'error');
     }
@@ -231,15 +241,13 @@ export default function NoteBoard({ user }) {
     try {
       await notesApi.update(id, { isPermanent: permanent });
       setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPermanent: permanent } : n));
-      addToast(permanent ? '♾ Đã đặt lưu vĩnh viễn' : '⏳ Đã bỏ lưu vĩnh viễn');
+      addToast(permanent ? 'Đã đặt lưu vĩnh viễn' : 'Đã bỏ lưu vĩnh viễn');
     } catch (e) {
       addToast(e.message, 'error');
     }
   };
 
   const handleReorder = async (orderedIds) => {
-    // Optimistic: already reordered in DraggableNoteGrid state
-    // Persist to server + localStorage
     try {
       localStorage.setItem('notenow_sort_order', JSON.stringify(orderedIds));
     } catch {}
@@ -287,7 +295,7 @@ export default function NoteBoard({ user }) {
       <div className="nn-create-bar">
         {/* Mobile Search Bar */}
         <div className="nn-search-mobile">
-          <span className="nn-search-mobile-icon" aria-hidden="true">🔍</span>
+          <Search size={15} className="nn-search-mobile-icon" aria-hidden="true" />
           <input
             className="nn-search-mobile-input"
             type="search"
@@ -303,7 +311,7 @@ export default function NoteBoard({ user }) {
               type="button"
               aria-label="Xoá tìm kiếm"
             >
-              ✕
+              <X size={14} strokeWidth={2.5} />
             </button>
           )}
         </div>
@@ -319,7 +327,8 @@ export default function NoteBoard({ user }) {
           id="btn-new-note"
         >
           <span className="nn-create-placeholder">
-            ✏️&nbsp;&nbsp;Tạo ghi chú mới…
+            <Plus size={17} strokeWidth={2.5} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+            Tạo ghi chú mới…
           </span>
         </div>
       </div>
@@ -332,7 +341,9 @@ export default function NoteBoard({ user }) {
           </div>
         ) : filteredNotes.length === 0 && sharedNotes.length === 0 ? (
           <div className="nn-empty">
-            <div className="nn-empty-icon">📝</div>
+            <div className="nn-empty-icon">
+              <FileText size={48} strokeWidth={1.5} />
+            </div>
             <h2 className="nn-empty-title">
               {search ? 'Không tìm thấy ghi chú' : 'Chưa có ghi chú nào'}
             </h2>
@@ -349,8 +360,10 @@ export default function NoteBoard({ user }) {
                 onClick={openNewNoteEditor}
                 id="btn-create-first-note"
                 type="button"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                ✏️ Tạo ghi chú đầu tiên
+                <Plus size={15} strokeWidth={2.5} />
+                Tạo ghi chú đầu tiên
               </button>
             )}
           </div>
@@ -359,7 +372,10 @@ export default function NoteBoard({ user }) {
             {/* Pinned Notes */}
             {pinnedNotes.length > 0 && (
               <div style={{ marginBottom: 8 }}>
-                <p className="nn-section-label">📌 Đã ghim</p>
+                <p className="nn-section-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Pin size={13} fill="currentColor" strokeWidth={1.5} />
+                  Đã ghim
+                </p>
                 <DraggableNoteGrid
                   notes={pinnedNotes}
                   onEdit={(n) => setEditingNote(n)}
@@ -393,7 +409,10 @@ export default function NoteBoard({ user }) {
             {/* Shared Notes */}
             {sharedNotes.length > 0 && (
               <div style={{ marginTop: 24 }}>
-                <p className="nn-section-label">👥 Được chia sẻ với bạn</p>
+                <p className="nn-section-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Users size={13} strokeWidth={2} />
+                  Được chia sẻ với bạn
+                </p>
                 <DraggableNoteGrid
                   notes={sharedNotes}
                   onEdit={(n) => setEditingNote(n)}
@@ -442,7 +461,9 @@ export default function NoteBoard({ user }) {
         type="button"
         id="btn-fab-new-note"
       >
-        <span className="nn-fab-icon">✏️</span>
+        <span className="nn-fab-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Plus size={22} strokeWidth={2.5} />
+        </span>
       </button>
 
       {/* Toasts */}

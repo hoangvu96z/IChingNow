@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
  * Full-screen image lightbox viewer.
@@ -45,8 +46,9 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
         onClick={onClose}
         aria-label="Đóng"
         type="button"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        ✕
+        <X size={20} strokeWidth={2.5} />
       </button>
 
       {/* Counter */}
@@ -63,8 +65,9 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
           onClick={(e) => { e.stopPropagation(); goPrev(); }}
           aria-label="Ảnh trước"
           type="button"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          ‹
+          <ChevronLeft size={28} strokeWidth={2.5} />
         </button>
       )}
 
@@ -84,8 +87,9 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
           onClick={(e) => { e.stopPropagation(); goNext(); }}
           aria-label="Ảnh tiếp theo"
           type="button"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          ›
+          <ChevronRight size={28} strokeWidth={2.5} />
         </button>
       )}
 

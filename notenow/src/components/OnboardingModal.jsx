@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkles, X, FileText, Clock, Share2 } from 'lucide-react';
 
 export default function OnboardingModal({ isOpen, onClose }) {
   if (!isOpen) return null;
@@ -7,7 +8,9 @@ export default function OnboardingModal({ isOpen, onClose }) {
     <div className="nn-overlay">
       <div className="nn-modal nn-onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
         <div className="nn-onboarding-header">
-          <div className="nn-onboarding-icon" aria-hidden="true">✨</div>
+          <div className="nn-onboarding-icon" aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles size={28} strokeWidth={2.2} color="var(--accent)" />
+          </div>
           <h2 id="onboarding-title" className="nn-onboarding-title">Chào mừng đến với NoteNow!</h2>
           <p className="nn-onboarding-sub">Ghi chú thông minh, định dạng phong phú theo phong cách Google Keep</p>
           <button
@@ -17,13 +20,15 @@ export default function OnboardingModal({ isOpen, onClose }) {
             title="Đóng (Esc)"
             type="button"
           >
-            ✕
+            <X size={18} strokeWidth={2.2} />
           </button>
         </div>
 
         <div className="nn-onboarding-body">
           <div className="nn-onboarding-feature">
-            <div className="nn-feature-badge green">📝</div>
+            <div className="nn-feature-badge green" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={20} strokeWidth={2} />
+            </div>
             <div className="nn-feature-content">
               <h4>Ghi chú nhanh & Định dạng phong phú</h4>
               <p>
@@ -34,7 +39,9 @@ export default function OnboardingModal({ isOpen, onClose }) {
           </div>
 
           <div className="nn-onboarding-feature">
-            <div className="nn-feature-badge blue">⏳</div>
+            <div className="nn-feature-badge blue" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Clock size={20} strokeWidth={2} />
+            </div>
             <div className="nn-feature-content">
               <h4>Chính sách lưu trữ thông minh</h4>
               <ul>
@@ -45,7 +52,9 @@ export default function OnboardingModal({ isOpen, onClose }) {
           </div>
 
           <div className="nn-onboarding-feature">
-            <div className="nn-feature-badge purple">🔗</div>
+            <div className="nn-feature-badge purple" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Share2 size={20} strokeWidth={2} />
+            </div>
             <div className="nn-feature-content">
               <h4>Chia sẻ & Phân quyền linh hoạt</h4>
               <p>
@@ -61,8 +70,9 @@ export default function OnboardingModal({ isOpen, onClose }) {
             onClick={onClose}
             type="button"
             id="btn-onboarding-start"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            🚀 Bắt đầu ghi chú
+            <Sparkles size={16} strokeWidth={2.5} /> Bắt đầu ghi chú
           </button>
         </div>
       </div>

@@ -1,8 +1,18 @@
 import React from 'react';
 import { NOTE_COLORS, NOTE_PATTERNS } from '../constants.js';
+import { Ban, MoreHorizontal, Grid3X3, AlignJustify } from 'lucide-react';
+
+const PATTERN_ICONS = {
+  none: <Ban size={12} strokeWidth={2} />,
+  dots: <MoreHorizontal size={12} strokeWidth={2} />,
+  grid: <Grid3X3 size={12} strokeWidth={2} />,
+  lines: <AlignJustify size={12} strokeWidth={2} />,
+};
 
 export default function NoteColorPicker({ bgColor, bgPattern, onChange }) {
-  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const isDark = typeof document !== 'undefined' && document.documentElement
+    ? document.documentElement.getAttribute('data-theme') !== 'light'
+    : false;
 
   return (
     <div className="nn-color-picker">
@@ -41,8 +51,11 @@ export default function NoteColorPicker({ bgColor, bgPattern, onChange }) {
             aria-pressed={bgPattern === p.key}
             onClick={() => onChange({ bgPattern: p.key })}
             type="button"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            <span aria-hidden="true">{p.icon}</span>
+            <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center' }}>
+              {PATTERN_ICONS[p.key] || p.icon}
+            </span>
             {p.label}
           </button>
         ))}

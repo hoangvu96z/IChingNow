@@ -4,13 +4,22 @@ import { notesApi, charCount, compressImageTo720p } from '../api.js';
 import NoteColorPicker from './NoteColorPicker.jsx';
 import ImageViewer from './ImageViewer.jsx';
 
+// Lucide React icons
+import {
+  Bold, Italic, Underline, Strikethrough,
+  Highlighter, List, ListOrdered,
+  AlignLeft, AlignCenter, AlignRight,
+  Image as ImageIcon, Palette, X, Check,
+  Loader2, AlertCircle, Eye, Pencil, Plus,
+} from 'lucide-react';
+
 // TipTap
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import TextStyle from '@tiptap/extension-text-style';
-import Underline from '@tiptap/extension-underline';
+import UnderlineExt from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 
 const SSO_BASE = getSsoApiBase(import.meta.env);
@@ -62,11 +71,12 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
       Highlight,
       TextAlign.configure({ types: ['paragraph'] }),
       TextStyle,
-      Underline,
+      UnderlineExt,
       Placeholder.configure({ placeholder: 'Viết ghi chú của bạn ở đây…' }),
     ],
     content: note?.content || '',
     editable: !isReadOnly,
+    immediatelyRender: false,
     onUpdate: () => {
       triggerAutoSave();
     },
@@ -184,6 +194,8 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  const iconSize = 15;
+
   return (
     <div className="nn-overlay">
       <div
@@ -195,7 +207,14 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
         <div className="nn-sheet-handle" aria-hidden="true" />
         <div className="nn-editor-header">
           <div className="nn-editor-badge">
-            <span>{isNew ? '✏️ Ghi chú mới' : isReadOnly ? '👁 Đang xem ghi chú' : '📝 Chỉnh sửa ghi chú'}</span>
+            <span>
+              {isNew
+                ? <><Plus size={14} strokeWidth={2.5} /> Ghi chú mới</>
+                : isReadOnly
+                ? <><Eye size={14} strokeWidth={2} /> Đang xem ghi chú</>
+                : <><Pencil size={14} strokeWidth={2} /> Chỉnh sửa ghi chú</>
+              }
+            </span>
           </div>
           {!isReadOnly && (
             <button
@@ -212,7 +231,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
               type="button"
               id="btn-editor-top-close"
             >
-              ✕
+              <X size={16} strokeWidth={2.5} />
             </button>
           )}
         </div>
@@ -258,7 +277,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                       aria-label={`Xoá hình ${idx + 1}`}
                       type="button"
                     >
-                      ✕
+                      <X size={12} strokeWidth={3} />
                     </button>
                   )}
                 </div>
@@ -286,7 +305,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive('bold')}
                 onClick={() => editor?.chain().focus().toggleBold().run()}
               >
-                <strong>B</strong>
+                <Bold size={iconSize} strokeWidth={2.5} />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-italic"
@@ -294,7 +313,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive('italic')}
                 onClick={() => editor?.chain().focus().toggleItalic().run()}
               >
-                <em style={{ fontStyle: 'italic' }}>I</em>
+                <Italic size={iconSize} strokeWidth={2} />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-underline"
@@ -302,7 +321,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive('underline')}
                 onClick={() => editor?.chain().focus().toggleUnderline().run()}
               >
-                <u>U</u>
+                <Underline size={iconSize} strokeWidth={2} />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-strike"
@@ -310,7 +329,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive('strike')}
                 onClick={() => editor?.chain().focus().toggleStrike().run()}
               >
-                <s>S</s>
+                <Strikethrough size={iconSize} strokeWidth={2} />
               </ToolbarButton>
 
               <div className="nn-toolbar-sep" />
@@ -321,7 +340,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive('highlight')}
                 onClick={() => editor?.chain().focus().toggleHighlight().run()}
               >
-                <span style={{ background: 'rgba(253,224,71,0.4)', padding: '0 2px', borderRadius: 2 }}>A</span>
+                <Highlighter size={iconSize} strokeWidth={2} />
               </ToolbarButton>
 
               <div className="nn-toolbar-sep" />
@@ -332,7 +351,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive('bulletList')}
                 onClick={() => editor?.chain().focus().toggleBulletList().run()}
               >
-                ☰
+                <List size={iconSize} strokeWidth={2} />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-ol"
@@ -340,7 +359,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive('orderedList')}
                 onClick={() => editor?.chain().focus().toggleOrderedList().run()}
               >
-                №
+                <ListOrdered size={iconSize} strokeWidth={2} />
               </ToolbarButton>
 
               <div className="nn-toolbar-sep" />
@@ -351,7 +370,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive({ textAlign: 'left' })}
                 onClick={() => editor?.chain().focus().setTextAlign('left').run()}
               >
-                ◧
+                <AlignLeft size={iconSize} strokeWidth={2} />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-align-center"
@@ -359,7 +378,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive({ textAlign: 'center' })}
                 onClick={() => editor?.chain().focus().setTextAlign('center').run()}
               >
-                ◈
+                <AlignCenter size={iconSize} strokeWidth={2} />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-align-right"
@@ -367,7 +386,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 isActive={editor?.isActive({ textAlign: 'right' })}
                 onClick={() => editor?.chain().focus().setTextAlign('right').run()}
               >
-                ◨
+                <AlignRight size={iconSize} strokeWidth={2} />
               </ToolbarButton>
             </div>
           )}
@@ -392,8 +411,9 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
 
           {/* Error */}
           {error && (
-            <div style={{ padding: '0 20px 8px', fontSize: '0.8rem', color: '#f87171' }}>
-              ⚠ {error}
+            <div style={{ padding: '0 20px 8px', fontSize: '0.8rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <AlertCircle size={13} strokeWidth={2} />
+              {error}
             </div>
           )}
 
@@ -424,7 +444,10 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                         onClick={() => fileInputRef.current?.click()}
                         id="btn-upload-image"
                       >
-                        {uploading ? '⏳' : '🖼'}
+                        {uploading
+                          ? <Loader2 size={16} strokeWidth={2} className="nn-spin" />
+                          : <ImageIcon size={16} strokeWidth={2} />
+                        }
                       </button>
                     </>
                   )}
@@ -439,7 +462,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                     onClick={() => setShowColorPicker((v) => !v)}
                     id="btn-color-picker"
                   >
-                    🎨
+                    <Palette size={16} strokeWidth={2} />
                   </button>
                 </>
               )}
@@ -466,7 +489,10 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                   id="btn-save-note"
                   type="button"
                 >
-                  {saving ? 'Đang lưu…' : isNew ? '✓ Tạo note' : '✓ Lưu'}
+                  {saving
+                    ? <><Loader2 size={14} strokeWidth={2} className="nn-spin" /> Đang lưu…</>
+                    : <><Check size={14} strokeWidth={2.5} /> {isNew ? 'Tạo note' : 'Lưu'}</>
+                  }
                 </button>
               )}
 

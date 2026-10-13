@@ -2,6 +2,11 @@ import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState } from 'react';
 import { getDaysRemaining, stripHtml } from '../api.js';
 import ImageViewer from './ImageViewer.jsx';
+import {
+  GripVertical, Pin, Infinity as InfinityIcon,
+  Users, User, Clock, Link2, Lock,
+  Pencil, Trash2,
+} from 'lucide-react';
 
 const SSO_BASE = getSsoApiBase(import.meta.env);
 
@@ -38,21 +43,25 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       {!isShared && (
         <div
           className="nn-card-drag-handle"
-          title="Kéo để di chuyển"
+          title="Kéo để sắp xếp vị trí"
           aria-label="Kéo thả để sắp xếp"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-          ⠿
+          <GripVertical size={14} />
         </div>
       )}
 
       {note.isPinned && (
-        <span className="nn-pin-icon" aria-label="Đã ghim">📌</span>
+        <span className="nn-pin-icon" aria-label="Đã ghim" title="Đã ghim">
+          <Pin size={13} fill="currentColor" strokeWidth={1.5} />
+        </span>
       )}
 
       {note.isPermanent && (
-        <span className="nn-permanent-icon" aria-label="Lưu vĩnh viễn" title="Ghi chú vĩnh viễn">♾</span>
+        <span className="nn-permanent-icon" aria-label="Lưu vĩnh viễn" title="Ghi chú vĩnh viễn">
+          <InfinityIcon size={14} strokeWidth={2.2} />
+        </span>
       )}
 
       {/* Images */}
@@ -106,17 +115,17 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
         <div className="nn-card-badges">
           {isShared && (
             <span className="nn-badge nn-badge-shared" title="Được chia sẻ với bạn">
-              👥 Được share
+              <Users size={11} strokeWidth={2} /> Được share
             </span>
           )}
           {!isShared && note.isGuest && (
             <span className="nn-badge nn-badge-guest" title="Ghi chú không đăng nhập">
-              👤 Khách
+              <User size={11} strokeWidth={2} /> Khách
             </span>
           )}
           {note.isPermanent && (
             <span className="nn-badge nn-badge-permanent" title="Lưu vĩnh viễn — không tự xoá">
-              ♾ Vĩnh viễn
+              <InfinityIcon size={11} strokeWidth={2.2} /> Vĩnh viễn
             </span>
           )}
           {daysLeft !== null && daysLeft <= 30 && !note.isPermanent && (
@@ -124,17 +133,17 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               className="nn-badge nn-badge-expiry"
               title={`Ghi chú sẽ xoá sau ${daysLeft} ngày`}
             >
-              ⏳ {daysLeft}d
+              <Clock size={11} strokeWidth={2} /> {daysLeft}d
             </span>
           )}
           {note.shareMode !== 'none' && (
-            <span className="nn-badge nn-badge-shared" title="Đang chia sẻ">
-              🔗
+            <span className="nn-badge nn-badge-shared" title="Đang chia sẻ liên kết">
+              <Link2 size={11} strokeWidth={2} />
             </span>
           )}
           {note.sharePassword && (
             <span className="nn-badge nn-badge-locked" title="Được bảo vệ bằng mật khẩu">
-              🔒
+              <Lock size={11} strokeWidth={2} />
             </span>
           )}
         </div>
@@ -150,7 +159,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               type="button"
               id={`btn-pin-${note.id}`}
             >
-              📌
+              <Pin size={14} fill={note.isPinned ? 'currentColor' : 'none'} strokeWidth={2} />
             </button>
 
             {/* Permanent toggle */}
@@ -162,7 +171,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               type="button"
               id={`btn-permanent-${note.id}`}
             >
-              ♾
+              <InfinityIcon size={14} strokeWidth={2} />
             </button>
 
             {/* Share */}
@@ -174,7 +183,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               type="button"
               id={`btn-share-${note.id}`}
             >
-              🔗
+              <Link2 size={14} strokeWidth={2} />
             </button>
 
             {/* Edit */}
@@ -186,7 +195,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               type="button"
               id={`btn-edit-${note.id}`}
             >
-              ✏️
+              <Pencil size={14} strokeWidth={2} />
             </button>
 
             {/* Delete */}
@@ -198,7 +207,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               type="button"
               id={`btn-delete-${note.id}`}
             >
-              🗑
+              <Trash2 size={14} strokeWidth={2} />
             </button>
           </div>
         )}

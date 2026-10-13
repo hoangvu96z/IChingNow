@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { notesApi } from '../api.js';
+import {
+  Share2, X, Check, Copy, Eye, Pencil, Lock, Unlock,
+  ShieldCheck, Trash2, Send, Loader2, AlertCircle, CheckCircle2,
+  Link2, KeyRound,
+} from 'lucide-react';
 
 const APP_BASE = typeof window !== 'undefined'
   ? window.location.origin
@@ -107,11 +112,11 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
       setSharePassword(hasPw ? '••••••••' : '');
       setNewPassword('');
       setShowPasswordEdit(false);
-      setPasswordMsg(hasPw ? '✓ Đã đặt mật khẩu thành công' : '✓ Đã xóa mật khẩu');
+      setPasswordMsg({ type: 'success', text: hasPw ? 'Đã đặt mật khẩu thành công' : 'Đã xóa mật khẩu' });
       onUpdate?.({ sharePassword: newPassword.trim() || null });
       setTimeout(() => setPasswordMsg(null), 3000);
     } catch (e) {
-      setPasswordMsg('⚠ ' + e.message);
+      setPasswordMsg({ type: 'error', text: e.message });
     } finally {
       setSavingPassword(false);
     }
@@ -127,7 +132,9 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
       >
         {/* Header */}
         <div className="nn-modal-header">
-          <h2 className="nn-modal-title" id="share-modal-title">🔗 Chia sẻ ghi chú</h2>
+          <h2 className="nn-modal-title" id="share-modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Share2 size={18} strokeWidth={2.2} /> Chia sẻ ghi chú
+          </h2>
           <button
             className="nn-modal-close"
             onClick={onClose}
@@ -135,7 +142,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
             type="button"
             id="btn-share-modal-close"
           >
-            ✕
+            <X size={18} strokeWidth={2.2} />
           </button>
         </div>
 
@@ -151,7 +158,11 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
               alignItems: 'center',
               gap: 4,
             }}>
-              {shareMode !== 'none' ? '🟢 Đang bật' : '🔒 Đang tắt'}
+              {shareMode !== 'none' ? (
+                <><CheckCircle2 size={13} strokeWidth={2.5} /> Đang bật</>
+              ) : (
+                <><Lock size={13} strokeWidth={2} /> Đang tắt</>
+              )}
             </span>
           </div>
 
@@ -172,15 +183,19 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   onClick={copyLink}
                   type="button"
                   id="btn-copy-link"
-                  style={{ flexShrink: 0, minWidth: 95 }}
+                  style={{ flexShrink: 0, minWidth: 105, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  {copied ? '✓ Đã chép' : '📋 Copy Link'}
+                  {copied ? (
+                    <><Check size={14} strokeWidth={2.5} /> Đã chép</>
+                  ) : (
+                    <><Copy size={14} strokeWidth={2} /> Sao chép</>
+                  )}
                 </button>
               </div>
 
               {/* Status info */}
               <div style={{
-                padding: '8px 12px',
+                padding: '10px 12px',
                 borderRadius: 'var(--radius-sm)',
                 background: 'var(--bg-elevated)',
                 border: '1px solid var(--border-subtle)',
@@ -188,11 +203,20 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                 color: 'var(--text-secondary)',
                 marginBottom: 12,
                 lineHeight: 1.45,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 8,
               }}>
                 {shareMode === 'edit' ? (
-                  <span>✏️ <strong>Quyền chỉnh sửa:</strong> Bất kỳ ai có liên kết này đều có thể xem và sửa nội dung trực tiếp.</span>
+                  <>
+                    <Pencil size={15} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2, color: 'var(--accent)' }} />
+                    <span><strong>Quyền chỉnh sửa:</strong> Bất kỳ ai có liên kết này đều có thể xem và sửa nội dung trực tiếp.</span>
+                  </>
                 ) : (
-                  <span>👁️ <strong>Chỉ xem:</strong> Bất kỳ ai có liên kết này chỉ có thể xem nội dung ghi chú.</span>
+                  <>
+                    <Eye size={15} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2, color: '#38bdf8' }} />
+                    <span><strong>Chỉ xem:</strong> Bất kỳ ai có liên kết này chỉ có thể xem nội dung ghi chú.</span>
+                  </>
                 )}
               </div>
 
@@ -201,13 +225,13 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     className="btn btn-ghost"
-                    style={{ fontSize: '0.8rem', color: '#f87171' }}
+                    style={{ fontSize: '0.8rem', color: '#f87171', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     onClick={() => applyShareMode('none')}
                     disabled={loading}
                     type="button"
                     id="btn-turn-off-share"
                   >
-                    🔒 Tắt chia sẻ
+                    <Lock size={13} strokeWidth={2} /> Tắt chia sẻ
                   </button>
                 </div>
               ) : (
@@ -218,8 +242,9 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     onClick={() => applyShareMode('view')}
                     disabled={loading}
                     type="button"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                   >
-                    👁️ Chỉ xem
+                    <Eye size={13} strokeWidth={2} /> Chỉ xem
                   </button>
                   <button
                     id="share-mode-edit"
@@ -227,18 +252,19 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     onClick={() => applyShareMode('edit')}
                     disabled={loading}
                     type="button"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                   >
-                    ✏️ Cho phép sửa
+                    <Pencil size={13} strokeWidth={2} /> Cho phép sửa
                   </button>
                   <button
                     id="share-mode-none"
                     className="nn-share-mode-tab"
-                    style={{ color: '#f87171' }}
+                    style={{ color: '#f87171', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     onClick={() => applyShareMode('none')}
                     disabled={loading}
                     type="button"
                   >
-                    🔒 Tắt
+                    <Lock size={13} strokeWidth={2} /> Tắt
                   </button>
                 </div>
               )}
@@ -246,7 +272,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
           ) : (
             <div style={{
               textAlign: 'center',
-              padding: '16px 12px',
+              padding: '18px 14px',
               background: 'var(--bg-elevated)',
               borderRadius: 'var(--radius-md)',
               border: '1px dashed var(--border)',
@@ -263,8 +289,13 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   disabled={loading}
                   type="button"
                   id="btn-enable-guest-share"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  {loading ? 'Đang tạo…' : '🔗 Bật link chia sẻ (Sửa mặc định)'}
+                  {loading ? (
+                    <><Loader2 size={14} className="nn-spin" /> Đang tạo…</>
+                  ) : (
+                    <><Link2 size={14} strokeWidth={2.2} /> Bật link chia sẻ (Sửa mặc định)</>
+                  )}
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -273,17 +304,18 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     onClick={() => applyShareMode('view')}
                     disabled={loading}
                     type="button"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   >
-                    👁️ Tạo link Chỉ xem
+                    <Eye size={14} strokeWidth={2} /> Tạo link Chỉ xem
                   </button>
                   <button
                     className="btn btn-primary"
-                    style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)' }}
+                    style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     onClick={() => applyShareMode('edit')}
                     disabled={loading}
                     type="button"
                   >
-                    ✏️ Tạo link Xem & Sửa
+                    <Pencil size={14} strokeWidth={2} /> Tạo link Xem & Sửa
                   </button>
                 </div>
               )}
@@ -332,15 +364,15 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                 disabled={loading || !inviteEmail.trim()}
                 type="button"
                 id="btn-send-invite"
-                style={{ flexShrink: 0 }}
+                style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                {loading ? '⏳' : 'Gửi'}
+                {loading ? <Loader2 size={14} className="nn-spin" /> : <><Send size={14} strokeWidth={2} /> Gửi</>}
               </button>
             </div>
 
             {inviteSent && (
-              <p style={{ fontSize: '0.8rem', color: 'var(--accent)', marginTop: 6 }}>
-                ✓ Đã gửi lời mời tới {inviteEmail || 'email'}
+              <p style={{ fontSize: '0.8rem', color: 'var(--accent)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Check size={14} strokeWidth={2.5} /> Đã gửi lời mời tới {inviteEmail || 'email'}
               </p>
             )}
 
@@ -354,8 +386,12 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     </div>
                     <div className="nn-shared-user-info">
                       <div className="nn-shared-user-email">{s.email || s.userId}</div>
-                      <div className="nn-shared-user-perm">
-                        {s.permission === 'edit' ? '✏️ Có thể sửa' : '👁️ Chỉ xem'}
+                      <div className="nn-shared-user-perm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {s.permission === 'edit' ? (
+                          <><Pencil size={11} strokeWidth={2} /> Có thể sửa</>
+                        ) : (
+                          <><Eye size={11} strokeWidth={2} /> Chỉ xem</>
+                        )}
                       </div>
                     </div>
                     <button
@@ -365,7 +401,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                       aria-label={`Thu hồi quyền của ${s.email || s.userId}`}
                       type="button"
                     >
-                      ✕
+                      <X size={14} strokeWidth={2.2} />
                     </button>
                   </div>
                 ))}
@@ -375,8 +411,9 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
         )}
 
         {error && (
-          <div style={{ padding: '8px 20px 12px', fontSize: '0.8rem', color: '#f87171' }}>
-            ⚠ {error}
+          <div style={{ padding: '8px 20px 12px', fontSize: '0.8rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <AlertCircle size={14} strokeWidth={2} />
+            {error}
           </div>
         )}
 
@@ -384,13 +421,22 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
         {shareMode !== 'none' && (
           <div className="nn-share-section">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span className="nn-share-label" style={{ margin: 0, fontWeight: 600 }}>🔒 Bảo vệ bằng mật khẩu</span>
+              <span className="nn-share-label" style={{ margin: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck size={16} strokeWidth={2.2} /> Bảo vệ bằng mật khẩu
+              </span>
               <span style={{
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 color: hasPassword ? '#f59e0b' : 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
               }}>
-                {hasPassword ? '🔒 Đang bật' : '🔓 Chưa đặt'}
+                {hasPassword ? (
+                  <><Lock size={12} strokeWidth={2} /> Đang bật</>
+                ) : (
+                  <><Unlock size={12} strokeWidth={2} /> Chưa đặt</>
+                )}
               </span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>
@@ -403,23 +449,27 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   className="btn btn-ghost"
-                  style={{ fontSize: '0.82rem' }}
+                  style={{ fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   onClick={() => { setShowPasswordEdit(true); setNewPassword(''); }}
                   type="button"
                   id="btn-edit-share-password"
                 >
-                  {hasPassword ? '✏️ Đổi mật khẩu' : '🔒 Đặt mật khẩu'}
+                  {hasPassword ? (
+                    <><KeyRound size={13} strokeWidth={2} /> Đổi mật khẩu</>
+                  ) : (
+                    <><Lock size={13} strokeWidth={2} /> Đặt mật khẩu</>
+                  )}
                 </button>
                 {hasPassword && (
                   <button
                     className="btn btn-ghost"
-                    style={{ fontSize: '0.82rem', color: '#f87171' }}
+                    style={{ fontSize: '0.82rem', color: '#f87171', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     onClick={() => { setNewPassword(''); handleSetPassword(); }}
                     disabled={savingPassword}
                     type="button"
                     id="btn-remove-share-password"
                   >
-                    🗑 Xoá mật khẩu
+                    <Trash2 size={13} strokeWidth={2} /> Xoá mật khẩu
                   </button>
                 )}
               </div>
@@ -441,9 +491,13 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   onClick={handleSetPassword}
                   disabled={savingPassword}
                   type="button"
-                  style={{ flexShrink: 0 }}
+                  style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  {savingPassword ? '⏳' : '✓ Lưu'}
+                  {savingPassword ? (
+                    <Loader2 size={14} className="nn-spin" />
+                  ) : (
+                    <><Check size={14} strokeWidth={2.5} /> Lưu</>
+                  )}
                 </button>
                 <button
                   className="btn btn-ghost"
@@ -457,8 +511,20 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
             )}
 
             {passwordMsg && (
-              <p style={{ fontSize: '0.8rem', marginTop: 8, color: passwordMsg.startsWith('⚠') ? '#f87171' : 'var(--accent)' }}>
-                {passwordMsg}
+              <p style={{
+                fontSize: '0.8rem',
+                marginTop: 8,
+                color: passwordMsg.type === 'error' ? '#f87171' : 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
+                {passwordMsg.type === 'error' ? (
+                  <AlertCircle size={13} strokeWidth={2} />
+                ) : (
+                  <Check size={13} strokeWidth={2.5} />
+                )}
+                {passwordMsg.text}
               </p>
             )}
           </div>
