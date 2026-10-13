@@ -132,10 +132,15 @@ export const notesApi = {
     }
   },
 
-  getByShareToken: async (shareToken) => {
+  getByShareToken: async (shareToken, accessPassword) => {
     try {
-      return await apiFetch(`/notes/share/${shareToken}`);
-    } catch {
+      const headers = {};
+      if (accessPassword) headers['x-share-password'] = accessPassword;
+      return await apiFetch(`/notes/share/${shareToken}`, { headers });
+    } catch (e) {
+      if (e.message && (e.message.includes('password') || e.message.includes('401') || e.message.includes('403'))) {
+        throw e;
+      }
       const found = getLocalNotes().find((n) => n.shareToken === shareToken);
       if (found) return { ...found, canEdit: found.shareMode === 'edit' };
       throw new Error('Link chia sẻ không hợp lệ hoặc đã hết hạn');
@@ -268,6 +273,45 @@ export const notesApi = {
 
   removeSharedUser: (noteId, targetUserId) =>
     apiFetch(`/notes/${noteId}/share/user/${targetUserId}`, { method: 'DELETE' }),
+
+  reorderNotes: async (orderedIds) => {
+    try {
+      return await apiFetch('/notes/reorder', {
+        method: 'POST',
+        body: JSON.stringify({ order: orderedIds }),
+      });
+    } catch {
+      // Store order locally if API unavailable
+      try { localStorage.setItem('notenow_sort_order', JSON.stringify(orderedIds)); } catch {}
+      return { success: true };
+    }
+  },
+
+  setSharePassword: async (id, password) => {
+    try {
+      return await apiFetch(`/notes/${id}/share/password`, {
+        method: 'POST',
+        body: JSON.stringify({ password: password || null }),
+      });
+    } catch (e) {
+      // Fallback: store locally
+      const notes = getLocalNotes();
+      const idx = notes.findIndex((n) => n.id === id);
+      if (idx !== -1) {
+        notes[idx] = { ...notes[idx], sharePassword: password || null };
+        saveLocalNotes(notes);
+        return { success: true };
+      }
+      throw e;
+    }
+  },
+
+  verifySharePassword: async (shareToken, password) => {
+    return await apiFetch(`/notes/share/${shareToken}/verify-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  },
 
   claimGuestNotes: async () => {
     try {

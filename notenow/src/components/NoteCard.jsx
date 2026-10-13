@@ -4,7 +4,7 @@ import { getDaysRemaining, stripHtml } from '../api.js';
 
 const SSO_BASE = getSsoApiBase(import.meta.env);
 
-export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, isShared }) {
+export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPermanent, isShared }) {
   const [deleting, setDeleting] = useState(false);
   const daysLeft = getDaysRemaining(note.expiresAt);
   const contentPreview = stripHtml(note.content || '');
@@ -22,7 +22,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, isSha
 
   return (
     <div
-      className={`nn-card${note.isPinned ? ' pinned' : ''}`}
+      className={`nn-card${note.isPinned ? ' pinned' : ''}${note.isPermanent ? ' permanent' : ''}`}
       data-bg={note.bgColor || 'default'}
       data-pattern={note.bgPattern || 'none'}
       onClick={() => onEdit(note)}
@@ -32,8 +32,25 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, isSha
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onEdit(note); }}
       style={{ opacity: deleting ? 0.5 : 1 }}
     >
+      {/* Drag Handle — only for own notes */}
+      {!isShared && (
+        <div
+          className="nn-card-drag-handle"
+          title="Kéo để di chuyển"
+          aria-label="Kéo thả để sắp xếp"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          ⠿
+        </div>
+      )}
+
       {note.isPinned && (
         <span className="nn-pin-icon" aria-label="Đã ghim">📌</span>
+      )}
+
+      {note.isPermanent && (
+        <span className="nn-permanent-icon" aria-label="Lưu vĩnh viễn" title="Ghi chú vĩnh viễn">♾</span>
       )}
 
       {/* Images */}
@@ -83,7 +100,12 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, isSha
               👤 Khách
             </span>
           )}
-          {daysLeft !== null && daysLeft <= 30 && (
+          {note.isPermanent && (
+            <span className="nn-badge nn-badge-permanent" title="Lưu vĩnh viễn — không tự xoá">
+              ♾ Vĩnh viễn
+            </span>
+          )}
+          {daysLeft !== null && daysLeft <= 30 && !note.isPermanent && (
             <span
               className="nn-badge nn-badge-expiry"
               title={`Ghi chú sẽ xoá sau ${daysLeft} ngày`}
@@ -94,6 +116,11 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, isSha
           {note.shareMode !== 'none' && (
             <span className="nn-badge nn-badge-shared" title="Đang chia sẻ">
               🔗
+            </span>
+          )}
+          {note.sharePassword && (
+            <span className="nn-badge nn-badge-locked" title="Được bảo vệ bằng mật khẩu">
+              🔒
             </span>
           )}
         </div>
@@ -110,6 +137,18 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, isSha
               id={`btn-pin-${note.id}`}
             >
               📌
+            </button>
+
+            {/* Permanent toggle */}
+            <button
+              className={`nn-card-action${note.isPermanent ? ' active' : ''}`}
+              title={note.isPermanent ? 'Bỏ lưu vĩnh viễn' : 'Lưu vĩnh viễn (không tự xoá)'}
+              aria-label={note.isPermanent ? 'Bỏ lưu vĩnh viễn' : 'Đặt lưu vĩnh viễn'}
+              onClick={(e) => { e.stopPropagation(); onPermanent(note.id, !note.isPermanent); }}
+              type="button"
+              id={`btn-permanent-${note.id}`}
+            >
+              ♾
             </button>
 
             {/* Share */}

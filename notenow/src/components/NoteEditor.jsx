@@ -193,24 +193,26 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
         <div className="nn-sheet-handle" aria-hidden="true" />
         <div className="nn-editor-header">
           <div className="nn-editor-badge">
-            <span>{isNew ? '✏️ Ghi chú mới' : '📝 Chỉnh sửa ghi chú'}</span>
+            <span>{isNew ? '✏️ Ghi chú mới' : isReadOnly ? '👁 Đang xem ghi chú' : '📝 Chỉnh sửa ghi chú'}</span>
           </div>
-          <button
-            className="nn-modal-close"
-            onClick={async () => {
-              clearTimeout(autoSaveTimer.current);
-              if (activeNoteId || !isNew || shareToken) {
-                await handleSave(true, false);
-              }
-              onClose();
-            }}
-            aria-label="Đóng"
-            title="Đóng (Esc)"
-            type="button"
-            id="btn-editor-top-close"
-          >
-            ✕
-          </button>
+          {!isReadOnly && (
+            <button
+              className="nn-modal-close"
+              onClick={async () => {
+                clearTimeout(autoSaveTimer.current);
+                if (activeNoteId || !isNew || shareToken) {
+                  await handleSave(true, false);
+                }
+                onClose();
+              }}
+              aria-label="Đóng"
+              title="Đóng (Esc)"
+              type="button"
+              id="btn-editor-top-close"
+            >
+              ✕
+            </button>
+          )}
         </div>
         <div className="nn-editor-wrap" data-bg={bgColor}>
           {/* Title */}
@@ -428,13 +430,15 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* Char counter */}
-              <span
-                className={`nn-char-counter${overLimit ? ' over' : nearLimit ? ' warn' : ''}`}
-                aria-live="polite"
-              >
-                {chars.toLocaleString()}/{MAX_CHARS.toLocaleString()}
-              </span>
+              {/* Char counter — hide in read-only mode */}
+              {!isReadOnly && (
+                <span
+                  className={`nn-char-counter${overLimit ? ' over' : nearLimit ? ' warn' : ''}`}
+                  aria-live="polite"
+                >
+                  {chars.toLocaleString()}/{MAX_CHARS.toLocaleString()}
+                </span>
+              )}
 
               {!isReadOnly && (
                 <button
@@ -450,20 +454,22 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 </button>
               )}
 
-              <button
-                className="btn btn-ghost"
-                onClick={async () => {
-                  clearTimeout(autoSaveTimer.current);
-                  if (activeNoteId || !isNew || shareToken) {
-                    await handleSave(true, false);
-                  }
-                  onClose();
-                }}
-                id="btn-close-editor"
-                type="button"
-              >
-                Đóng
-              </button>
+              {!isReadOnly && (
+                <button
+                  className="btn btn-ghost"
+                  onClick={async () => {
+                    clearTimeout(autoSaveTimer.current);
+                    if (activeNoteId || !isNew || shareToken) {
+                      await handleSave(true, false);
+                    }
+                    onClose();
+                  }}
+                  id="btn-close-editor"
+                  type="button"
+                >
+                  Đóng
+                </button>
+              )}
             </div>
           </div>
         </div>

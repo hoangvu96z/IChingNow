@@ -16,6 +16,13 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
   const [copied, setCopied] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
   const [error, setError] = useState(null);
+  // Password protection
+  const [sharePassword, setSharePassword] = useState(note.sharePassword ? '••••••••' : '');
+  const [newPassword, setNewPassword] = useState('');
+  const [hasPassword, setHasPassword] = useState(!!note.sharePassword);
+  const [showPasswordEdit, setShowPasswordEdit] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState(null);
 
   const shareLink = shareToken ? `${APP_BASE}/note/s/${shareToken}` : null;
 
@@ -87,6 +94,26 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
       setError(e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSetPassword = async () => {
+    setSavingPassword(true);
+    setPasswordMsg(null);
+    try {
+      await notesApi.setSharePassword(note.id, newPassword.trim() || null);
+      const hasPw = !!newPassword.trim();
+      setHasPassword(hasPw);
+      setSharePassword(hasPw ? '••••••••' : '');
+      setNewPassword('');
+      setShowPasswordEdit(false);
+      setPasswordMsg(hasPw ? '✓ Đã đặt mật khẩu thành công' : '✓ Đã xóa mật khẩu');
+      onUpdate?.({ sharePassword: newPassword.trim() || null });
+      setTimeout(() => setPasswordMsg(null), 3000);
+    } catch (e) {
+      setPasswordMsg('⚠ ' + e.message);
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -350,6 +377,90 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
         {error && (
           <div style={{ padding: '8px 20px 12px', fontSize: '0.8rem', color: '#f87171' }}>
             ⚠ {error}
+          </div>
+        )}
+
+        {/* Password Protection Section */}
+        {shareMode !== 'none' && (
+          <div className="nn-share-section">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span className="nn-share-label" style={{ margin: 0, fontWeight: 600 }}>🔒 Bảo vệ bằng mật khẩu</span>
+              <span style={{
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: hasPassword ? '#f59e0b' : 'var(--text-muted)',
+              }}>
+                {hasPassword ? '🔒 Đang bật' : '🔓 Chưa đặt'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>
+              {hasPassword
+                ? 'Người xem cần nhập mật khẩu để truy cập liên kết chia sẻ.'
+                : 'Thêm mật khẩu để bảo vệ link chia sẻ khỏi truy cập không mong muốn.'}
+            </p>
+
+            {!showPasswordEdit ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="btn btn-ghost"
+                  style={{ fontSize: '0.82rem' }}
+                  onClick={() => { setShowPasswordEdit(true); setNewPassword(''); }}
+                  type="button"
+                  id="btn-edit-share-password"
+                >
+                  {hasPassword ? '✏️ Đổi mật khẩu' : '🔒 Đặt mật khẩu'}
+                </button>
+                {hasPassword && (
+                  <button
+                    className="btn btn-ghost"
+                    style={{ fontSize: '0.82rem', color: '#f87171' }}
+                    onClick={() => { setNewPassword(''); handleSetPassword(); }}
+                    disabled={savingPassword}
+                    type="button"
+                    id="btn-remove-share-password"
+                  >
+                    🗑 Xoá mật khẩu
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="password"
+                  className="nn-share-link-input"
+                  placeholder="Nhập mật khẩu mới…"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSetPassword(); if (e.key === 'Escape') setShowPasswordEdit(false); }}
+                  autoFocus
+                  id="share-new-password-input"
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSetPassword}
+                  disabled={savingPassword}
+                  type="button"
+                  style={{ flexShrink: 0 }}
+                >
+                  {savingPassword ? '⏳' : '✓ Lưu'}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setShowPasswordEdit(false)}
+                  type="button"
+                  style={{ flexShrink: 0 }}
+                >
+                  Huỷ
+                </button>
+              </div>
+            )}
+
+            {passwordMsg && (
+              <p style={{ fontSize: '0.8rem', marginTop: 8, color: passwordMsg.startsWith('⚠') ? '#f87171' : 'var(--accent)' }}>
+                {passwordMsg}
+              </p>
+            )}
           </div>
         )}
       </div>

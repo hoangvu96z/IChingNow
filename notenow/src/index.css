@@ -666,6 +666,88 @@ body {
   opacity: 0.7;
 }
 
+/* Permanent icon overlay */
+.nn-permanent-icon {
+  position: absolute;
+  top: 10px;
+  right: 30px;
+  font-size: 13px;
+  color: #f59e0b;
+  opacity: 0.8;
+}
+
+.nn-card.permanent::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #f59e0b, transparent);
+}
+
+/* Permanent badge */
+.nn-badge-permanent {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* Locked (password-protected) badge */
+.nn-badge-locked {
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* ─── Drag & Drop ─────────────────────────────────────────────── */
+
+/* Drag handle — shows on card hover */
+.nn-card-drag-handle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  user-select: none;
+}
+
+.nn-card:hover .nn-card-drag-handle,
+.nn-card:focus-within .nn-card-drag-handle {
+  opacity: 0.45;
+}
+
+.nn-card-drag-handle:hover {
+  opacity: 1 !important;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.nn-card-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Dragging state — the card being dragged */
+.nn-masonry-item.nn-dragging {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Drop target highlight */
+.nn-masonry-item.nn-drag-over > .nn-card {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-glow), var(--shadow-md);
+  transform: scale(1.01);
+}
+
 /* ─── Modal / Overlay ─────────────────────────────────────────── */
 .nn-overlay {
   position: fixed;

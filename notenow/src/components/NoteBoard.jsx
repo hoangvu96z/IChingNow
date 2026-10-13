@@ -20,6 +20,92 @@ function Toast({ toasts }) {
   );
 }
 
+// ─── Draggable Notes Grid ────────────────────────────────────────────────────
+
+function DraggableNoteGrid({ notes, onEdit, onDelete, onShare, onPin, onPermanent, onReorder, isShared }) {
+  const [draggedId, setDraggedId] = useState(null);
+  const [overIdx, setOverIdx] = useState(null);
+  const [localNotes, setLocalNotes] = useState(notes);
+  const saveTimer = useRef(null);
+
+  // Sync when parent notes change (e.g. after fetch)
+  useEffect(() => {
+    setLocalNotes(notes);
+  }, [notes]);
+
+  const handleDragStart = (e, note) => {
+    if (isShared) return;
+    setDraggedId(note.id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', note.id);
+  };
+
+  const handleDragOver = (e, idx) => {
+    if (isShared || draggedId === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setOverIdx(idx);
+  };
+
+  const handleDrop = (e, targetIdx) => {
+    e.preventDefault();
+    if (isShared || draggedId === null) return;
+
+    const fromIdx = localNotes.findIndex((n) => n.id === draggedId);
+    if (fromIdx === -1 || fromIdx === targetIdx) {
+      setDraggedId(null);
+      setOverIdx(null);
+      return;
+    }
+
+    const reordered = [...localNotes];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(targetIdx, 0, moved);
+    setLocalNotes(reordered);
+    setDraggedId(null);
+    setOverIdx(null);
+
+    // Debounced save
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      onReorder(reordered.map((n) => n.id));
+    }, 600);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setOverIdx(null);
+  };
+
+  return (
+    <div className="nn-masonry">
+      {localNotes.map((note, idx) => (
+        <div
+          key={note.id}
+          className={`nn-masonry-item${draggedId === note.id ? ' nn-dragging' : ''}${overIdx === idx && draggedId !== note.id ? ' nn-drag-over' : ''}`}
+          draggable={!isShared}
+          onDragStart={(e) => handleDragStart(e, note)}
+          onDragOver={(e) => handleDragOver(e, idx)}
+          onDrop={(e) => handleDrop(e, idx)}
+          onDragEnd={handleDragEnd}
+        >
+          <NoteCard
+            note={note}
+            onEdit={(n) => onEdit(n)}
+            onDelete={onDelete}
+            onShare={onShare}
+            onPin={onPin}
+            onPermanent={onPermanent}
+            isShared={isShared}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main NoteBoard ──────────────────────────────────────────────────────────
+
 export default function NoteBoard({ user }) {
   const [notes, setNotes] = useState([]);
   const [sharedNotes, setSharedNotes] = useState([]);
@@ -42,7 +128,22 @@ export default function NoteBoard({ user }) {
     setLoading(true);
     try {
       const data = await notesApi.list();
-      setNotes(data.notes || []);
+      const fetched = data.notes || [];
+      // Apply local sort order if available
+      try {
+        const savedOrder = JSON.parse(localStorage.getItem('notenow_sort_order') || 'null');
+        if (savedOrder && Array.isArray(savedOrder)) {
+          fetched.sort((a, b) => {
+            const ai = savedOrder.indexOf(a.id);
+            const bi = savedOrder.indexOf(b.id);
+            if (ai === -1 && bi === -1) return 0;
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return ai - bi;
+          });
+        }
+      } catch {}
+      setNotes(fetched);
       setSharedNotes(data.sharedNotes || []);
     } catch (e) {
       addToast(e.message || 'Không thể tải ghi chú', 'error');
@@ -124,6 +225,25 @@ export default function NoteBoard({ user }) {
     } catch (e) {
       addToast(e.message, 'error');
     }
+  };
+
+  const handlePermanentNote = async (id, permanent) => {
+    try {
+      await notesApi.update(id, { isPermanent: permanent });
+      setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPermanent: permanent } : n));
+      addToast(permanent ? '♾ Đã đặt lưu vĩnh viễn' : '⏳ Đã bỏ lưu vĩnh viễn');
+    } catch (e) {
+      addToast(e.message, 'error');
+    }
+  };
+
+  const handleReorder = async (orderedIds) => {
+    // Optimistic: already reordered in DraggableNoteGrid state
+    // Persist to server + localStorage
+    try {
+      localStorage.setItem('notenow_sort_order', JSON.stringify(orderedIds));
+    } catch {}
+    await notesApi.reorderNotes(orderedIds);
   };
 
   const handleEditorSave = async (dto, explicitId, options = {}) => {
@@ -240,20 +360,16 @@ export default function NoteBoard({ user }) {
             {pinnedNotes.length > 0 && (
               <div style={{ marginBottom: 8 }}>
                 <p className="nn-section-label">📌 Đã ghim</p>
-                <div className="nn-masonry">
-                  {pinnedNotes.map((note) => (
-                    <div className="nn-masonry-item" key={note.id}>
-                      <NoteCard
-                        note={note}
-                        onEdit={(n) => setEditingNote(n)}
-                        onDelete={handleDeleteNote}
-                        onShare={(n) => setSharingNote(n)}
-                        onPin={handlePinNote}
-                        isShared={false}
-                      />
-                    </div>
-                  ))}
-                </div>
+                <DraggableNoteGrid
+                  notes={pinnedNotes}
+                  onEdit={(n) => setEditingNote(n)}
+                  onDelete={handleDeleteNote}
+                  onShare={(n) => setSharingNote(n)}
+                  onPin={handlePinNote}
+                  onPermanent={handlePermanentNote}
+                  onReorder={handleReorder}
+                  isShared={false}
+                />
               </div>
             )}
 
@@ -261,20 +377,16 @@ export default function NoteBoard({ user }) {
             {unpinnedNotes.length > 0 && (
               <div style={{ marginBottom: 8 }}>
                 {pinnedNotes.length > 0 && <p className="nn-section-label">Ghi chú khác</p>}
-                <div className="nn-masonry">
-                  {unpinnedNotes.map((note) => (
-                    <div className="nn-masonry-item" key={note.id}>
-                      <NoteCard
-                        note={note}
-                        onEdit={(n) => setEditingNote(n)}
-                        onDelete={handleDeleteNote}
-                        onShare={(n) => setSharingNote(n)}
-                        onPin={handlePinNote}
-                        isShared={false}
-                      />
-                    </div>
-                  ))}
-                </div>
+                <DraggableNoteGrid
+                  notes={unpinnedNotes}
+                  onEdit={(n) => setEditingNote(n)}
+                  onDelete={handleDeleteNote}
+                  onShare={(n) => setSharingNote(n)}
+                  onPin={handlePinNote}
+                  onPermanent={handlePermanentNote}
+                  onReorder={handleReorder}
+                  isShared={false}
+                />
               </div>
             )}
 
@@ -282,20 +394,16 @@ export default function NoteBoard({ user }) {
             {sharedNotes.length > 0 && (
               <div style={{ marginTop: 24 }}>
                 <p className="nn-section-label">👥 Được chia sẻ với bạn</p>
-                <div className="nn-masonry">
-                  {sharedNotes.map((note) => (
-                    <div className="nn-masonry-item" key={note.id}>
-                      <NoteCard
-                        note={note}
-                        onEdit={(n) => setEditingNote(n)}
-                        onDelete={() => {}}
-                        onShare={() => {}}
-                        onPin={() => {}}
-                        isShared={true}
-                      />
-                    </div>
-                  ))}
-                </div>
+                <DraggableNoteGrid
+                  notes={sharedNotes}
+                  onEdit={(n) => setEditingNote(n)}
+                  onDelete={() => {}}
+                  onShare={() => {}}
+                  onPin={() => {}}
+                  onPermanent={() => {}}
+                  onReorder={() => {}}
+                  isShared={true}
+                />
               </div>
             )}
           </>

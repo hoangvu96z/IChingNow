@@ -65,18 +65,97 @@ function getRoute() {
 
 // ─── Share View Page ───────────────────────────────────────────────────────
 
+function SharePasswordGate({ shareToken, onUnlocked }) {
+  const [password, setPassword] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!password.trim()) return;
+    setVerifying(true);
+    setError(null);
+    try {
+      const data = await notesApi.getByShareToken(shareToken, password.trim());
+      onUnlocked(data);
+    } catch (err) {
+      setError('Mật khẩu không đúng. Vui lòng thử lại.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '40px 32px',
+        maxWidth: 380,
+        width: '100%',
+        textAlign: 'center',
+        boxShadow: 'var(--shadow-lg)',
+      }}>
+        <div style={{ fontSize: '3rem', marginBottom: 16 }}>🔒</div>
+        <h2 style={{ marginBottom: 8, color: 'var(--text-primary)' }}>Ghi chú được bảo vệ</h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.9rem' }}>
+          Nhập mật khẩu để xem ghi chú này.
+        </p>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            className="nn-share-link-input"
+            placeholder="Nhập mật khẩu…"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoFocus
+            style={{ marginBottom: 12, textAlign: 'left' }}
+            id="share-password-input"
+          />
+          {error && (
+            <p style={{ color: '#f87171', fontSize: '0.82rem', marginBottom: 12 }}>⚠ {error}</p>
+          )}
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={verifying || !password.trim()}
+            style={{ width: '100%' }}
+          >
+            {verifying ? 'Đang kiểm tra…' : '🔓 Mở khoá'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function ShareViewPage({ shareToken, user }) {
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [needsPassword, setNeedsPassword] = useState(false);
 
   useEffect(() => {
     notesApi.getByShareToken(shareToken).then((data) => {
       setNote(data);
       setLoading(false);
     }).catch((e) => {
-      setError(e.message);
-      setLoading(false);
+      // Detect password-protected notes (401/403 or specific messages)
+      if (e.message && (
+        e.message.toLowerCase().includes('password') ||
+        e.message.includes('401') ||
+        e.message.includes('403') ||
+        e.message.toLowerCase().includes('protected') ||
+        e.message.toLowerCase().includes('bảo vệ') ||
+        e.message.toLowerCase().includes('mật khẩu')
+      )) {
+        setNeedsPassword(true);
+        setLoading(false);
+      } else {
+        setError(e.message);
+        setLoading(false);
+      }
     });
   }, [shareToken]);
 
@@ -88,6 +167,10 @@ function ShareViewPage({ shareToken, user }) {
         <span>Đang tải…</span>
       </div>
     );
+  }
+
+  if (needsPassword) {
+    return <SharePasswordGate shareToken={shareToken} onUnlocked={(data) => { setNote(data); setNeedsPassword(false); }} />;
   }
 
   if (error) {
