@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { notesApi, ssoApi } from '../api.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   Loader2, Lock, MailCheck, MailOpen,
   CheckCircle2, AlertCircle, LogIn, Check,
 } from 'lucide-react';
 
 export default function InviteAcceptPage({ token, user, onAccepted }) {
+  const { t } = useLanguage();
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'success' | 'error'
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -39,7 +41,7 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
             <div className="nn-invite-icon">
               <Loader2 size={38} className="nn-spin" color="var(--accent)" />
             </div>
-            <h1 className="nn-invite-title">Đang xử lý…</h1>
+            <h1 className="nn-invite-title">{t('invite.loading', 'Đang xử lý…')}</h1>
           </>
         )}
 
@@ -48,9 +50,9 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
             <div className="nn-invite-icon">
               <Lock size={38} color="var(--accent)" />
             </div>
-            <h1 className="nn-invite-title">Đăng nhập để chấp nhận</h1>
+            <h1 className="nn-invite-title">{t('invite.login_title', 'Đăng nhập để chấp nhận')}</h1>
             <p className="nn-invite-text">
-              Bạn cần đăng nhập vào tài khoản vInfi SSO có email khớp với lời mời để chấp nhận.
+              {t('invite.login_desc', 'Bạn cần đăng nhập vào tài khoản vInfi SSO có email khớp với lời mời để chấp nhận.')}
             </p>
             <a
               href={loginUrl}
@@ -58,7 +60,7 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
               style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 8 }}
               id="btn-invite-login"
             >
-              <LogIn size={16} strokeWidth={2.2} /> Đăng nhập vInfi SSO
+              <LogIn size={16} strokeWidth={2.2} /> {t('invite.login_btn', 'Đăng nhập vInfi SSO')}
             </a>
           </>
         )}
@@ -68,12 +70,12 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
             <div className="nn-invite-icon">
               <MailCheck size={38} color="var(--accent)" />
             </div>
-            <h1 className="nn-invite-title">Lời mời chia sẻ ghi chú</h1>
+            <h1 className="nn-invite-title">{t('invite.ready_title', 'Lời mời chia sẻ ghi chú')}</h1>
             <p className="nn-invite-text">
-              Bạn được mời xem / chỉnh sửa một ghi chú trên NoteNow.
+              {t('invite.ready_desc', 'Bạn được mời xem / chỉnh sửa một ghi chú trên NoteNow.')}
             </p>
             <div className="nn-invite-note-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <MailOpen size={16} /> Nhấn chấp nhận để xem ghi chú được chia sẻ
+              <MailOpen size={16} /> {t('invite.ready_box', 'Nhấn chấp nhận để xem ghi chú được chia sẻ')}
             </div>
             <button
               className="btn btn-primary w-full"
@@ -82,7 +84,7 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
               type="button"
               id="btn-accept-invite"
             >
-              <Check size={16} strokeWidth={2.5} /> Chấp nhận lời mời
+              <Check size={16} strokeWidth={2.5} /> {t('invite.accept_btn', 'Chấp nhận lời mời')}
             </button>
           </>
         )}
@@ -92,9 +94,9 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
             <div className="nn-invite-icon">
               <CheckCircle2 size={38} color="var(--accent)" />
             </div>
-            <h1 className="nn-invite-title">Đã chấp nhận!</h1>
+            <h1 className="nn-invite-title">{t('invite.success_title', 'Đã chấp nhận!')}</h1>
             <p className="nn-invite-text">
-              Ghi chú đã được thêm vào board của bạn. Đang chuyển hướng…
+              {t('invite.success_desc', 'Ghi chú đã được thêm vào board của bạn. Đang chuyển hướng…')}
             </p>
           </>
         )}
@@ -104,15 +106,15 @@ export default function InviteAcceptPage({ token, user, onAccepted }) {
             <div className="nn-invite-icon">
               <AlertCircle size={38} color="#f87171" />
             </div>
-            <h1 className="nn-invite-title">Không thể chấp nhận</h1>
-            <p className="nn-invite-text">{errorMsg || 'Lời mời không hợp lệ hoặc đã hết hạn.'}</p>
+            <h1 className="nn-invite-title">{t('invite.error_title', 'Không thể chấp nhận')}</h1>
+            <p className="nn-invite-text">{errorMsg || t('invite.error_default', 'Lời mời không hợp lệ hoặc đã hết hạn.')}</p>
             <a
               href={import.meta.env.BASE_URL || '/note/'}
               className="btn btn-ghost w-full"
               style={{ justifyContent: 'center' }}
               id="btn-go-home"
             >
-              ← Về trang chính
+              {t('share_view.back_home', '← Về trang chính')}
             </a>
           </>
         )}

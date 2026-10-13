@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { notesApi, charCount, compressImageTo720p } from '../api.js';
 import NoteColorPicker from './NoteColorPicker.jsx';
 import ImageViewer from './ImageViewer.jsx';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 // Lucide React icons
 import {
@@ -41,6 +42,7 @@ function ToolbarButton({ onClick, title, isActive, children, id }) {
 }
 
 export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = false, userIsLoggedIn, shareToken }) {
+  const { t } = useLanguage();
   const MAX_CHARS = userIsLoggedIn ? 10000 : 2048;
 
   const [activeNoteId, setActiveNoteId] = useState(note?.id || null);
@@ -72,7 +74,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
       TextAlign.configure({ types: ['paragraph'] }),
       TextStyle,
       UnderlineExt,
-      Placeholder.configure({ placeholder: 'Viết ghi chú của bạn ở đây…' }),
+      Placeholder.configure({ placeholder: t('editor.content_placeholder', 'Viết ghi chú của bạn ở đây…') }),
     ],
     content: note?.content || '',
     editable: !isReadOnly,
@@ -121,7 +123,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
     if (!files.length) return;
 
     if (images.length + files.length > 2) {
-      setError('Mỗi note chỉ được tối đa 2 hình ảnh');
+      setError(t('editor.max_images_error', 'Mỗi note chỉ được tối đa 2 hình ảnh'));
       return;
     }
 
@@ -202,17 +204,17 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
         className="nn-modal nn-editor-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={isNew ? 'Tạo ghi chú mới' : 'Chỉnh sửa ghi chú'}
+        aria-label={isNew ? t('editor.badge_new', 'Tạo ghi chú mới') : t('editor.badge_editing', 'Chỉnh sửa ghi chú')}
       >
         <div className="nn-sheet-handle" aria-hidden="true" />
         <div className="nn-editor-header">
           <div className="nn-editor-badge">
             <span>
               {isNew
-                ? <><Plus size={14} strokeWidth={2.5} /> Ghi chú mới</>
+                ? <><Plus size={14} strokeWidth={2.5} /> {t('editor.badge_new', 'Ghi chú mới')}</>
                 : isReadOnly
-                ? <><Eye size={14} strokeWidth={2} /> Đang xem ghi chú</>
-                : <><Pencil size={14} strokeWidth={2} /> Chỉnh sửa ghi chú</>
+                ? <><Eye size={14} strokeWidth={2} /> {t('editor.badge_viewing', 'Đang xem ghi chú')}</>
+                : <><Pencil size={14} strokeWidth={2} /> {t('editor.badge_editing', 'Chỉnh sửa ghi chú')}</>
               }
             </span>
           </div>
@@ -226,8 +228,8 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 }
                 onClose();
               }}
-              aria-label="Đóng"
-              title="Đóng (Esc)"
+              aria-label={t('editor.btn_close', 'Đóng')}
+              title={`${t('editor.btn_close', 'Đóng')} (Esc)`}
               type="button"
               id="btn-editor-top-close"
             >
@@ -239,20 +241,19 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
           {/* Title */}
           <textarea
             className="nn-editor-title"
-            placeholder="Tiêu đề"
+            placeholder={t('editor.title_placeholder', 'Tiêu đề')}
             value={title}
             rows={1}
             maxLength={200}
             readOnly={isReadOnly}
             onChange={(e) => {
               setTitle(e.target.value);
-              // auto-resize
               e.target.style.height = 'auto';
               e.target.style.height = e.target.scrollHeight + 'px';
               triggerAutoSave();
             }}
             id="note-editor-title"
-            aria-label="Tiêu đề ghi chú"
+            aria-label={t('editor.title_placeholder', 'Tiêu đề ghi chú')}
           />
 
           {/* Images */}
@@ -267,14 +268,14 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                     loading="lazy"
                     onClick={() => setViewerIndex(idx)}
                     style={{ cursor: 'zoom-in' }}
-                    title="Bấm để xem to"
+                    title={t('card.click_zoom', 'Bấm để xem to')}
                   />
                   {!isReadOnly && (
                     <button
                       className="nn-editor-img-remove"
                       onClick={() => handleRemoveImage(idx)}
-                      title="Xoá hình"
-                      aria-label={`Xoá hình ${idx + 1}`}
+                      title={t('editor.delete_image', 'Xoá hình')}
+                      aria-label={`${t('editor.delete_image', 'Xoá hình')} ${idx + 1}`}
                       type="button"
                     >
                       <X size={12} strokeWidth={3} />
@@ -301,7 +302,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
             <div className="nn-toolbar" role="toolbar" aria-label="Định dạng văn bản">
               <ToolbarButton
                 id="tb-bold"
-                title="Đậm (Ctrl+B)"
+                title={t('editor.tb_bold', 'Đậm (Ctrl+B)')}
                 isActive={editor?.isActive('bold')}
                 onClick={() => editor?.chain().focus().toggleBold().run()}
               >
@@ -309,7 +310,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
               </ToolbarButton>
               <ToolbarButton
                 id="tb-italic"
-                title="Nghiêng (Ctrl+I)"
+                title={t('editor.tb_italic', 'Nghiêng (Ctrl+I)')}
                 isActive={editor?.isActive('italic')}
                 onClick={() => editor?.chain().focus().toggleItalic().run()}
               >
@@ -317,7 +318,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
               </ToolbarButton>
               <ToolbarButton
                 id="tb-underline"
-                title="Gạch chân (Ctrl+U)"
+                title={t('editor.tb_underline', 'Gạch chân (Ctrl+U)')}
                 isActive={editor?.isActive('underline')}
                 onClick={() => editor?.chain().focus().toggleUnderline().run()}
               >
@@ -325,7 +326,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
               </ToolbarButton>
               <ToolbarButton
                 id="tb-strike"
-                title="Gạch ngang"
+                title={t('editor.tb_strike', 'Gạch ngang')}
                 isActive={editor?.isActive('strike')}
                 onClick={() => editor?.chain().focus().toggleStrike().run()}
               >
@@ -336,7 +337,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
 
               <ToolbarButton
                 id="tb-highlight"
-                title="Highlight"
+                title={t('editor.tb_highlight', 'Highlight')}
                 isActive={editor?.isActive('highlight')}
                 onClick={() => editor?.chain().focus().toggleHighlight().run()}
               >
@@ -347,7 +348,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
 
               <ToolbarButton
                 id="tb-ul"
-                title="Danh sách"
+                title={t('editor.tb_bullet_list', 'Danh sách')}
                 isActive={editor?.isActive('bulletList')}
                 onClick={() => editor?.chain().focus().toggleBulletList().run()}
               >
@@ -355,7 +356,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
               </ToolbarButton>
               <ToolbarButton
                 id="tb-ol"
-                title="Danh sách số"
+                title={t('editor.tb_ordered_list', 'Danh sách số')}
                 isActive={editor?.isActive('orderedList')}
                 onClick={() => editor?.chain().focus().toggleOrderedList().run()}
               >
@@ -366,7 +367,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
 
               <ToolbarButton
                 id="tb-align-left"
-                title="Căn trái"
+                title={t('editor.tb_align_left', 'Căn trái')}
                 isActive={editor?.isActive({ textAlign: 'left' })}
                 onClick={() => editor?.chain().focus().setTextAlign('left').run()}
               >
@@ -374,7 +375,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
               </ToolbarButton>
               <ToolbarButton
                 id="tb-align-center"
-                title="Căn giữa"
+                title={t('editor.tb_align_center', 'Căn giữa')}
                 isActive={editor?.isActive({ textAlign: 'center' })}
                 onClick={() => editor?.chain().focus().setTextAlign('center').run()}
               >
@@ -382,7 +383,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
               </ToolbarButton>
               <ToolbarButton
                 id="tb-align-right"
-                title="Căn phải"
+                title={t('editor.tb_align_right', 'Căn phải')}
                 isActive={editor?.isActive({ textAlign: 'right' })}
                 onClick={() => editor?.chain().focus().setTextAlign('right').run()}
               >
@@ -433,12 +434,12 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                         style={{ display: 'none' }}
                         onChange={handleImageUpload}
                         id="note-image-upload"
-                        aria-label="Upload hình ảnh"
+                        aria-label={t('editor.upload_image', 'Upload hình ảnh')}
                       />
                       <button
                         className="btn btn-ghost btn-icon"
-                        title={`Upload hình (${images.length}/2)`}
-                        aria-label="Upload hình ảnh"
+                        title={t('editor.upload_image_count', `Upload hình (${images.length}/2)`, { count: images.length })}
+                        aria-label={t('editor.upload_image', 'Upload hình ảnh')}
                         type="button"
                         disabled={uploading}
                         onClick={() => fileInputRef.current?.click()}
@@ -455,8 +456,8 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                   {/* Color picker toggle */}
                   <button
                     className={`btn btn-ghost btn-icon${showColorPicker ? ' text-accent' : ''}`}
-                    title="Màu nền"
-                    aria-label="Chọn màu nền và hoa văn"
+                    title={t('editor.color_picker', 'Màu nền và hoa văn')}
+                    aria-label={t('editor.color_picker', 'Màu nền và hoa văn')}
                     aria-expanded={showColorPicker}
                     type="button"
                     onClick={() => setShowColorPicker((v) => !v)}
@@ -490,8 +491,8 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                   type="button"
                 >
                   {saving
-                    ? <><Loader2 size={14} strokeWidth={2} className="nn-spin" /> Đang lưu…</>
-                    : <><Check size={14} strokeWidth={2.5} /> {isNew ? 'Tạo note' : 'Lưu'}</>
+                    ? <><Loader2 size={14} strokeWidth={2} className="nn-spin" /> {t('editor.btn_saving', 'Đang lưu…')}</>
+                    : <><Check size={14} strokeWidth={2.5} /> {isNew ? t('editor.btn_create', 'Tạo note') : t('editor.btn_save', 'Lưu')}</>
                   }
                 </button>
               )}
@@ -509,7 +510,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                   id="btn-close-editor"
                   type="button"
                 >
-                  Đóng
+                  {t('editor.btn_close', 'Đóng')}
                 </button>
               )}
             </div>

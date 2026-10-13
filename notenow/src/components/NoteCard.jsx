@@ -2,6 +2,7 @@ import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState } from 'react';
 import { getDaysRemaining, stripHtml } from '../api.js';
 import ImageViewer from './ImageViewer.jsx';
+import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   GripVertical, Pin, Infinity as InfinityIcon,
   Users, User, Clock, Link2, Lock,
@@ -11,6 +12,7 @@ import {
 const SSO_BASE = getSsoApiBase(import.meta.env);
 
 export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPermanent, isShared }) {
+  const { t } = useLanguage();
   const [deleting, setDeleting] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
   const daysLeft = getDaysRemaining(note.expiresAt);
@@ -18,7 +20,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
 
   const handleDelete = async (e) => {
     e.stopPropagation();
-    if (!window.confirm('Xoá ghi chú này?')) return;
+    if (!window.confirm(t('card.delete_confirm', 'Xoá ghi chú này?'))) return;
     setDeleting(true);
     try {
       await onDelete(note.id);
@@ -35,7 +37,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       onClick={() => onEdit(note)}
       role="button"
       tabIndex={0}
-      aria-label={`Ghi chú: ${note.title || 'Không có tiêu đề'}`}
+      aria-label={`${t('editor.badge_new', 'Ghi chú')}: ${note.title || t('card.untitled', 'Không có tiêu đề')}`}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onEdit(note); }}
       style={{ opacity: deleting ? 0.5 : 1 }}
     >
@@ -43,8 +45,8 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       {!isShared && (
         <div
           className="nn-card-drag-handle"
-          title="Kéo để sắp xếp vị trí"
-          aria-label="Kéo thả để sắp xếp"
+          title={t('card.drag_title', 'Kéo để sắp xếp vị trí')}
+          aria-label={t('card.drag_title', 'Kéo để sắp xếp vị trí')}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
@@ -53,13 +55,13 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       )}
 
       {note.isPinned && (
-        <span className="nn-pin-icon" aria-label="Đã ghim" title="Đã ghim">
+        <span className="nn-pin-icon" aria-label={t('board.section_pinned', 'Đã ghim')} title={t('board.section_pinned', 'Đã ghim')}>
           <Pin size={13} fill="currentColor" strokeWidth={1.5} />
         </span>
       )}
 
       {note.isPermanent && (
-        <span className="nn-permanent-icon" aria-label="Lưu vĩnh viễn" title="Ghi chú vĩnh viễn">
+        <span className="nn-permanent-icon" aria-label={t('card.badge_permanent', 'Lưu vĩnh viễn')} title={t('card.tooltip_permanent', 'Lưu vĩnh viễn — không tự xoá')}>
           <InfinityIcon size={14} strokeWidth={2.2} />
         </span>
       )}
@@ -76,11 +78,11 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               key={idx}
               className="nn-card-img"
               src={img.url.startsWith('data:') || img.url.startsWith('http') ? img.url : `${SSO_BASE}${img.url}`}
-              alt={`Ảnh ${idx + 1} trong ghi chú`}
+              alt={`Ảnh ${idx + 1}`}
               loading="lazy"
               onClick={(e) => { e.stopPropagation(); setViewerIndex(idx); }}
               style={{ cursor: 'zoom-in' }}
-              title="Bấm để xem to"
+              title={t('card.click_zoom', 'Bấm để xem to')}
             />
           ))}
         </div>
@@ -114,35 +116,35 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       <div className="nn-card-footer">
         <div className="nn-card-badges">
           {isShared && (
-            <span className="nn-badge nn-badge-shared" title="Được chia sẻ với bạn">
-              <Users size={11} strokeWidth={2} /> Được share
+            <span className="nn-badge nn-badge-shared" title={t('board.section_shared', 'Được chia sẻ với bạn')}>
+              <Users size={11} strokeWidth={2} /> {t('card.badge_shared', 'Được share')}
             </span>
           )}
           {!isShared && note.isGuest && (
-            <span className="nn-badge nn-badge-guest" title="Ghi chú không đăng nhập">
-              <User size={11} strokeWidth={2} /> Khách
+            <span className="nn-badge nn-badge-guest" title={t('board.empty_guest_desc', 'Ghi chú không đăng nhập')}>
+              <User size={11} strokeWidth={2} /> {t('card.badge_guest', 'Khách')}
             </span>
           )}
           {note.isPermanent && (
-            <span className="nn-badge nn-badge-permanent" title="Lưu vĩnh viễn — không tự xoá">
-              <InfinityIcon size={11} strokeWidth={2.2} /> Vĩnh viễn
+            <span className="nn-badge nn-badge-permanent" title={t('card.tooltip_permanent', 'Lưu vĩnh viễn — không tự xoá')}>
+              <InfinityIcon size={11} strokeWidth={2.2} /> {t('card.badge_permanent', 'Vĩnh viễn')}
             </span>
           )}
           {daysLeft !== null && daysLeft <= 30 && !note.isPermanent && (
             <span
               className="nn-badge nn-badge-expiry"
-              title={`Ghi chú sẽ xoá sau ${daysLeft} ngày`}
+              title={t('card.tooltip_expiry', `Ghi chú sẽ xoá sau ${daysLeft} ngày`, { days: daysLeft })}
             >
               <Clock size={11} strokeWidth={2} /> {daysLeft}d
             </span>
           )}
           {note.shareMode !== 'none' && (
-            <span className="nn-badge nn-badge-shared" title="Đang chia sẻ liên kết">
+            <span className="nn-badge nn-badge-shared" title={t('share.link_section', 'Đang chia sẻ liên kết')}>
               <Link2 size={11} strokeWidth={2} />
             </span>
           )}
           {note.sharePassword && (
-            <span className="nn-badge nn-badge-locked" title="Được bảo vệ bằng mật khẩu">
+            <span className="nn-badge nn-badge-locked" title={t('share.password_title', 'Được bảo vệ bằng mật khẩu')}>
               <Lock size={11} strokeWidth={2} />
             </span>
           )}
@@ -153,8 +155,8 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
             {/* Pin */}
             <button
               className={`nn-card-action${note.isPinned ? ' active' : ''}`}
-              title={note.isPinned ? 'Bỏ ghim' : 'Ghim'}
-              aria-label={note.isPinned ? 'Bỏ ghim ghi chú' : 'Ghim ghi chú'}
+              title={note.isPinned ? t('card.action_unpin', 'Bỏ ghim') : t('card.action_pin', 'Ghim')}
+              aria-label={note.isPinned ? t('card.action_unpin', 'Bỏ ghim') : t('card.action_pin', 'Ghim')}
               onClick={(e) => { e.stopPropagation(); onPin(note.id, !note.isPinned); }}
               type="button"
               id={`btn-pin-${note.id}`}
@@ -165,8 +167,8 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
             {/* Permanent toggle */}
             <button
               className={`nn-card-action${note.isPermanent ? ' active' : ''}`}
-              title={note.isPermanent ? 'Bỏ lưu vĩnh viễn' : 'Lưu vĩnh viễn (không tự xoá)'}
-              aria-label={note.isPermanent ? 'Bỏ lưu vĩnh viễn' : 'Đặt lưu vĩnh viễn'}
+              title={note.isPermanent ? t('card.action_unpermanent', 'Bỏ lưu vĩnh viễn') : t('card.action_permanent', 'Lưu vĩnh viễn')}
+              aria-label={note.isPermanent ? t('card.action_unpermanent', 'Bỏ lưu vĩnh viễn') : t('card.action_permanent', 'Lưu vĩnh viễn')}
               onClick={(e) => { e.stopPropagation(); onPermanent(note.id, !note.isPermanent); }}
               type="button"
               id={`btn-permanent-${note.id}`}
@@ -177,8 +179,8 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
             {/* Share */}
             <button
               className="nn-card-action"
-              title="Chia sẻ"
-              aria-label="Chia sẻ ghi chú"
+              title={t('card.action_share', 'Chia sẻ')}
+              aria-label={t('card.action_share', 'Chia sẻ')}
               onClick={(e) => { e.stopPropagation(); onShare(note); }}
               type="button"
               id={`btn-share-${note.id}`}
@@ -189,8 +191,8 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
             {/* Edit */}
             <button
               className="nn-card-action"
-              title="Chỉnh sửa"
-              aria-label="Chỉnh sửa ghi chú"
+              title={t('card.action_edit', 'Chỉnh sửa')}
+              aria-label={t('card.action_edit', 'Chỉnh sửa')}
               onClick={(e) => { e.stopPropagation(); onEdit(note); }}
               type="button"
               id={`btn-edit-${note.id}`}
@@ -201,8 +203,8 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
             {/* Delete */}
             <button
               className="nn-card-action danger"
-              title="Xoá"
-              aria-label="Xoá ghi chú"
+              title={t('card.action_delete', 'Xoá')}
+              aria-label={t('card.action_delete', 'Xoá')}
               onClick={handleDelete}
               type="button"
               id={`btn-delete-${note.id}`}

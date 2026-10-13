@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { notesApi } from '../api.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   Share2, X, Check, Copy, Eye, Pencil, Lock, Unlock,
   ShieldCheck, Trash2, Send, Loader2, AlertCircle, CheckCircle2,
@@ -11,6 +12,7 @@ const APP_BASE = typeof window !== 'undefined'
   : (import.meta.env.VITE_APP_URL || 'https://vunph.id.vn');
 
 export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) {
+  const { t } = useLanguage();
   const isGuest = !isLoggedIn;
   const [shareMode, setShareMode] = useState(note.shareMode || (isGuest ? 'edit' : 'none'));
   const [shareToken, setShareToken] = useState(note.shareToken || '');
@@ -22,7 +24,6 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
   const [inviteSent, setInviteSent] = useState(false);
   const [error, setError] = useState(null);
   // Password protection
-  const [sharePassword, setSharePassword] = useState(note.sharePassword ? '••••••••' : '');
   const [newPassword, setNewPassword] = useState('');
   const [hasPassword, setHasPassword] = useState(!!note.sharePassword);
   const [showPasswordEdit, setShowPasswordEdit] = useState(false);
@@ -109,10 +110,12 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
       await notesApi.setSharePassword(note.id, newPassword.trim() || null);
       const hasPw = !!newPassword.trim();
       setHasPassword(hasPw);
-      setSharePassword(hasPw ? '••••••••' : '');
       setNewPassword('');
       setShowPasswordEdit(false);
-      setPasswordMsg({ type: 'success', text: hasPw ? 'Đã đặt mật khẩu thành công' : 'Đã xóa mật khẩu' });
+      setPasswordMsg({
+        type: 'success',
+        text: hasPw ? t('share.password_success_set', 'Đã đặt mật khẩu thành công') : t('share.password_success_remove', 'Đã xóa mật khẩu'),
+      });
       onUpdate?.({ sharePassword: newPassword.trim() || null });
       setTimeout(() => setPasswordMsg(null), 3000);
     } catch (e) {
@@ -133,12 +136,12 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
         {/* Header */}
         <div className="nn-modal-header">
           <h2 className="nn-modal-title" id="share-modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Share2 size={18} strokeWidth={2.2} /> Chia sẻ ghi chú
+            <Share2 size={18} strokeWidth={2.2} /> {t('share.title', 'Chia sẻ ghi chú')}
           </h2>
           <button
             className="nn-modal-close"
             onClick={onClose}
-            aria-label="Đóng"
+            aria-label={t('editor.btn_close', 'Đóng')}
             type="button"
             id="btn-share-modal-close"
           >
@@ -149,7 +152,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
         {/* Share by link */}
         <div className="nn-share-section">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span className="nn-share-label" style={{ margin: 0, fontWeight: 600 }}>Chia sẻ qua liên kết</span>
+            <span className="nn-share-label" style={{ margin: 0, fontWeight: 600 }}>{t('share.link_section', 'Chia sẻ qua liên kết')}</span>
             <span style={{
               fontSize: '0.75rem',
               fontWeight: 600,
@@ -159,9 +162,9 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
               gap: 4,
             }}>
               {shareMode !== 'none' ? (
-                <><CheckCircle2 size={13} strokeWidth={2.5} /> Đang bật</>
+                <><CheckCircle2 size={13} strokeWidth={2.5} /> {t('share.status_on', 'Đang bật')}</>
               ) : (
-                <><Lock size={13} strokeWidth={2} /> Đang tắt</>
+                <><Lock size={13} strokeWidth={2} /> {t('share.status_off', 'Đang tắt')}</>
               )}
             </span>
           </div>
@@ -175,7 +178,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   value={shareLink}
                   readOnly
                   onClick={(e) => e.target.select()}
-                  aria-label="Link chia sẻ"
+                  aria-label={t('share.link_section', 'Link chia sẻ')}
                   id="share-link-input"
                 />
                 <button
@@ -186,9 +189,9 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   style={{ flexShrink: 0, minWidth: 105, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   {copied ? (
-                    <><Check size={14} strokeWidth={2.5} /> Đã chép</>
+                    <><Check size={14} strokeWidth={2.5} /> {t('share.copied', 'Đã chép')}</>
                   ) : (
-                    <><Copy size={14} strokeWidth={2} /> Sao chép</>
+                    <><Copy size={14} strokeWidth={2} /> {t('share.copy', 'Sao chép')}</>
                   )}
                 </button>
               </div>
@@ -210,12 +213,12 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                 {shareMode === 'edit' ? (
                   <>
                     <Pencil size={15} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2, color: 'var(--accent)' }} />
-                    <span><strong>Quyền chỉnh sửa:</strong> Bất kỳ ai có liên kết này đều có thể xem và sửa nội dung trực tiếp.</span>
+                    <span>{t('share.perm_edit_tip', 'Quyền chỉnh sửa: Bất kỳ ai có liên kết này đều có thể xem và sửa nội dung trực tiếp.')}</span>
                   </>
                 ) : (
                   <>
                     <Eye size={15} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2, color: '#38bdf8' }} />
-                    <span><strong>Chỉ xem:</strong> Bất kỳ ai có liên kết này chỉ có thể xem nội dung ghi chú.</span>
+                    <span>{t('share.perm_view_tip', 'Chỉ xem: Bất kỳ ai có liên kết này chỉ có thể xem nội dung ghi chú.')}</span>
                   </>
                 )}
               </div>
@@ -231,7 +234,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     type="button"
                     id="btn-turn-off-share"
                   >
-                    <Lock size={13} strokeWidth={2} /> Tắt chia sẻ
+                    <Lock size={13} strokeWidth={2} /> {t('share.turn_off', 'Tắt chia sẻ')}
                   </button>
                 </div>
               ) : (
@@ -244,7 +247,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     type="button"
                     style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                   >
-                    <Eye size={13} strokeWidth={2} /> Chỉ xem
+                    <Eye size={13} strokeWidth={2} /> {t('share.tab_view', 'Chỉ xem')}
                   </button>
                   <button
                     id="share-mode-edit"
@@ -254,7 +257,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     type="button"
                     style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                   >
-                    <Pencil size={13} strokeWidth={2} /> Cho phép sửa
+                    <Pencil size={13} strokeWidth={2} /> {t('share.tab_edit', 'Cho phép sửa')}
                   </button>
                   <button
                     id="share-mode-none"
@@ -264,7 +267,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     disabled={loading}
                     type="button"
                   >
-                    <Lock size={13} strokeWidth={2} /> Tắt
+                    <Lock size={13} strokeWidth={2} /> {t('share.tab_off', 'Tắt')}
                   </button>
                 </div>
               )}
@@ -278,9 +281,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
               border: '1px dashed var(--border)',
             }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                {isGuest
-                  ? 'Liên kết chia sẻ cho phép người nhận chỉnh sửa ghi chú trực tiếp.'
-                  : 'Tạo liên kết chia sẻ để gửi cho bất kỳ ai xem hoặc chỉnh sửa.'}
+                {isGuest ? t('share.guest_desc', 'Liên kết chia sẻ cho phép người nhận chỉnh sửa ghi chú trực tiếp.') : t('share.user_desc', 'Tạo liên kết chia sẻ để gửi cho bất kỳ ai xem hoặc chỉnh sửa.')}
               </p>
               {isGuest ? (
                 <button
@@ -292,9 +293,9 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   {loading ? (
-                    <><Loader2 size={14} className="nn-spin" /> Đang tạo…</>
+                    <><Loader2 size={14} className="nn-spin" /> {t('editor.btn_saving', 'Đang tạo…')}</>
                   ) : (
-                    <><Link2 size={14} strokeWidth={2.2} /> Bật link chia sẻ (Sửa mặc định)</>
+                    <><Link2 size={14} strokeWidth={2.2} /> {t('share.enable_guest_btn', 'Bật link chia sẻ (Sửa mặc định)')}</>
                   )}
                 </button>
               ) : (
@@ -306,7 +307,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     type="button"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   >
-                    <Eye size={14} strokeWidth={2} /> Tạo link Chỉ xem
+                    <Eye size={14} strokeWidth={2} /> {t('share.create_view_link', 'Tạo link Chỉ xem')}
                   </button>
                   <button
                     className="btn btn-primary"
@@ -315,7 +316,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     disabled={loading}
                     type="button"
                   >
-                    <Pencil size={14} strokeWidth={2} /> Tạo link Xem & Sửa
+                    <Pencil size={14} strokeWidth={2} /> {t('share.create_edit_link', 'Tạo link Xem & Sửa')}
                   </button>
                 </div>
               )}
@@ -326,18 +327,18 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
         {/* Share with specific SSO users — only for logged-in */}
         {isLoggedIn && (
           <div className="nn-share-section">
-            <span className="nn-share-label" style={{ fontWeight: 600 }}>Chia sẻ cho người dùng cụ thể</span>
+            <span className="nn-share-label" style={{ fontWeight: 600 }}>{t('share.user_section', 'Chia sẻ cho người dùng cụ thể')}</span>
 
             <div className="nn-invite-row">
               <input
                 className="nn-invite-input"
                 type="email"
-                placeholder="Email tài khoản vInfi SSO..."
+                placeholder={t('share.user_placeholder', 'Email tài khoản vInfi SSO...')}
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
                 id="invite-email-input"
-                aria-label="Email người được mời"
+                aria-label={t('share.user_section', 'Email người được mời')}
               />
               <select
                 value={invitePerm}
@@ -353,10 +354,10 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   cursor: 'pointer',
                 }}
                 id="invite-perm-select"
-                aria-label="Quyền của người được mời"
+                aria-label={t('share.user_section', 'Quyền của người được mời')}
               >
-                <option value="view">Xem</option>
-                <option value="edit">Sửa</option>
+                <option value="view">{t('share.perm_opt_view', 'Xem')}</option>
+                <option value="edit">{t('share.perm_opt_edit', 'Sửa')}</option>
               </select>
               <button
                 className="btn btn-primary"
@@ -366,13 +367,13 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                 id="btn-send-invite"
                 style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                {loading ? <Loader2 size={14} className="nn-spin" /> : <><Send size={14} strokeWidth={2} /> Gửi</>}
+                {loading ? <Loader2 size={14} className="nn-spin" /> : <><Send size={14} strokeWidth={2} /> {t('share.send_invite', 'Gửi')}</>}
               </button>
             </div>
 
             {inviteSent && (
               <p style={{ fontSize: '0.8rem', color: 'var(--accent)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Check size={14} strokeWidth={2.5} /> Đã gửi lời mời tới {inviteEmail || 'email'}
+                <Check size={14} strokeWidth={2.5} /> {t('share.invite_sent', `Đã gửi lời mời tới ${inviteEmail || 'email'}`, { email: inviteEmail || 'email' })}
               </p>
             )}
 
@@ -388,17 +389,17 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                       <div className="nn-shared-user-email">{s.email || s.userId}</div>
                       <div className="nn-shared-user-perm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         {s.permission === 'edit' ? (
-                          <><Pencil size={11} strokeWidth={2} /> Có thể sửa</>
+                          <><Pencil size={11} strokeWidth={2} /> {t('share.user_can_edit', 'Có thể sửa')}</>
                         ) : (
-                          <><Eye size={11} strokeWidth={2} /> Chỉ xem</>
+                          <><Eye size={11} strokeWidth={2} /> {t('share.user_view_only', 'Chỉ xem')}</>
                         )}
                       </div>
                     </div>
                     <button
                       className="btn btn-ghost btn-icon"
                       onClick={() => handleRemoveUser(s.userId)}
-                      title="Thu hồi quyền"
-                      aria-label={`Thu hồi quyền của ${s.email || s.userId}`}
+                      title={t('share.revoke_perm', 'Thu hồi quyền')}
+                      aria-label={`${t('share.revoke_perm', 'Thu hồi quyền')} ${s.email || s.userId}`}
                       type="button"
                     >
                       <X size={14} strokeWidth={2.2} />
@@ -422,7 +423,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
           <div className="nn-share-section">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <span className="nn-share-label" style={{ margin: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <ShieldCheck size={16} strokeWidth={2.2} /> Bảo vệ bằng mật khẩu
+                <ShieldCheck size={16} strokeWidth={2.2} /> {t('share.password_title', 'Bảo vệ bằng mật khẩu')}
               </span>
               <span style={{
                 fontSize: '0.75rem',
@@ -433,16 +434,16 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                 gap: 4,
               }}>
                 {hasPassword ? (
-                  <><Lock size={12} strokeWidth={2} /> Đang bật</>
+                  <><Lock size={12} strokeWidth={2} /> {t('share.status_on', 'Đang bật')}</>
                 ) : (
-                  <><Unlock size={12} strokeWidth={2} /> Chưa đặt</>
+                  <><Unlock size={12} strokeWidth={2} /> {t('share.status_off', 'Chưa đặt')}</>
                 )}
               </span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>
               {hasPassword
-                ? 'Người xem cần nhập mật khẩu để truy cập liên kết chia sẻ.'
-                : 'Thêm mật khẩu để bảo vệ link chia sẻ khỏi truy cập không mong muốn.'}
+                ? t('share.password_desc_on', 'Người xem cần nhập mật khẩu để truy cập liên kết chia sẻ.')
+                : t('share.password_desc_off', 'Thêm mật khẩu để bảo vệ link chia sẻ khỏi truy cập không mong muốn.')}
             </p>
 
             {!showPasswordEdit ? (
@@ -455,9 +456,9 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   id="btn-edit-share-password"
                 >
                   {hasPassword ? (
-                    <><KeyRound size={13} strokeWidth={2} /> Đổi mật khẩu</>
+                    <><KeyRound size={13} strokeWidth={2} /> {t('share.password_change', 'Đổi mật khẩu')}</>
                   ) : (
-                    <><Lock size={13} strokeWidth={2} /> Đặt mật khẩu</>
+                    <><Lock size={13} strokeWidth={2} /> {t('share.password_set', 'Đặt mật khẩu')}</>
                   )}
                 </button>
                 {hasPassword && (
@@ -469,7 +470,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                     type="button"
                     id="btn-remove-share-password"
                   >
-                    <Trash2 size={13} strokeWidth={2} /> Xoá mật khẩu
+                    <Trash2 size={13} strokeWidth={2} /> {t('share.password_remove', 'Xoá mật khẩu')}
                   </button>
                 )}
               </div>
@@ -478,7 +479,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                 <input
                   type="password"
                   className="nn-share-link-input"
-                  placeholder="Nhập mật khẩu mới…"
+                  placeholder={t('share.password_placeholder', 'Nhập mật khẩu mới…')}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSetPassword(); if (e.key === 'Escape') setShowPasswordEdit(false); }}
@@ -496,7 +497,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   {savingPassword ? (
                     <Loader2 size={14} className="nn-spin" />
                   ) : (
-                    <><Check size={14} strokeWidth={2.5} /> Lưu</>
+                    <><Check size={14} strokeWidth={2.5} /> {t('share.password_save', 'Lưu')}</>
                   )}
                 </button>
                 <button
@@ -505,7 +506,7 @@ export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) 
                   type="button"
                   style={{ flexShrink: 0 }}
                 >
-                  Huỷ
+                  {t('share.password_cancel', 'Huỷ')}
                 </button>
               </div>
             )}

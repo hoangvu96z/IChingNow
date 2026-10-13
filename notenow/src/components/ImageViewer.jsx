@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 /**
  * Full-screen image lightbox viewer.
@@ -11,6 +12,7 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react';
  *   ssoBase  – base URL for relative image URLs
  */
 export default function ImageViewer({ images, index, onClose, onChange, ssoBase = '' }) {
+  const { t } = useLanguage();
   const total = images.length;
   const img = images[index];
   const src = img?.url
@@ -38,13 +40,13 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Xem ảnh"
+      aria-label={t('viewer.aria_label', 'Xem ảnh')}
     >
       {/* Close button */}
       <button
         className="nn-img-viewer-close"
         onClick={onClose}
-        aria-label="Đóng"
+        aria-label={t('viewer.close', 'Đóng')}
         type="button"
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
@@ -63,7 +65,7 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
         <button
           className="nn-img-viewer-arrow nn-img-viewer-prev"
           onClick={(e) => { e.stopPropagation(); goPrev(); }}
-          aria-label="Ảnh trước"
+          aria-label={t('viewer.prev', 'Ảnh trước')}
           type="button"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
@@ -85,7 +87,7 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
         <button
           className="nn-img-viewer-arrow nn-img-viewer-next"
           onClick={(e) => { e.stopPropagation(); goNext(); }}
-          aria-label="Ảnh tiếp theo"
+          aria-label={t('viewer.next', 'Ảnh tiếp theo')}
           type="button"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
@@ -106,7 +108,7 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
                 className={`nn-img-viewer-thumb${i === index ? ' active' : ''}`}
                 onClick={() => onChange(i)}
                 type="button"
-                aria-label={`Xem ảnh ${i + 1}`}
+                aria-label={`${t('viewer.aria_label', 'Xem ảnh')} ${i + 1}`}
               >
                 <img src={thumbSrc} alt={`Thumbnail ${i + 1}`} />
               </button>

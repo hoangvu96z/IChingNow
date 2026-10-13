@@ -5,11 +5,12 @@ import NoteEditor from './components/NoteEditor.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { ssoApi, notesApi, safeStorage } from './api.js';
+import { useLanguage } from './context/LanguageContext.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { trackPageVisit } from '@shared/utils/analytics.js';
 import {
   FileText, Search, Sun, Moon, LogIn,
-  Lock, Unlock, AlertCircle, Share2, Plus,
+  Lock, AlertCircle, Share2, Plus,
   HelpCircle, Loader2, KeyRound,
 } from 'lucide-react';
 
@@ -70,6 +71,7 @@ function getRoute() {
 // ─── Share View Page ───────────────────────────────────────────────────────
 
 function SharePasswordGate({ shareToken, onUnlocked }) {
+  const { t } = useLanguage();
   const [password, setPassword] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState(null);
@@ -82,8 +84,8 @@ function SharePasswordGate({ shareToken, onUnlocked }) {
     try {
       const data = await notesApi.getByShareToken(shareToken, password.trim());
       onUnlocked(data);
-    } catch (err) {
-      setError('Mật khẩu không đúng. Vui lòng thử lại.');
+    } catch {
+      setError(t('share_gate.wrong_password', 'Mật khẩu không đúng. Vui lòng thử lại.'));
     } finally {
       setVerifying(false);
     }
@@ -115,15 +117,15 @@ function SharePasswordGate({ shareToken, onUnlocked }) {
             <Lock size={32} strokeWidth={2} />
           </div>
         </div>
-        <h2 style={{ marginBottom: 8, color: 'var(--text-primary)' }}>Ghi chú được bảo vệ</h2>
+        <h2 style={{ marginBottom: 8, color: 'var(--text-primary)' }}>{t('share_gate.title', 'Ghi chú được bảo vệ')}</h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.9rem' }}>
-          Nhập mật khẩu để xem ghi chú này.
+          {t('share_gate.desc', 'Nhập mật khẩu để xem ghi chú này.')}
         </p>
         <form onSubmit={handleSubmit}>
           <input
             type="password"
             className="nn-share-link-input"
-            placeholder="Nhập mật khẩu…"
+            placeholder={t('share_gate.placeholder', 'Nhập mật khẩu…')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
@@ -142,9 +144,9 @@ function SharePasswordGate({ shareToken, onUnlocked }) {
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
             {verifying ? (
-              <><Loader2 size={15} className="nn-spin" /> Đang kiểm tra…</>
+              <><Loader2 size={15} className="nn-spin" /> {t('share_gate.checking', 'Đang kiểm tra…')}</>
             ) : (
-              <><KeyRound size={15} strokeWidth={2} /> Mở khoá</>
+              <><KeyRound size={15} strokeWidth={2} /> {t('share_gate.unlock', 'Mở khoá')}</>
             )}
           </button>
         </form>
@@ -154,6 +156,7 @@ function SharePasswordGate({ shareToken, onUnlocked }) {
 }
 
 function ShareViewPage({ shareToken, user }) {
+  const { t } = useLanguage();
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -188,7 +191,7 @@ function ShareViewPage({ shareToken, user }) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-muted)', gap: 8 }}>
           <Loader2 size={20} className="nn-spin" />
-          <span>Đang tải…</span>
+          <span>{t('share_view.loading', 'Đang tải…')}</span>
         </div>
       );
     }
@@ -203,9 +206,9 @@ function ShareViewPage({ shareToken, user }) {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
             <Lock size={44} color="#f87171" strokeWidth={1.8} />
           </div>
-          <h2 style={{ marginBottom: 8 }}>Không thể xem ghi chú</h2>
+          <h2 style={{ marginBottom: 8 }}>{t('share_view.error_title', 'Không thể xem ghi chú')}</h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>{error}</p>
-          <a href={appBase} className="btn btn-ghost">← Về trang chính</a>
+          <a href={appBase} className="btn btn-ghost">{t('share_view.back_home', '← Về trang chính')}</a>
         </div>
       );
     }
@@ -215,10 +218,12 @@ function ShareViewPage({ shareToken, user }) {
         <div className="nn-share-banner">
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Share2 size={15} strokeWidth={2.2} />
-            Đây là ghi chú được chia sẻ. {note?.canEdit ? 'Bạn có thể chỉnh sửa ghi chú này.' : 'Bạn chỉ có thể xem.'}
+            {note?.canEdit
+              ? t('share_view.banner_edit', 'Đây là ghi chú được chia sẻ. Bạn có thể chỉnh sửa ghi chú này.')
+              : t('share_view.banner_view', 'Đây là ghi chú được chia sẻ. Bạn chỉ có thể xem.')}
           </span>
           <a href={appBase} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Plus size={14} strokeWidth={2.5} /> Tạo ghi chú của bạn
+            <Plus size={14} strokeWidth={2.5} /> {t('share_view.create_own', 'Tạo ghi chú của bạn')}
           </a>
         </div>
 
@@ -252,15 +257,15 @@ function ShareViewPage({ shareToken, user }) {
       <a
         href={appBase}
         className="nn-fab nn-fab-create-note"
-        aria-label="Tạo ghi chú của bạn"
-        title="Tạo ghi chú của bạn"
+        aria-label={t('share_view.create_own', 'Tạo ghi chú của bạn')}
+        title={t('share_view.create_own', 'Tạo ghi chú của bạn')}
         id="btn-share-page-create-note"
         style={{ textDecoration: 'none' }}
       >
         <span className="nn-fab-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Plus size={20} strokeWidth={2.5} />
         </span>
-        <span className="nn-fab-label">Tạo note</span>
+        <span className="nn-fab-label">{t('share_view.fab_create', 'Tạo note')}</span>
       </a>
     </>
   );
@@ -269,6 +274,7 @@ function ShareViewPage({ shareToken, user }) {
 // ─── App ───────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const { t, language, setLanguage } = useLanguage();
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [theme, setTheme] = useState(() => {
@@ -358,13 +364,13 @@ export default function App() {
 
       {/* Header */}
       <header className="nn-header">
-        <a href={import.meta.env.BASE_URL || '/note/'} className="nn-logo" aria-label="NoteNow — Về trang chính">
+        <a href={import.meta.env.BASE_URL || '/note/'} className="nn-logo" aria-label={`${t('app.title', 'NoteNow')} — ${t('share_view.back_home', 'Về trang chính')}`}>
           <div className="nn-logo-icon" aria-hidden="true">
             <FileText size={20} strokeWidth={2.4} color="var(--accent)" />
           </div>
           <div>
-            <div className="nn-logo-text">NoteNow</div>
-            <div className="nn-logo-sub">Ghi chú thông minh</div>
+            <div className="nn-logo-text">{t('app.title', 'NoteNow')}</div>
+            <div className="nn-logo-sub">{t('app.subtitle', 'Ghi chú thông minh')}</div>
           </div>
         </a>
 
@@ -373,8 +379,8 @@ export default function App() {
             <input
               className="nn-search-input"
               type="search"
-              placeholder="Tìm kiếm ghi chú…"
-              aria-label="Tìm kiếm ghi chú"
+              placeholder={t('header.search_placeholder', 'Tìm kiếm ghi chú…')}
+              aria-label={t('header.search_placeholder', 'Tìm kiếm ghi chú…')}
               id="search-notes"
               onChange={(e) => {
                 window.dispatchEvent(new CustomEvent('nn-search', { detail: e.target.value }));
@@ -387,12 +393,30 @@ export default function App() {
         )}
 
         <div className="nn-header-actions">
+          {/* Language toggle — similar to IChingNow */}
+          <button
+            className="nn-theme-toggle"
+            onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+            title={t('header.lang_title', 'Chuyển đổi ngôn ngữ (VI / EN)')}
+            aria-label={t('header.lang_title', 'Chuyển đổi ngôn ngữ (VI / EN)')}
+            type="button"
+            id="btn-lang-toggle"
+            style={{
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
+              letterSpacing: '0.05em',
+            }}
+          >
+            {language === 'vi' ? 'VI' : 'EN'}
+          </button>
+
           {/* Guide / Feature Intro */}
           <button
             className="nn-theme-toggle"
             onClick={() => setShowOnboarding(true)}
-            title="Hướng dẫn & Tính năng"
-            aria-label="Xem hướng dẫn và tính năng"
+            title={t('header.help_title', 'Hướng dẫn & Tính năng')}
+            aria-label={t('header.help_title', 'Hướng dẫn & Tính năng')}
             type="button"
             id="btn-help-guide"
           >
@@ -403,8 +427,8 @@ export default function App() {
           <button
             className="nn-theme-toggle"
             onClick={toggleTheme}
-            title={theme === 'dark' ? 'Chuyển sang sáng' : 'Chuyển sang tối'}
-            aria-label={theme === 'dark' ? 'Bật chế độ sáng' : 'Bật chế độ tối'}
+            title={theme === 'dark' ? t('header.theme_to_light', 'Chuyển sang sáng') : t('header.theme_to_dark', 'Chuyển sang tối')}
+            aria-label={theme === 'dark' ? t('header.theme_to_light', 'Bật chế độ sáng') : t('header.theme_to_dark', 'Bật chế độ tối')}
             type="button"
             id="btn-theme-toggle"
           >
@@ -429,7 +453,7 @@ export default function App() {
                 type="button"
                 id="btn-logout"
               >
-                Đăng xuất
+                {t('header.logout', 'Đăng xuất')}
               </button>
             </div>
           ) : (
@@ -439,7 +463,7 @@ export default function App() {
               id="btn-login"
             >
               <LogIn size={15} strokeWidth={2.2} />
-              <span className="nn-auth-text">Đăng nhập</span>
+              <span className="nn-auth-text">{t('header.login', 'Đăng nhập')}</span>
             </a>
           )}
         </div>
@@ -458,7 +482,7 @@ export default function App() {
         <InviteAcceptPage
           token={route.token}
           user={user}
-          onAccepted={(noteId) => navigateTo(`${import.meta.env.BASE_URL || '/note/'}`)}
+          onAccepted={() => navigateTo(`${import.meta.env.BASE_URL || '/note/'}`)}
         />
       )}
 
@@ -481,7 +505,7 @@ export default function App() {
           footerText: 'var(--text-muted)',
           footerDot: 'rgba(52,211,153,0.3)',
         }}
-        tagline="NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú"
+        tagline={t('footer.tagline', 'NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú')}
       />
     </>
   );

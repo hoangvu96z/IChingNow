@@ -4,6 +4,7 @@ import NoteEditor from './NoteEditor.jsx';
 import NoteShareModal from './NoteShareModal.jsx';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { notesApi, stripHtml } from '../api.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   Check, X, Info, Pin, Users, Plus,
   Search, FileText,
@@ -117,10 +118,11 @@ function DraggableNoteGrid({ notes, onEdit, onDelete, onShare, onPin, onPermanen
 // ─── Main NoteBoard ──────────────────────────────────────────────────────────
 
 export default function NoteBoard({ user }) {
+  const { t } = useLanguage();
   const [notes, setNotes] = useState([]);
   const [sharedNotes, setSharedNotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingNote, setEditingNote] = useState(null); // null = closed, {note} = editing, 'new' = new
+  const [editingNote, setEditingNote] = useState(null);
   const [sharingNote, setSharingNote] = useState(null);
   const [search, setSearch] = useState('');
   const [toasts, setToasts] = useState([]);
@@ -156,11 +158,11 @@ export default function NoteBoard({ user }) {
       setNotes(fetched);
       setSharedNotes(data.sharedNotes || []);
     } catch (e) {
-      addToast(e.message || 'Không thể tải ghi chú', 'error');
+      addToast(e.message || t('toast.load_error', 'Không thể tải ghi chú'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, t]);
 
   useEffect(() => {
     fetchNotes();
@@ -194,11 +196,11 @@ export default function NoteBoard({ user }) {
       const note = await notesApi.create(dto);
       setNotes((prev) => [note, ...prev]);
       if (!silent) {
-        addToast('Đã lưu ghi chú thành công!');
+        addToast(t('toast.save_success', 'Đã lưu ghi chú thành công!'));
       }
       return note;
     } catch (e) {
-      addToast(e.message || 'Lỗi khi tạo ghi chú', 'error');
+      addToast(e.message || t('toast.create_error', 'Lỗi khi tạo ghi chú'), 'error');
       throw e;
     }
   };
@@ -208,11 +210,11 @@ export default function NoteBoard({ user }) {
       const updated = await notesApi.update(id, dto);
       setNotes((prev) => prev.map((n) => n.id === id ? updated : n));
       if (!silent) {
-        addToast('Đã lưu ghi chú thành công!');
+        addToast(t('toast.save_success', 'Đã lưu ghi chú thành công!'));
       }
       return updated;
     } catch (e) {
-      addToast(e.message || 'Lỗi khi lưu ghi chú', 'error');
+      addToast(e.message || t('toast.update_error', 'Lỗi khi lưu ghi chú'), 'error');
       throw e;
     }
   };
@@ -221,7 +223,7 @@ export default function NoteBoard({ user }) {
     try {
       await notesApi.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
-      addToast('Ghi chú đã bị xoá');
+      addToast(t('toast.delete_success', 'Ghi chú đã bị xoá'));
     } catch (e) {
       addToast(e.message, 'error');
     }
@@ -231,7 +233,7 @@ export default function NoteBoard({ user }) {
     try {
       await notesApi.update(id, { isPinned: pin });
       setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPinned: pin } : n));
-      addToast(pin ? 'Đã ghim ghi chú' : 'Đã bỏ ghim ghi chú');
+      addToast(pin ? t('toast.pin_added', 'Đã ghim ghi chú') : t('toast.pin_removed', 'Đã bỏ ghim ghi chú'));
     } catch (e) {
       addToast(e.message, 'error');
     }
@@ -241,7 +243,7 @@ export default function NoteBoard({ user }) {
     try {
       await notesApi.update(id, { isPermanent: permanent });
       setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPermanent: permanent } : n));
-      addToast(permanent ? 'Đã đặt lưu vĩnh viễn' : 'Đã bỏ lưu vĩnh viễn');
+      addToast(permanent ? t('toast.perm_added', 'Đã đặt lưu vĩnh viễn') : t('toast.perm_removed', 'Đã bỏ lưu vĩnh viễn'));
     } catch (e) {
       addToast(e.message, 'error');
     }
@@ -299,8 +301,8 @@ export default function NoteBoard({ user }) {
           <input
             className="nn-search-mobile-input"
             type="search"
-            placeholder="Tìm kiếm ghi chú…"
-            aria-label="Tìm kiếm ghi chú"
+            placeholder={t('header.search_placeholder', 'Tìm kiếm ghi chú…')}
+            aria-label={t('header.search_placeholder', 'Tìm kiếm ghi chú…')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -309,7 +311,7 @@ export default function NoteBoard({ user }) {
               className="nn-search-mobile-clear"
               onClick={() => setSearch('')}
               type="button"
-              aria-label="Xoá tìm kiếm"
+              aria-label={t('board.search_clear', 'Xoá tìm kiếm')}
             >
               <X size={14} strokeWidth={2.5} />
             </button>
@@ -322,13 +324,13 @@ export default function NoteBoard({ user }) {
           onClick={openNewNoteEditor}
           role="button"
           tabIndex={0}
-          aria-label="Tạo ghi chú mới"
+          aria-label={t('board.create_placeholder', 'Tạo ghi chú mới…')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openNewNoteEditor(); }}
           id="btn-new-note"
         >
           <span className="nn-create-placeholder">
             <Plus size={17} strokeWidth={2.5} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-            Tạo ghi chú mới…
+            {t('board.create_placeholder', 'Tạo ghi chú mới…')}
           </span>
         </div>
       </div>
@@ -345,14 +347,14 @@ export default function NoteBoard({ user }) {
               <FileText size={48} strokeWidth={1.5} />
             </div>
             <h2 className="nn-empty-title">
-              {search ? 'Không tìm thấy ghi chú' : 'Chưa có ghi chú nào'}
+              {search ? t('board.empty_search_title', 'Không tìm thấy ghi chú') : t('board.empty_title', 'Chưa có ghi chú nào')}
             </h2>
             <p className="nn-empty-text">
               {search
-                ? `Không có ghi chú nào khớp với "${search}"`
+                ? t('board.empty_search_desc', `Không có ghi chú nào khớp với "${search}"`, { query: search })
                 : isLoggedIn
-                ? 'Bấm vào ô trên để tạo ghi chú đầu tiên của bạn!'
-                : 'Bấm vào ô trên để tạo ghi chú. Không cần đăng nhập!'}
+                ? t('board.empty_user_desc', 'Bấm vào ô trên để tạo ghi chú đầu tiên của bạn!')
+                : t('board.empty_guest_desc', 'Bấm vào ô trên để tạo ghi chú. Không cần đăng nhập!')}
             </p>
             {!search && (
               <button
@@ -363,7 +365,7 @@ export default function NoteBoard({ user }) {
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
                 <Plus size={15} strokeWidth={2.5} />
-                Tạo ghi chú đầu tiên
+                {t('board.create_first', 'Tạo ghi chú đầu tiên')}
               </button>
             )}
           </div>
@@ -374,7 +376,7 @@ export default function NoteBoard({ user }) {
               <div style={{ marginBottom: 8 }}>
                 <p className="nn-section-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Pin size={13} fill="currentColor" strokeWidth={1.5} />
-                  Đã ghim
+                  {t('board.section_pinned', 'Đã ghim')}
                 </p>
                 <DraggableNoteGrid
                   notes={pinnedNotes}
@@ -392,7 +394,7 @@ export default function NoteBoard({ user }) {
             {/* My Notes */}
             {unpinnedNotes.length > 0 && (
               <div style={{ marginBottom: 8 }}>
-                {pinnedNotes.length > 0 && <p className="nn-section-label">Ghi chú khác</p>}
+                {pinnedNotes.length > 0 && <p className="nn-section-label">{t('board.section_others', 'Ghi chú khác')}</p>}
                 <DraggableNoteGrid
                   notes={unpinnedNotes}
                   onEdit={(n) => setEditingNote(n)}
@@ -411,7 +413,7 @@ export default function NoteBoard({ user }) {
               <div style={{ marginTop: 24 }}>
                 <p className="nn-section-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Users size={13} strokeWidth={2} />
-                  Được chia sẻ với bạn
+                  {t('board.section_shared', 'Được chia sẻ với bạn')}
                 </p>
                 <DraggableNoteGrid
                   notes={sharedNotes}
@@ -456,8 +458,8 @@ export default function NoteBoard({ user }) {
       <button
         className="nn-fab"
         onClick={openNewNoteEditor}
-        aria-label="Tạo ghi chú mới"
-        title="Tạo ghi chú mới"
+        aria-label={t('board.create_placeholder', 'Tạo ghi chú mới')}
+        title={t('board.create_placeholder', 'Tạo ghi chú mới')}
         type="button"
         id="btn-fab-new-note"
       >
