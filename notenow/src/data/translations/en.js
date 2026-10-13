@@ -3,6 +3,9 @@ export const en = {
   'app.title': 'NoteNow',
   'app.subtitle': 'Smart Notes',
   'header.search_placeholder': 'Search notes…',
+  'header.apps': 'Apps',
+  'header.apps_choose': 'Choose Application',
+  'header.apps_current': 'CURRENT',
   'header.help_title': 'Guide & Features',
   'header.theme_to_light': 'Switch to light mode',
   'header.theme_to_dark': 'Switch to dark mode',
@@ -10,6 +13,9 @@ export const en = {
   'header.logout': 'Sign out',
   'header.lang_title': 'Toggle language (VI / EN)',
   'footer.tagline': 'NoteNow — Quick notes, easy sharing, rich text support',
+  'footer.support_label': 'Support & Feedback:',
+  'footer.support_btn': 'Support & Feedback via TalkWithMe',
+  'footer.copyright': '© {year} vunph.id.vn · Made with ❤️ in Vietnam',
 
   // Board
   'board.create_placeholder': 'Take a note…',

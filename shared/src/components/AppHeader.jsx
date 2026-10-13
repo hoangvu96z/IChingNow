@@ -77,9 +77,23 @@ const APPS = [
 ];
 
 // ─── Apps Dropdown ──────────────────────────────────────────────────────────
-function AppsDropdown({ appId, colors }) {
+export function AppsDropdown({ appId = 'iching', colors = {}, label, chooseLabel, currentLabel }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+
+  const c = {
+    accent: colors?.accent || '#10b981',
+    accentSoft: colors?.accentSoft || 'rgba(16, 185, 129, 0.14)',
+    border: colors?.border || 'rgba(255, 255, 255, 0.15)',
+    textMuted: colors?.textMuted || 'rgba(255, 255, 255, 0.6)',
+    dropdownBg: colors?.dropdownBg || 'var(--bg-card, #12121e)',
+    dropdownBorder: colors?.dropdownBorder || 'var(--border, rgba(255, 255, 255, 0.08))',
+    dropdownItemText: colors?.dropdownItemText || 'var(--text-primary, rgba(255, 255, 255, 0.85))',
+    dropdownItemSub: colors?.dropdownItemSub || 'var(--text-muted, rgba(255, 255, 255, 0.4))',
+    dropdownHeader: colors?.dropdownHeader || 'var(--text-muted, rgba(255, 255, 255, 0.35))',
+    hoverBg: colors?.hoverBg || 'var(--bg-card-hover, rgba(255, 255, 255, 0.06))',
+    ...colors,
+  };
 
   useEffect(() => {
     function handleOutside(e) {
@@ -106,10 +120,10 @@ function AppsDropdown({ appId, colors }) {
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          background: open ? colors.accentSoft : 'transparent',
-          border: `1px solid ${open ? colors.accent : colors.border}`,
+          background: open ? c.accentSoft : 'transparent',
+          border: `1px solid ${open ? c.accent : c.border}`,
           borderRadius: 8,
-          color: open ? colors.accent : colors.textMuted,
+          color: open ? c.accent : c.textMuted,
           padding: '6px 12px',
           cursor: 'pointer',
           fontSize: '0.8125rem',
@@ -120,15 +134,15 @@ function AppsDropdown({ appId, colors }) {
         }}
         onMouseEnter={e => {
           if (!open) {
-            e.currentTarget.style.color = colors.accent;
-            e.currentTarget.style.borderColor = colors.accent;
-            e.currentTarget.style.background = colors.accentSoft;
+            e.currentTarget.style.color = c.accent;
+            e.currentTarget.style.borderColor = c.accent;
+            e.currentTarget.style.background = c.accentSoft;
           }
         }}
         onMouseLeave={e => {
           if (!open) {
-            e.currentTarget.style.color = colors.textMuted;
-            e.currentTarget.style.borderColor = colors.border;
+            e.currentTarget.style.color = c.textMuted;
+            e.currentTarget.style.borderColor = c.border;
             e.currentTarget.style.background = 'transparent';
           }
         }}
@@ -141,7 +155,7 @@ function AppsDropdown({ appId, colors }) {
           <rect x="3" y="14" width="7" height="7" rx="1" />
           <rect x="14" y="14" width="7" height="7" rx="1" />
         </svg>
-        Ứng Dụng
+        {label || 'Ứng Dụng'}
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }}
         >
@@ -154,8 +168,8 @@ function AppsDropdown({ appId, colors }) {
           position: 'absolute',
           top: 'calc(100% + 8px)',
           right: 0,
-          background: '#12121e',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: c.dropdownBg,
+          border: `1px solid ${c.dropdownBorder}`,
           borderRadius: 14,
           padding: 8,
           minWidth: 240,
@@ -166,11 +180,11 @@ function AppsDropdown({ appId, colors }) {
             padding: '6px 12px 8px',
             fontSize: '0.7rem',
             fontWeight: 700,
-            color: 'rgba(255,255,255,0.35)',
+            color: c.dropdownHeader,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
           }}>
-            Chọn Ứng Dụng
+            {chooseLabel || 'Chọn Ứng Dụng'}
           </div>
 
           {APPS.map(app => {
@@ -198,9 +212,9 @@ function AppsDropdown({ appId, colors }) {
                     <span style={{
                       fontSize: '0.6rem', background: app.color, color: '#000',
                       padding: '1px 6px', borderRadius: 20, fontWeight: 800, lineHeight: 1.6,
-                    }}>ĐANG DÙNG</span>
+                    }}>{currentLabel || 'ĐANG DÙNG'}</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
+                  <div style={{ fontSize: '0.75rem', color: c.dropdownItemSub, marginTop: 1 }}>
                     {app.tagline}
                   </div>
                 </div>
@@ -219,19 +233,19 @@ function AppsDropdown({ appId, colors }) {
                   transition: 'background 0.15s',
                   cursor: 'pointer',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseEnter={e => e.currentTarget.style.background = c.hoverBg}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <span style={{ fontSize: '1.25rem', lineHeight: 1, flexShrink: 0 }}>{app.icon}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: c.dropdownItemText }}>
                     {app.name}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
+                  <div style={{ fontSize: '0.75rem', color: c.dropdownItemSub, marginTop: 1 }}>
                     {app.tagline}
                   </div>
                 </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}>
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </a>

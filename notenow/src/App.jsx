@@ -6,6 +6,7 @@ import OnboardingModal from './components/OnboardingModal.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { ssoApi, notesApi, safeStorage } from './api.js';
 import { useLanguage } from './context/LanguageContext.jsx';
+import { AppsDropdown } from '@shared/components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { trackPageVisit } from '@shared/utils/analytics.js';
 import {
@@ -393,6 +394,23 @@ export default function App() {
         )}
 
         <div className="nn-header-actions">
+          {/* Shared Apps Dropdown */}
+          <AppsDropdown
+            appId="notenow"
+            colors={{
+              accent: 'var(--accent, #10b981)',
+              accentSoft: 'var(--accent-dim, rgba(16, 185, 129, 0.14))',
+              border: 'var(--border, rgba(255, 255, 255, 0.18))',
+              textMuted: 'var(--text-secondary, rgba(255, 255, 255, 0.65))',
+              dropdownBg: 'var(--bg-card, #12121e)',
+              dropdownBorder: 'var(--border, rgba(255, 255, 255, 0.15))',
+              hoverBg: 'var(--bg-card-hover, rgba(255, 255, 255, 0.08))',
+            }}
+            label={t('header.apps', 'Ứng Dụng')}
+            currentLabel={t('header.apps_current', 'ĐANG DÙNG')}
+            chooseLabel={t('header.apps_choose', 'Chọn Ứng Dụng')}
+          />
+
           {/* Language toggle — similar to IChingNow */}
           <button
             className="nn-theme-toggle"
@@ -495,17 +513,23 @@ export default function App() {
         }}
       />
 
-      {/* Footer */}
+      {/* Shared Footer — compact, distinct background, no app pills */}
       <AppFooter
         appId="notenow"
+        showApps={false}
+        compact={true}
         colors={{
-          accent: '#34d399',
-          footerBorder: 'rgba(52,211,153,0.18)',
+          accent: '#10b981',
+          accentSoft: 'rgba(16, 185, 129, 0.14)',
+          footerBg: 'var(--bg-surface)',
+          footerBorder: 'var(--border)',
           footerLink: 'var(--text-secondary)',
           footerText: 'var(--text-muted)',
-          footerDot: 'rgba(52,211,153,0.3)',
         }}
         tagline={t('footer.tagline', 'NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú')}
+        supportLabel={t('footer.support_label', 'Hỗ trợ & Góp ý:')}
+        supportBtnText={t('footer.support_btn', 'Liên hệ qua TalkWithMe')}
+        copyrightText={t('footer.copyright', `© ${new Date().getFullYear()} vunph.id.vn · Made with ❤️ in Việt Nam`).replace('{year}', new Date().getFullYear())}
       />
     </>
   );

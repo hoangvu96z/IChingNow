@@ -3,6 +3,9 @@ export const vi = {
   'app.title': 'NoteNow',
   'app.subtitle': 'Ghi chú thông minh',
   'header.search_placeholder': 'Tìm kiếm ghi chú…',
+  'header.apps': 'Ứng dụng',
+  'header.apps_choose': 'Chọn ứng dụng',
+  'header.apps_current': 'ĐANG DÙNG',
   'header.help_title': 'Hướng dẫn & Tính năng',
   'header.theme_to_light': 'Chuyển sang sáng',
   'header.theme_to_dark': 'Chuyển sang tối',
@@ -10,6 +13,9 @@ export const vi = {
   'header.logout': 'Đăng xuất',
   'header.lang_title': 'Chuyển đổi ngôn ngữ (VI / EN)',
   'footer.tagline': 'NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú',
+  'footer.support_label': 'Hỗ trợ & Góp ý:',
+  'footer.support_btn': 'Hỗ trợ & Góp ý qua TalkWithMe',
+  'footer.copyright': '© {year} vunph.id.vn · Made with ❤️ in Việt Nam',
 
   // Board
   'board.create_placeholder': 'Tạo ghi chú mới…',

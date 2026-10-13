@@ -17,24 +17,36 @@ const APPS = [
   { id: 'notenow', icon: '📝', name: 'NoteNow',   url: '/note/' },
 ];
 
-export default function AppFooter({ colors = {}, appId, tagline }) {
+export default function AppFooter({
+  colors = {},
+  appId,
+  tagline,
+  showApps = true,
+  hideApps = false,
+  compact = false,
+  supportLabel,
+  supportBtnText,
+  copyrightText,
+}) {
   const year = new Date().getFullYear();
 
+  const shouldShowApps = showApps && !hideApps;
   const accentColor = colors.accent || '#38bdf8';
   const accentSoft = colors.accentSoft || 'rgba(56, 189, 248, 0.14)';
   const borderColor = colors.footerBorder || 'var(--border-subtle, rgba(255, 255, 255, 0.12))';
   const textColor = colors.footerText || 'var(--text-muted, var(--color-ink-muted, rgba(255, 255, 255, 0.65)))';
   const linkColor = colors.footerLink || 'var(--text-primary, var(--color-ink, rgba(255, 255, 255, 0.9)))';
+  const footerBg = colors.footerBg || colors.bg || 'transparent';
 
   return (
     <footer style={{
       position: 'relative',
       zIndex: 10,
       width: '100%',
-      marginTop: 48,
-      padding: '36px 20px 48px',
+      marginTop: compact ? 32 : (colors.marginTop || 48),
+      padding: compact ? '22px 20px 28px' : '36px 20px 48px',
       borderTop: `1px solid ${borderColor}`,
-      background: 'transparent',
+      background: footerBg,
       boxSizing: 'border-box',
     }}>
       <div style={{
@@ -43,21 +55,22 @@ export default function AppFooter({ colors = {}, appId, tagline }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 20,
+        gap: compact ? 14 : 20,
       }}>
         {/* App Switcher Pills */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-        }}>
-          {APPS.map((app) => {
-            const isActive = app.id === appId;
-            if (isActive) {
-              return (
-                <div
+        {shouldShowApps && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}>
+            {APPS.map((app) => {
+              const isActive = app.id === appId;
+              if (isActive) {
+                return (
+                  <div
                   key={app.id}
                   style={{
                     display: 'inline-flex',
@@ -135,6 +148,7 @@ export default function AppFooter({ colors = {}, appId, tagline }) {
             );
           })}
         </div>
+      )}
 
         {/* Contact CTA Row */}
         <div style={{
@@ -158,7 +172,7 @@ export default function AppFooter({ colors = {}, appId, tagline }) {
             gap: 6,
           }}>
             <span>✨</span>
-            <span>Hỗ trợ & Góp ý:</span>
+            <span>{supportLabel || 'Hỗ trợ & Góp ý:'}</span>
           </span>
 
           {appId === 'talkwithme' ? (
@@ -205,7 +219,7 @@ export default function AppFooter({ colors = {}, appId, tagline }) {
               }}
             >
               <span style={{ fontSize: '0.875rem' }}>💬</span>
-              <span>Liên hệ qua TalkWithMe</span>
+              <span>{supportBtnText || 'Liên hệ qua TalkWithMe'}</span>
               <span style={{ fontSize: '0.75rem', opacity: 0.9 }}>→</span>
             </a>
           )}
@@ -233,7 +247,7 @@ export default function AppFooter({ colors = {}, appId, tagline }) {
           opacity: 0.85,
           textAlign: 'center',
         }}>
-          © {year} vunph.id.vn · Made with ❤️ in Việt Nam
+          {copyrightText || `© ${year} vunph.id.vn · Made with ❤️ in Việt Nam`}
         </p>
       </div>
     </footer>
