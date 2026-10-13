@@ -230,7 +230,8 @@ export default function App() {
 
   useEffect(() => {
     trackPageVisit('notenow');
-    if (!localStorage.getItem('notenow_onboarded_v2')) {
+    // Only show onboarding on the main board, not on share/invite pages
+    if (route.page === 'board' && !localStorage.getItem('notenow_onboarded_v2')) {
       setShowOnboarding(true);
     }
   }, []);
