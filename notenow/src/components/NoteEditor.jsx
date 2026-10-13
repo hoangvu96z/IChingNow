@@ -2,6 +2,7 @@ import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState, useEffect, useRef } from 'react';
 import { notesApi, charCount, compressImageTo720p } from '../api.js';
 import NoteColorPicker from './NoteColorPicker.jsx';
+import ImageViewer from './ImageViewer.jsx';
 
 // TipTap
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -42,6 +43,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [viewerIndex, setViewerIndex] = useState(null); // null = closed
   const fileInputRef = useRef(null);
   const autoSaveTimer = useRef(null);
 
@@ -244,6 +246,9 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                     src={img.url.startsWith('data:') || img.url.startsWith('http') ? img.url : `${SSO_BASE}${img.url}`}
                     alt={`Hình ${idx + 1}`}
                     loading="lazy"
+                    onClick={() => setViewerIndex(idx)}
+                    style={{ cursor: 'zoom-in' }}
+                    title="Bấm để xem to"
                   />
                   {!isReadOnly && (
                     <button
@@ -259,6 +264,17 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Image Viewer Lightbox */}
+          {viewerIndex !== null && (
+            <ImageViewer
+              images={images}
+              index={viewerIndex}
+              onClose={() => setViewerIndex(null)}
+              onChange={(i) => setViewerIndex(i)}
+              ssoBase={SSO_BASE}
+            />
           )}
 
           {/* Toolbar */}

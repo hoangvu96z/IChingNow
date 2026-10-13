@@ -209,6 +209,19 @@ function ShareViewPage({ shareToken, user }) {
           />
         </ErrorBoundary>
       )}
+
+      {/* FAB — Create own note */}
+      <a
+        href={appBase}
+        className="nn-fab nn-fab-create-note"
+        aria-label="Tạo ghi chú của bạn"
+        title="Tạo ghi chú của bạn"
+        id="btn-share-page-create-note"
+        style={{ textDecoration: 'none' }}
+      >
+        <span className="nn-fab-icon">✏️</span>
+        <span className="nn-fab-label">Tạo note</span>
+      </a>
     </>
   );
 }

@@ -1,11 +1,13 @@
 import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState } from 'react';
 import { getDaysRemaining, stripHtml } from '../api.js';
+import ImageViewer from './ImageViewer.jsx';
 
 const SSO_BASE = getSsoApiBase(import.meta.env);
 
 export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPermanent, isShared }) {
   const [deleting, setDeleting] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(null);
   const daysLeft = getDaysRemaining(note.expiresAt);
   const contentPreview = stripHtml(note.content || '');
 
@@ -67,11 +69,23 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               src={img.url.startsWith('data:') || img.url.startsWith('http') ? img.url : `${SSO_BASE}${img.url}`}
               alt={`Ảnh ${idx + 1} trong ghi chú`}
               loading="lazy"
-              onClick={() => onEdit(note)}
-              style={{ cursor: 'pointer' }}
+              onClick={(e) => { e.stopPropagation(); setViewerIndex(idx); }}
+              style={{ cursor: 'zoom-in' }}
+              title="Bấm để xem to"
             />
           ))}
         </div>
+      )}
+
+      {/* Image Viewer Lightbox */}
+      {viewerIndex !== null && (
+        <ImageViewer
+          images={note.images}
+          index={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+          onChange={(i) => setViewerIndex(i)}
+          ssoBase={SSO_BASE}
+        />
       )}
 
       {/* Title */}
