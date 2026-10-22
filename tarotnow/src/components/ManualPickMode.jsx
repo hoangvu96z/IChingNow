@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getCardMeaning } from '../utils/tarotLogic';
+import { createManualReadingEntry } from '../utils/manualReading.mjs';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import AiInterpretationPanel from './AiInterpretationPanel';
@@ -20,9 +21,7 @@ export default function ManualPickMode({
   tarotCards, 
   weights, 
   setWeights, 
-  activeReadingId, 
   onSaveAiConversation, 
-  savedConversation,
   onSaveReading 
 }) {
   const { language } = useLanguage();
@@ -45,6 +44,16 @@ export default function ManualPickMode({
   const [suitCategory] = useState('all');
   const [isShufflingDeck, setIsShufflingDeck] = useState(false);
   const [showWeightModal, setShowWeightModal] = useState(false);
+  const [manualReadingId, setManualReadingId] = useState(null);
+  const [isSavingReading, setIsSavingReading] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const saveAttempted = useRef(false);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const shuffle = (arr) => {
     const a = [...arr];
@@ -89,6 +98,10 @@ export default function ManualPickMode({
     setSelectedIds([]);
     setDrawnCards([]);
     setRevealedSet(new Set());
+    saveAttempted.current = false;
+    setManualReadingId(null);
+    setIsSavingReading(false);
+    setSaveError('');
     setPhase('picking');
   };
 
@@ -123,6 +136,41 @@ export default function ManualPickMode({
       return () => clearTimeout(timer);
     }
   }, [selectedIds, pickCount, phase]);
+
+  useEffect(() => {
+    if (
+      phase !== 'results' ||
+      !isAuthenticated ||
+      !onSaveReading ||
+      drawnCards.length !== pickCount ||
+      saveAttempted.current
+    ) return;
+
+    saveAttempted.current = true;
+    setIsSavingReading(true);
+    setSaveError('');
+    const reading = createManualReadingEntry({
+      question,
+      drawnCards,
+      pickCount,
+      language,
+    });
+
+    Promise.resolve(onSaveReading(reading))
+      .then((saved) => {
+        if (!mounted.current) return;
+        if (!saved?.id) throw new Error('Máy chủ chưa xác nhận đã lưu trải bài.');
+        setManualReadingId(saved.id);
+      })
+      .catch((error) => {
+        if (mounted.current) {
+          setSaveError(error.message || 'Không thể lưu trải bài thủ công.');
+        }
+      })
+      .finally(() => {
+        if (mounted.current) setIsSavingReading(false);
+      });
+  }, [drawnCards, isAuthenticated, language, onSaveReading, phase, pickCount, question]);
 
   useEffect(() => {
     if (phase === 'results' && resultRef.current) {
@@ -242,6 +290,16 @@ export default function ManualPickMode({
             <p className="results-question-text" style={{ margin: 0 }}>
               {language === 'en' ? 'Question' : 'Câu hỏi'}: "{question}"
             </p>
+            {isSavingReading && (
+              <p role="status" style={{ margin: '8px 0 0', fontSize: '0.8rem' }}>
+                {language === 'en' ? 'Saving this reading…' : 'Đang lưu trải bài…'}
+              </p>
+            )}
+            {saveError && (
+              <p role="alert" style={{ margin: '8px 0 0', color: '#ff8e8e', fontSize: '0.8rem' }}>
+                {language === 'en' ? 'Could not save this reading: ' : 'Không thể lưu trải bài: '}{saveError}
+              </p>
+            )}
           </div>
 
           {/* 4-Tab Interpretations */}
@@ -286,15 +344,21 @@ export default function ManualPickMode({
 
           {/* AI Assistant Chat Panel */}
           <div style={{ marginBottom: 24 }}>
-            <AiInterpretationPanel
-              question={question}
-              drawnCards={drawnCards}
-              spreadName={language === 'en' ? `Manual Pick (${pickCount} cards)` : `Chọn từng lá (${pickCount} lá)`}
-              getCardMeaning={getCardMeaning}
-              readingId={activeReadingId}
-              onSaveAiConversation={onSaveAiConversation}
-              savedConversation={savedConversation}
-            />
+            {!isAuthenticated || manualReadingId || saveError || !onSaveReading ? (
+              <AiInterpretationPanel
+                question={question}
+                drawnCards={drawnCards}
+                spreadName={language === 'en' ? `Manual Pick (${pickCount} cards)` : `Chọn từng lá (${pickCount} lá)`}
+                getCardMeaning={getCardMeaning}
+                readingId={manualReadingId}
+                onSaveAiConversation={onSaveAiConversation}
+                savedConversation={null}
+              />
+            ) : (
+              <p role="status" style={{ textAlign: 'center' }}>
+                {language === 'en' ? 'Saving your reading before AI interpretation…' : 'Đang lưu trải bài trước khi luận giải AI…'}
+              </p>
+            )}
           </div>
 
           {/* Copy section — 2 options (Requires Authentication) */}

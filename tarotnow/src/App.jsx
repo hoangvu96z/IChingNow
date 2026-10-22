@@ -514,13 +514,8 @@ ${summaryObj.advice}
               tarotCards={tarotCards} 
               weights={weights} 
               setWeights={setWeights}
-              activeReadingId={activeReadingId}
               onSaveAiConversation={updateReadingData}
-              onSaveReading={(item) => {
-                saveReading(item).then(saved => {
-                  if (saved?.id) setActiveReadingId(saved.id);
-                }).catch((err) => setValidationError(err.message || 'Không thể lưu trải bài.'));
-              }}
+              onSaveReading={saveReading}
             />
           )}
 
