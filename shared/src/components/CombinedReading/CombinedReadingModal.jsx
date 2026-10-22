@@ -16,6 +16,7 @@ import TopicSelectionStep from './steps/TopicSelectionStep.jsx';
 import BirthInfoStep from './steps/BirthInfoStep.jsx';
 import QuestionStep from './steps/QuestionStep.jsx';
 import AiResultStep from './steps/AiResultStep.jsx';
+import StepProgress from './StepProgress.jsx';
 import {
   useCombinedReading,
   summarizeRelevantPalaces,
@@ -273,168 +274,19 @@ export default function CombinedReadingModal({
           }}>✕</button>
         </div>
 
-        {/* Step indicator (Clickable Navigation) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          marginBottom: '24px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '14px',
-          padding: '8px 12px',
-        }}>
-          {[1, hasChart ? null : 2, 3, 4].filter(Boolean).map((s, idx) => {
-            let label = '';
-            if (hasChart) {
-              const labelsTuVi = isVi
-                ? ['Chủ đề', 'Hỏi & Gieo quẻ', 'Luận giải AI']
-                : ['Topic', 'Ask & Cast', 'AI Reading'];
-              label = labelsTuVi[idx];
-            } else {
-              const labelsIChing = isVi
-                ? ['Chủ đề', 'Ngày sinh', hasPrecastHex ? 'Xác nhận & Quẻ' : 'Hỏi & Quẻ', 'Luận giải AI']
-                : ['Topic', 'Birth Info', hasPrecastHex ? 'Confirm & Hex' : 'Ask & Hex', 'AI Reading'];
-              label = labelsIChing[idx];
-            }
-            const actualStep = hasChart ? [1, 3, 4][idx] : s;
-            const isActive = step === actualStep;
-            const isPassed = step > actualStep;
-            const isUnlocked = actualStep <= maxStepReached;
-            const isClickable = !isActive && (
-              isPassed ||
-              isUnlocked ||
-              actualStep === 1 ||
-              (actualStep === 2 && !hasChart && !!topic) ||
-              (actualStep === 3 && !!topic && (hasChart || !!localBirthInfo || maxStepReached >= 3)) ||
-              (actualStep === 4 && (maxStepReached >= 4 || !!aiResponse))
-            );
-            const isHovered = hoveredStep === actualStep;
-
-            let tooltip = '';
-            if (isActive) {
-              tooltip = isVi ? `Đang ở bước ${idx + 1}: ${label}` : `Current step ${idx + 1}: ${label}`;
-            } else if (isClickable) {
-              tooltip = isVi ? `Bấm để chuyển đến bước ${idx + 1}: ${label}` : `Click to jump to step ${idx + 1}: ${label}`;
-            } else {
-              tooltip = isVi ? 'Vui lòng hoàn thành các bước trước' : 'Please complete previous steps first';
-            }
-
-            return (
-              <div
-                key={s}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  flex: idx < (hasChart ? 2 : 3) ? 1 : 'none',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isClickable) setStep(actualStep);
-                  }}
-                  onMouseEnter={() => setHoveredStep(actualStep)}
-                  onMouseLeave={() => setHoveredStep(null)}
-                  disabled={!isClickable && !isActive}
-                  title={tooltip}
-                  aria-label={label}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '7px',
-                    background: isHovered && isClickable
-                      ? 'rgba(229,193,88,0.15)'
-                      : isActive
-                        ? 'rgba(229,193,88,0.08)'
-                        : 'transparent',
-                    border: isHovered && isClickable
-                      ? '1px solid rgba(229,193,88,0.45)'
-                      : isActive
-                        ? '1px solid rgba(229,193,88,0.25)'
-                        : '1px solid transparent',
-                    borderRadius: '20px',
-                    padding: '4px 10px',
-                    cursor: isClickable ? 'pointer' : (isActive ? 'default' : 'not-allowed'),
-                    transition: 'all 0.2s ease',
-                    outline: 'none',
-                    transform: isHovered && isClickable ? 'translateY(-1px)' : 'none',
-                    boxShadow: isHovered && isClickable ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: isActive
-                      ? 'linear-gradient(135deg, rgba(229,193,88,0.4), rgba(229,193,88,0.18))'
-                      : isPassed
-                        ? 'rgba(229,193,88,0.22)'
-                        : isUnlocked
-                          ? 'rgba(229,193,88,0.12)'
-                          : 'rgba(255,255,255,0.05)',
-                    border: `1.5px solid ${
-                      isActive
-                        ? '#e5c158'
-                        : isPassed
-                          ? 'rgba(229,193,88,0.6)'
-                          : isUnlocked
-                            ? 'rgba(229,193,88,0.35)'
-                            : 'rgba(255,255,255,0.1)'
-                    }`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '11px',
-                    color: isActive
-                      ? '#fff'
-                      : isPassed || isUnlocked
-                        ? '#e5c158'
-                        : 'rgba(255,255,255,0.3)',
-                    fontWeight: 700,
-                    flexShrink: 0,
-                    boxShadow: isActive ? '0 0 10px rgba(229,193,88,0.5)' : 'none',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    {isPassed ? '✓' : idx + 1}
-                  </div>
-                  <span style={{
-                    fontSize: '11.5px',
-                    color: isActive
-                      ? '#e5c158'
-                      : isHovered && isClickable
-                        ? '#fff'
-                        : isPassed
-                          ? 'rgba(255,255,255,0.85)'
-                          : isUnlocked
-                            ? 'rgba(255,255,255,0.65)'
-                            : 'rgba(255,255,255,0.25)',
-                    fontWeight: isActive ? 700 : (isPassed || (isHovered && isClickable)) ? 600 : 400,
-                    whiteSpace: 'nowrap',
-                    textDecoration: isHovered && isClickable ? 'underline' : 'none',
-                    textUnderlineOffset: '3px',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    {label}
-                  </span>
-                </button>
-                {idx < (hasChart ? 2 : 3) && (
-                  <div style={{
-                    flex: 1,
-                    height: '2px',
-                    minWidth: '8px',
-                    background: isPassed
-                      ? 'linear-gradient(90deg, rgba(229,193,88,0.6), rgba(229,193,88,0.2))'
-                      : 'rgba(255,255,255,0.08)',
-                    borderRadius: '1px',
-                  }} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <StepProgress
+          step={step}
+          setStep={setStep}
+          hasChart={hasChart}
+          isVi={isVi}
+          hasPrecastHex={hasPrecastHex}
+          maxStepReached={maxStepReached}
+          hoveredStep={hoveredStep}
+          setHoveredStep={setHoveredStep}
+          topic={topic}
+          localBirthInfo={localBirthInfo}
+          aiResponse={aiResponse}
+        />
 
         <TopicSelectionStep
           step={step}
