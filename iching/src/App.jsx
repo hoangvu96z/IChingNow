@@ -1,6 +1,6 @@
 import { EvidenceProvider } from './context/EvidenceContext.jsx';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from './context/AuthContext.jsx';
+import { useAuth } from './context/useAuth.js';
 import { useReadingsApi } from './hooks/useReadingsApi.js';
 import CastingForm from './components/CastingForm.jsx';
 import MethodPicker from './components/MethodPicker.jsx';
@@ -26,7 +26,7 @@ import KnowledgeFeed from './components/KnowledgeFeed.jsx';
 import { buildResult } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
-import { useLanguage } from './context/LanguageContext.jsx';
+import { useLanguage } from './context/useLanguage.js';
 import { vi } from './data/translations/vi.js';
 import { en } from './data/translations/en.js';
 import CombinedReadingModal from '@shared/components/CombinedReading/CombinedReadingModal.jsx';

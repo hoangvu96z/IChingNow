@@ -6,7 +6,7 @@ import {
   useState,
 } from 'react';
 import { buildEvidenceCatalog } from '../logic/interpretationEvidence';
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from './useLanguage.js';
 
 export function EvidenceProvider({ result, children }) {
   const { language } = useLanguage();

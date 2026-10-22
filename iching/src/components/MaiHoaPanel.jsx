@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { buildMaiHoaResult, generateSerialSuggestions, getLunarInfo } from '../logic/maiHoa.js';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 // ─── Preview âm lịch + giờ địa chi ──────────────────────────────────────────
 function LunarPreview({ dateStr, timeStr }) {
@@ -385,7 +385,7 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
 
 // ─── Công thức giải thích ────────────────────────────────────────────────────
 function FormulaBox({ mode }) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const isTime = mode === 'time';
   return (
     <div style={{

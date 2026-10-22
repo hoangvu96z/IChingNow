@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { castAllLines, castOneLine, LINE_TYPE_LABELS } from '../logic/castLines.js';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 import AncientCoin3D from './AncientCoin3D.jsx';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import MindfulnessModal from './MindfulnessModal.jsx';

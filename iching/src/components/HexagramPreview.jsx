@@ -1,7 +1,7 @@
 import { useEvidence } from '../context/evidenceState';
 import React from 'react';
 import HexagramDisplay from './HexagramDisplay.jsx';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 /**
  * Card hiển thị quẻ chủ + quẻ biến cạnh nhau

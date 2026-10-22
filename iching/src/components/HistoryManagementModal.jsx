@@ -1,6 +1,6 @@
 import { evidencePlainText } from '../logic/interpretationEvidence';
-import React, { useState, useMemo } from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useLanguage } from '../context/useLanguage.js';
 
 export default function HistoryManagementModal({
   isOpen,
@@ -17,7 +17,7 @@ export default function HistoryManagementModal({
   const [previewTab, setPreviewTab] = useState('info');
   const [actionError, setActionError] = useState('');
 
-  const formatHistoryTitle = (item) => {
+  const formatHistoryTitle = useCallback((item) => {
     const getHexName = (hex) => {
       if (!hex) return '';
       return language === 'en' ? t(`hex.name.${hex.id}`, hex.nameVi) : hex.nameVi;
@@ -33,7 +33,7 @@ export default function HistoryManagementModal({
       const bienLabel = language === 'en' ? 'Changed' : 'Biến';
       return `${primaryName} (${chuLabel}) ➔ ${changedName} (${bienLabel})`;
     }
-  };
+  }, [language, t]);
 
   const formatTime = (isoString) => {
     try {
@@ -65,7 +65,7 @@ export default function HistoryManagementModal({
       const question = (item.question || '').toLowerCase();
       return title.includes(term) || question.includes(term);
     });
-  }, [history, searchTerm, language]);
+  }, [history, searchTerm, formatHistoryTitle]);
 
   if (!isOpen) return null;
 

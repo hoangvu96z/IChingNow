@@ -4,10 +4,10 @@ import IChingWaitingAnimation from './IChingWaitingAnimation.jsx';
 import IChingFollowUpConversation from './IChingFollowUpConversation.jsx';
 import { evidencePrompt, parseInterpretationResponse } from '../logic/interpretationEvidence';
 import React, { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 import { usePlan } from '../hooks/usePlan.js';
 import PricingModal from './PricingModal.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/useAuth.js';
 import { requestAiChat } from '../../../shared/src/utils/aiProxy.mjs';
 import { readOpenAiChatStream } from '../../../shared/src/utils/openAiSse.mjs';
 
@@ -19,7 +19,7 @@ const PREDEFINED_MODELS = [
   { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'gemma-4-26b-a4b-it:free' }
 ];
 
-export default function AiInterpretationPanel({ result, mode, plainTextResult, readingId, onSaveAiConversation }) {
+export default function AiInterpretationPanel({ result, plainTextResult, readingId, onSaveAiConversation }) {
   const evidence = useEvidence();
   const active = useRef(false);
   const requestController = useRef(null);
@@ -55,7 +55,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
   // ─── Quota & Plan ─────────────────────────────────────────────────────────
   const { isAuthenticated, login } = useAuth();
-  const { remaining, plan, canBonus, expiresAt, daysRemaining, isExpiringSoon, isOverride, fetchQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
+  const { remaining, plan, canBonus, expiresAt, daysRemaining, isOverride, fetchQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
   const [showPricing, setShowPricing] = useState(false);
 
   // Timer cho loading state
@@ -99,9 +99,9 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
             : activeSettings.model,
         };
       }
-    } catch (e) {}
+    } catch {}
     setSettings(activeSettings);
-    try { localStorage.setItem('iching_ai_settings', JSON.stringify(activeSettings)); } catch (e) {}
+    try { localStorage.setItem('iching_ai_settings', JSON.stringify(activeSettings)); } catch {}
   }, []);
 
   // Sync settings to form when settings modal opens
@@ -345,7 +345,6 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       canBonus={canBonus}
       expiresAt={expiresAt}
       daysRemaining={daysRemaining}
-      isExpiringSoon={isExpiringSoon}
       isOverride={isOverride}
       onRequestBonus={requestBonus}
       onApplyCoupon={applyCoupon}

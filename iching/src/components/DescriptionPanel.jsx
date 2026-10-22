@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 const BINARY_TO_QUAI_NUMBER = {
   '111': 1, // Càn

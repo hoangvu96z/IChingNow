@@ -1,6 +1,6 @@
 import { useEvidence } from '../context/evidenceState';
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 import LucHaoTable from './LucHaoTable.jsx';
 import DescriptionPanel from './DescriptionPanel.jsx';
 import LearnPanel from './LearnPanel.jsx';

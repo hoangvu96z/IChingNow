@@ -39,7 +39,7 @@ export function getCanChiFromDate(dateStr, timeStr = '00:00') {
 
   try {
     const [year, month, day]   = dateStr.split('-').map(Number);
-    const [hour = 0, min = 0]  = (timeStr || '00:00').split(':').map(Number);
+    const [hour = 0] = (timeStr || '00:00').split(':').map(Number);
 
     // Chuyển giờ sang địa chi giờ (Tý = 0, Sửu = 1, ...)
     // Giờ Tý: 23:00-00:59, Sửu: 01:00-02:59, ...

@@ -1,13 +1,13 @@
 import { useEvidence } from '../context/evidenceState';
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 import { GLOSSARY } from '../data/glossary.js';
 
 /**
  * Bảng Lục Hào chính — render cả quẻ chủ và quẻ biến song song
  */
 export default function LucHaoTable({ result, highlight = [], onLearn }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
 
   if (!result || !result.lines || result.lines.length < 6) {
     return (

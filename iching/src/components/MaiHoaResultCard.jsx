@@ -3,7 +3,7 @@ import React from 'react';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import DescriptionPanel from './DescriptionPanel.jsx';
 import LucHaoTable from './LucHaoTable.jsx';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 // ─── Hexagram card (1 trong 3 quẻ) ───────────────────────────────────────────
 function HexCard({ evidenceId, label, labelColor, hexagram, lines, subtitle, badge }) {

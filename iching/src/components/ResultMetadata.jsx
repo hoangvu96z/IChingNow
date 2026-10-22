@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 /**
  * Hiển thị metadata của lần lập quẻ

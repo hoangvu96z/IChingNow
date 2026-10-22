@@ -1,5 +1,5 @@
 import { useEvidence } from '../context/evidenceState';
-import { useLanguage } from '../context/LanguageContext';
+import { useLanguage } from '../context/useLanguage.js';
 import { parseInterpretationResponse } from '../logic/interpretationEvidence';
 import MarkdownContent from './MarkdownContent.mjs';
 

@@ -15,7 +15,7 @@ export function useReadingsApi(isAuthenticated, userId) {
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
   // Helper giải mã đối tượng reading khi tải về từ server
-  const decryptReadingObject = async (r) => {
+  const decryptReadingObject = useCallback(async (r) => {
     let decryptionError = false;
     let question = r.question;
     if (question && typeof question === 'string' && question.startsWith('enc_v1::')) {
@@ -52,7 +52,7 @@ export function useReadingsApi(isAuthenticated, userId) {
       _remoteId: r.id,
       ...(decryptionError ? { _decryptionError: true } : {}),
     };
-  };
+  }, [userId]);
 
   // ─── Load lịch sử ──────────────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
@@ -77,7 +77,7 @@ export function useReadingsApi(isAuthenticated, userId) {
     } finally {
       setHistoryLoaded(true);
     }
-  }, [isAuthenticated, userId]);
+  }, [isAuthenticated, decryptReadingObject]);
 
   // ─── Lưu reading qua HTTPS; SSO backend mã hóa các trường nhạy cảm khi lưu ─
   const saveReading = useCallback(async (newResult, type) => {
@@ -132,7 +132,7 @@ export function useReadingsApi(isAuthenticated, userId) {
       console.error('saveReading error:', err);
       throw err;
     }
-  }, [isAuthenticated, userId]);
+  }, [isAuthenticated]);
 
   // ─── Xoá 1 reading ─────────────────────────────────────────────────────────
   const deleteReading = useCallback(async (item) => {
@@ -214,7 +214,7 @@ export function useReadingsApi(isAuthenticated, userId) {
       console.error('updateReadingData error:', err);
       throw err;
     }
-  }, [history, isAuthenticated, userId]);
+  }, [history, isAuthenticated]);
 
   return {
     history,

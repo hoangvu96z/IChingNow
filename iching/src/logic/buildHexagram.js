@@ -120,7 +120,7 @@ function getChangedBinary(lines) {
  */
 function annotateLines({
   binary,
-  palaceName,
+  palaceName: _palaceName,
   palaceElement,
   theHao,
   ungHao,
@@ -182,8 +182,8 @@ export function buildLucHaoResult({ formData, lines, mode }) {
   // ── Bước 2+3: Tầm Cung ─────────────────────────────────────────────────
   const primaryBinary  = linesToBinary(lines);
   const palaceInfo     = findPalaceInfo(lines);
-  const { palaceName, palaceElement, palaceBinary, queType, theHao, ungHao } = palaceInfo || {
-    palaceName: 'Càn', palaceElement: 'Kim', palaceBinary: '111111',
+  const { palaceName, palaceElement, queType, theHao, ungHao } = palaceInfo || {
+    palaceName: 'Càn', palaceElement: 'Kim',
     queType: 'unknown', theHao: 6, ungHao: 3,
   };
 

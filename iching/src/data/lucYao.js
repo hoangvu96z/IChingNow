@@ -133,21 +133,6 @@ function buildPalaceMap() {
   // [0]=bát thuần, [1]=nhất thế, [2]=nhị thế, [3]=tam thế,
   // [4]=tứ thế (du hồn), [5]=quy hồn, special cases...
   // Using the standard King Wen palace system
-  const palaceData = {
-    'Càn': {
-      element: 'Kim',
-      hexagrams: [
-        { binary:'111111', type:'bat-thuan', theHao:6 }, // Thuần Càn
-        { binary:'111110', type:'nhat-the',  theHao:1 }, // Thiên Phong Cấu  (H1 biến: 1→0)
-        { binary:'111100', type:'nhi-the',   theHao:2 }, // Thiên Sơn Độn    (H2 biến)
-        { binary:'111000', type:'tam-the',   theHao:3 }, // Thiên Địa Bĩ     (H3 biến)
-        { binary:'110000', type:'tu-the',    theHao:4 }, // Phong Địa Quan   wait...
-        // Actually theHao=4 but it's Du Hồn: H4 also flips → 
-        { binary:'101000', type:'ngu-the',   theHao:5 }, // Hỏa Địa Tấn?? 
-        // This gets complex. Use authoritative lookup table instead:
-      ]
-    }
-  };
   // Return empty; will use the authoritative static table below
   return {};
 }
@@ -218,22 +203,14 @@ export const PALACE_SEQUENCES = {
 export const HEX_PALACE_AUTHORITATIVE = {
   // ── CUNG CÀN (Kim) ──────────────────────────────────────────────────────
   '111111': { palace:'Càn',  queType:'bat-thuan', theHao:6 }, // Thuần Càn
-  '011111': { palace:'Càn',  queType:'nhat-the',  theHao:1 }, // Thiên Phong Cấu (H1: 1→0)
-  '001111': { palace:'Càn',  queType:'nhi-the',   theHao:2 }, // Thiên Sơn Độn   (H2: 1→0)
-  '000111': { palace:'Càn',  queType:'tam-the',   theHao:3 }, // Thiên Địa Bĩ    (H3: 1→0)
   '000011': { palace:'Càn',  queType:'tu-the',    theHao:4 }, // Phong Địa Quan  (H4: 1→0)
   '000001': { palace:'Càn',  queType:'ngu-the',   theHao:5 }, // Sơn Địa Bác     (H5: 1→0)
   '000101': { palace:'Càn',  queType:'du-hon',    theHao:4 }, // Hỏa Địa Tấn    (Du Hồn: H4 đảo lại)
   '101111': { palace:'Càn',  queType:'quy-hon',   theHao:3 }, // Thiên Hỏa Đồng Nhân (Quy Hồn: H1H2H3 về)
 
   // ── CUNG KHẢM (Thủy) ────────────────────────────────────────────────────
-  '010010': { palace:'Khảm', queType:'bat-thuan', theHao:6 }, // Thuần Khảm
   '110010': { palace:'Khảm', queType:'nhat-the',  theHao:1 }, // Thủy Trạch Tiết (H1: 0→1)
-  '100010': { palace:'Khảm', queType:'nhi-the',   theHao:2 }, // Thủy Lôi Truân  (H2: 1→0)
-  '100000': { palace:'Khảm', queType:'tam-the',   theHao:3 }, // Địa Lôi Phục    (H3: 0→0... wait)
   // Khảm inner=[Dần,Thìn,Ngọ], this follows the mutation sequence
-  '100011': { palace:'Khảm', queType:'tu-the',    theHao:4 }, // Phong Lôi Ích
-  '100001': { palace:'Khảm', queType:'ngu-the',   theHao:5 }, // Sơn Lôi Di
   '100101': { palace:'Khảm', queType:'du-hon',    theHao:4 }, // Hỏa Lôi Phệ Hạp
   '010011': { palace:'Khảm', queType:'quy-hon',   theHao:3 }, // Phong Thủy Hoán
 
@@ -245,44 +222,38 @@ export const HEX_PALACE_AUTHORITATIVE = {
   // H1 flip 001001→101001 → Sơn Hỏa Bí? lower=101 upper=001 → Ly inner, Cấn outer = Sơn Hỏa Bí ✓
   '111001': { palace:'Cấn',  queType:'nhi-the',   theHao:2 }, // Sơn Thiên Đại Súc (H2 flip)
   '110001': { palace:'Cấn',  queType:'tam-the',   theHao:3 }, // Sơn Trạch Tổn
-  '110011': { palace:'Cấn',  queType:'tu-the',    theHao:4 }, // Phong Trạch Trung Phu... 
   '110111': { palace:'Cấn',  queType:'ngu-the',   theHao:5 }, // Thiên Trạch Lý
   '110101': { palace:'Cấn',  queType:'du-hon',    theHao:4 }, // Hỏa Trạch Khuê
-  '001101': { palace:'Cấn',  queType:'quy-hon',   theHao:3 }, // Hỏa Sơn Lữ
 
   // ── CUNG CHẤN (Mộc) ─────────────────────────────────────────────────────
   '100100': { palace:'Chấn', queType:'bat-thuan', theHao:6 }, // Thuần Chấn
-  '000100': { palace:'Chấn', queType:'nhat-the',  theHao:1 }, // Lôi Địa Dự
   '010100': { palace:'Chấn', queType:'nhi-the',   theHao:2 }, // Lôi Thủy Giải
   '011100': { palace:'Chấn', queType:'tam-the',   theHao:3 }, // Lôi Phong Hằng
   '011110': { palace:'Chấn', queType:'tu-the',    theHao:4 }, // Trạch Phong Đại Quá
-  '011111': { palace:'Chấn', queType:'ngu-the',   theHao:5 }, // Thiên Phong Cấu ... wait dup
-  '011101': { palace:'Chấn', queType:'du-hon',    theHao:4 }, // Hỏa Phong Đỉnh
+  '011111': { palace:'Chấn', queType:'ngu-the',   theHao:5 }, // Thiên Phong Cấu
   '101100': { palace:'Chấn', queType:'quy-hon',   theHao:3 }, // Lôi Hỏa Phong
 
   // ── CUNG TỐN (Mộc) ──────────────────────────────────────────────────────
   '011011': { palace:'Tốn',  queType:'bat-thuan', theHao:6 }, // Thuần Tốn
   '111011': { palace:'Tốn',  queType:'nhat-the',  theHao:1 }, // Phong Thiên Tiểu Súc
   '101011': { palace:'Tốn',  queType:'nhi-the',   theHao:2 }, // Phong Hỏa Gia Nhân
-  '100011': { palace:'Tốn',  queType:'tam-the',   theHao:3 }, // Phong Lôi Ích... dup?
-  '100001': { palace:'Tốn',  queType:'tu-the',    theHao:4 }, // Sơn Lôi Di... dup?
-  '100000': { palace:'Tốn',  queType:'ngu-the',   theHao:5 }, // Địa Lôi Phục... dup?
-  '100010': { palace:'Tốn',  queType:'du-hon',    theHao:4 }, // Thủy Lôi Truân... dup?
-  '011010': { palace:'Tốn',  queType:'quy-hon',   theHao:3 }, // Thủy Phong Tỉnh
+  '100011': { palace:'Tốn',  queType:'tam-the',   theHao:3 }, // Phong Lôi Ích
+  '100001': { palace:'Tốn',  queType:'tu-the',    theHao:4 }, // Sơn Lôi Di
+  '100010': { palace:'Tốn',  queType:'du-hon',    theHao:4 }, // Thủy Lôi Truân
 
   // ── CUNG LY (Hỏa) ───────────────────────────────────────────────────────
   '101101': { palace:'Ly',   queType:'bat-thuan', theHao:6 }, // Thuần Ly
-  '001101': { palace:'Ly',   queType:'nhat-the',  theHao:1 }, // Hỏa Sơn Lữ... wait dup from Cấn quy hồn
-  '011101': { palace:'Ly',   queType:'nhi-the',   theHao:2 }, // Hỏa Phong Đỉnh... dup?
+  '001101': { palace:'Ly',   queType:'nhat-the',  theHao:1 }, // Hỏa Sơn Lữ
+  '011101': { palace:'Ly',   queType:'nhi-the',   theHao:2 }, // Hỏa Phong Đỉnh
   '011001': { palace:'Ly',   queType:'tam-the',   theHao:3 }, // Sơn Phong Cổ
   '011000': { palace:'Ly',   queType:'tu-the',    theHao:4 }, // Địa Phong Thăng
-  '011010': { palace:'Ly',   queType:'ngu-the',   theHao:5 }, // Thủy Phong Tỉnh... dup?
-  '010010': { palace:'Ly',   queType:'du-hon',    theHao:4 }, // Thuần Khảm... dup?
+  '011010': { palace:'Ly',   queType:'ngu-the',   theHao:5 }, // Thủy Phong Tỉnh
+  '010010': { palace:'Ly',   queType:'du-hon',    theHao:4 }, // Thuần Khảm
   '101010': { palace:'Ly',   queType:'quy-hon',   theHao:3 }, // Thủy Hỏa Ký Tế
 
   // ── CUNG KHÔN (Thổ) ─────────────────────────────────────────────────────
   '000000': { palace:'Khôn', queType:'bat-thuan', theHao:6 }, // Thuần Khôn
-  '100000': { palace:'Khôn', queType:'nhat-the',  theHao:1 }, // Địa Lôi Phục... dup
+  '100000': { palace:'Khôn', queType:'nhat-the',  theHao:1 }, // Địa Lôi Phục
   '010000': { palace:'Khôn', queType:'nhi-the',   theHao:2 }, // Địa Thủy Sư... wait lower=000 upper=010? 
   '001000': { palace:'Khôn', queType:'tam-the',   theHao:3 }, // Địa Sơn Khiêm
   '001100': { palace:'Khôn', queType:'tu-the',    theHao:4 }, // Lôi Sơn Tiểu Quá
@@ -294,9 +265,9 @@ export const HEX_PALACE_AUTHORITATIVE = {
   '110110': { palace:'Đoài', queType:'bat-thuan', theHao:6 }, // Thuần Đoài
   '010110': { palace:'Đoài', queType:'nhat-the',  theHao:1 }, // Trạch Thủy Khốn (H1: 1→0)
   '000110': { palace:'Đoài', queType:'nhi-the',   theHao:2 }, // Trạch Địa Tụy   (H2: 1→0)
-  '000100': { palace:'Đoài', queType:'tam-the',   theHao:3 }, // Lôi Địa Dự... dup
-  '000111': { palace:'Đoài', queType:'tu-the',    theHao:4 }, // Thiên Địa Bĩ... dup
-  '001111': { palace:'Đoài', queType:'ngu-the',   theHao:5 }, // Thiên Sơn Độn... dup
+  '000100': { palace:'Đoài', queType:'tam-the',   theHao:3 }, // Lôi Địa Dự
+  '000111': { palace:'Đoài', queType:'tu-the',    theHao:4 }, // Thiên Địa Bĩ
+  '001111': { palace:'Đoài', queType:'ngu-the',   theHao:5 }, // Thiên Sơn Độn
   '001011': { palace:'Đoài', queType:'du-hon',    theHao:4 }, // Phong Sơn Tiệm
   '110011': { palace:'Đoài', queType:'quy-hon',   theHao:3 }, // Phong Trạch Trung Phu... 
 };

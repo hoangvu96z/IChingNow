@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { buildPlainTextResult } from '../logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from '../logic/clipboard.js';
-import { useLanguage } from '../context/LanguageContext.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
+import { useAuth } from '../context/useAuth.js';
 
 /**
  * Card plaintext – nền tối, monospace, nút copy + download

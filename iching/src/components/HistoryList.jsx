@@ -1,6 +1,6 @@
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
+import { useAuth } from '../context/useAuth.js';
 
 export default function HistoryList({
   history = [],

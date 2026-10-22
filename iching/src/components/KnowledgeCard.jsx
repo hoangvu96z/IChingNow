@@ -8,8 +8,6 @@ const TYPE_CONFIG = {
   hexOfDay:{ emoji: '☯',  label: 'Quẻ của ngày', accent: '#c25050', bg: 'linear-gradient(165deg, #1a0a0a 0%, #2d1010 30%, #1a0a0a 100%)' },
 };
 
-const TRIGRAM_EMOJI = { 1: '☰', 2: '☷', 3: '☵', 4: '☲', 5: '☳', 6: '☶', 7: '☴', 8: '☱' };
-
 /**
  * Thẻ kiến thức đẹp — có thể xuất ảnh để chia sẻ.
  * Props: post (from knowledgePosts.js), compact (boolean, nếu true = nhỏ gọn cho feed)

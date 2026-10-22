@@ -4,7 +4,7 @@ import { createLineCommitGate } from '../logic/lineCommitGate.js';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import AncientCoin3D from './AncientCoin3D.jsx';
 import MindfulnessModal from './MindfulnessModal.jsx';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 import { soundEngine } from '../utils/soundEffects.js';
 
 const YAO_NAMES_VI = ['Hào Sơ (1)', 'Hào Nhị (2)', 'Hào Tam (3)', 'Hào Tứ (4)', 'Hào Ngũ (5)', 'Hào Thượng (6)'];

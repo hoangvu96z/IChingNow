@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 import { soundEngine } from '../utils/soundEffects.js';
 import { createMindfulnessCountdown } from '../utils/mindfulnessCompletion.js';
 
@@ -22,7 +22,7 @@ export default function MindfulnessModal({
   onComplete,
   onClose,
 }) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const isEn = language === 'en';
 
   const [timeLeft, setTimeLeft] = useState(10);
@@ -30,7 +30,7 @@ export default function MindfulnessModal({
     try {
       const saved = localStorage.getItem('iching_mindfulness_enabled');
       return saved === null ? true : saved === 'true';
-    } catch (e) {
+    } catch {
       return true;
     }
   });
@@ -76,7 +76,7 @@ export default function MindfulnessModal({
     setMindfulnessEnabled(nextVal);
     try {
       localStorage.setItem('iching_mindfulness_enabled', String(nextVal));
-    } catch (e) {}
+    } catch {}
   }
 
   function handleSkip() {

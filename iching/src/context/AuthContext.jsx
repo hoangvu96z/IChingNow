@@ -1,1 +1,1 @@
-export { AuthProvider, useAuth } from '../../../shared/src/context/AuthContext.jsx';
+export { AuthProvider } from '../../../shared/src/context/AuthContext.jsx';

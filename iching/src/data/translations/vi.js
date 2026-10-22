@@ -313,7 +313,6 @@ export const vi = {
   'branch.Hợi': 'Hợi',
 
   // Elements
-  'element.Kim': 'Kim',
   'element.Mộc': 'Mộc',
   'element.Thủy': 'Thủy',
   'element.Hỏa': 'Hỏa',
@@ -334,7 +333,6 @@ export const vi = {
   'trigram.Chấn': 'Chấn',
   'trigram.Tốn': 'Tốn',
   'trigram.Khảm': 'Khảm',
-  'trigram.Ly': 'Ly',
   'trigram.Cấn': 'Cấn',
   'trigram.Đoài': 'Đoài',
 

@@ -399,7 +399,6 @@ export const en = {
   'trigram.Chấn': 'Zhen (Thunder)',
   'trigram.Tốn': 'Xun (Wind)',
   'trigram.Khảm': 'Kan (Water)',
-  'trigram.Ly': 'Li (Fire)',
   'trigram.Cấn': 'Gen (Mountain)',
   'trigram.Đoài': 'Dui (Lake)',
 

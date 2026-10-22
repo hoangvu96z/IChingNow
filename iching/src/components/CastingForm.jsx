@@ -1,7 +1,7 @@
 import React from 'react';
 import { HOUR_BRANCHES } from '../data/hourBranches.js';
 import { SOLAR_TERMS } from '../data/solarTerms.js';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 /**
  * Form nhập liệu: việc cần xem, ngày giờ, người lập, tiết khí, động tâm

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 /**
  * Màn hình chọn phương pháp gieo quẻ — 4 lựa chọn xếp gọn trên 1 hàng ngang.

@@ -1,6 +1,6 @@
 import { getSsoApiBase, getSsoWebBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
@@ -50,12 +50,11 @@ export default function PricingModal({
   canBonus = false,
   expiresAt = null,
   daysRemaining = null,
-  isExpiringSoon = false,
   isOverride = false,
   onRequestBonus,
   onApplyCoupon,
 }) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const isEn = language === 'en';
 
   const [couponCode, setCouponCode] = useState('');

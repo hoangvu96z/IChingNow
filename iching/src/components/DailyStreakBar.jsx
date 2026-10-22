@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { useLanguage } from '../context/useLanguage.js';
 import { useStreak } from '@shared/utils/useStreak.js';
 import { postOfTheDay } from '../data/knowledgePosts.js';
 
