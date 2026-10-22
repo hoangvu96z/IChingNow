@@ -3,31 +3,21 @@
 ## Hoạt động
 
 - Copy prompt và dữ liệu lá số dùng được khi chưa đăng nhập.
-- Luận giải AI cần phiên SSO hợp lệ. Frontend gọi `POST /plans/tuvi-ai`; API key chỉ nằm ở SSO.
+- Luận giải AI cần phiên SSO hợp lệ. Frontend dùng helper `requestAiChat` để gọi `POST /plans/ai` trên SSO; không gọi trực tiếp provider.
 - Quota dùng app `tuvinow`; lịch sử dùng app `tuvi`, giữ hợp đồng của các hook cũ.
-- Mỗi yêu cầu AI trừ một lượt trước khi gọi upstream, theo chính sách SSO hiện có. Backend thử lại tối đa một lần khi mất kết nối, HTTP 429 hoặc 5xx, không trừ thêm lượt. Lỗi/hủy chờ không hoàn lượt.
+- Mỗi yêu cầu AI giữ chỗ một lượt trước khi gọi provider. Nếu request tới provider hoặc stream provider lỗi, backend hoàn lại lượt đã giữ. Ngắt kết nối/hủy từ client sau khi yêu cầu bắt đầu không hoàn lượt vì provider có thể đã xử lý và tính phí.
 - Lần luận giải thành công tự lưu lá số và hội thoại. Có nút Lưu để lưu riêng lá số hoặc thử lưu lại khi lỗi. Tối đa 5 câu hỏi thêm mỗi luận giải.
 - Ngày sinh và hội thoại được mã hóa theo tiện ích AES hiện có của project trước khi lưu; đây không phải mã hóa với khóa bí mật do người dùng tự giữ.
 
 ## Cấu hình SSO
 
-Trên máy chủ chạy vInfiSSO, đặt:
+Frontend gửi yêu cầu AI qua proxy dùng chung `POST /plans/ai` của vInfiSSO. Chỉ cấu hình `AI_API_KEY` và `AI_BASE_URL` trong môi trường runtime của SSO; không đặt giá trị của chúng trong biến `VITE_*`, frontend bundle, tài liệu hoặc source control. Proxy chỉ chấp nhận dịch vụ AI chạy local và từ chối base URL public.
 
-```dotenv
-TUVI_AI_BASE_URL=http://43.128.116.69:20128/v1
-provider API key configuration=<API key của upstream đang dùng>
-TUVI_AI_MODELS=combo1
-```
+Trên production, SSO đọc `.env` trước rồi bổ sung biến còn thiếu từ `.env.production`; biến môi trường của tiến trình được ưu tiên cao nhất. Đặt cấu hình tại thư mục gốc SSO. Sau khi cập nhật biến môi trường, khởi động lại PM2 với `--update-env`.
 
-Có thể liệt kê nhiều model, phân cách bằng dấu phẩy. Frontend chỉ chọn trong danh sách này. Không đưa API key vào biến `VITE_` hoặc commit credential vào repo.
+Frontend cần `VITE_SSO_URL` trỏ đến SSO và cấu hình origin tương ứng trong `ALLOWED_ORIGINS`. Khi phát triển local, dùng cấu hình Vite proxy hiện có; production phải gọi SSO trực tiếp.
 
-Khi chạy `NODE_ENV=production`, SSO đọc `.env` trước rồi bổ sung biến còn thiếu từ `.env.production`. Biến môi trường của tiến trình được ưu tiên cao nhất. Đặt các file tại thư mục gốc SSO; PM2 đã cố định `cwd` tại thư mục chứa ecosystem config. Không để `provider API key configuration` rỗng trong nguồn ưu tiên cao hơn. Sau khi cập nhật biến môi trường, khởi động lại PM2 với `--update-env`.
-
-Kiểm tra `GET /plans/tuvi-ai/config`: `configured: true` xác nhận đã nạp key, chưa xác nhận upstream hoạt động. Nếu trả `false`, backend không gọi upstream và không trừ quota. UI sẽ hiện trạng thái chưa sẵn sàng và cho kiểm tra lại. Frontend chỉ gọi SSO, không gọi trực tiếp upstream hay dùng key `provider API key configuration` để vượt lỗi SSO.
-
-Frontend cần `VITE_SSO_URL` trỏ đến SSO (cùng cấu hình đăng nhập hiện có). Nếu biến này trống trong dev, Vite proxy `/sso`, `/ui`, `/plans`, `/readings` đến `https://sso.vunph.click`. Production phải dùng SSO URL thực, không dựa vào Vite proxy. Đảm bảo `ALLOWED_ORIGINS` của SSO cho phép origin chạy TuViNow.
-
-Triển khai backend SSO trước, rồi build/deploy TuViNow. Không cần migration database. Hai app TarotNow và IChing không đổi luồng gọi AI.
+Triển khai backend SSO trước rồi build/deploy TuViNow. Không cần migration database. Luồng AI của các app dùng chung proxy SSO.
 
 ## Kiểm thử
 
@@ -38,7 +28,7 @@ npm run build:tuvi
 npm run lint:tuvi
 
 # Tại vInfiSSO
-npm test -- --runInBand plans.tuvi-ai.spec.ts
+npm test -- --runInBand src/plans/plans.ai.spec.ts
 npx nest build
 ```
 
