@@ -542,54 +542,6 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     }
   };
 
-  function parseMarkdown(text) {
-    if (!text) return '';
-    let html = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h4 style="color: var(--color-gold-light); font-family: \'Noto Serif\', serif; font-size: 1.05rem; margin-top: 16px; margin-bottom: 8px; font-weight: 700;">$1</h4>');
-    html = html.replace(/^## (.*$)/gim, '<h3 style="color: var(--color-gold); font-family: \'Noto Serif\', serif; font-size: 1.25rem; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(184,134,11,0.15); padding-bottom: 4px; font-weight: 700;">$1</h3>');
-    html = html.replace(/^# (.*$)/gim, '<h2 style="color: var(--color-gold); font-family: \'Noto Serif\', serif; font-size: 1.4rem; margin-top: 24px; margin-bottom: 12px; font-weight: 700;">$1</h2>');
-
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--color-ink); font-weight: 700;">$1</strong>');
-
-    // Bullet points
-    html = html.replace(/^\s*-\s+(.*$)/gim, '<li style="margin-left: 20px; margin-bottom: 6px; list-style-type: square; color: var(--color-ink);">$1</li>');
-    html = html.replace(/^\s*\*\s+(.*$)/gim, '<li style="margin-left: 20px; margin-bottom: 6px; list-style-type: square; color: var(--color-ink);">$1</li>');
-
-    // Paragraphs
-    const lines = html.split('\n');
-    let inList = false;
-    const processed = lines.map(line => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('<li')) {
-        if (!inList) {
-          inList = true;
-          return '<ul style="margin: 8px 0; padding-left: 10px;">' + line;
-        }
-        return line;
-      } else {
-        let prefix = '';
-        if (inList) {
-          inList = false;
-          prefix = '</ul>';
-        }
-        if (trimmed === '') return '';
-        if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('</ul')) {
-          return prefix + line;
-        }
-        return prefix + `<p style="margin: 8px 0; line-height: 1.65; color: var(--color-ink);">${line}</p>`;
-      }
-    });
-    if (inList) processed.push('</ul>');
-
-    return processed.join('\n');
-  }
-
   return (
     <>
     <PricingModal
@@ -716,7 +668,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       {!loading && interpretation && (
         <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: 'var(--color-paper)', border: '1px solid var(--color-paper-dark)', borderRadius: 10, padding: 22, boxShadow: '0 4px 16px rgba(44,24,16,0.03)' }}>
-            <EvidenceInterpretation parsedResponse={parsedInterpretation} renderMarkdown={parseMarkdown} />
+            <EvidenceInterpretation parsedResponse={parsedInterpretation} />
             {!parsedInterpretation.sections.length && !parsedInterpretation.fallback.trim() && (
               <button type="button" className="btn-primary" onClick={handleInterpret}>
                 {isEn ? 'Try again' : 'Luận giải lại'}
@@ -775,7 +727,7 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
                         padding: '12px 16px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                       }}>
-                        <EvidenceInterpretation text={item.answer} renderMarkdown={parseMarkdown} />
+                        <EvidenceInterpretation text={item.answer} />
                         {item.answerTimestamp && (
                           <div style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: 6, fontFamily: 'monospace' }}>
                             🕐 {new Date(item.answerTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

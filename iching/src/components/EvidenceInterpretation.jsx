@@ -1,11 +1,11 @@
 import { useEvidence } from '../context/evidenceState';
 import { useLanguage } from '../context/LanguageContext';
 import { parseInterpretationResponse } from '../logic/interpretationEvidence';
+import MarkdownContent from './MarkdownContent.mjs';
 
 export default function EvidenceInterpretation({
   text,
   parsedResponse,
-  renderMarkdown,
 }) {
   const evidence = useEvidence();
   const { language } = useLanguage();
@@ -19,16 +19,14 @@ export default function EvidenceInterpretation({
           : 'AI chưa trả về nội dung luận giải. Bạn vui lòng thử lại.'}
       </p>;
     }
-    return <div dangerouslySetInnerHTML={{ __html: renderMarkdown(parsed.fallback) }} />;
+    return <MarkdownContent>{parsed.fallback}</MarkdownContent>;
   }
   return (
     <div className="evidence-interpretation">
       {parsed.sections.map((section, index) => (
         <section key={index}>
           {section.title && <h3>{section.title}</h3>}
-          <div
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(section.text) }}
-          />
+          <MarkdownContent>{section.text}</MarkdownContent>
           {section.references.length > 0 && (
             <button
               type="button"

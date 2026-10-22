@@ -18,7 +18,8 @@
     "html-to-image": "^1.11.13",
     "lunar-javascript": "^1.7.7",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.1",
