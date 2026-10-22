@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { soundEngine } from '../utils/soundEffects.js';
+import { createMindfulnessCountdown } from '../utils/mindfulnessCompletion.js';
 
 const MINDFUL_QUOTES = {
   vi: [
@@ -36,42 +37,39 @@ export default function MindfulnessModal({
 
   const quotes = isEn ? MINDFUL_QUOTES.en : MINDFUL_QUOTES.vi;
   const [quoteIndex, setQuoteIndex] = useState(0);
-  const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  const countdownRef = useRef(null);
+  const skipRequestedRef = useRef(false);
+
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!isOpen) {
       setTimeLeft(10);
-      completedRef.current = false;
       return;
     }
 
-    completedRef.current = false;
+    skipRequestedRef.current = false;
     setTimeLeft(10);
     setQuoteIndex(Math.floor(Math.random() * quotes.length));
 
     // Play serene meditation singing bowl sound
     soundEngine.playMeditationBell();
 
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          if (!completedRef.current) {
-            completedRef.current = true;
-            setTimeout(() => {
-              onComplete();
-            }, 350);
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const countdown = createMindfulnessCountdown({
+      onCompleteRef,
+      onTimeChange: setTimeLeft,
+    });
+    countdownRef.current = countdown;
+    countdown.start();
 
     return () => {
-      clearInterval(interval);
+      countdown.cancel();
+      if (countdownRef.current === countdown) countdownRef.current = null;
     };
-  }, [isOpen]);
+  }, [isOpen, quotes.length]);
 
   function handleToggleMindfulness() {
     const nextVal = !mindfulnessEnabled;
@@ -82,9 +80,11 @@ export default function MindfulnessModal({
   }
 
   function handleSkip() {
-    if (completedRef.current) return;
-    completedRef.current = true;
-    onComplete();
+    if (skipRequestedRef.current) return;
+    skipRequestedRef.current = true;
+
+    if (countdownRef.current) countdownRef.current.skip();
+    else onCompleteRef.current();
   }
 
   if (!isOpen) return null;
