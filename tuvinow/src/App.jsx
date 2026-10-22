@@ -9,6 +9,7 @@ import TuViLocalReport from './components/TuViLocalReport.jsx';
 import TuViAiPanel from './components/TuViAiPanel.jsx';
 import HopHonPage from './components/HopHonPage.jsx';
 import { useReadingsApi } from './hooks/useReadingsApi';
+import { getHistoryRestoreError } from './utils/historyRestore.js';
 import TuViHistoryModal from './components/TuViHistoryModal.jsx';
 import AppHeader from '@shared/components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
@@ -178,8 +179,10 @@ export default function App() {
   }, [chartResult, inputData, isAuthenticated, user?.id, reading?.id, ensureChartSaved, retrySave]);
 
   const openReading = (item) => {
-    if (!item.data?.inputData) {
-      setHistoryActionError('Lá số này thiếu dữ liệu đầu vào.');
+    const restoreError = getHistoryRestoreError(item);
+    if (restoreError) {
+      setHistoryActionError(restoreError);
+      setShowHistoryModal(false);
       return;
     }
     setHistoryActionError('');
@@ -262,6 +265,11 @@ export default function App() {
           <a href="#la-so" aria-current={page === 'la-so' ? 'page' : undefined}>Lá số cá nhân</a>
           <a href="#hop-hon" aria-current={page === 'hop-hon' ? 'page' : undefined}>♡ Hợp hôn</a>
         </nav>
+        {historyActionError && (
+          <div role="alert" style={{ margin: '0 0 16px', padding: '10px 14px', borderRadius: 10, color: '#fecaca', background: 'rgba(127,29,29,0.28)', border: '1px solid rgba(248,113,113,0.45)' }}>
+            ⚠ {historyActionError}
+          </div>
+        )}
         {page === 'hop-hon' && <HopHonPage />}
         {page === 'la-so' && showForm && !chartResult && (
           <>
