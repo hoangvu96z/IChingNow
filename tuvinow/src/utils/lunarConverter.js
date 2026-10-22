@@ -8,10 +8,6 @@ import { Lunar, Solar } from 'lunar-javascript';
 const THIEN_CAN_VI = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"];
 const DIA_CHI_VI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
 
-// Map Hán tự sang tiếng Việt
-const CAN_MAP = { '甲': 0, '乙': 1, '丙': 2, '丁': 3, '戊': 4, '己': 5, '庚': 6, '辛': 7, '壬': 8, '癸': 9 };
-const CHI_MAP = { '子': 0, '丑': 1, '寅': 2, '卯': 3, '辰': 4, '巳': 5, '午': 6, '未': 7, '申': 8, '酉': 9, '戌': 10, '亥': 11 };
-
 // 12 canh giờ
 export const GIO_SINH_OPTIONS = [
   { label: "Tý (23:00 – 01:00)", value: 0 },
@@ -45,14 +41,9 @@ export function solarToLunar(year, month, day) {
     const lunarDay = lunar.getDay();
     const isLeap = lunar.getMonth() < 0; // negative month = leap
 
-    // Can Chi năm từ Bát Tự
-    const eightChar = lunar.getEightChar();
-    const yearGanZhi = eightChar.getYear();
-    const yearGan = yearGanZhi.charAt(0);
-    const yearZhi = yearGanZhi.charAt(1);
-
-    const yearCanIndex = CAN_MAP[yearGan] ?? fallbackYearCan(lunarYear);
-    const yearChiIndex = CHI_MAP[yearZhi] ?? fallbackYearChi(lunarYear);
+    // Use the lunar calendar year so solar and direct-lunar input produce the same chart.
+    const yearCanIndex = yearCanIndexFromLunarYear(lunarYear);
+    const yearChiIndex = yearChiIndexFromLunarYear(lunarYear);
 
     return {
       lunarYear,
@@ -88,15 +79,12 @@ export function validateLunarDate(year, month, day) {
   }
 }
 
-/**
- * Lấy Can Chi năm từ số năm âm lịch (fallback)
- */
-function fallbackYearCan(lunarYear) {
-  return (lunarYear - 4) % 10;
+function yearCanIndexFromLunarYear(lunarYear) {
+  return ((lunarYear - 4) % 10 + 10) % 10;
 }
 
-function fallbackYearChi(lunarYear) {
-  return (lunarYear - 4) % 12;
+function yearChiIndexFromLunarYear(lunarYear) {
+  return ((lunarYear - 4) % 12 + 12) % 12;
 }
 
 /**
@@ -144,8 +132,8 @@ export function getYearOptions() {
  * @returns {string} ví dụ: "Bính Ngọ", "Ất Tỵ"
  */
 export function getYearCanChi(year) {
-  const canIndex = ((year - 4) % 10 + 10) % 10;
-  const chiIndex = ((year - 4) % 12 + 12) % 12;
+  const canIndex = yearCanIndexFromLunarYear(year);
+  const chiIndex = yearChiIndexFromLunarYear(year);
   return `${THIEN_CAN_VI[canIndex]} ${DIA_CHI_VI[chiIndex]}`;
 }
 

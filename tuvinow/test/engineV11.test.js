@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { anLaSoTuVi } from '../src/utils/tuViEngine.js';
+import { solarToLunar } from '../src/utils/lunarConverter.js';
 import { buildTuViText, buildTuViPrompt } from '../src/utils/buildTuViPrompt.js';
 const original = createRequire(import.meta.url)('./fixtures/tuvi-v11-user.cjs');
 
@@ -34,6 +35,28 @@ test('missing annual year never invokes wall-clock fallback and pre-birth years 
     assert.ok(result.palates.every(p => !p.isTieuHan && !p.luuNienChucNang));
   }
   assert.throws(() => anLaSoTuVi({ ...input, viewYear: 1995 }), /Năm xem/);
+});
+
+test('solar and direct-lunar input for the same birth date produce the same chart', () => {
+  const converted = solarToLunar(2024, 2, 5);
+  const shared = {
+    lunarYear: converted.lunarYear,
+    lunarMonth: converted.lunarMonth,
+    lunarDay: converted.lunarDay,
+    lunarHourIndex: 3,
+    gender: 1,
+  };
+  const fromSolar = anLaSoTuVi({
+    ...shared,
+    yearCanIndex: converted.yearCanIndex,
+    yearChiIndex: converted.yearChiIndex,
+  });
+  const fromLunar = anLaSoTuVi({
+    ...shared,
+    yearCanIndex: (converted.lunarYear - 4 + 10) % 10,
+    yearChiIndex: (converted.lunarYear - 4 + 12) % 12,
+  });
+  assert.deepEqual(fromSolar, fromLunar);
 });
 
 function compare(input) {
