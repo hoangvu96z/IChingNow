@@ -90,6 +90,11 @@ export default function TuViAiPanel({
   const exportCopied = copiedText === exportText;
 
   const checkConfig = useCallback(async (signal) => {
+    if (!isAuthenticated) {
+      setCheckingConfig(false);
+      setConfigError('');
+      return;
+    }
     setCheckingConfig(true);
     setConfigError('');
     try {
@@ -106,7 +111,7 @@ export default function TuViAiPanel({
     } finally {
       if (!signal?.aborted && mounted.current) setCheckingConfig(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     mounted.current = true;
@@ -117,9 +122,9 @@ export default function TuViAiPanel({
       abort.abort();
       controller.current?.abort();
     };
-  }, [checkConfig]);
+  }, [checkConfig, isAuthenticated]);
 
-  const aiUnavailable = checkingConfig || config.configured !== true;
+  const aiUnavailable = isAuthenticated && (checkingConfig || config.configured !== true);
 
   useEffect(() => {
     if (!busy) return;
