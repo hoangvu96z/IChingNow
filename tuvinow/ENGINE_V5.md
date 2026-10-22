@@ -1,6 +1,6 @@
 # Thuật toán Tử Vi v5 (lịch sử)
 
-Nguồn: `tu-vi-an-so-v5.js` do người dùng cung cấp, lưu nguyên văn tại `test/fixtures/tuvi-v5-user.cjs`. Phiên bản đang dùng là v8; tài liệu này giữ lại để đối chiếu lịch sử.
+Nguồn: `tu-vi-an-so-v5.js` do người dùng cung cấp, lưu nguyên văn tại `test/fixtures/tuvi-v5-user.cjs`. Phiên bản hiện tại là v11 (xem `ENGINE_V11.md`); tài liệu này giữ lại để đối chiếu lịch sử.
 SHA-256: `c4ef28c5a6b03a4b35f4a1f33af3a207312adf5972827b84470c50e8be480fd0`.
 
 So với nguồn v4, file mới chỉ đổi ba phần tử của `thienPhucMap`:
