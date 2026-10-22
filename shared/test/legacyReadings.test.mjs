@@ -1,13 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
 import { decryptData as decryptIChing } from '../../iching/src/utils/cryptoUtils.js';
 import { decryptData as decryptTarot } from '../../tarotnow/src/utils/cryptoUtils.js';
+import { decryptData as decryptTuVi } from '../../tuvinow/src/utils/cryptoUtils.js';
 
-const legacyCiphertext = 'enc_v1::AA==:AA==';
+const legacyCiphertext = 'enc_v1::AAECAwQFBgcICQoL:LzAhZMRgJTSGIC5mC2kzY3rdgcfBh+f9Oenf';
+const legacyAccountId = 'account-123';
 
 for (const [app, decryptData] of [
   ['IChingNow', decryptIChing],
   ['TarotNow', decryptTarot],
+  ['TuViNow', decryptTuVi],
 ]) {
   test(`${app} refuses legacy decryption without an authenticated account ID`, async () => {
     assert.equal(await decryptData(legacyCiphertext), null);
@@ -41,6 +45,18 @@ for (const [app, decryptData] of [
     try {
       assert.deepEqual(await decryptData(legacyCiphertext, 'account-123'), { restored: true });
       assert.ok(digestInput.startsWith('account-123:'));
+    } finally {
+      if (originalWindow === undefined) delete globalThis.window;
+      else globalThis.window = originalWindow;
+    }
+  });
+
+  test(`${app} decrypts an enc_v1 ciphertext produced by the legacy AES-GCM format`, async () => {
+    const originalWindow = globalThis.window;
+    globalThis.window = { crypto: webcrypto };
+
+    try {
+      assert.equal(await decryptData(legacyCiphertext, legacyAccountId), 'legacy-v1');
     } finally {
       if (originalWindow === undefined) delete globalThis.window;
       else globalThis.window = originalWindow;
