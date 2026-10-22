@@ -13,6 +13,15 @@ dist
 dist-ssr
 *.local
 
+# Local environment configuration may contain secrets.
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
+
+# Local I Ching backend data must remain on the user's machine.
+/iching/backend/database.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

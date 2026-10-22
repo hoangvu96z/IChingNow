@@ -222,7 +222,7 @@ export function AppsDropdown({ appId = 'iching', colors = {}, label, chooseLabel
             ) : (
               <a
                 key={app.id}
-                href={getAppLink(app.url, import.meta.env, typeof window !== 'undefined' ? window.location : null)}
+                href={getAppLink(app.url, { DEV: import.meta.env.DEV }, typeof window !== 'undefined' ? window.location : null)}
                 onClick={() => setOpen(false)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
@@ -294,7 +294,7 @@ function MobileAppsList({ appId, colors }) {
             }}>ĐANG DÙNG</span>
           </div>
         ) : (
-          <a key={app.id} href={getAppLink(app.url, import.meta.env, typeof window !== 'undefined' ? window.location : null)} style={{
+          <a key={app.id} href={getAppLink(app.url, { DEV: import.meta.env.DEV }, typeof window !== 'undefined' ? window.location : null)} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '10px 0',
             borderBottom: `1px solid ${colors.border}`,

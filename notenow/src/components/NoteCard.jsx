@@ -1,7 +1,8 @@
-import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { getDaysRemaining, stripHtml } from '../api.js';
 import ImageViewer from './ImageViewer.jsx';
+import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
+import { contentWithProtectedImageSources, getInlineNoteImages, sanitizeNoteContent } from '../safeNoteContent.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   GripVertical, Pin, Infinity as InfinityIcon,
@@ -9,14 +10,23 @@ import {
   Pencil, Trash2,
 } from 'lucide-react';
 
-const SSO_BASE = getSsoApiBase(import.meta.env);
+const EMPTY_IMAGES = [];
 
 export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPermanent, isShared }) {
   const { t } = useLanguage();
   const [deleting, setDeleting] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
+  const attachmentImages = Array.isArray(note.images) ? note.images : EMPTY_IMAGES;
+  const sanitizedContent = useMemo(() => sanitizeNoteContent(note.content), [note.content]);
+  const inlineImages = useMemo(() => getInlineNoteImages(sanitizedContent), [sanitizedContent]);
+  const imageRefs = useMemo(() => [...attachmentImages, ...inlineImages], [attachmentImages, inlineImages]);
+  const { sources: imageSources, loading: imagesLoading } = useNoteImageSources(imageRefs, note.id, null, Boolean(note.isGuest));
   const daysLeft = getDaysRemaining(note.expiresAt);
   const contentPreview = stripHtml(note.content || '');
+  const contentPreviewHtml = useMemo(
+    () => contentWithProtectedImageSources(sanitizedContent, imageSources, attachmentImages.length, imagesLoading),
+    [sanitizedContent, imageSources, attachmentImages.length, imagesLoading],
+  );
 
   const handleDelete = async (e) => {
     e.stopPropagation();
@@ -67,23 +77,29 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       )}
 
       {/* Images */}
-      {note.images?.length > 0 && (
+      {attachmentImages.length > 0 && (
         <div
-          className={`nn-card-images${note.images.length === 1 ? ' single' : ''}`}
+          className={`nn-card-images${attachmentImages.length === 1 ? ' single' : ''}`}
           onClick={(e) => e.stopPropagation()}
           role="presentation"
         >
-          {note.images.map((img, idx) => (
-            <img
-              key={idx}
-              className="nn-card-img"
-              src={img.url.startsWith('data:') || img.url.startsWith('http') ? img.url : `${SSO_BASE}${img.url}`}
-              alt={`Ảnh ${idx + 1}`}
-              loading="lazy"
-              onClick={(e) => { e.stopPropagation(); setViewerIndex(idx); }}
-              style={{ cursor: 'zoom-in' }}
-              title={t('card.click_zoom', 'Bấm để xem to')}
-            />
+          {attachmentImages.map((_img, idx) => (
+            imageSources[idx] ? (
+              <img
+                key={idx}
+                className="nn-card-img"
+                src={imageSources[idx]}
+                alt={`Ảnh ${idx + 1}`}
+                loading="lazy"
+                onClick={(e) => { e.stopPropagation(); setViewerIndex(idx); }}
+                style={{ cursor: 'zoom-in' }}
+                title={t('card.click_zoom', 'Bấm để xem to')}
+              />
+            ) : (
+              <div key={idx} className="nn-card-img-unavailable" role="status">
+                {imagesLoading ? 'Đang tải ảnh…' : 'Không tải được ảnh'}
+              </div>
+            )
           ))}
         </div>
       )}
@@ -91,11 +107,12 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       {/* Image Viewer Lightbox */}
       {viewerIndex !== null && (
         <ImageViewer
-          images={note.images}
+          images={attachmentImages}
+          imageSources={imageSources}
+          imagesLoading={imagesLoading}
           index={viewerIndex}
           onClose={() => setViewerIndex(null)}
           onChange={(i) => setViewerIndex(i)}
-          ssoBase={SSO_BASE}
         />
       )}
 
@@ -105,10 +122,10 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
       )}
 
       {/* Content preview */}
-      {contentPreview && (
+      {(contentPreview || inlineImages.length > 0) && (
         <div
           className="nn-card-content"
-          dangerouslySetInnerHTML={{ __html: note.content }}
+          dangerouslySetInnerHTML={{ __html: contentPreviewHtml }}
         />
       )}
 

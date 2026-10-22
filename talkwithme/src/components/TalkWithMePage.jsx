@@ -1,11 +1,11 @@
 import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { loadContactSessionMessages, sendContactMessage } from '../contactApi.mjs';
+import React, { useState, useEffect, useRef } from 'react';
 import './TalkWithMePage.css';
 
-const SSO_BASE = getSsoApiBase(import.meta.env);
+const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 const SESSION_KEY = 'talkwithme_session';
-const MAX_IMAGE_SIZE = 1.5 * 1024 * 1024; // 1.5MB raw
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 function getOrCreateSession() {
@@ -137,42 +137,12 @@ function getClientMetadata() {
   }
 }
 
-async function sendMessage({ sessionId, name, email, title, message, images }) {
-  const clientMeta = getClientMetadata();
-  const res = await fetch(`${SSO_BASE}/contact/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sessionId,
-      name,
-      email,
-      title,
-      message,
-      images: images && images.length > 0 ? images.map(img => ({
-        data: img.data,
-        mime: img.mime,
-        name: img.name,
-        size: img.compressedSize,
-        width: img.width,
-        height: img.height,
-      })) : undefined,
-      imageData: images && images[0] ? images[0].data : undefined,
-      imageMime: images && images[0] ? images[0].mime : undefined,
-      clientMeta,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Lỗi ${res.status}`);
-  }
-  return res.json();
+async function sendMessage(params) {
+  return sendContactMessage({ ...params, ssoBase: SSO_BASE, clientMeta: getClientMetadata() });
 }
 
-async function loadSessionMessages(sessionId) {
-  const res = await fetch(`${SSO_BASE}/contact/session/${sessionId}`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.messages || [];
+async function loadSessionMessages({ id: sessionId, guestToken }) {
+  return loadContactSessionMessages({ ssoBase: SSO_BASE, sessionId, guestToken });
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────
@@ -200,14 +170,37 @@ export default function TalkWithMePage() {
 
   // Load previous messages on mount
   useEffect(() => {
+    let isCurrent = true;
     if (session?.id) {
+      if (!session.guestToken) {
+        clearSession();
+        setSession(null);
+        setMessages([]);
+        setError('Phiên cũ không có mã truy cập. Đã xoá phiên lưu trên thiết bị; hãy tạo phiên mới để tiếp tục.');
+        return () => { isCurrent = false; };
+      }
       setLoading(true);
-      loadSessionMessages(session.id)
-        .then(msgs => setMessages(msgs))
-        .catch(() => {})
-        .finally(() => setLoading(false));
+      loadSessionMessages(session)
+        .then(msgs => {
+          if (!isCurrent) return;
+          setMessages(msgs);
+          setError('');
+        })
+        .catch(err => {
+          if (!isCurrent) return;
+          setMessages([]);
+          if (err.status === 401 || err.status === 403) {
+            clearSession();
+            setSession(null);
+            setError('Mã truy cập phiên đã hết hạn hoặc không hợp lệ. Đã xoá phiên lưu trên thiết bị; hãy tạo phiên mới.');
+          } else {
+            setError(err.message || 'Không tải được lịch sử tin nhắn.');
+          }
+        })
+        .finally(() => { if (isCurrent) setLoading(false); });
     }
-  }, [session?.id]);
+    return () => { isCurrent = false; };
+  }, [session?.id, session?.guestToken]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -263,9 +256,11 @@ export default function TalkWithMePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (sending) return;
     setError('');
     setSuccess('');
 
+    if (compressing) { setError('Vui lòng chờ nén ảnh hoàn tất trước khi gửi.'); return; }
     if (!name.trim()) { setError('Vui lòng nhập tên.'); return; }
     if (!message.trim()) { setError('Vui lòng nhập nội dung tin nhắn.'); return; }
 
@@ -273,12 +268,19 @@ export default function TalkWithMePage() {
 
     try {
       let sid = session?.id;
+      if (session?.id && !session.guestToken) {
+        clearSession();
+        setSession(null);
+        setMessages([]);
+        throw new Error('Phiên cũ không có mã truy cập. Hãy gửi lại tin nhắn trong một phiên mới.');
+      }
       if (!sid) {
         sid = generateSessionId();
       }
 
       const result = await sendMessage({
         sessionId: sid,
+        guestToken: session?.guestToken,
         name: name.trim(),
         email: email.trim() || undefined,
         title: title.trim() || undefined,
@@ -287,7 +289,8 @@ export default function TalkWithMePage() {
       });
 
       // Save session
-      const newSession = { id: sid, name: name.trim(), email: email.trim() || '' };
+      const guestToken = result.guestToken || session?.guestToken || null;
+      const newSession = { id: sid, name: name.trim(), email: email.trim() || '', guestToken };
       setSession(newSession);
       saveSession(newSession);
 
@@ -299,21 +302,33 @@ export default function TalkWithMePage() {
       setMessage('');
       setAttachedImages([]);
       setSuccess('Tin nhắn đã gửi thành công! 🎉');
+      if (!guestToken) {
+        setError('Tin nhắn đã gửi, nhưng máy chủ chưa cấp mã truy cập lịch sử. Hãy lưu lại mã xác nhận với quản trị viên nếu cần xem lại phiên này.');
+      }
       setTimeout(() => setSuccess(''), 5000);
 
       // Focus back to textarea
       textareaRef.current?.focus();
     } catch (err) {
-      setError(err.message || 'Không gửi được tin nhắn. Thử lại sau.');
+      if ((err.status === 401 || err.status === 403) && session?.id) {
+        clearSession();
+        setSession(null);
+        setMessages([]);
+        setError('Mã truy cập phiên đã hết hạn hoặc không hợp lệ. Đã xoá phiên lưu trên thiết bị; hãy tạo phiên mới.');
+      } else {
+        setError(err.message || 'Không gửi được tin nhắn. Thử lại sau.');
+      }
     } finally {
       setSending(false);
     }
   };
 
   const handleNewSession = () => {
+    if (sending || compressing) return;
     clearSession();
     setSession(null);
     setMessages([]);
+    setLoading(false);
     setName('');
     setEmail('');
     setTitle('');
@@ -354,7 +369,7 @@ export default function TalkWithMePage() {
                 <span className="twm-messages-count">{messages.length}</span>
                 Tin nhắn đã gửi
               </h2>
-              <button type="button" className="twm-btn-ghost" onClick={handleNewSession}>
+              <button type="button" className="twm-btn-ghost" onClick={handleNewSession} disabled={sending || compressing}>
                 Session mới
               </button>
             </div>
@@ -534,9 +549,11 @@ export default function TalkWithMePage() {
             {success && <div className="twm-alert twm-alert-success" role="status"><span>✅</span> {success}</div>}
 
             {/* Submit */}
-            <button type="submit" className="twm-submit" disabled={sending}>
+            <button type="submit" className="twm-submit" disabled={sending || compressing}>
               {sending ? (
                 <><span className="twm-spinner-inline" /> Đang gửi...</>
+              ) : compressing ? (
+                <><span className="twm-spinner-inline" /> Đang nén ảnh...</>
               ) : (
                 <>🚀 Gửi tin nhắn</>
               )}
@@ -547,7 +564,7 @@ export default function TalkWithMePage() {
             <div className="twm-session-info">
               📌 Phiên: <code>{session.id.substring(0, 12)}…</code>
               {session.email && <> · {session.email}</>}
-              <button type="button" className="twm-btn-ghost twm-btn-sm" onClick={handleNewSession}>
+              <button type="button" className="twm-btn-ghost twm-btn-sm" onClick={handleNewSession} disabled={sending || compressing}>
                 Xoá session
               </button>
             </div>

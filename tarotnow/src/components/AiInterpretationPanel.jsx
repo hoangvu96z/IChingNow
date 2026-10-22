@@ -1,8 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { usePlan } from '../hooks/usePlan.js';
 import PricingModal from './PricingModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { requestAiChat } from '../../../shared/src/utils/aiProxy.mjs';
+import { readOpenAiChatStream } from '../../../shared/src/utils/openAiSse.mjs';
+import TarotMarkdown from './TarotMarkdown.mjs';
+
+import TarotWaitingAnimation from './TarotWaitingAnimation.jsx';
+import TarotFollowUpSection from './TarotFollowUpSection.jsx';
+import TarotSettingsPanel from './TarotSettingsPanel.jsx';
+import TarotPromptTemplateSelector from './TarotPromptTemplateSelector.jsx';
+import TarotAiAnimations from './TarotAiAnimations.jsx';
 
 const PREDEFINED_MODELS = [
   { value: 'combo1', label: 'combo1 (Combo)' },
@@ -12,235 +21,6 @@ const PREDEFINED_MODELS = [
   { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'gemma-4-26b-a4b-it:free' }
 ];
 
-// ─── Danh sách lời động viên / nhắc nhở vui nhộn & huyền bí theo chủ đề Tarot ───
-const TAROT_WAIT_QUOTES = {
-  vi: [
-    { icon: '🔮', title: 'Kết nối Trực giác', desc: 'Đang lắng nghe trực giác và kết nối năng lượng sâu thẳm của các lá bài...' },
-    { icon: '🎴', title: 'Thông điệp Ẩn số', desc: 'Các lá bài đang thì thầm, đan cài những bức tranh định mệnh sống động...' },
-    { icon: '✨', title: 'Tín hiệu Vũ trụ', desc: 'Vũ trụ đang gửi tín hiệu, chuẩn bị đón nhận thông điệp sáng tỏ nhất nhé...' },
-    { icon: '🪐', title: 'Hành tinh thuận hành', desc: 'Sao Thủy không hề nghịch hành, kiên nhẫn một tẹo là thông điệp xuất lộ ngay!' },
-    { icon: '☕', title: 'Thanh lọc Năng lượng', desc: 'Thả lỏng vai, thở nhẹ một nhịp để đón nhận nguồn năng lượng thuần khiết...' },
-    { icon: '🌟', title: 'Chiếu rọi Ánh sáng', desc: 'The Star và The Sun đang lan tỏa ánh sáng may mắn vào trải bài này...' },
-    { icon: '🎯', title: 'Sắp hoàn tất rồi!', desc: 'Chỉ còn vài giây nữa, toàn bộ bức tranh sẽ hiển thị rạng ngời và tròn vẹn ngay đây!' }
-  ],
-  en: [
-    { icon: '🔮', title: 'Intuitive Connection', desc: 'Tuning into cosmic frequencies and channeling your cards...' },
-    { icon: '🎴', title: 'Unfolding Archetypes', desc: 'The archetypes are whispering, weaving their deep divine narrative...' },
-    { icon: '✨', title: 'Cosmic Transmission', desc: 'The Universe is broadcasting clarity and wisdom for your question...' },
-    { icon: '🪐', title: 'Planetary Harmony', desc: 'No Mercury retrograde here, divine magic takes just a moment to brew!' },
-    { icon: '☕', title: 'Mindful Aura', desc: 'Take a gentle breath and relax your aura while the cards reveal...' },
-    { icon: '🌟', title: 'Celestial Blessings', desc: 'Channeling the radiant blessings of The Star and The Sun...' },
-    { icon: '🎯', title: 'Almost Complete!', desc: 'Synthesizing your full, crystal-clear reading right now...' }
-  ]
-};
-
-// ─── Component Animation Đợi Luận Giải Tarot Vũ Trụ ───
-function TarotWaitingAnimation({ isEn, retryInfo, elapsedSeconds }) {
-  const quotes = isEn ? TAROT_WAIT_QUOTES.en : TAROT_WAIT_QUOTES.vi;
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  const [fade, setFade] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setQuoteIndex((prev) => (prev + 1) % quotes.length);
-        setFade(true);
-      }, 300);
-    }, 3200);
-    return () => clearInterval(interval);
-  }, [quotes.length]);
-
-  const currentQuote = quotes[quoteIndex] || quotes[0];
-
-  return (
-    <div style={{
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '30px 16px',
-      background: 'linear-gradient(180deg, rgba(28,23,46,0.85) 0%, rgba(13,10,25,0.95) 100%)',
-      borderRadius: '16px',
-      border: '1px solid rgba(229,193,88,0.25)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 0 20px rgba(167,139,250,0.06)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Background celestial glow */}
-      <div style={{
-        position: 'absolute',
-        top: '20%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 180,
-        height: 180,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)',
-        pointerEvents: 'none'
-      }} />
-
-      {/* Floating Glowing Tarot Card Visual */}
-      <div style={{ position: 'relative', width: 80, height: 110, marginBottom: 20 }}>
-        {/* Mystic Orbit Halo */}
-        <div style={{
-          position: 'absolute',
-          top: -12,
-          left: -12,
-          right: -12,
-          bottom: -12,
-          borderRadius: '50%',
-          border: '1px dashed rgba(229,193,88,0.4)',
-          animation: 'spin 14s linear infinite'
-        }}>
-          <span style={{ position: 'absolute', top: -6, left: '45%', fontSize: '0.8rem' }}>✨</span>
-          <span style={{ position: 'absolute', bottom: -6, left: '45%', fontSize: '0.8rem' }}>🌙</span>
-          <span style={{ position: 'absolute', left: -6, top: '45%', fontSize: '0.8rem' }}>⭐</span>
-          <span style={{ position: 'absolute', right: -6, top: '45%', fontSize: '0.8rem' }}>🔮</span>
-        </div>
-
-        {/* 3D Holographic Card */}
-        <div style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: 10,
-          background: 'linear-gradient(135deg, #2d1b4e 0%, #150f28 100%)',
-          border: '1.5px solid rgba(229,193,88,0.6)',
-          boxShadow: '0 0 24px rgba(229,193,88,0.3), 0 8px 16px rgba(0,0,0,0.5)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: 'cardHover 3s ease-in-out infinite',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Card inner border */}
-          <div style={{
-            position: 'absolute',
-            inset: 4,
-            border: '1px solid rgba(229,193,88,0.25)',
-            borderRadius: 6,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <span style={{
-              fontSize: '2rem',
-              animation: 'starPulse 2s ease-in-out infinite',
-              filter: 'drop-shadow(0 0 8px rgba(229,193,88,0.8))'
-            }}>
-              🎴
-            </span>
-          </div>
-
-          {/* Shimmer sweep */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: '-100%',
-            width: '60%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
-            transform: 'skewX(-25deg)',
-            animation: 'cardShimmer 2.4s infinite'
-          }} />
-        </div>
-      </div>
-
-      {/* Rotating Quote Card */}
-      <div style={{
-        maxWidth: 500,
-        textAlign: 'center',
-        opacity: fade ? 1 : 0,
-        transform: fade ? 'translateY(0)' : 'translateY(6px)',
-        transition: 'opacity 0.3s ease, transform 0.3s ease',
-        minHeight: 64,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4
-      }}>
-        <div style={{
-          fontSize: '0.95rem',
-          fontWeight: 700,
-          color: '#e5c158',
-          fontFamily: 'var(--font-heading, serif)',
-          letterSpacing: '0.5px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6
-        }}>
-          <span>{currentQuote.icon}</span>
-          <span>{currentQuote.title}</span>
-        </div>
-        <div style={{
-          fontSize: '0.84rem',
-          color: '#dfdbf0',
-          lineHeight: 1.5,
-          fontStyle: 'italic',
-          padding: '0 12px'
-        }}>
-          "{currentQuote.desc}"
-        </div>
-      </div>
-
-      {/* Auto Retry indicator if triggered */}
-      {retryInfo && (
-        <div style={{
-          marginTop: 12,
-          padding: '4px 12px',
-          borderRadius: 20,
-          background: 'rgba(235,94,85,0.12)',
-          border: '1px solid rgba(235,94,85,0.3)',
-          color: '#eb5e55',
-          fontSize: '0.78rem',
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          animation: 'fadeIn 0.3s ease'
-        }}>
-          <span>🔄</span>
-          <span>{retryInfo}</span>
-        </div>
-      )}
-
-      {/* Progress Bar & Timer */}
-      <div style={{ width: '80%', maxWidth: 360, marginTop: 16 }}>
-        <div style={{
-          height: 4,
-          background: 'rgba(255,255,255,0.08)',
-          borderRadius: 4,
-          overflow: 'hidden',
-          position: 'relative'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            width: '40%',
-            background: 'linear-gradient(90deg, #a78bfa, #e5c158)',
-            borderRadius: 4,
-            animation: 'shimmerSlide 1.8s ease-in-out infinite'
-          }} />
-        </div>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: 6,
-          fontSize: '0.72rem',
-          color: 'var(--text-muted, #a69fbf)',
-          fontWeight: 500
-        }}>
-          <span>{isEn ? 'Synthesizing complete reading...' : 'Đang kết tinh trọn vẹn thông điệp...'}</span>
-          <span>{elapsedSeconds}s</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function AiInterpretationPanel({ 
   question, 
@@ -255,18 +35,9 @@ export default function AiInterpretationPanel({
   savedConversation,
 }) {
   const { t, language } = useLanguage();
-  const [settings, setSettings] = useState({
-    endpoint: import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1',
-    apiKey: import.meta.env.VITE_AI_API_KEY || '',
-    model: import.meta.env.VITE_AI_MODEL || 'combo1',
-  });
+  const [settings, setSettings] = useState({ model: import.meta.env.VITE_AI_MODEL || 'combo1' });
   const [showSettings, setShowSettings] = useState(false);
-  const [formSettings, setFormSettings] = useState({
-    endpoint: '',
-    apiKey: '',
-    model: ''
-  });
-  const [modelType, setModelType] = useState('combo1');
+  const [formSettings, setFormSettings] = useState({ model: '' });
   const [promptTemplate, setPromptTemplate] = useState('standard'); // 'standard' | 'love' | 'career'
   const [interpretation, setInterpretation] = useState('');
   const [loading, setLoading] = useState(false);
@@ -274,9 +45,7 @@ export default function AiInterpretationPanel({
   const [retryStatus, setRetryStatus] = useState('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const [modelsList, setModelsList] = useState(PREDEFINED_MODELS);
-  const [loadingModels, setLoadingModels] = useState(false);
-  const [modelsError, setModelsError] = useState('');
+  const modelsList = PREDEFINED_MODELS;
 
   // ─── Follow-up Q&A State ──────────────────────────────────────────────────
   const [followUps, setFollowUps] = useState([]);
@@ -292,8 +61,8 @@ export default function AiInterpretationPanel({
   const isEn = language === 'en';
 
   // ─── Quota & Plan ─────────────────────────────────────────────────────────
-  const { isAuthenticated } = useAuth();
-  const { canAsk, remaining, plan, canBonus, expiresAt, daysRemaining, isExpiringSoon, isOverride, consumeQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
+  const { isAuthenticated, login } = useAuth();
+  const { remaining, plan, canBonus, expiresAt, daysRemaining, isExpiringSoon, isOverride, fetchQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
   const [showPricing, setShowPricing] = useState(false);
 
   // Timer cho loading state
@@ -340,112 +109,39 @@ export default function AiInterpretationPanel({
     }
   }, [savedConversation]);
 
-  const getResolvedEndpoint = (endpoint) => {
-    if (!endpoint) return '';
-    let callEndpoint = endpoint.replace(/\/$/, '');
-    const isHttp = callEndpoint.startsWith('http://');
-    const isSecureCtx = window.location.protocol === 'https:' ||
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1';
-    if (isHttp && isSecureCtx) {
-      const path = window.location.pathname;
-      let base = '/';
-      if (path.startsWith('/kinhdich')) base = '/kinhdich/';
-      else if (path.startsWith('/tarot')) base = '/tarot/';
-      const suffix = callEndpoint.replace(/^http:\/\/[^/]+/, '');
-      callEndpoint = base + 'api-vps' + suffix;
-    }
-    return callEndpoint;
-  };
-
-  const fetchModels = async (currentSettings) => {
-    if (!currentSettings.endpoint) return;
-    setLoadingModels(true);
-    setModelsError('');
-    try {
-      const resolvedEndpoint = getResolvedEndpoint(currentSettings.endpoint);
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      if (currentSettings.apiKey) {
-        headers['Authorization'] = `Bearer ${currentSettings.apiKey}`;
-      }
-      const response = await fetch(`${resolvedEndpoint}/models`, {
-        method: 'GET',
-        headers
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      if (data && Array.isArray(data.data)) {
-        const fetched = data.data.map(m => {
-          const simpleName = m.id.split('/').pop();
-          const label = m.owned_by === 'combo' ? `${simpleName} (Combo)` : simpleName;
-          return {
-            value: m.id,
-            label: label
-          };
-        });
-        setModelsList(fetched);
-      } else {
-        throw new Error('Invalid data format');
-      }
-    } catch (err) {
-      console.warn('Error fetching models:', err);
-      setModelsError('Unable to load models: ' + err.message);
-    } finally {
-      setLoadingModels(false);
-    }
-  };
-
   // Load settings
   useEffect(() => {
-    const defaultSettings = {
-      endpoint: import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1',
-      apiKey: import.meta.env.VITE_AI_API_KEY || '',
-      model: import.meta.env.VITE_AI_MODEL || 'combo1',
-    };
-    let activeSettings = { ...defaultSettings };
+    let activeSettings = { model: import.meta.env.VITE_AI_MODEL || 'combo1' };
     try {
       const saved = localStorage.getItem('tarot_ai_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
+        const savedModel = parsed.model;
         activeSettings = {
-          ...activeSettings,
-          endpoint: parsed.endpoint || activeSettings.endpoint,
-          model: parsed.model || activeSettings.model
+          model: PREDEFINED_MODELS.some(({ value }) => value === savedModel)
+            ? savedModel
+            : activeSettings.model,
         };
       }
     } catch (e) {}
     setSettings(activeSettings);
-    fetchModels(activeSettings);
+    try { localStorage.setItem('tarot_ai_settings', JSON.stringify(activeSettings)); } catch (e) {}
   }, []);
 
   // Sync settings to form when settings modal opens
   useEffect(() => {
     if (showSettings) {
       setFormSettings(settings);
-      const isPredefined = modelsList.some(m => m.value === settings.model);
-      setModelType(isPredefined ? settings.model : 'custom');
     }
   }, [showSettings, settings, modelsList]);
 
   // Save settings
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    const newSettings = {
-      endpoint: formSettings.endpoint,
-      apiKey: import.meta.env.VITE_AI_API_KEY || '',
-      model: formSettings.model
-    };
+    const newSettings = { model: formSettings.model };
     setSettings(newSettings);
-    localStorage.setItem('tarot_ai_settings', JSON.stringify({
-      endpoint: newSettings.endpoint,
-      model: newSettings.model
-    }));
+    localStorage.setItem('tarot_ai_settings', JSON.stringify(newSettings));
     setShowSettings(false);
-    fetchModels(newSettings);
   };
 
   // Generate detailed prompt text
@@ -511,111 +207,35 @@ export default function AiInterpretationPanel({
 
   // ─── HÀM GỌI AI CHỐNG MẤT KẾT NỐI VÀ TỰ ĐỘNG RETRY ───
   const fetchAiWithRetry = async (messages, onStatusUpdate) => {
-    const fallbackModels = Array.from(new Set([
-      settings.model,
-      'combo1',
-      'openrouter/tencent/hy3:free'
-    ])).filter(Boolean);
+    if (onStatusUpdate) onStatusUpdate('');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 65000);
+    try {
+      const response = await requestAiChat({
+        app: 'tarot',
+        model: settings.model || 'combo1',
+        messages,
+        stream: true,
+        signal: controller.signal,
+      });
+      // Buffer the complete answer before displaying or saving it. Error and
+      // truncated SSE streams must reach the existing visible error state.
+      const accumulatedText = await readOpenAiChatStream(response);
 
-    const callEndpoint = getResolvedEndpoint(settings.endpoint);
-    const MAX_RETRIES_PER_MODEL = 2;
-    let lastError = null;
-
-    for (let modelIdx = 0; modelIdx < fallbackModels.length; modelIdx++) {
-      const currentModel = fallbackModels[modelIdx];
-
-      for (let attempt = 1; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
-        try {
-          if (modelIdx > 0 || attempt > 1) {
-            const retryMsg = isEn
-              ? `Reconnecting with ${currentModel} (Attempt ${attempt}/${MAX_RETRIES_PER_MODEL})...`
-              : `Đang kết nối lại với ${currentModel} (Lần ${attempt}/${MAX_RETRIES_PER_MODEL})...`;
-            if (onStatusUpdate) onStatusUpdate(retryMsg);
-            await new Promise(r => setTimeout(r, 1200 * attempt));
-          } else {
-            if (onStatusUpdate) onStatusUpdate('');
-          }
-
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
-
-          const response = await fetch(`${callEndpoint}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(settings.apiKey ? { 'Authorization': `Bearer ${settings.apiKey}` } : {})
-            },
-            body: JSON.stringify({
-              model: currentModel,
-              messages,
-              stream: true
-            }),
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
-
-          if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(errText || `HTTP ${response.status}`);
-          }
-
-          // Đọc toàn bộ stream vào bộ đệm, KHÔNG render từng từ dở dang
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder('utf-8');
-          let done = false;
-          let buffer = '';
-          let accumulatedText = '';
-
-          while (!done) {
-            const { value, done: readerDone } = await reader.read();
-            done = readerDone;
-            if (value) {
-              buffer += decoder.decode(value, { stream: true });
-              let boundary = buffer.indexOf('\n');
-              while (boundary !== -1) {
-                const line = buffer.slice(0, boundary).trim();
-                buffer = buffer.slice(boundary + 1);
-                boundary = buffer.indexOf('\n');
-
-                if (line.startsWith('data: ')) {
-                  const jsonStr = line.slice(6).trim();
-                  if (jsonStr === '[DONE]') {
-                    done = true;
-                    break;
-                  }
-                  try {
-                    const parsed = JSON.parse(jsonStr);
-                    const chunkText = parsed.choices?.[0]?.delta?.content || '';
-                    accumulatedText += chunkText;
-                  } catch (e) {}
-                }
-              }
-            }
-          }
-
-          if (!accumulatedText || accumulatedText.trim().length < 40) {
-            throw new Error('Dữ liệu Tarot trả về bị ngắt quãng hoặc không hoàn chỉnh');
-          }
-
-          return accumulatedText.trim();
-        } catch (err) {
-          console.warn(`[AI Request] Model ${currentModel} attempt ${attempt} failed:`, err);
-          lastError = err;
-        }
+      if (!accumulatedText || accumulatedText.trim().length < 40) {
+        throw new Error('Dữ liệu Tarot trả về bị ngắt quãng hoặc không hoàn chỉnh');
       }
+      await fetchQuota();
+      return accumulatedText.trim();
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    throw lastError || new Error('Không thể kết nối đến server AI sau nhiều lần thử.');
   };
 
   const handleInterpret = async () => {
     if (!drawnCards || drawnCards.length === 0) return;
-
-    // Check quota before calling AI
-    const quotaResult = await consumeQuota();
-    if (!quotaResult.ok) {
-      setShowPricing(true);
+    if (!isAuthenticated) {
+      login();
       return;
     }
 
@@ -646,16 +266,21 @@ export default function AiInterpretationPanel({
 
       // Successful run, persist
       if (onSaveAiConversation && readingId && fullText) {
-        onSaveAiConversation(readingId, {
-          aiConversation: {
-            initialInterpretation: fullText,
-            initialTimestamp: new Date().toISOString(),
-            followUps: [],
-          }
-        });
+        try {
+          await onSaveAiConversation(readingId, {
+            aiConversation: {
+              initialInterpretation: fullText,
+              initialTimestamp: new Date().toISOString(),
+              followUps: [],
+            }
+          });
+        } catch (saveError) {
+          setError(`${isEn ? 'The interpretation was generated, but could not be saved' : 'Đã tạo lời luận giải nhưng không thể lưu'}: ${saveError.message || (isEn ? 'please try again.' : 'vui lòng thử lại.')}`);
+        }
       }
     } catch (err) {
       console.error(err);
+      if (err.code === 'QUOTA_EXCEEDED') setShowPricing(true);
       setError(err.message || (isEn ? 'Error occurred while calling the AI server API.' : 'Lỗi khi gọi API của server AI. Vui lòng bấm thử lại.'));
     } finally {
       setLoading(false);
@@ -724,6 +349,10 @@ export default function AiInterpretationPanel({
     if (e) e.preventDefault();
     const questionToSend = (textOverride || userQuestion).trim();
     if (!questionToSend || askingFollowUp || followUps.length >= 5) return;
+    if (!isAuthenticated) {
+      login();
+      return;
+    }
 
     setAskingFollowUp(true);
     setFollowUpError('');
@@ -767,70 +396,27 @@ export default function AiInterpretationPanel({
 
       // Persist follow-up lên server
       if (onSaveAiConversation && readingId) {
-        onSaveAiConversation(readingId, {
-          aiConversation: {
-            initialInterpretation: interpretation,
-            initialTimestamp: savedConversation?.initialTimestamp || new Date().toISOString(),
-            followUps: updatedFollowUps,
-          }
-        });
+        try {
+          await onSaveAiConversation(readingId, {
+            aiConversation: {
+              initialInterpretation: interpretation,
+              initialTimestamp: savedConversation?.initialTimestamp || new Date().toISOString(),
+              followUps: updatedFollowUps,
+            }
+          });
+        } catch (saveError) {
+          setFollowUpError(`${isEn ? 'The answer was generated, but could not be saved' : 'Đã tạo câu trả lời nhưng không thể lưu'}: ${saveError.message || (isEn ? 'please try again.' : 'vui lòng thử lại.')}`);
+        }
       }
     } catch (err) {
       console.error(err);
+      if (err.code === 'QUOTA_EXCEEDED') setShowPricing(true);
       setFollowUpError(err.message || (isEn ? 'Error connecting to AI. Please try again.' : 'Lỗi khi kết nối AI để trả lời câu hỏi. Vui lòng bấm gửi lại.'));
     } finally {
       setAskingFollowUp(false);
       setFollowUpRetryStatus('');
     }
   };
-
-  function parseMarkdown(text) {
-    if (!text) return '';
-    let html = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h4 style="color: #e5c158; font-family: var(--font-heading); font-size: 1.05rem; margin-top: 16px; margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px;">$1</h4>');
-    html = html.replace(/^## (.*$)/gim, '<h3 style="color: #e5c158; font-family: var(--font-heading); font-size: 1.25rem; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(229,193,88,0.2); padding-bottom: 4px; font-weight: 600; letter-spacing: 0.5px;">$1</h3>');
-    html = html.replace(/^# (.*$)/gim, '<h2 style="color: #e5c158; font-family: var(--font-heading); font-size: 1.40rem; margin-top: 24px; margin-bottom: 12px; font-weight: 600; letter-spacing: 0.5px;">$1</h2>');
-
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #fff; font-weight: 600;">$1</strong>');
-
-    // Bullet points
-    html = html.replace(/^\s*-\s+(.*$)/gim, '<li style="margin-left: 20px; margin-bottom: 6px; list-style-type: square; color: #dfdbf0;">$1</li>');
-    html = html.replace(/^\s*\*\s+(.*$)/gim, '<li style="margin-left: 20px; margin-bottom: 6px; list-style-type: square; color: #dfdbf0;">$1</li>');
-
-    // Paragraphs
-    const lines = html.split('\n');
-    let inList = false;
-    const processed = lines.map(line => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('<li')) {
-        if (!inList) {
-          inList = true;
-          return '<ul style="margin: 8px 0; padding-left: 10px;">' + line;
-        }
-        return line;
-      } else {
-        let prefix = '';
-        if (inList) {
-          inList = false;
-          prefix = '</ul>';
-        }
-        if (trimmed === '') return '';
-        if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('</ul')) {
-          return prefix + line;
-        }
-        return prefix + `<p style="margin: 8px 0; line-height: 1.65; color: #dfdbf0;">${line}</p>`;
-      }
-    });
-    if (inList) processed.push('</ul>');
-
-    return processed.join('\n');
-  }
 
   return (
     <>
@@ -867,7 +453,7 @@ export default function AiInterpretationPanel({
           <button
             onClick={() => setShowSettings(!showSettings)}
             style={{
-              background: 'none', border: 'none', color: 'var(--text-muted)',
+              background: 'none', color: 'var(--text-muted)',
               cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px',
               borderRadius: '4px', border: '1px solid rgba(255,255,255,0.08)',
               display: 'flex', alignItems: 'center', gap: '4px',
@@ -878,101 +464,9 @@ export default function AiInterpretationPanel({
         </div>
       </div>
 
-      {/* AI Settings Form */}
-      {showSettings && (
-        <form onSubmit={handleSaveSettings} style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(229,193,88,0.2)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h4 style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 600, color: '#e5c158' }}>{t('ai.settings_header', 'Cấu hình Server AI (9Router)')}</h4>
-          
-          <div>
-            <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--text-muted)' }}>API Endpoint *</label>
-            <input
-              type="text"
-              className="custom-textarea"
-              style={{ minHeight: 'auto', padding: '8px 12px', fontSize: '13px', height: '36px' }}
-              value={formSettings.endpoint}
-              onChange={e => setFormSettings({ ...formSettings, endpoint: e.target.value })}
-              required
-            />
-          </div>
+      <TarotSettingsPanel isOpen={showSettings} onSubmit={handleSaveSettings} onClose={() => setShowSettings(false)} formSettings={formSettings} setFormSettings={setFormSettings} modelsList={modelsList} t={t} />
 
-          <div>
-            <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Chọn Model *</span>
-              {loadingModels && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>⏳ Đang tải...</span>}
-              {modelsError && <span style={{ fontSize: '10px', color: 'red' }} title={modelsError}>⚠️ Lỗi tải model</span>}
-            </label>
-            <select
-              className="custom-textarea"
-              style={{ minHeight: 'auto', padding: '8px 12px', fontSize: '13px', height: '38px', background: '#1c172e', border: '1px solid rgba(255,255,255,0.08)', color: '#fff' }}
-              value={modelType}
-              onChange={e => {
-                const val = e.target.value;
-                setModelType(val);
-                if (val !== 'custom') {
-                  setFormSettings({ ...formSettings, model: val });
-                }
-              }}
-            >
-              {modelsList.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-              <option value="custom">Tùy chỉnh...</option>
-            </select>
-          </div>
-
-          {modelType === 'custom' && (
-            <div>
-              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--text-muted)' }}>Nhập Model Name tùy chỉnh *</label>
-              <input
-                type="text"
-                className="custom-textarea"
-                style={{ minHeight: 'auto', padding: '8px 12px', fontSize: '13px', height: '36px' }}
-                value={formSettings.model}
-                onChange={e => setFormSettings({ ...formSettings, model: e.target.value })}
-                placeholder="Nhập tên model (ví dụ: combo1)"
-                required
-              />
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '6px' }}>
-            <button type="button" className="reset-weights-btn" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => setShowSettings(false)}>
-              {t('common.cancel', 'Hủy')}
-            </button>
-            <button type="submit" className="copy-main-btn" style={{ padding: '6px 12px', fontSize: '12px', width: 'auto', minWidth: '80px' }}>
-              {t('common.save', 'Lưu lại')}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Template Selector for AI Prompt context */}
-      {!interpretation && !loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.15)', padding: '10px 14px', borderRadius: '6px' }}>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>{t('export.select_type', 'Chọn kiểu luận giải:')}</span>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {['standard', 'love', 'career'].map(type => (
-              <button
-                key={type}
-                onClick={() => setPromptTemplate(type)}
-                style={{
-                  background: promptTemplate === type ? 'rgba(229,193,88,0.15)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${promptTemplate === type ? 'var(--gold-color)' : 'rgba(255,255,255,0.08)'}`,
-                  color: promptTemplate === type ? '#fff' : 'var(--text-muted)',
-                  fontSize: '11px',
-                  padding: '4px 10px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  transition: 'all 0.2s'
-                }}
-              >
-                {t(`export.type_${type === 'standard' ? 'general' : type}`, type)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <TarotPromptTemplateSelector hasInterpretation={Boolean(interpretation)} loading={loading} promptTemplate={promptTemplate} setPromptTemplate={setPromptTemplate} t={t} />
 
       {/* Action and Initial Button */}
       {!interpretation && !loading && (
@@ -1024,199 +518,28 @@ export default function AiInterpretationPanel({
       {!loading && interpretation && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(229,193,88,0.18)', borderRadius: '10px', padding: '22px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
-            <div dangerouslySetInnerHTML={{ __html: parseMarkdown(displayInterpretation) }} />
+            <TarotMarkdown>{displayInterpretation}</TarotMarkdown>
           </div>
 
           {/* ─── Follow-up Q&A Chat Section ─────────────────────────────── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(229,193,88,0.15)' }} />
-              <span style={{ fontSize: '0.75rem', color: 'rgba(229,193,88,0.7)', fontWeight: 600, letterSpacing: '0.06em' }}>
-                💬 HỎI THÊM AI ({followUps.length}/5)
-              </span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(229,193,88,0.15)' }} />
-            </div>
-
-            {/* Previous Q&A list */}
-            {followUps.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {followUps.map((fu, idx) => (
-                  <div key={fu.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {/* Question bubble */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <div style={{ maxWidth: '80%', background: 'rgba(229,193,88,0.12)', border: '1px solid rgba(229,193,88,0.25)', borderRadius: '12px 12px 4px 12px', padding: '8px 12px' }}>
-                        <div style={{ fontSize: '0.82rem', color: '#f5e6a3', fontWeight: 600 }}>{fu.question}</div>
-                        {fu.questionTimestamp && (
-                          <div style={{ fontSize: '0.68rem', color: 'rgba(229,193,88,0.5)', marginTop: 3, textAlign: 'right', fontFamily: 'monospace' }}>
-                            🕐 {new Date(fu.questionTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {/* Answer bubble */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                      <div style={{ maxWidth: '85%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px 12px 12px 12px', padding: '10px 14px' }}>
-                        <div style={{ fontSize: '0.82rem', color: '#dfdbf0', lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: parseMarkdown(fu.answer) }} />
-                        {fu.answerTimestamp && (
-                          <div style={{ fontSize: '0.68rem', color: 'rgba(229,193,88,0.4)', marginTop: 4, fontFamily: 'monospace' }}>
-                            🕐 {new Date(fu.answerTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Waiting box when asking follow-up */}
-            {askingFollowUp && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 16px',
-                background: 'rgba(167,139,250,0.08)',
-                border: '1px dashed rgba(167,139,250,0.3)',
-                borderRadius: '10px',
-                animation: 'fadeIn 0.3s ease'
-              }}>
-                <div className="spinner" style={{ width: 16, height: 16, border: '2px solid rgba(229,193,88,0.2)', borderTop: '2px solid var(--gold-color, #e5c158)', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#e5c158' }}>
-                    {isEn ? 'AI is focusing on your Tarot question...' : 'AI đang thấu cảm và chuẩn bị câu trả lời hoàn chỉnh...'}
-                  </span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #a69fbf)' }}>
-                    {followUpRetryStatus || (isEn ? `Synthesizing guidance (${followUpElapsed}s)...` : `Đang kết nối năng lượng lá bài (${followUpElapsed}s)...`)}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Follow-up error */}
-            {followUpError && (
-              <div style={{ padding: '8px 12px', background: 'rgba(235,94,85,0.08)', border: '1px solid rgba(235,94,85,0.2)', borderRadius: '8px', color: '#eb5e55', fontSize: '12px' }}>
-                ⚠️ {followUpError}
-              </div>
-            )}
-
-            {/* Question input form */}
-            {followUps.length < 5 ? (
-              <form onSubmit={handleSendFollowUp} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {/* 3 AI Suggested Questions Pill Buttons */}
-                {!askingFollowUp && aiSuggestedQuestions.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '0.78rem', color: '#c4b5fd', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>💡</span> {isEn ? 'AI Suggested Follow-up Questions (Click to ask immediately):' : 'AI gợi ý 3 câu hỏi tiếp theo (Bấm vào để hỏi ngay):'}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {aiSuggestedQuestions.map((qText, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          disabled={askingFollowUp}
-                          onClick={() => handleSendFollowUp(null, qText)}
-                          style={{
-                            background: 'rgba(167,139,250,0.08)',
-                            border: '1px solid rgba(167,139,250,0.25)',
-                            borderRadius: 10,
-                            padding: '8px 14px',
-                            fontSize: '0.825rem',
-                            color: '#dfdbf0',
-                            cursor: askingFollowUp ? 'not-allowed' : 'pointer',
-                            textAlign: 'left',
-                            transition: 'all 0.2s ease',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            fontFamily: 'inherit',
-                          }}
-                          onMouseEnter={e => { if (!askingFollowUp) e.currentTarget.style.background = 'rgba(167,139,250,0.18)'; }}
-                          onMouseLeave={e => { if (!askingFollowUp) e.currentTarget.style.background = 'rgba(167,139,250,0.08)'; }}
-                        >
-                          <span style={{ fontSize: '0.9rem', color: '#a78bfa' }}>🔮</span>
-                          <span style={{ flex: 1 }}>{qText}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <textarea
-                    rows={2}
-                    value={userQuestion}
-                    onChange={(e) => setUserQuestion(e.target.value)}
-                    placeholder="Nhập câu hỏi thêm về trải bài này (tối đa 2048 ký tự)..."
-                    disabled={askingFollowUp}
-                    className="custom-textarea"
-                    style={{
-                      width: '100%', padding: '8px 12px', borderRadius: 8,
-                      border: `1px solid ${charCount > 2048 ? 'rgba(235,94,85,0.6)' : 'rgba(229,193,88,0.2)'}`,
-                      background: 'rgba(0,0,0,0.2)', fontSize: '0.85rem',
-                      resize: 'vertical', outline: 'none', color: '#dfdbf0',
-                      boxSizing: 'border-box', minHeight: 'unset',
-                    }}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginTop: 3, fontSize: '0.7rem' }}>
-                    <span style={{ color: charCount > 2048 ? '#eb5e55' : 'rgba(229,193,88,0.5)', fontWeight: charCount > 2048 ? 700 : 400 }}>
-                      {charCount > 2048 ? `⚠️ Đã vượt quá 2048 ký tự (${charCount})` : `${charCount} / 2048 ký tự`}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={askingFollowUp || !userQuestion.trim() || !isCharCountValid}
-                    className="copy-main-btn"
-                    style={{
-                      padding: '7px 18px', fontSize: '0.82rem', width: 'auto',
-                      opacity: (askingFollowUp || !userQuestion.trim() || !isCharCountValid) ? 0.5 : 1,
-                      cursor: (askingFollowUp || !userQuestion.trim() || !isCharCountValid) ? 'not-allowed' : 'pointer',
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                    }}
-                  >
-                    {askingFollowUp ? '⏳ Đang xử lý...' : '💬 Gửi câu hỏi'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '10px 14px', background: 'rgba(229,193,88,0.06)', borderRadius: 8, fontSize: '0.8rem', color: 'rgba(229,193,88,0.6)', border: '1px solid rgba(229,193,88,0.15)' }}>
-                ℹ️ Bạn đã sử dụng tối đa 5 câu hỏi thêm cho lượt luận giải này.
-              </div>
-            )}
-          </div>
+          <TarotFollowUpSection
+            followUps={followUps}
+            isEn={isEn}
+            askingFollowUp={askingFollowUp}
+            followUpRetryStatus={followUpRetryStatus}
+            followUpElapsed={followUpElapsed}
+            followUpError={followUpError}
+            aiSuggestedQuestions={aiSuggestedQuestions}
+            handleSendFollowUp={handleSendFollowUp}
+            userQuestion={userQuestion}
+            setUserQuestion={setUserQuestion}
+            charCount={charCount}
+            isCharCountValid={isCharCountValid}
+          />
         </div>
       )}
 
-      {/* Global CSS animations for cosmic waiting */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes cardHover {
-          0%, 100% { transform: translateY(0) rotate(-1deg); }
-          50% { transform: translateY(-8px) rotate(1.5deg); }
-        }
-        @keyframes starPulse {
-          0%, 100% { transform: scale(1); opacity: 0.85; }
-          50% { transform: scale(1.15); opacity: 1; }
-        }
-        @keyframes cardShimmer {
-          0% { left: -100%; }
-          100% { left: 200%; }
-        }
-        @keyframes shimmerSlide {
-          0% { left: -40%; }
-          100% { left: 100%; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+      <TarotAiAnimations />
     </div>
     </>
   );

@@ -29,16 +29,6 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       ...createSsoProxy(loadEnv(mode, import.meta.dirname, 'VITE_')),
-      '/api-vps': {
-        target: 'http://43.128.116.69',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api-vps/, '')
-      },
-      '/kinhdich/api-vps': {
-        target: 'http://43.128.116.69',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/kinhdich\/api-vps/, '')
-      },
       // API requests go through the shared SSO proxy.
     }
   }

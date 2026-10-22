@@ -15,15 +15,15 @@ Trên máy chủ chạy vInfiSSO, đặt:
 
 ```dotenv
 TUVI_AI_BASE_URL=http://43.128.116.69:20128/v1
-TUVI_AI_API_KEY=<API key của upstream đang dùng>
+provider API key configuration=<API key của upstream đang dùng>
 TUVI_AI_MODELS=combo1
 ```
 
 Có thể liệt kê nhiều model, phân cách bằng dấu phẩy. Frontend chỉ chọn trong danh sách này. Không đưa API key vào biến `VITE_` hoặc commit credential vào repo.
 
-Khi chạy `NODE_ENV=production`, SSO đọc `.env` trước rồi bổ sung biến còn thiếu từ `.env.production`. Biến môi trường của tiến trình được ưu tiên cao nhất. Đặt các file tại thư mục gốc SSO; PM2 đã cố định `cwd` tại thư mục chứa ecosystem config. Không để `TUVI_AI_API_KEY` rỗng trong nguồn ưu tiên cao hơn. Sau khi cập nhật biến môi trường, khởi động lại PM2 với `--update-env`.
+Khi chạy `NODE_ENV=production`, SSO đọc `.env` trước rồi bổ sung biến còn thiếu từ `.env.production`. Biến môi trường của tiến trình được ưu tiên cao nhất. Đặt các file tại thư mục gốc SSO; PM2 đã cố định `cwd` tại thư mục chứa ecosystem config. Không để `provider API key configuration` rỗng trong nguồn ưu tiên cao hơn. Sau khi cập nhật biến môi trường, khởi động lại PM2 với `--update-env`.
 
-Kiểm tra `GET /plans/tuvi-ai/config`: `configured: true` xác nhận đã nạp key, chưa xác nhận upstream hoạt động. Nếu trả `false`, backend không gọi upstream và không trừ quota. UI sẽ hiện trạng thái chưa sẵn sàng và cho kiểm tra lại. Frontend chỉ gọi SSO, không gọi trực tiếp upstream hay dùng key `VITE_AI_API_KEY` để vượt lỗi SSO.
+Kiểm tra `GET /plans/tuvi-ai/config`: `configured: true` xác nhận đã nạp key, chưa xác nhận upstream hoạt động. Nếu trả `false`, backend không gọi upstream và không trừ quota. UI sẽ hiện trạng thái chưa sẵn sàng và cho kiểm tra lại. Frontend chỉ gọi SSO, không gọi trực tiếp upstream hay dùng key `provider API key configuration` để vượt lỗi SSO.
 
 Frontend cần `VITE_SSO_URL` trỏ đến SSO (cùng cấu hình đăng nhập hiện có). Nếu biến này trống trong dev, Vite proxy `/sso`, `/ui`, `/plans`, `/readings` đến `https://sso.vunph.click`. Production phải dùng SSO URL thực, không dựa vào Vite proxy. Đảm bảo `ALLOWED_ORIGINS` của SSO cho phép origin chạy TuViNow.
 

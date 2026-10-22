@@ -58,7 +58,7 @@ function compare(input) {
 
 test('calculation body is identical to the supplied v11 source', () => {
   const source = readFileSync(new URL('./fixtures/tuvi-v11-user.cjs', import.meta.url), 'utf8');
-  const core = readFileSync(new URL('../src/utils/tuViEngineV11.js', import.meta.url), 'utf8');
+  const core = readFileSync(new URL('../../shared/src/utils/tuViEngineV11.js', import.meta.url), 'utf8');
   assert.equal(core.split('// ESM exports')[0], source.split("if (typeof module !== 'undefined'")[0]);
 });
 

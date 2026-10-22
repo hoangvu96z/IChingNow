@@ -1,0 +1,59 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install app dependencies
+        run: |
+          npm ci --prefix iching
+          npm ci --prefix tarotnow
+          npm ci --prefix tuvinow
+          npm ci --prefix talkwithme
+          npm ci --prefix notenow
+
+      - name: Run shared tests
+        run: npm run test:sso
+
+      - name: Run IChingNow tests
+        run: npm test --prefix iching
+
+      - name: Run TarotNow tests
+        run: npm test --prefix tarotnow
+
+      - name: Run TuViNow tests
+        run: npm test --prefix tuvinow
+
+      - name: Run TalkWithMe tests
+        run: npm test --prefix talkwithme
+
+      - name: Run NoteNow tests
+        run: npm test --prefix notenow
+
+      - name: Lint apps with configured lint scripts
+        run: |
+          npm run lint:iching
+          npm run lint:tarot
+          npm run lint:tuvi
+          npm run lint --prefix talkwithme
+          npm run lint --prefix notenow
+
+      - name: Build all five apps
+        run: npm run build:all

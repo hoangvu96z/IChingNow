@@ -1,7 +1,7 @@
 import { getSsoWebBase } from '../utils/ssoConfig.mjs';
 import React, { useState, useRef, useEffect } from 'react';
 
-const SSO_BASE = getSsoWebBase(import.meta.env);
+const SSO_BASE = getSsoWebBase({ VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 /**
  * Shared AuthUserBadge component

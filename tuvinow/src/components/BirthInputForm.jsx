@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { solarToLunar, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYearOptions, getViewYearOptions } from '../utils/lunarConverter';
+import React, { useState, useMemo, useEffect } from 'react';
+import { solarToLunar, validateLunarDate, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYearOptions, getViewYearOptions } from '../utils/lunarConverter';
 
 export default function BirthInputForm({ onSubmit }) {
   const [name, setName] = useState('');
@@ -17,7 +17,13 @@ export default function BirthInputForm({ onSubmit }) {
   const yearOptions = useMemo(() => getYearOptions(), []);
   const viewYearOptions = useMemo(() => getViewYearOptions(1920, 30), []);
   const monthOptions = useMemo(() => getMonthsInYear(), []);
-  const dayOptions = useMemo(() => getDaysInMonth(isLunar), [isLunar]);
+  const dayOptions = useMemo(() => getDaysInMonth(isLunar, year, month), [isLunar, year, month]);
+
+  useEffect(() => {
+    if (!isLunar || validateLunarDate(year, month, day)) return;
+    const lastValidDay = dayOptions.at(-1)?.value;
+    if (lastValidDay) setDay(lastValidDay);
+  }, [day, dayOptions, isLunar, month, year]);
 
   const handleNameChange = (e) => {
     const val = e.target.value;
@@ -43,6 +49,9 @@ export default function BirthInputForm({ onSubmit }) {
       let lunarData;
       if (isLunar) {
         // User nhập trực tiếp âm lịch
+        if (!validateLunarDate(year, month, day)) {
+          throw new Error('Ngày âm lịch không tồn tại trong tháng đã chọn.');
+        }
         const yearCanIndex = (year - 4) % 10;
         const yearChiIndex = (year - 4) % 12;
         lunarData = {

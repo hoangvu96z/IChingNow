@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ssoRequest } from '../services/ssoApi';
-import { encryptData, decryptData } from '../utils/cryptoUtils';
+import { decryptData } from '../utils/cryptoUtils';
 import { buildCompatibility, compatibilityEvidence, compatibilityPrompt, compatibilityText, WEIGHTS } from '../utils/compatibility';
 import { getYearCanChi } from '../utils/lunarConverter';
 import TuViAiPanel from './TuViAiPanel';
@@ -148,7 +148,7 @@ function PersonForm({ label, value, onChange, side }) {
 }
 
 
-function PairSession({ initial, userId, onStored }) {
+function PairSession({ initial, onStored }) {
   const [pair] = useState(initial.pair);
   const id = useRef(initial.id);
   const latest = useRef(initial.conversation || null);
@@ -162,8 +162,7 @@ function PairSession({ initial, userId, onStored }) {
     const operation = pending.current.catch(() => {}).then(async () => {
       if (!active.current) throw new Error('Phiên hợp hôn đã đóng.');
       setSaveStatus('Đang tự lưu hồ sơ và hội thoại…');
-      const payload = await encryptData({ pair, conversation }, userId);
-      if (typeof payload !== 'string' || !payload.startsWith('enc_v1::')) throw new Error('Chưa mã hóa được hồ sơ. Vui lòng thử lại.');
+      const payload = { pair, conversation };
       if (!active.current) throw new Error('Phiên hợp hôn đã đóng.');
       const { reading } = await ssoRequest(id.current ? `/readings/${id.current}` : '/readings', {
         method: id.current ? 'PATCH' : 'POST',
@@ -284,7 +283,7 @@ function AuthenticatedPage({ userId }) {
       <div className="hh-divider"><span aria-hidden="true">♡</span></div>
       <button className="hh-primary" disabled={busy}>{busy ? '✨ Đang đối chiếu…' : '💕 Xem hợp hôn'}</button>
     </form>
-      : <><button className="hh-back" onClick={() => setSession(null)}>← Đổi thông tin hai người</button><PairSession key={session.key} initial={session} userId={userId} onStored={loadHistory} /></>}
+      : <><button className="hh-back" onClick={() => setSession(null)}>← Đổi thông tin hai người</button><PairSession key={session.key} initial={session} onStored={loadHistory} /></>}
     {error && <p role="alert">{error}</p>}
     <details className="hh-history"><summary>📂 Lịch sử Hợp hôn ({history.length})</summary>
       {historyError && <p role="alert">{historyError}</p>}<button onClick={loadHistory}>Làm mới</button>

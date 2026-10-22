@@ -1,8 +1,15 @@
-import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { notesApi, charCount, compressImageTo720p } from '../api.js';
 import NoteColorPicker from './NoteColorPicker.jsx';
 import ImageViewer from './ImageViewer.jsx';
+import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
+import { getInlineImageOrphanIndices } from '../noteImages.mjs';
+import {
+  contentWithPreservedInlineImages,
+  contentWithInlineImagePlaceholders,
+  hasInlineImagePlaceholder,
+  sanitizeNoteContent,
+} from '../safeNoteContent.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
 // Lucide React icons
@@ -22,8 +29,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import TextStyle from '@tiptap/extension-text-style';
 import UnderlineExt from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
-
-const SSO_BASE = getSsoApiBase(import.meta.env);
+import NoteInlineImagePlaceholder from '../extensions/NoteInlineImagePlaceholder.js';
 
 function ToolbarButton({ onClick, title, isActive, children, id }) {
   return (
@@ -50,6 +56,23 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
   const [bgColor, setBgColor] = useState(note?.bgColor || 'default');
   const [bgPattern, setBgPattern] = useState(note?.bgPattern || 'none');
   const [images, setImages] = useState(note?.images || []);
+  const [, setContentRevision] = useState(0);
+  const sanitizedContent = useMemo(() => sanitizeNoteContent(note?.content), [note?.content]);
+  const inlineImageContent = useMemo(() => contentWithInlineImagePlaceholders(sanitizedContent), [sanitizedContent]);
+  const inlineImages = inlineImageContent.images;
+  const editorContent = inlineImageContent.content;
+  const unsupportedImageIndices = useMemo(() => {
+    const noteId = activeNoteId || note?.id;
+    if (String(noteId || '').startsWith('local-')) return [];
+    return getInlineImageOrphanIndices(inlineImages, images);
+  }, [activeNoteId, note?.id, images, inlineImages]);
+  const imageRefs = useMemo(() => [...images, ...inlineImages], [images, inlineImages]);
+  const { sources: imageSources, loading: imageSourcesLoading, failedCount: imageLoadFailedCount } = useNoteImageSources(
+    imageRefs,
+    activeNoteId || note?.id,
+    shareToken,
+    Boolean(note?.isGuest || !userIsLoggedIn),
+  );
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -75,23 +98,37 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
       TextStyle,
       UnderlineExt,
       Placeholder.configure({ placeholder: t('editor.content_placeholder', 'Viết ghi chú của bạn ở đây…') }),
+      NoteInlineImagePlaceholder,
     ],
-    content: note?.content || '',
+    content: editorContent,
     editable: !isReadOnly,
     immediatelyRender: false,
     onUpdate: () => {
+      setContentRevision((revision) => revision + 1);
       triggerAutoSave();
     },
   });
 
   const currentContent = editor?.getHTML() || '';
+  const visibleInlineImageIndices = inlineImages
+    .map((_, index) => index)
+    .filter((index) => hasInlineImagePlaceholder(currentContent || editorContent, index));
+  const unresolvedUnsupportedImageIndices = unsupportedImageIndices
+    .filter((index) => hasInlineImagePlaceholder(currentContent || editorContent, index));
   const chars = charCount(currentContent);
   const overLimit = chars > MAX_CHARS;
   const nearLimit = chars > MAX_CHARS * 0.85;
+  const hasUnsupportedImagePlaceholder = (content) => unsupportedImageIndices
+    .some((index) => hasInlineImagePlaceholder(content, index));
 
   const handleSave = async (silent = false, closeAfter = false, overrides = {}) => {
     if (overLimit) return;
     clearTimeout(autoSaveTimer.current);
+    const contentToSave = editor?.getHTML() || currentContent;
+    if (hasUnsupportedImagePlaceholder(contentToSave)) {
+      setError('Không thể lưu: ảnh nội tuyến này không có trong danh sách ảnh của ghi chú nên máy chủ sẽ gỡ ảnh. Hãy xóa vị trí giữ ảnh trong nội dung rồi lưu lại.');
+      return;
+    }
     if (!silent) setSaving(true);
     setError(null);
     try {
@@ -99,7 +136,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
       const finalBgPattern = overrides.bgPattern !== undefined ? overrides.bgPattern : bgPattern;
       const dto = {
         title: title.trim() || null,
-        content: currentContent,
+        content: contentWithPreservedInlineImages(contentToSave, inlineImages),
         bgColor: finalBgColor,
         bgPattern: finalBgPattern,
       };
@@ -130,12 +167,17 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
     setUploading(true);
     setError(null);
     try {
+      const contentToSave = editor?.getHTML() || currentContent;
+      if (hasUnsupportedImagePlaceholder(contentToSave)) {
+        setError('Không thể tải ảnh lên khi ảnh nội tuyến chưa có trong danh sách ảnh của ghi chú. Hãy xóa vị trí giữ ảnh trong nội dung trước.');
+        return;
+      }
       let targetId = activeNoteId;
       // If new note without ID yet, create draft first
       if (!targetId && !shareToken) {
         const dto = {
           title: title.trim() || null,
-          content: currentContent,
+          content: contentWithPreservedInlineImages(contentToSave, inlineImages),
           bgColor,
           bgPattern,
         };
@@ -259,17 +301,23 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
           {/* Images */}
           {images.length > 0 && (
             <div className="nn-editor-images">
-              {images.map((img, idx) => (
+              {images.map((_img, idx) => (
                 <div key={idx} className="nn-editor-img-wrap">
-                  <img
-                    className="nn-editor-img"
-                    src={img.url.startsWith('data:') || img.url.startsWith('http') ? img.url : `${SSO_BASE}${img.url}`}
-                    alt={`Hình ${idx + 1}`}
-                    loading="lazy"
-                    onClick={() => setViewerIndex(idx)}
-                    style={{ cursor: 'zoom-in' }}
-                    title={t('card.click_zoom', 'Bấm để xem to')}
-                  />
+                  {imageSources[idx] ? (
+                    <img
+                      className="nn-editor-img"
+                      src={imageSources[idx]}
+                      alt={`Hình ${idx + 1}`}
+                      loading="lazy"
+                      onClick={() => setViewerIndex(idx)}
+                      style={{ cursor: 'zoom-in' }}
+                      title={t('card.click_zoom', 'Bấm để xem to')}
+                    />
+                  ) : (
+                    <div className="nn-editor-img-unavailable" role="status">
+                      {imageSourcesLoading ? 'Đang tải ảnh…' : 'Không tải được ảnh'}
+                    </div>
+                  )}
                   {!isReadOnly && (
                     <button
                       className="nn-editor-img-remove"
@@ -286,14 +334,48 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
             </div>
           )}
 
+          {inlineImages.length > 0 && (
+            <div className="nn-editor-inline-images" aria-label="Ảnh đã lưu trong nội dung">
+              <p>
+                {unresolvedUnsupportedImageIndices.length
+                  ? `${unresolvedUnsupportedImageIndices.length} ảnh nội tuyến chưa có trong danh sách ảnh của ghi chú. Xóa vị trí giữ ảnh trong nội dung để lưu mà không mất ảnh.`
+                  : 'Ảnh đã lưu trong nội dung được giữ nguyên tại vị trí hiện tại khi lưu.'}
+              </p>
+              <div className="nn-editor-images">
+                {visibleInlineImageIndices.map((idx) => {
+                  const inlineImage = inlineImages[idx];
+                  const source = imageSources[images.length + idx];
+                  return source ? (
+                    <img
+                      key={`${inlineImage.url}-${idx}`}
+                      className="nn-editor-img"
+                      src={source}
+                      alt={inlineImage.alt || `Ảnh nội dung ${idx + 1}`}
+                      onClick={() => setViewerIndex(images.length + visibleInlineImageIndices.indexOf(idx))}
+                      style={{ cursor: 'zoom-in' }}
+                    />
+                  ) : (
+                    <div key={`${inlineImage.url}-${idx}`} className="nn-editor-img-unavailable" role="status">
+                      {imageSourcesLoading ? 'Đang tải ảnh…' : 'Không tải được ảnh'}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Image Viewer Lightbox */}
           {viewerIndex !== null && (
             <ImageViewer
-              images={images}
+              images={[...images, ...visibleInlineImageIndices.map((idx) => inlineImages[idx])]}
+              imageSources={[
+                ...imageSources.slice(0, images.length),
+                ...visibleInlineImageIndices.map((idx) => imageSources[images.length + idx]),
+              ]}
+              imagesLoading={imageSourcesLoading}
               index={viewerIndex}
               onClose={() => setViewerIndex(null)}
               onChange={(i) => setViewerIndex(i)}
-              ssoBase={SSO_BASE}
             />
           )}
 
@@ -411,10 +493,10 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
           )}
 
           {/* Error */}
-          {error && (
-            <div style={{ padding: '0 20px 8px', fontSize: '0.8rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {(error || imageLoadFailedCount > 0) && (
+            <div role="alert" style={{ padding: '0 20px 8px', fontSize: '0.8rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
               <AlertCircle size={13} strokeWidth={2} />
-              {error}
+              {error || `Không tải được ${imageLoadFailedCount} ảnh đính kèm.`}
             </div>
           )}
 

@@ -1,8 +1,9 @@
 import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import { useState, useCallback } from 'react';
-import { encryptData, decryptData } from '../utils/cryptoUtils';
+import { decryptData } from '../utils/cryptoUtils';
+import { deleteReadingItems } from '../../../shared/src/utils/readingDeletes.mjs';
 
-const SSO_BASE = getSsoApiBase(import.meta.env);
+const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 const APP = 'iching';
 
 function getToken() {
@@ -20,29 +21,37 @@ function authHeaders() {
 }
 
 /**
- * Hook quản lý lịch sử gieo quẻ qua API với Mã Hóa Client-Side (Zero-Knowledge E2EE)
+ * Hook quản lý lịch sử gieo quẻ. Các bản ghi mới được mã hóa lưu trữ ở phía máy chủ;
+ * decryptData chỉ giữ tương thích với các bản ghi enc_v1 cũ.
  */
-export function useReadingsApi(isAuthenticated, userId = 'default_user') {
+export function useReadingsApi(isAuthenticated, userId) {
   const [history, setHistory] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
   // Helper giải mã đối tượng reading khi tải về từ server
   const decryptReadingObject = async (r) => {
+    let decryptionError = false;
     let question = r.question;
     if (question && typeof question === 'string' && question.startsWith('enc_v1::')) {
       const dec = await decryptData(question, userId);
+      if (dec === null) decryptionError = true;
       question = dec || r.title || '(Lần lập quẻ)';
     }
 
     let dataObj = r.data || {};
     if (dataObj.question && typeof dataObj.question === 'string' && dataObj.question.startsWith('enc_v1::')) {
       const dec = await decryptData(dataObj.question, userId);
-      dataObj = { ...dataObj, question: dec || r.title || '(Lần lập quẻ)' };
+      if (dec === null) decryptionError = true;
+      else dataObj = { ...dataObj, question: dec };
+    }
+    if ((!question || String(question).startsWith('enc_v1::')) && typeof dataObj.question === 'string' && !dataObj.question.startsWith('enc_v1::')) {
+      question = dataObj.question;
     }
     if (dataObj.aiConversation) {
       if (typeof dataObj.aiConversation === 'string' && dataObj.aiConversation.startsWith('enc_v1::')) {
         const decryptedAi = await decryptData(dataObj.aiConversation, userId);
-        dataObj = { ...dataObj, aiConversation: decryptedAi };
+        if (decryptedAi === null) decryptionError = true;
+        else dataObj = { ...dataObj, aiConversation: decryptedAi };
       }
     }
 
@@ -55,6 +64,7 @@ export function useReadingsApi(isAuthenticated, userId = 'default_user') {
       mode: dataObj.mode || r.type,
       data: dataObj,
       _remoteId: r.id,
+      ...(decryptionError ? { _decryptionError: true } : {}),
     };
   };
 
@@ -84,21 +94,12 @@ export function useReadingsApi(isAuthenticated, userId = 'default_user') {
     }
   }, [isAuthenticated, userId]);
 
-  // ─── Lưu 1 reading mới với mã hóa AES-GCM ──────────────────────────────────
+  // ─── Lưu reading qua HTTPS; SSO backend mã hóa các trường nhạy cảm khi lưu ─
   const saveReading = useCallback(async (newResult, type) => {
     if (!newResult || !isAuthenticated) return null;
 
     const plainQuestion = newResult.question || null;
-    const encryptedQuestion = plainQuestion ? await encryptData(plainQuestion, userId) : null;
-
-    const dataToSave = {
-      ...newResult,
-      question: encryptedQuestion,
-    };
-
-    if (newResult.aiConversation) {
-      dataToSave.aiConversation = await encryptData(newResult.aiConversation, userId);
-    }
+    const dataToSave = { ...newResult, question: plainQuestion };
 
     const title =
       type === 'luc-hao'
@@ -123,7 +124,7 @@ export function useReadingsApi(isAuthenticated, userId = 'default_user') {
         body: JSON.stringify({
           app: APP,
           type,
-          question: encryptedQuestion,
+          question: plainQuestion,
           title,
           data: dataToSave,
         }),
@@ -144,78 +145,72 @@ export function useReadingsApi(isAuthenticated, userId = 'default_user') {
       return mappedItem;
     } catch (err) {
       console.error('saveReading error:', err);
-      return null;
+      throw err;
     }
   }, [isAuthenticated, userId]);
 
   // ─── Xoá 1 reading ─────────────────────────────────────────────────────────
   const deleteReading = useCallback(async (item) => {
-    const remoteId = item._remoteId || item.id;
-
-    if (isAuthenticated && item._remoteId) {
-      try {
-        await fetch(`${SSO_BASE}/readings/${remoteId}`, {
-          method: 'DELETE',
-          headers: authHeaders(),
-          credentials: 'include',
-        });
-      } catch (err) {
-        console.error('deleteReading error:', err);
-      }
+    const { deletedItems, failedItems } = await deleteReadingItems([item], {
+      isAuthenticated,
+      deleteRemote: (remoteId) => fetch(`${SSO_BASE}/readings/${remoteId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+        credentials: 'include',
+      }),
+    });
+    if (deletedItems.length) {
+      setHistory((prev) => prev.filter((h) => h.id !== item.id));
     }
-
-    setHistory((prev) => prev.filter((h) => h.id !== item.id));
+    if (failedItems.length) {
+      throw new Error('Không thể xóa bản ghi trên máy chủ. Bản ghi được giữ lại để thử lại.');
+    }
   }, [isAuthenticated]);
 
   // ─── Xoá nhiều readings ───────────────────────────────────────────────────
   const deleteMultipleReadings = useCallback(async (itemsToDelete) => {
     if (!itemsToDelete || itemsToDelete.length === 0) return;
 
-    const idsToDelete = new Set(itemsToDelete.map((i) => i.id));
-
-    if (isAuthenticated) {
-      await Promise.allSettled(
-        itemsToDelete.map((item) => {
-          const remoteId = item._remoteId || item.id;
-          if (!remoteId) return Promise.resolve();
-          return fetch(`${SSO_BASE}/readings/${remoteId}`, {
-            method: 'DELETE',
-            headers: authHeaders(),
-            credentials: 'include',
-          });
-        })
-      );
+    const { deletedItems, failedItems } = await deleteReadingItems(itemsToDelete, {
+      isAuthenticated,
+      deleteRemote: (remoteId) => fetch(`${SSO_BASE}/readings/${remoteId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+        credentials: 'include',
+      }),
+    });
+    const deletedIds = new Set(deletedItems.map((item) => item.id));
+    if (deletedIds.size) setHistory((prev) => prev.filter((item) => !deletedIds.has(item.id)));
+    if (failedItems.length) {
+      const error = new Error(`Không thể xóa ${failedItems.length} bản ghi trên máy chủ. Những bản ghi đó được giữ lại để thử lại.`);
+      error.failedIds = failedItems.map(({ item }) => item.id);
+      throw error;
     }
-
-    setHistory((prev) => prev.filter((h) => !idsToDelete.has(h.id)));
   }, [isAuthenticated]);
 
   // ─── Xoá toàn bộ ───────────────────────────────────────────────────────────
   const clearHistory = useCallback(async () => {
     if (isAuthenticated) {
-      try {
-        await fetch(`${SSO_BASE}/readings/all?app=${APP}`, {
-          method: 'DELETE',
-          headers: authHeaders(),
-          credentials: 'include',
-        });
-      } catch (err) {
-        console.error('clearHistory error:', err);
-      }
+      const response = await fetch(`${SSO_BASE}/readings/all?app=${APP}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Không thể xóa lịch sử trên máy chủ. Lịch sử vẫn được giữ lại.');
     }
     setHistory([]);
   }, [isAuthenticated]);
 
-  // ─── Cập nhật data với mã hóa AI conversation ──────────────────────────────
+  // ─── Backend giữ title/question hiện có và mã hóa lại sau khi merge data ───
   const updateReadingData = useCallback(async (readingId, partialData) => {
     if (!isAuthenticated || !readingId) return;
 
     const dataToPatch = { ...partialData };
-    if (partialData.aiConversation) {
-      dataToPatch.aiConversation = await encryptData(partialData.aiConversation, userId);
-    }
-
     try {
+      const existing = history.find(item => item.id === readingId || item._remoteId === readingId);
+      if (existing?._decryptionError) {
+        throw new Error('Không thể giải mã dữ liệu đã lưu; bản ghi cũ được giữ nguyên và chưa có nội dung mới nào được ghi đè.');
+      }
       const res = await fetch(`${SSO_BASE}/readings/${readingId}`, {
         method: 'PATCH',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -235,8 +230,9 @@ export function useReadingsApi(isAuthenticated, userId = 'default_user') {
       return responseData.reading;
     } catch (err) {
       console.error('updateReadingData error:', err);
+      throw err;
     }
-  }, [isAuthenticated, userId]);
+  }, [history, isAuthenticated, userId]);
 
   return {
     history,

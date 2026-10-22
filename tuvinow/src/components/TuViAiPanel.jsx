@@ -10,6 +10,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../hooks/usePlan';
 import { ssoRequest } from '../services/ssoApi';
+import { requestAiChat } from '../../../shared/src/utils/aiProxy.mjs';
+import { readOpenAiChatStream } from '../../../shared/src/utils/openAiSse.mjs';
 
 function Icon({ name = 'spark', size = 18 }) {
   const paths = {
@@ -195,12 +197,14 @@ export default function TuViAiPanel({
     }
     const activeModel = model || config.models?.[0] || 'combo1';
     try {
-      const res = await ssoRequest('/plans/tuvi-ai', {
-        method: 'POST',
-        body: { model: activeModel, messages },
+      const response = await requestAiChat({
+        app: 'tuvi',
+        model: activeModel,
+        messages,
+        stream: true,
         signal: abort.signal,
       });
-      const content = res?.content || '';
+      const content = await readOpenAiChatStream(response);
       const answer = parseTuViAnswer(content, catalog);
       if (!answer.sections.length && !answer.fallback.trim()) {
         throw new Error('Không nhận được nội dung luận giải từ AI. Vui lòng thử lại.');
@@ -223,7 +227,7 @@ export default function TuViAiPanel({
       setFollowUp('');
       await save(updated);
     } catch (err) {
-      if (mounted.current && err.code === 'AI_NOT_CONFIGURED') setConfig(previous => ({ ...previous, configured: false }));
+      if (mounted.current && err.code === 'QUOTA_EXCEEDED') setShowSettings(true);
       if (mounted.current)
         setError(
           abort.signal.aborted

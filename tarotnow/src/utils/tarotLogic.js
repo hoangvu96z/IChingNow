@@ -300,6 +300,20 @@ export const SPREADS = [
   }
 ];
 
+export const DEFAULT_SPREAD_ID = "ppf";
+
+const LEGACY_SPREAD_IDS = {
+  "past-present-future": "ppf",
+  "1-card": "single"
+};
+
+export function normalizeSpreadId(spreadId) {
+  const normalizedId = LEGACY_SPREAD_IDS[spreadId] || spreadId;
+  return SPREADS.some(spread => spread.id === normalizedId)
+    ? normalizedId
+    : DEFAULT_SPREAD_ID;
+}
+
 export const PERSPECTIVES = [
   { key: "general", id: "general", name: "Tổng quan (General)" },
   { key: "love", id: "love", name: "Tình cảm (Love)" },
@@ -532,12 +546,57 @@ export const POSITION_TABLE = {
   }
 };
 
+const PRESET_POSITION_ROLES = {
+  horseshoe: {
+    vi: [
+      "Quá khứ xa",
+      "Quá khứ gần",
+      "Hiện tại",
+      "Tương lai gần",
+      "Ảnh hưởng xung quanh",
+      "Rào cản hoặc thách thức",
+      "Kết quả cuối cùng"
+    ],
+    en: [
+      "Distant past",
+      "Recent past",
+      "Present",
+      "Near future",
+      "Surrounding influences",
+      "Obstacle or challenge",
+      "Final outcome"
+    ]
+  },
+  "relationship-7": {
+    vi: [
+      "Cách bạn nhìn nhận mối quan hệ",
+      "Cách đối phương nhìn nhận mối quan hệ",
+      "Nền tảng của mối quan hệ",
+      "Điểm mạnh chung",
+      "Điểm cần cải thiện",
+      "Thách thức lớn nhất",
+      "Tiềm năng tương lai"
+    ],
+    en: [
+      "How you see the relationship",
+      "How your partner sees the relationship",
+      "The relationship's foundation",
+      "Shared strengths",
+      "What needs improvement",
+      "The greatest challenge",
+      "Future potential"
+    ]
+  }
+};
+
 function getPositionRoles(spreadType, perspective, language = "vi") {
-  const isEn = language === "en";
+  const presetRoles = PRESET_POSITION_ROLES[spreadType];
+  if (presetRoles) return presetRoles[language] || presetRoles.vi;
+
   let spreadKey = "three_card";
   if (spreadType === "single") spreadKey = "one_card";
-  else if (["five-cross", "five-decision", "five-relationship"].includes(spreadType)) spreadKey = "five-card";
-  else if (spreadType === "ten_card") spreadKey = "ten_card";
+  else if (["five-cross", "five-decision", "five-relationship", "career-5"].includes(spreadType)) spreadKey = "five-card";
+  else if (["celtic-cross", "ten_card"].includes(spreadType)) spreadKey = "ten_card";
   
   const mapKey = spreadKey.replace("-", "_");
   const spreadMap = POSITION_TABLE[mapKey] || POSITION_TABLE.three_card;

@@ -15,6 +15,7 @@ export default function HistoryManagementModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [previewItem, setPreviewItem] = useState(null);
   const [previewTab, setPreviewTab] = useState('info');
+  const [actionError, setActionError] = useState('');
 
   const formatHistoryTitle = (item) => {
     const getHexName = (hex) => {
@@ -86,26 +87,41 @@ export default function HistoryManagementModal({
     });
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
     const count = selectedIds.size;
     if (window.confirm(t('history.confirm_delete_selected', `Bạn có chắc chắn muốn xóa ${count} quẻ đã chọn không?`))) {
-      onDeleteMultiple(history.filter((h) => selectedIds.has(h.id)));
-      setSelectedIds(new Set());
-      setPreviewItem(null);
+      setActionError('');
+      try {
+        await onDeleteMultiple(history.filter((h) => selectedIds.has(h.id)));
+        setSelectedIds(new Set());
+        setPreviewItem(null);
+      } catch (error) {
+        if (Array.isArray(error?.failedIds)) setSelectedIds(new Set(error.failedIds));
+        setActionError(error?.message || 'Không thể xóa các bản ghi. Những bản ghi chưa xóa vẫn được giữ lại.');
+      }
     }
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (history.length === 0) return;
     if (window.confirm(t('history.confirm_clear', 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử gieo quẻ không?'))) {
-      onClearAll();
-      setSelectedIds(new Set());
-      setPreviewItem(null);
+      setActionError('');
+      try {
+        await onClearAll();
+        setSelectedIds(new Set());
+        setPreviewItem(null);
+      } catch (error) {
+        setActionError(error?.message || 'Không thể xóa lịch sử. Dữ liệu vẫn được giữ lại.');
+      }
     }
   };
 
-  const handleSelectItem = (item) => { onSelect(item); onClose(); };
+  const handleSelectItem = (item) => {
+    if (item?._decryptionError) return;
+    onSelect(item);
+    onClose();
+  };
   const handlePreviewItem = (item, e) => { e.stopPropagation(); setPreviewItem(item); setPreviewTab('info'); };
 
   // ─── Detail Overlay ────────────────────────────────────────────────────────
@@ -131,6 +147,12 @@ export default function HistoryManagementModal({
             </div>
             <button onClick={() => setPreviewItem(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 30, height: 30, color: '#f5d78e', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
+
+          {item._decryptionError && (
+            <div role="alert" style={{ padding: '10px 20px', color: '#9f2d22', background: 'rgba(192,57,43,0.08)', borderBottom: '1px solid rgba(192,57,43,0.2)', fontSize: '0.82rem' }}>
+              Không giải mã được dữ liệu mã hóa cũ. Bản ghi chỉ đọc để bảo vệ nội dung gốc; bạn vẫn có thể xóa bản ghi.
+            </div>
+          )}
 
           <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,134,11,0.15)', background: 'rgba(184,134,11,0.04)' }}>
             {[
@@ -223,7 +245,7 @@ export default function HistoryManagementModal({
 
           <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(184,134,11,0.15)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setPreviewItem(null)} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid rgba(184,134,11,0.3)', background: 'transparent', color: 'var(--color-ink)', fontSize: '0.85rem', cursor: 'pointer' }}>Đóng</button>
-            <button onClick={() => handleSelectItem(item)} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg, #b8860b, #d4a017)', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>🔍 Mở lại quẻ này ➔</button>
+            <button disabled={item._decryptionError} onClick={() => handleSelectItem(item)} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg, #b8860b, #d4a017)', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: item._decryptionError ? 'not-allowed' : 'pointer', opacity: item._decryptionError ? 0.55 : 1 }}>🔍 Mở lại quẻ này ➔</button>
           </div>
         </div>
       </div>
@@ -247,6 +269,12 @@ export default function HistoryManagementModal({
             </div>
             <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: '#f5d78e', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
+
+          {actionError && (
+            <div role="alert" style={{ padding: '10px 20px', color: '#9f2d22', background: 'rgba(192,57,43,0.08)', borderBottom: '1px solid rgba(192,57,43,0.2)', fontSize: '0.82rem' }}>
+              {actionError}
+            </div>
+          )}
 
           <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(184, 134, 11, 0.15)', background: 'rgba(184, 134, 11, 0.04)', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <input type="text" placeholder={t('history.search_placeholder', '🔍 Tìm kiếm theo tên quẻ hoặc câu hỏi...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(184, 134, 11, 0.3)', background: '#fff', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
@@ -299,7 +327,12 @@ export default function HistoryManagementModal({
                         </div>
                         <span style={{ fontSize: '0.75rem', color: '#7f8c8d', fontFamily: 'monospace' }}>{formatTime(item.timestamp)}</span>
                       </div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: "'Noto Serif', serif", color: 'var(--color-ink, #2c3e50)', marginBottom: 2 }}>{formatHistoryTitle(item)}</div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: "'Noto Serif', serif", color: 'var(--color-ink, #2c3e50)', marginBottom: 2 }}>{formatHistoryTitle(item)}</div>
+                        {item._decryptionError && (
+                          <div role="status" style={{ fontSize: '0.72rem', color: 'var(--color-vermillion, #c0392b)', fontWeight: 600, marginBottom: 4 }}>
+                            ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
+                          </div>
+                        )}
                       {item.question && (
                         <div style={{ fontSize: '0.8rem', color: '#7f8c8d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.question === '(Không có câu hỏi)' ? t('history.no_question', '(Không có câu hỏi)') : item.question}

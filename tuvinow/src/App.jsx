@@ -104,7 +104,7 @@ export default function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, login } = useAuth();
   const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, deleteReading, deleteAllReadings } = useReadingsApi(isAuthenticated, user?.id);
   const { streak, recordActivity } = useStreak('tuvi');
   const [reading, setReading] = useState(null);
@@ -356,6 +356,8 @@ export default function App() {
         inputData={inputData}
         sourceApp="tuvi"
         language="vi"
+        isAuthenticated={isAuthenticated}
+        onLogin={login}
       />
 
       {/* ===== FOOTER ===== */}

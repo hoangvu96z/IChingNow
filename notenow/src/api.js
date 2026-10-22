@@ -1,9 +1,12 @@
-import { getSsoApiBase, getSsoLoginUrl, fetchSsoSession, isSessionRejected } from '../../shared/src/utils/ssoConfig.mjs';
+import { getSsoApiBase, getSsoLoginUrl, takeSsoCodeFromUrl, createSsoCodeExchangeCoordinator, fetchSsoSession, isSessionRejected } from '../../shared/src/utils/ssoConfig.mjs';
+import { getNoteImageEndpoint } from './noteImages.mjs';
 // NoteNow API utility
 
-const SSO_BASE = getSsoApiBase(import.meta.env);
+const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 const GUEST_TOKEN_KEY = 'notenow_guest_token';
+const ssoCodeExchange = createSsoCodeExchangeCoordinator();
+let ssoAuthGeneration = 0;
 
 // Safe localStorage wrapper (protect against Safari private browsing & cross-site restrictions)
 export const safeStorage = {
@@ -19,25 +22,14 @@ export const safeStorage = {
 };
 
 /**
- * Extracts and stores sso_token from URL query string if just redirected from SSO.
- * Automatically cleans the address bar without page reload.
+ * Extracts an OAuth code from the callback URL and cleans the address bar.
  */
-export function extractSsoTokenFromUrl() {
+export function extractSsoCodeFromUrl() {
   if (typeof window === 'undefined') return null;
   try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('sso_token');
-    if (tokenFromUrl) {
-      safeStorage.setItem('sso_token', tokenFromUrl);
-      safeStorage.removeItem('sso_logged_out');
-      urlParams.delete('sso_token');
-      const newSearch = urlParams.toString();
-      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
-      window.history.replaceState({}, document.title, newUrl);
-      return tokenFromUrl;
-    }
+    return takeSsoCodeFromUrl();
   } catch {}
-  return safeStorage.getItem('sso_token');
+  return null;
 }
 
 export function getOrCreateGuestToken() {
@@ -211,6 +203,27 @@ export const notesApi = {
       }
       throw new Error('Không tìm thấy ghi chú');
     }
+  },
+
+  fetchImage: async ({ noteId, shareToken, image, guestOwned = false }) => {
+    const endpoint = getNoteImageEndpoint({ noteId, shareToken, image });
+    if (!endpoint) throw new Error('Không xác định được ảnh cần tải.');
+
+    const headers = {};
+    if (!shareToken) {
+      const ssoToken = safeStorage.getItem('sso_token');
+      if (guestOwned || !ssoToken) {
+        headers['x-guest-token'] = getOrCreateGuestToken();
+      } else {
+        headers.Authorization = `Bearer ${ssoToken}`;
+      }
+    }
+
+    const response = await fetch(`${SSO_BASE}${endpoint}`, { credentials: 'include', headers });
+    if (!response.ok) {
+      throw new Error(`Không tải được ảnh đính kèm (HTTP ${response.status}).`);
+    }
+    return response.blob();
   },
 
   delete: async (id) => {
@@ -442,11 +455,25 @@ export const notesApi = {
 export const ssoApi = {
   getLoginUrl: (customRedirect) => {
     const returnUrl = customRedirect || (typeof window !== 'undefined' ? window.location.href : 'https://vunph.id.vn/note/');
-    return getSsoLoginUrl(import.meta.env, returnUrl);
+    return getSsoLoginUrl({ VITE_SSO_URL: import.meta.env.VITE_SSO_URL }, returnUrl);
   },
 
   getMe: async () => {
-    extractSsoTokenFromUrl();
+    const generation = ++ssoAuthGeneration;
+    const code = extractSsoCodeFromUrl();
+    const exchangePromise = ssoCodeExchange.getOrStart(SSO_BASE, code);
+    if (exchangePromise) {
+      try {
+        const exchanged = await exchangePromise;
+        if (generation !== ssoAuthGeneration) return null;
+        safeStorage.setItem('sso_token', exchanged.token);
+        safeStorage.removeItem('sso_logged_out');
+        ssoCodeExchange.complete();
+        return exchanged;
+      } finally {
+        ssoCodeExchange.finish(exchangePromise);
+      }
+    }
     const token = safeStorage.getItem('sso_token');
     const loggedOut = safeStorage.getItem('sso_logged_out');
     if (loggedOut && !token) return null;
@@ -455,9 +482,6 @@ export const ssoApi = {
       const data = await fetchSsoSession(SSO_BASE, token);
       if (data?.user) {
         safeStorage.removeItem('sso_logged_out');
-        if (data.token) {
-          safeStorage.setItem('sso_token', data.token);
-        }
         return data;
       } else {
         if (token) {
@@ -475,6 +499,8 @@ export const ssoApi = {
   },
 
   logout: async () => {
+    ++ssoAuthGeneration;
+    ssoCodeExchange.cancel();
     try {
       await apiFetch('/sso/logout', { method: 'POST', body: '{}' });
     } catch {}

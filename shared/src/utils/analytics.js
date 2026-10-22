@@ -4,7 +4,7 @@ import { getSsoApiBase } from './ssoConfig.mjs';
  * Reports lightweight page visit pings to vInfiSSO
  */
 
-const SSO_BASE = getSsoApiBase(import.meta.env);
+const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 export function trackPageVisit(appId) {
   if (typeof window === 'undefined') return;

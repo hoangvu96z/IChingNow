@@ -2,7 +2,7 @@ import { getSsoApiBase, getSsoWebBase } from '../../../shared/src/utils/ssoConfi
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
-const SSO_BASE = getSsoApiBase(import.meta.env);
+const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 const DEFAULT_PLANS = [
   {
@@ -124,7 +124,7 @@ export default function PricingModal({
   // Điều hướng sang trang thanh toán SSO, kèm gói đã chọn và URL quay về app
   const goToPayment = (planName) => {
     const returnUrl = encodeURIComponent(window.location.href);
-    window.location.href = `${getSsoWebBase(import.meta.env)}/ui/payment?plan=${encodeURIComponent(planName)}&redirect=${returnUrl}`;
+    window.location.href = `${getSsoWebBase({ VITE_SSO_URL: import.meta.env.VITE_SSO_URL })}/ui/payment?plan=${encodeURIComponent(planName)}&redirect=${returnUrl}`;
   };
 
   const getFeatures = (p) => {

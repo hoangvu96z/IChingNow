@@ -2,7 +2,7 @@ import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
-const SSO_BASE = getSsoApiBase(import.meta.env);
+const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 const DEFAULT_PLANS = [
   {

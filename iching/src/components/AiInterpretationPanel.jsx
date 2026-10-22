@@ -6,6 +6,8 @@ import { useLanguage } from '../context/LanguageContext.jsx';
 import { usePlan } from '../hooks/usePlan.js';
 import PricingModal from './PricingModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { requestAiChat } from '../../../shared/src/utils/aiProxy.mjs';
+import { readOpenAiChatStream } from '../../../shared/src/utils/openAiSse.mjs';
 
 const PREDEFINED_MODELS = [
   { value: 'combo1', label: 'combo1 (Combo)' },
@@ -235,27 +237,16 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
   const { t, language } = useLanguage();
   const isEn = language === 'en';
-  const [settings, setSettings] = useState({
-    endpoint: import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1',
-    apiKey: import.meta.env.VITE_AI_API_KEY || '',
-    model: import.meta.env.VITE_AI_MODEL || 'combo1',
-  });
+  const [settings, setSettings] = useState({ model: import.meta.env.VITE_AI_MODEL || 'combo1' });
   const [showSettings, setShowSettings] = useState(false);
-  const [formSettings, setFormSettings] = useState({
-    endpoint: '',
-    apiKey: '',
-    model: ''
-  });
-  const [modelType, setModelType] = useState('combo1');
+  const [formSettings, setFormSettings] = useState({ model: '' });
   const [interpretation, setInterpretation] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [retryStatus, setRetryStatus] = useState('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const [modelsList, setModelsList] = useState(PREDEFINED_MODELS);
-  const [loadingModels, setLoadingModels] = useState(false);
-  const [modelsError, setModelsError] = useState('');
+  const modelsList = PREDEFINED_MODELS;
 
   // ─── Follow-up Q&A State ──────────────────────────────────────────────────
   const [followUps, setFollowUps] = useState([]); // [{ question: '', answer: '' }]
@@ -269,8 +260,8 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
   const isCharCountValid = charCount > 0 && charCount <= 2048;
 
   // ─── Quota & Plan ─────────────────────────────────────────────────────────
-  const { isAuthenticated } = useAuth();
-  const { canAsk, remaining, plan, canBonus, expiresAt, daysRemaining, isExpiringSoon, isOverride, consumeQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
+  const { isAuthenticated, login } = useAuth();
+  const { remaining, plan, canBonus, expiresAt, daysRemaining, isExpiringSoon, isOverride, fetchQuota, requestBonus, applyCoupon } = usePlan(isAuthenticated);
   const [showPricing, setShowPricing] = useState(false);
 
   // Timer cho loading state
@@ -300,113 +291,41 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     };
   }, [askingFollowUp]);
 
-  const getResolvedEndpoint = (endpoint) => {
-    if (!endpoint) return '';
-    let callEndpoint = endpoint.replace(/\/$/, '');
-    const isHttp = callEndpoint.startsWith('http://');
-    const isSecureCtx = window.location.protocol === 'https:' ||
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1';
-    if (isHttp && isSecureCtx) {
-      const path = window.location.pathname;
-      let base = '/';
-      if (path.startsWith('/kinhdich')) base = '/kinhdich/';
-      else if (path.startsWith('/tarot')) base = '/tarot/';
-      const suffix = callEndpoint.replace(/^http:\/\/[^/]+/, '');
-      callEndpoint = base + 'api-vps' + suffix;
-    }
-    return callEndpoint;
-  };
-
-  const fetchModels = async (currentSettings) => {
-    if (!currentSettings.endpoint) return;
-    setLoadingModels(true);
-    setModelsError('');
-    try {
-      const resolvedEndpoint = getResolvedEndpoint(currentSettings.endpoint);
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      if (currentSettings.apiKey) {
-        headers['Authorization'] = `Bearer ${currentSettings.apiKey}`;
-      }
-      const response = await fetch(`${resolvedEndpoint}/models`, {
-        method: 'GET',
-        headers
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      if (data && Array.isArray(data.data)) {
-        const fetched = data.data.map(m => {
-          const simpleName = m.id.split('/').pop();
-          const label = m.owned_by === 'combo' ? `${simpleName} (Combo)` : simpleName;
-          return {
-            value: m.id,
-            label: label
-          };
-        });
-        setModelsList(fetched);
-      } else {
-        throw new Error('Định dạng dữ liệu không đúng');
-      }
-    } catch (err) {
-      console.warn('Error fetching models:', err);
-      setModelsError('Không thể lấy danh sách model: ' + err.message);
-    } finally {
-      setLoadingModels(false);
-    }
-  };
-
   // Load settings
   useEffect(() => {
-    const defaultSettings = {
-      endpoint: import.meta.env.VITE_AI_BASE_URL || 'http://43.128.116.69:20128/v1',
-      apiKey: import.meta.env.VITE_AI_API_KEY || '',
-      model: import.meta.env.VITE_AI_MODEL || 'combo1',
-    };
-    let activeSettings = { ...defaultSettings };
+    let activeSettings = { model: import.meta.env.VITE_AI_MODEL || 'combo1' };
     try {
       const saved = localStorage.getItem('iching_ai_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
+        const savedModel = parsed.model;
         activeSettings = {
-          ...activeSettings,
-          endpoint: parsed.endpoint || activeSettings.endpoint,
-          model: parsed.model || activeSettings.model
+          model: PREDEFINED_MODELS.some(({ value }) => value === savedModel)
+            ? savedModel
+            : activeSettings.model,
         };
       }
     } catch (e) {}
     setSettings(activeSettings);
-    fetchModels(activeSettings);
+    try { localStorage.setItem('iching_ai_settings', JSON.stringify(activeSettings)); } catch (e) {}
   }, []);
 
   // Sync settings to form when settings modal opens
   useEffect(() => {
     if (showSettings) {
       setFormSettings(settings);
-      const isPredefined = modelsList.some(m => m.value === settings.model);
-      setModelType(isPredefined ? settings.model : 'custom');
     }
   }, [showSettings, settings, modelsList]);
 
   // Save settings
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    const newSettings = {
-      endpoint: formSettings.endpoint,
-      apiKey: import.meta.env.VITE_AI_API_KEY || '',
-      model: formSettings.model
-    };
+    const newSettings = { model: formSettings.model };
     try {
-      localStorage.setItem('iching_ai_settings', JSON.stringify({
-        endpoint: newSettings.endpoint,
-        model: newSettings.model
-      }));
+      localStorage.setItem('iching_ai_settings', JSON.stringify(newSettings));
     } catch {}
+    setSettings(newSettings);
     setShowSettings(false);
-    fetchModels(newSettings);
   };
 
   // Restore AI conversation khi load từ history
@@ -425,131 +344,48 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       setUserQuestion('');
       setError('');
     }
-  }, [result?.createdAt]);
+  }, [result?.createdAt, result?.aiConversation]);
 
   // ─── HÀM GỌI AI CHỐNG MẤT KẾT NỐI VÀ TỰ ĐỘNG RETRY ───
   const fetchAiWithRetry = async (messages, onStatusUpdate) => {
-    const fallbackModels = Array.from(new Set([
-      settings.model,
-      'combo1',
-      'openrouter/tencent/hy3:free'
-    ])).filter(Boolean);
+    if (onStatusUpdate) onStatusUpdate('');
+    if (!active.current) throw new Error('Reading changed');
+    const controller = new AbortController();
+    requestController.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 65000);
+    try {
+      const response = await requestAiChat({
+        app: 'iching',
+        model: settings.model || 'combo1',
+        messages,
+        stream: true,
+        signal: controller.signal,
+      });
+      const accumulatedText = await readOpenAiChatStream(response);
 
-    const callEndpoint = getResolvedEndpoint(settings.endpoint);
-    const MAX_RETRIES_PER_MODEL = 2; // Thử lại tối đa 2 lần mỗi model
-    let lastError = null;
-
-    for (let modelIdx = 0; modelIdx < fallbackModels.length; modelIdx++) {
-      const currentModel = fallbackModels[modelIdx];
-
-      for (let attempt = 1; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
-        let timeoutId;
-        try {
-          if (!active.current) throw new Error("Reading changed");
-          if (modelIdx > 0 || attempt > 1) {
-            const retryMsg = isEn
-              ? `Reconnecting with ${currentModel} (Attempt ${attempt}/${MAX_RETRIES_PER_MODEL})...`
-              : `Đang kết nối lại với ${currentModel} (Lần ${attempt}/${MAX_RETRIES_PER_MODEL})...`;
-            if (onStatusUpdate) onStatusUpdate(retryMsg);
-            // Delay nhẹ trước khi retry để server/network phục hồi
-            await new Promise(r => setTimeout(r, 1200 * attempt));
-          } else {
-            if (onStatusUpdate) onStatusUpdate('');
-          }
-
-          if (!active.current) throw new Error("Reading changed");
-          const controller = new AbortController();
-          requestController.current = controller;
-          timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
-
-          const response = await fetch(`${callEndpoint}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(settings.apiKey ? { 'Authorization': `Bearer ${settings.apiKey}` } : {})
-            },
-            body: JSON.stringify({
-              model: currentModel,
-              messages,
-              stream: true
-            }),
-            signal: controller.signal
-          });
-
-
-          if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(errText || `HTTP ${response.status}`);
-          }
-
-          // Đọc toàn bộ stream vào bộ đệm, KHÔNG render từng từ dở dang
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder('utf-8');
-          let done = false;
-          let buffer = '';
-          let accumulatedText = '';
-
-          while (!done) {
-            const { value, done: readerDone } = await reader.read();
-            done = readerDone;
-            if (value) {
-              buffer += decoder.decode(value, { stream: true });
-              let boundary = buffer.indexOf('\n');
-              while (boundary !== -1) {
-                const line = buffer.slice(0, boundary).trim();
-                buffer = buffer.slice(boundary + 1);
-                boundary = buffer.indexOf('\n');
-
-                if (line.startsWith('data: ')) {
-                  const jsonStr = line.slice(6).trim();
-                  if (jsonStr === '[DONE]') {
-                    done = true;
-                    break;
-                  }
-                  try {
-                    const parsed = JSON.parse(jsonStr);
-                    const chunkText = parsed.choices?.[0]?.delta?.content || '';
-                    accumulatedText += chunkText;
-                  } catch (e) {}
-                }
-              }
-            }
-          }
-
-          // Kiểm tra tính toàn vẹn: nếu dữ liệu trả về rỗng hoặc quá ngắn do đứt cáp bất ngờ, coi như thất bại để retry
-          const parsedAnswer = parseInterpretationResponse(accumulatedText, evidence?.catalog || []);
-          if (!accumulatedText || accumulatedText.trim().length < 40 ||
-              (!parsedAnswer.sections.length && !parsedAnswer.fallback.trim())) {
-            throw new Error('Dữ liệu trả về bị ngắt quãng hoặc không hoàn chỉnh');
-          }
-
-          // Thành công nhận toàn bộ dữ liệu!
-          return accumulatedText.trim();
-        } catch (err) {
-          if (!active.current) throw err;
-          console.warn(`[AI Request] Model ${currentModel} attempt ${attempt} failed:`, err);
-          lastError = err;
-        } finally {
-          clearTimeout(timeoutId);
-          requestController.current = null;
-        }
+      const parsedAnswer = parseInterpretationResponse(accumulatedText, evidence?.catalog || []);
+      if (!accumulatedText || accumulatedText.trim().length < 40 ||
+          (!parsedAnswer.sections.length && !parsedAnswer.fallback.trim())) {
+        const error = new Error('Dữ liệu trả về bị ngắt quãng hoặc không hoàn chỉnh');
+        error.retryable = false;
+        throw error;
       }
+      await fetchQuota();
+      return accumulatedText.trim();
+    } finally {
+      clearTimeout(timeoutId);
+      requestController.current = null;
     }
-
-    throw lastError || new Error('Không thể kết nối đến server AI sau nhiều lần thử.');
   };
 
   // ─── Luận giải quẻ dịch ───
   const handleInterpret = async () => {
     if (!result || requestLock.current) return;
     requestLock.current = true;
-
-    // Check quota before calling AI
-    const quotaResult = await consumeQuota();
     if (!active.current) { requestLock.current = false; return; }
-    if (!quotaResult.ok) {
+    if (!isAuthenticated) {
       requestLock.current = false;
-      setShowPricing(true);
+      login();
       return;
     }
 
@@ -590,18 +426,24 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
       setInterpretation(fullText);
 
       if (onSaveAiConversation && readingId) {
-        onSaveAiConversation(readingId, {
-          aiConversation: {
-            evidenceVersion: 1,
-            initialInterpretation: fullText,
-            initialTimestamp: new Date().toISOString(),
-            followUps: [],
-          }
-        });
+        try {
+          await onSaveAiConversation(readingId, {
+            aiConversation: {
+              evidenceVersion: 1,
+              initialInterpretation: fullText,
+              initialTimestamp: new Date().toISOString(),
+              followUps: [],
+            }
+          });
+        } catch (saveError) {
+          if (!active.current) return;
+          setError(`${isEn ? 'The interpretation was generated, but could not be saved' : 'Đã tạo lời luận giải nhưng không thể lưu'}: ${saveError.message || (isEn ? 'please try again.' : 'vui lòng thử lại.')}`);
+        }
       }
     } catch (err) {
       if (!active.current) return;
       console.error('AI Error:', err);
+      if (err.code === 'QUOTA_EXCEEDED') setShowPricing(true);
       setError(err.message || (isEn ? 'Error calling AI Server.' : 'Lỗi khi gọi API của server AI. Vui lòng bấm thử lại.'));
     } finally {
       requestLock.current = false;
@@ -618,6 +460,11 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
     const questionToSend = (textOverride || userQuestion).trim();
     if (!questionToSend || questionToSend.length > 2048 || requestLock.current || askingFollowUp || followUps.length >= 5) return;
     requestLock.current = true;
+    if (!isAuthenticated) {
+      requestLock.current = false;
+      login();
+      return;
+    }
 
     setAskingFollowUp(true);
     setFollowUpError('');
@@ -669,19 +516,25 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
 
       // Persist follow-up lên server
       if (onSaveAiConversation && readingId) {
-        onSaveAiConversation(readingId, {
-          aiConversation: {
-            ...(result?.aiConversation || {}),
-            evidenceVersion: 1,
-            initialInterpretation: interpretation,
-            initialTimestamp: result?.aiConversation?.initialTimestamp || new Date().toISOString(),
-            followUps: updatedFollowUps,
-          }
-        });
+        try {
+          await onSaveAiConversation(readingId, {
+            aiConversation: {
+              ...(result?.aiConversation || {}),
+              evidenceVersion: 1,
+              initialInterpretation: interpretation,
+              initialTimestamp: result?.aiConversation?.initialTimestamp || new Date().toISOString(),
+              followUps: updatedFollowUps,
+            }
+          });
+        } catch (saveError) {
+          if (!active.current) return;
+          setFollowUpError(`${isEn ? 'The answer was generated, but could not be saved' : 'Đã tạo câu trả lời nhưng không thể lưu'}: ${saveError.message || (isEn ? 'please try again.' : 'vui lòng thử lại.')}`);
+        }
       }
     } catch (err) {
       if (!active.current) return;
       console.error(err);
+      if (err.code === 'QUOTA_EXCEEDED') setShowPricing(true);
       setFollowUpError(err.message || (isEn ? 'Error connecting to AI. Please try again.' : 'Lỗi khi kết nối AI để trả lời câu hỏi. Vui lòng bấm gửi lại.'));
     } finally {
       requestLock.current = false;
@@ -789,56 +642,20 @@ export default function AiInterpretationPanel({ result, mode, plainTextResult, r
           <h4 style={{ margin: '0 0 4px', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-ink)' }}>{t('ai.settings_header', 'Cấu hình Server AI (9Router)')}</h4>
           
           <div>
-            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>API Endpoint *</label>
-            <input
-              type="text"
-              className="form-input"
-              style={{ padding: '6px 10px', fontSize: '0.8125rem' }}
-              value={formSettings.endpoint}
-              onChange={e => setFormSettings({ ...formSettings, endpoint: e.target.value })}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>
               <span>Chọn Model *</span>
-              {loadingModels && <span style={{ fontSize: '0.6875rem', color: 'var(--color-ink-muted)' }}>⏳ Đang tải...</span>}
-              {modelsError && <span style={{ fontSize: '0.6875rem', color: 'var(--color-vermillion)' }} title={modelsError}>⚠️ Lỗi tải model</span>}
             </label>
             <select
               className="form-input"
               style={{ padding: '6px 10px', fontSize: '0.8125rem', height: 34, background: '#fff', border: '1px solid var(--color-ink-muted)' }}
-              value={modelType}
-              onChange={e => {
-                const val = e.target.value;
-                setModelType(val);
-                if (val !== 'custom') {
-                  setFormSettings({ ...formSettings, model: val });
-                }
-              }}
+              value={formSettings.model}
+              onChange={e => setFormSettings({ ...formSettings, model: e.target.value })}
             >
               {modelsList.map(m => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
-              <option value="custom">Tùy chỉnh...</option>
             </select>
           </div>
-
-          {modelType === 'custom' && (
-            <div>
-              <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>Nhập Model Name tùy chỉnh *</label>
-              <input
-                type="text"
-                className="form-input"
-                style={{ padding: '6px 10px', fontSize: '0.8125rem' }}
-                value={formSettings.model}
-                onChange={e => setFormSettings({ ...formSettings, model: e.target.value })}
-                placeholder="Nhập tên model (ví dụ: combo1)"
-                required
-              />
-            </div>
-          )}
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
             <button type="button" className="btn-ghost" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => setShowSettings(false)}>

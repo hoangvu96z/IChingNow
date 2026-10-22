@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { castOneLine, coinsToLine, COIN_LABELS, LINE_TYPE_LABELS } from '../logic/castLines.js';
+import { createLineCommitGate } from '../logic/lineCommitGate.js';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import AncientCoin3D from './AncientCoin3D.jsx';
 import MindfulnessModal from './MindfulnessModal.jsx';
@@ -19,6 +20,9 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
   const isDone      = completedLines.length === 6;
 
   const [isTossing, setIsTossing]       = useState(false);
+  const [isLinePending, setIsLinePending] = useState(false);
+  const [lineCommitGate] = useState(() => createLineCommitGate());
+  const completedLineCountRef = useRef(completedLines.length);
   const [currentCoins, setCurrentCoins] = useState(['ngua', 'ngua', 'ngua']);
   const [manualCoins, setManualCoins]   = useState(['ngua', 'sap', 'ngua']);
   const [manualMode, setManualMode]     = useState(false);
@@ -36,6 +40,28 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
     }
   });
 
+  useEffect(() => () => lineCommitGate.cancel(), [lineCommitGate]);
+
+  useEffect(() => {
+    if (completedLines.length < completedLineCountRef.current && lineCommitGate.isPending()) {
+      lineCommitGate.cancel();
+      setIsLinePending(false);
+      setIsTossing(false);
+      setLastLine(null);
+    }
+    completedLineCountRef.current = completedLines.length;
+  }, [completedLines.length, lineCommitGate]);
+
+  function handleReset() {
+    lineCommitGate.cancel();
+    setIsLinePending(false);
+    setIsTossing(false);
+    setLastLine(null);
+    setShowMindfulnessModal(false);
+    setManualMode(false);
+    onReset();
+  }
+
   function handleToggleSound() {
     const next = soundEngine.toggleSound();
     setSoundOn(next);
@@ -50,7 +76,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
   }
 
   function handleInitiateToss() {
-    if (isTossing || isDone || disabled) return;
+    if (isTossing || lineCommitGate.isPending() || isDone || disabled) return;
 
     // Only prompt mindfulness on the very first line (Hào 1)
     let isMindful = mindfulnessOn;
@@ -72,7 +98,10 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
   }
 
   async function executeToss() {
-    if (isTossing || isDone || disabled) return;
+    if (isTossing || lineCommitGate.isPending() || isDone || disabled) return;
+    const commitToken = lineCommitGate.begin();
+    if (commitToken === null) return;
+    setIsLinePending(true);
     setIsTossing(true);
     setLastLine(null);
 
@@ -84,6 +113,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
 
     // Chờ xu bay trong không gian 3D
     await new Promise(r => setTimeout(r, 680));
+    if (!lineCommitGate.isCurrent(commitToken)) return;
 
     // 3. Xu rơi chạm đĩa -> phát tiếng kim loại leng keng & đổi mặt
     setCurrentCoins(line.coins);
@@ -94,11 +124,12 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
     // Nếu là hào thứ 6 (hào cuối cùng) -> phát chuông khánh ngân vang
     if (currentStep === 5) {
       setTimeout(() => {
-        soundEngine.playHexagramComplete();
+        if (lineCommitGate.isCurrent(commitToken)) soundEngine.playHexagramComplete();
       }, 500);
     }
 
-    setTimeout(() => {
+    lineCommitGate.schedule(commitToken, () => {
+      setIsLinePending(false);
       onLineAdded(line);
       setLastLine(null);
     }, 1100);
@@ -407,7 +438,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={handleInitiateToss}
-                disabled={isTossing}
+                disabled={isTossing || isLinePending}
                 className="btn-primary btn-cta"
                 style={{
                   display: 'flex',
@@ -417,7 +448,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
                   padding: '14px 32px',
                   borderRadius: 12,
                   boxShadow: '0 4px 16px rgba(184,134,11,0.25)',
-                  cursor: isTossing ? 'not-allowed' : 'pointer'
+                  cursor: isTossing || isLinePending ? 'not-allowed' : 'pointer'
                 }}
               >
                 <span style={{ fontSize: '1.2rem' }}>🪙</span>
@@ -430,6 +461,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
               <button
                 className="btn-ghost"
                 onClick={() => setManualMode(true)}
+                disabled={isLinePending}
                 style={{ padding: '12px 18px', fontSize: '0.875rem' }}
               >
                 {t('stepper.manual_btn', '✍ Chọn mặt tay')}
@@ -462,7 +494,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
           <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700, color: 'var(--color-jade)' }}>
             {t('stepper.done', '✅ Đã gieo đủ 6 hào!')}
           </div>
-          <button className="btn-ghost" onClick={onReset} style={{ fontSize: '0.875rem' }}>
+          <button className="btn-ghost" onClick={handleReset} style={{ fontSize: '0.875rem' }}>
             {t('stepper.recast', '🔄 Gieo lại')}
           </button>
         </div>
@@ -471,7 +503,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
       {/* Nút Bắt đầu lại giữa chừng */}
       {!isDone && completedLines.length > 0 && (
         <div style={{ textAlign: 'center' }}>
-          <button className="btn-ghost" onClick={onReset} style={{ fontSize: '0.8125rem' }}>
+          <button className="btn-ghost" onClick={handleReset} style={{ fontSize: '0.8125rem' }}>
             {t('stepper.restart', '↺ Bắt đầu lại')}
           </button>
         </div>

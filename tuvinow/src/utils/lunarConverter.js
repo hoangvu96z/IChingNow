@@ -3,7 +3,7 @@
  * Wrapper around lunar-javascript to convert Solar → Lunar dates
  * and extract Can-Chi information needed by the TuVi engine.
  */
-import { Solar } from 'lunar-javascript';
+import { Lunar, Solar } from 'lunar-javascript';
 
 const THIEN_CAN_VI = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"];
 const DIA_CHI_VI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
@@ -76,10 +76,16 @@ export function solarToLunar(year, month, day) {
  * Validate nếu ngày âm lịch hợp lệ
  */
 export function validateLunarDate(year, month, day) {
-  if (year < 1900 || year > 2100) return false;
-  if (month < 1 || month > 12) return false;
-  if (day < 1 || day > 30) return false;
-  return true;
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) return false;
+  if (!Number.isInteger(month) || month < 1 || month > 12) return false;
+  if (!Number.isInteger(day) || day < 1 || day > 30) return false;
+
+  try {
+    const lunar = Lunar.fromYmd(year, month, day);
+    return lunar.getYear() === year && lunar.getMonth() === month && lunar.getDay() === day;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -106,7 +112,13 @@ export function getMonthsInYear() {
 /**
  * Generate day options
  */
-export function getDaysInMonth(isLunar = false) {
+export function getDaysInMonth(isLunar = false, year, month) {
+  if (isLunar && Number.isInteger(year) && Number.isInteger(month)) {
+    return Array.from({ length: 30 }, (_, i) => i + 1)
+      .filter((day) => validateLunarDate(year, month, day))
+      .map((day) => ({ value: day, label: `${day}` }));
+  }
+
   const maxDay = isLunar ? 30 : 31;
   return Array.from({ length: maxDay }, (_, i) => ({
     value: i + 1,

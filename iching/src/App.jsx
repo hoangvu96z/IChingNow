@@ -241,18 +241,18 @@ function MaiHoaExportCard({ result }) {
  * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
  */
 function ResultSection({ mode, result, maiHoaResult, onChangeMethod, activeReadingId, updateReadingData }) {
-  const { user } = useAuth();
+  const { user, isAuthenticated, login } = useAuth();
   const isMaiHoa = mode.startsWith('mai-hoa');
   const source = isMaiHoa ? maiHoaResult : result;
   const { aiConversation: _conversation, ...identity } = source || {};
   return <EvidenceProvider key={`${user?.id || 'guest'}:${JSON.stringify(identity)}`} result={source}>
     {isMaiHoa
-      ? <MaiHoaResultSection result={maiHoaResult} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />
-      : <CoinCastResultSection result={result} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />}
+      ? <MaiHoaResultSection result={maiHoaResult} isAuthenticated={isAuthenticated} onLogin={login} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />
+      : <CoinCastResultSection result={result} isAuthenticated={isAuthenticated} onLogin={login} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />}
   </EvidenceProvider>;
 }
 
-function CoinCastResultSection({ result, onChangeMethod, activeReadingId, updateReadingData }) {
+function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMethod, activeReadingId, updateReadingData }) {
   const { t, language } = useLanguage();
   const [showCombinedModal, setShowCombinedModal] = useState(false);
   if (!result) return null;
@@ -317,6 +317,8 @@ function CoinCastResultSection({ result, onChangeMethod, activeReadingId, update
         initialHexResult={result}
         sourceApp="iching"
         language={language}
+        isAuthenticated={isAuthenticated}
+        onLogin={onLogin}
       />
 
       {/* Combined Tabbed Section: Bảng Lục Hào & Luận Giải Cơ Bản (2 Tabs, Default: Bảng Lục Hào) */}
@@ -377,7 +379,7 @@ function CoinCastResultSection({ result, onChangeMethod, activeReadingId, update
   );
 }
 
-function MaiHoaResultSection({ result, onChangeMethod, activeReadingId, updateReadingData }) {
+function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod, activeReadingId, updateReadingData }) {
   const { t, language } = useLanguage();
   const [showCombinedModal, setShowCombinedModal] = useState(false);
   if (!result) return null;
@@ -451,6 +453,8 @@ function MaiHoaResultSection({ result, onChangeMethod, activeReadingId, updateRe
         initialHexResult={result}
         sourceApp="iching"
         language={language}
+        isAuthenticated={isAuthenticated}
+        onLogin={onLogin}
       />
 
       {/* Câu hỏi + thời gian */}
@@ -538,6 +542,7 @@ export default function App() {
   const [maiHoaResult,     setMaiHoaResult]     = useState(null);
   const [hasPickedMethod,  setHasPickedMethod]  = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [readingSaveError, setReadingSaveError] = useState('');
 
   const handleStartDailyCast = useCallback((dailyQuestion) => {
     setFormData(prev => ({
@@ -583,6 +588,7 @@ export default function App() {
   // Tự động lưu Lục Hào vào lịch sử (Chỉ khi quẻ mới được lập, chưa có activeReadingId)
   useEffect(() => {
     if (result && !activeReadingId) {
+      setReadingSaveError('');
       saveReading(result, 'luc-hao').then((saved) => {
         if (saved?.id) {
           setActiveReadingId(saved.id);
@@ -590,13 +596,14 @@ export default function App() {
           url.searchParams.set('id', saved.id);
           window.history.pushState({ id: saved.id }, '', url.toString());
         }
-      }).catch(() => {});
+      }).catch((err) => setReadingSaveError(err.message || 'Không thể lưu bản ghi.'));
     }
   }, [result, activeReadingId, saveReading]);
 
   // Tự động lưu Mai Hoa vào lịch sử (Chỉ khi quẻ mới được lập, chưa có activeReadingId)
   useEffect(() => {
     if (maiHoaResult && !activeReadingId) {
+      setReadingSaveError('');
       saveReading(maiHoaResult, 'mai-hoa').then((saved) => {
         if (saved?.id) {
           setActiveReadingId(saved.id);
@@ -604,12 +611,17 @@ export default function App() {
           url.searchParams.set('id', saved.id);
           window.history.pushState({ id: saved.id }, '', url.toString());
         }
-      }).catch(() => {});
+      }).catch((err) => setReadingSaveError(err.message || 'Không thể lưu bản ghi.'));
     }
   }, [maiHoaResult, activeReadingId, saveReading]);
 
   const handleSelectHistoryItem = useCallback((item) => {
     if (!item) return;
+    if (item._decryptionError) {
+      setReadingSaveError('Không thể giải mã dữ liệu lịch sử cũ với tài khoản hiện tại. Bản ghi được giữ nguyên và không thể mở để ghi đè.');
+      return;
+    }
+    setReadingSaveError('');
 
     if (item.type === 'luc-hao') {
       setResult(item.data);
@@ -801,6 +813,12 @@ export default function App() {
       {/* ===== MAIN LAYOUT ===== */}
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+          {readingSaveError && (
+            <div role="alert" style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(192,57,43,0.35)', background: 'rgba(192,57,43,0.08)', color: 'var(--color-vermillion)' }}>
+              {readingSaveError}
+            </div>
+          )}
           
           {/* ── Thanh công cụ gọn: Streak · Game · Kiến thức · Gieo nhanh ── */}
           <div style={{

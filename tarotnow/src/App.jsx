@@ -4,10 +4,12 @@ import { useReadingsApi } from './hooks/useReadingsApi.js';
 import {
   drawTarotCards,
   SPREADS,
+  DEFAULT_SPREAD_ID,
   CONTEXTS,
   getCardMeaning,
   analyzeSpreadPatterns,
-  composeSpreadSummary
+  composeSpreadSummary,
+  normalizeSpreadId
 } from './utils/tarotLogic';
 import Card3D from './components/Card3D';
 import DeckPile from './components/DeckPile';
@@ -50,7 +52,7 @@ export default function App() {
   const [drawnCards, setDrawnCards] = useState([]);
   const [currentDrawnQuestion, setCurrentDrawnQuestion] = useState('');
   const [isShuffling, setIsShuffling] = useState(false);
-  const [activeSpread, setActiveSpread] = useState('past-present-future');
+  const [activeSpread, setActiveSpread] = useState(DEFAULT_SPREAD_ID);
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedModalCard, setSelectedModalCard] = useState(null);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
@@ -74,12 +76,17 @@ export default function App() {
 
   const handleSelectHistoryItem = useCallback((item) => {
     if (!item) return;
+    if (item._decryptionError) {
+      setValidationError('Không thể giải mã dữ liệu trải bài cũ với tài khoản hiện tại. Bản ghi được giữ nguyên và không thể mở để ghi đè.');
+      return;
+    }
+    setValidationError('');
 
     const restoredQuestion = item.question || item.data?.question || '';
     setQuestion(restoredQuestion);
     setCurrentDrawnQuestion(restoredQuestion);
 
-    const restoredSpread = item.spread || item.data?.activeSpread || item.spreadId || '1-card';
+    const restoredSpread = normalizeSpreadId(item.spread || item.data?.activeSpread || item.spreadId || '1-card');
     setActiveSpread(restoredSpread);
 
     let cardsList = [];
@@ -287,7 +294,7 @@ export default function App() {
           spreadId: activeSpread,
           spread: activeSpread,
           spreadName,
-          title: `${spreadName}${question ? ' - ' + question : ''}`,
+          title: spreadName,
           cards: results.map(c => ({
             id: c.id,
             name: c.name,
@@ -301,7 +308,7 @@ export default function App() {
             url.searchParams.set('id', saved.id);
             window.history.pushState({ id: saved.id }, '', url.toString());
           }
-        }).catch(() => {});
+        }).catch((err) => setValidationError(err.message || 'Không thể lưu trải bài.'));
       }, 500);
 
     } catch (err) {
@@ -332,7 +339,7 @@ export default function App() {
     setDrawnCards([]);
     setCurrentDrawnQuestion('');
     setValidationError('');
-    setActiveSpread('past-present-future');
+    setActiveSpread(DEFAULT_SPREAD_ID);
     setDrawCount(3);
     setWeights({
       major: 20,
@@ -512,7 +519,7 @@ ${summaryObj.advice}
               onSaveReading={(item) => {
                 saveReading(item).then(saved => {
                   if (saved?.id) setActiveReadingId(saved.id);
-                }).catch(() => {});
+                }).catch((err) => setValidationError(err.message || 'Không thể lưu trải bài.'));
               }}
             />
           )}

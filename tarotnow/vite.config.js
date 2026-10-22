@@ -26,11 +26,6 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       ...createSsoProxy(loadEnv(mode, import.meta.dirname, 'VITE_')),
-      '/tarot/api-vps': {
-        target: 'http://43.128.116.69',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/tarot\/api-vps/, '')
-      },
       // SSO: VITE_SSO_URL=https://sso.vunph.click (see .env)
     }
   }

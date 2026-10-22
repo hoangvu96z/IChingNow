@@ -2651,3 +2651,79 @@ input:checked + .toggle-slider:before {
   scrollbar-width: thin;
   scrollbar-color: rgba(229,193,88,0.2) transparent;
 }
+
+.tarot-markdown {
+  color: #dfdbf0;
+  line-height: 1.65;
+}
+
+.tarot-markdown > :first-child {
+  margin-top: 0;
+}
+
+.tarot-markdown h1,
+.tarot-markdown h2,
+.tarot-markdown h3,
+.tarot-markdown h4,
+.tarot-markdown h5,
+.tarot-markdown h6 {
+  color: #e5c158;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.tarot-markdown h1 {
+  margin: 24px 0 12px;
+  font-size: 1.4rem;
+}
+
+.tarot-markdown h2 {
+  margin: 20px 0 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(229, 193, 88, 0.2);
+  font-size: 1.25rem;
+}
+
+.tarot-markdown h3,
+.tarot-markdown h4,
+.tarot-markdown h5,
+.tarot-markdown h6 {
+  margin: 16px 0 8px;
+  font-size: 1.05rem;
+}
+
+.tarot-markdown p {
+  margin: 8px 0;
+}
+
+.tarot-markdown ul,
+.tarot-markdown ol {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.tarot-markdown li {
+  margin-bottom: 6px;
+}
+
+.tarot-markdown ul li {
+  list-style-type: square;
+}
+
+.tarot-markdown strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.tarot-markdown a {
+  color: #e5c158;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.tarot-markdown--compact {
+  color: #dfdbf0;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}

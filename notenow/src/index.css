@@ -564,6 +564,37 @@ body {
   background: var(--bg-elevated);
 }
 
+.nn-card-img-unavailable {
+  width: 100%;
+  aspect-ratio: 16/9;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  font-size: 0.75rem;
+}
+
+.nn-note-inline-image-status {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  font-size: 0.8rem;
+}
+
+.nn-inline-image-placeholder {
+  display: inline-block;
+  margin: 0 3px;
+  padding: 2px 7px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  font-size: 0.75rem;
+  vertical-align: middle;
+}
+
 .nn-card-images.single .nn-card-img {
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   aspect-ratio: 3/2;
@@ -772,6 +803,11 @@ body {
   animation: imgZoomIn 220ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   cursor: default;
   user-select: none;
+}
+
+.nn-img-viewer-unavailable {
+  color: #fff;
+  font-size: 0.95rem;
 }
 
 @keyframes imgZoomIn {
@@ -1183,6 +1219,28 @@ body {
   display: block;
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
+}
+
+.nn-editor-img-unavailable {
+  width: 150px;
+  height: 95px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.nn-editor-inline-images {
+  padding: 0 20px 12px;
+}
+
+.nn-editor-inline-images > p {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .nn-editor-img-remove {

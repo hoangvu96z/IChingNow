@@ -1,7 +1,7 @@
 import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 // In development, use relative paths (Vite proxy → sso.vunph.click) to avoid CORS issues.
 // In production, VITE_SSO_URL should be set to the full SSO server URL.
-const BASE = getSsoApiBase(import.meta.env);
+const BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 export async function ssoRequest(path, { method = 'GET', body, signal } = {}) {
   const token = localStorage.getItem('sso_token');

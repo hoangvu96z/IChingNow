@@ -108,7 +108,7 @@ export default function AppFooter({
             return (
               <a
                 key={app.id}
-                href={getAppLink(app.url, import.meta.env, typeof window !== 'undefined' ? window.location : null)}
+                href={getAppLink(app.url, { DEV: import.meta.env.DEV }, typeof window !== 'undefined' ? window.location : null)}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -192,7 +192,7 @@ export default function AppFooter({
             </span>
           ) : (
             <a
-              href={getAppLink('/talk/', import.meta.env, typeof window !== 'undefined' ? window.location : null)}
+              href={getAppLink('/talk/', { DEV: import.meta.env.DEV }, typeof window !== 'undefined' ? window.location : null)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

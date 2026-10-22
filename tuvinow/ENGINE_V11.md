@@ -1,6 +1,6 @@
 # An lá số v11
 
-Nguồn: `tu-vi-an-so-v11.js` do người dùng cung cấp. Bản nguyên văn nằm tại `test/fixtures/tuvi-v11-user.cjs`; core ESM `src/utils/tuViEngineV11.js` chỉ đổi phần export. Adapter ghi `engineVersion: user-v11`.
+Nguồn: `tu-vi-an-so-v11.js` do người dùng cung cấp. Bản nguyên văn nằm tại `test/fixtures/tuvi-v11-user.cjs`; core ESM dùng chung nằm tại `../shared/src/utils/tuViEngineV11.js` và chỉ đổi phần export. Adapter tại `src/utils/tuViEngine.js` ghi `engineVersion: user-v11`.
 
 ## Thay đổi từ v8
 

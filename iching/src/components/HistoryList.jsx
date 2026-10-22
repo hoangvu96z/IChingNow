@@ -268,6 +268,12 @@ export default function HistoryList({
                   {formatHistoryTitle(item)}
                 </div>
 
+                {item._decryptionError && (
+                  <div role="status" style={{ fontSize: '0.72rem', color: 'var(--color-vermillion)', fontWeight: 600 }}>
+                    ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
+                  </div>
+                )}
+
                 {/* Truncated question */}
                 {item.question && (
                   <div

@@ -9,15 +9,14 @@ import { useLanguage } from '../context/LanguageContext.jsx';
  *   index    – currently displayed index
  *   onClose  – callback to close viewer
  *   onChange – callback(newIndex) to navigate
- *   ssoBase  – base URL for relative image URLs
+ *   imageSources – sources already loaded through the note's authorized image route
+ *   imagesLoading – whether those sources are still loading
  */
-export default function ImageViewer({ images, index, onClose, onChange, ssoBase = '' }) {
+export default function ImageViewer({ images, imageSources = [], imagesLoading = false, index, onClose, onChange }) {
   const { t } = useLanguage();
   const total = images.length;
   const img = images[index];
-  const src = img?.url
-    ? (img.url.startsWith('data:') || img.url.startsWith('http') ? img.url : `${ssoBase}${img.url}`)
-    : '';
+  const src = imageSources[index] || '';
 
   const goPrev = useCallback(() => onChange((index - 1 + total) % total), [index, total, onChange]);
   const goNext = useCallback(() => onChange((index + 1) % total), [index, total, onChange]);
@@ -74,13 +73,19 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
       )}
 
       {/* Image */}
-      <img
-        className="nn-img-viewer-img"
-        src={src}
-        alt={`Ảnh ${index + 1}`}
-        onClick={(e) => e.stopPropagation()}
-        draggable={false}
-      />
+      {src ? (
+        <img
+          className="nn-img-viewer-img"
+          src={src}
+          alt={`Ảnh ${index + 1}`}
+          onClick={(e) => e.stopPropagation()}
+          draggable={false}
+        />
+      ) : (
+        <div className="nn-img-viewer-unavailable" role="status">
+          {imagesLoading ? 'Đang tải ảnh…' : 'Không tải được ảnh'}
+        </div>
+      )}
 
       {/* Next arrow */}
       {total > 1 && (
@@ -98,10 +103,8 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
       {/* Thumbnails strip */}
       {total > 1 && (
         <div className="nn-img-viewer-thumbs" onClick={(e) => e.stopPropagation()}>
-          {images.map((thumb, i) => {
-            const thumbSrc = thumb.url.startsWith('data:') || thumb.url.startsWith('http')
-              ? thumb.url
-              : `${ssoBase}${thumb.url}`;
+          {images.map((_thumb, i) => {
+            const thumbSrc = imageSources[i];
             return (
               <button
                 key={i}
@@ -110,7 +113,7 @@ export default function ImageViewer({ images, index, onClose, onChange, ssoBase 
                 type="button"
                 aria-label={`${t('viewer.aria_label', 'Xem ảnh')} ${i + 1}`}
               >
-                <img src={thumbSrc} alt={`Thumbnail ${i + 1}`} />
+                {thumbSrc ? <img src={thumbSrc} alt={`Thumbnail ${i + 1}`} /> : <span aria-hidden="true">…</span>}
               </button>
             );
           })}

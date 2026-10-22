@@ -87,6 +87,7 @@ export default function HistoryManagementModal({
   };
 
   const handleSelectItem = (item) => {
+    if (item?._decryptionError) return;
     if (onSelect) onSelect(item);
     onClose();
   };
@@ -338,7 +339,7 @@ export default function HistoryManagementModal({
 
                   {/* Info Column */}
                   <div
-                    style={{ flex: 1, minWidth: 0, cursor: onSelect ? 'pointer' : 'default' }}
+                    style={{ flex: 1, minWidth: 0, cursor: onSelect && !item._decryptionError ? 'pointer' : 'default' }}
                     onClick={() => handleSelectItem(item)}
                   >
                     <div
@@ -384,6 +385,12 @@ export default function HistoryManagementModal({
                       >
                         "{item.question}"
                       </p>
+                    )}
+
+                    {item._decryptionError && (
+                      <div role="status" style={{ margin: '0 0 6px', color: '#ff8e8e', fontSize: '0.72rem', fontWeight: 600 }}>
+                        ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
+                      </div>
                     )}
 
                     {/* Cards Badges */}
