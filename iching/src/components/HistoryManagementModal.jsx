@@ -118,7 +118,11 @@ export default function HistoryManagementModal({
   };
 
   const handleSelectItem = (item) => {
-    if (item?._decryptionError) return;
+    if (item?._decryptionError) {
+      setActionError('Không thể mở bản ghi này vì dữ liệu mã hóa cũ không giải mã được với tài khoản hiện tại. Bản ghi được giữ nguyên ở chế độ chỉ đọc.');
+      return;
+    }
+    setActionError('');
     onSelect(item);
     onClose();
   };
