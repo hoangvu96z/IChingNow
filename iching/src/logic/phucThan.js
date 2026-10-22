@@ -13,7 +13,7 @@
  * Khi thiếu thần, ta lấy hào đầu tiên (tính từ H1 lên) của Bát Thuần có thần đó.
  */
 
-import { PALACES, NAP_GIAP_CHI, BRANCH_BY_NAME } from '../data/lucYao.js';
+import { PALACES } from '../data/lucYao.js';
 import { getLucThan, LUC_THAN } from './lucThan.js';
 import { computeNapGiap } from './napGiap.js';
 

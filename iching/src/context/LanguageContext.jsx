@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { vi } from '../data/translations/vi.js';
 import { en } from '../data/translations/en.js';
 import { EN_HEXAGRAM_DESCRIPTIONS } from '../data/translations/en_descriptions.js';

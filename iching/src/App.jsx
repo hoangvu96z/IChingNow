@@ -12,7 +12,6 @@ import ResultMetadata from './components/ResultMetadata.jsx';
 import PlainTextExportCard from './components/PlainTextExportCard.jsx';
 import MaiHoaPanel from './components/MaiHoaPanel.jsx';
 import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
-import DescriptionPanel from './components/DescriptionPanel.jsx';
 import HistoryList from './components/HistoryList.jsx';
 import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';

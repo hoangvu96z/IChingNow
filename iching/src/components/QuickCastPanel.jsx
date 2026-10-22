@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { castAllLines, castOneLine, COIN_LABELS, LINE_TYPE_LABELS } from '../logic/castLines.js';
+import { castAllLines, castOneLine, LINE_TYPE_LABELS } from '../logic/castLines.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import AncientCoin3D from './AncientCoin3D.jsx';
 import HexagramDisplay from './HexagramDisplay.jsx';
@@ -27,7 +27,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
     try {
       const saved = localStorage.getItem('iching_mindfulness_enabled');
       return saved === null ? true : saved === 'true';
-    } catch (e) {
+    } catch {
       return true;
     }
   });
@@ -50,7 +50,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
     setMindfulnessOn(next);
     try {
       localStorage.setItem('iching_mindfulness_enabled', String(next));
-    } catch (e) {}
+    } catch {}
   }
 
   // Pre-cast trigger (check if mindfulness is enabled first)
@@ -62,7 +62,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
     try {
       const saved = localStorage.getItem('iching_mindfulness_enabled');
       if (saved !== null) isMindful = saved === 'true';
-    } catch (e) {}
+    } catch {}
 
     if (isMindful) {
       setShowMindfulnessModal(true);

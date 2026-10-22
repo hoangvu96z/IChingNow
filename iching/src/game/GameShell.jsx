@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useStreak } from '@shared/utils/useStreak.js';
 import {
   MODES, buildSession, dailySession, buildShareText,

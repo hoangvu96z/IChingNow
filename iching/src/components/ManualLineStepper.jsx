@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { castOneLine, coinsToLine, COIN_LABELS, LINE_TYPE_LABELS } from '../logic/castLines.js';
+import { castOneLine, coinsToLine, LINE_TYPE_LABELS } from '../logic/castLines.js';
 import { createLineCommitGate } from '../logic/lineCommitGate.js';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import AncientCoin3D from './AncientCoin3D.jsx';
@@ -35,7 +35,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
     try {
       const saved = localStorage.getItem('iching_mindfulness_enabled');
       return saved === null ? true : saved === 'true';
-    } catch (e) {
+    } catch {
       return true;
     }
   });
@@ -72,7 +72,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
     setMindfulnessOn(next);
     try {
       localStorage.setItem('iching_mindfulness_enabled', String(next));
-    } catch (e) {}
+    } catch {}
   }
 
   function handleInitiateToss() {
@@ -83,7 +83,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
     try {
       const saved = localStorage.getItem('iching_mindfulness_enabled');
       if (saved !== null) isMindful = saved === 'true';
-    } catch (e) {}
+    } catch {}
 
     if (isMindful && currentStep === 0) {
       setShowMindfulnessModal(true);

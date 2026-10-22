@@ -13,7 +13,7 @@ class SoundEngine {
       if (saved !== null) {
         this.enabled = saved === 'true';
       }
-    } catch (e) {}
+    } catch {}
   }
 
   initCtx() {
@@ -37,7 +37,7 @@ class SoundEngine {
     this.enabled = !this.enabled;
     try {
       localStorage.setItem('iching_sound_enabled', String(this.enabled));
-    } catch (e) {}
+    } catch {}
     if (this.enabled) {
       this.playCoinClink(1.2, 0.4);
     }
@@ -48,7 +48,7 @@ class SoundEngine {
     this.enabled = Boolean(val);
     try {
       localStorage.setItem('iching_sound_enabled', String(this.enabled));
-    } catch (e) {}
+    } catch {}
   }
 
   /**
