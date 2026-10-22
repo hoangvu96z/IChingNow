@@ -1030,18 +1030,9 @@ export function pickMainTension(cards, metrics, perspective, language = "vi") {
   return renderTensionText(winner.code, perspective, language);
 }
 
-/**
- * Rotating template selector to prevent duplication
- */
-function pickTemplate(bank, usedIndexSet, rng) {
-  const available = bank
-    .map((text, index) => ({ text, index }))
-    .filter(item => !usedIndexSet.has(item.index));
-  const pool = available.length > 0 ? available : bank.map((text, index) => ({ text, index }));
-  const choice = pool[Math.floor(rng() * pool.length)];
-  usedIndexSet.add(choice.index);
-  if (usedIndexSet.size >= bank.length) usedIndexSet.clear();
-  return choice.text;
+/** Choose a template from the reading's seeded random generator. */
+function pickTemplate(bank, rng) {
+  return bank[Math.floor(rng() * bank.length)];
 }
 
 export const INTRO_BANK = {
@@ -1274,13 +1265,26 @@ export const ADVICE_BANK = {
   }
 };
 
-const usedIntroIndices = new Set();
-const usedAdviceIndices = new Set();
+function deriveSummarySeed(drawnCards, spreadPresetId, perspective, language, question) {
+  const seedInput = JSON.stringify({
+    spreadPresetId,
+    perspective,
+    language,
+    question,
+    cards: drawnCards.map(card => [card.id ?? card.name, card.orientation || "upright"])
+  });
+  let hash = 2166136261;
+  for (let index = 0; index < seedInput.length; index += 1) {
+    hash ^= seedInput.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
 
 /**
  * Generate a multi-dimensional, deep reading summary analysis object
  */
-export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "general", language = "vi", question = "", seed = Date.now()) {
+export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "general", language = "vi", question = "", seed) {
   if (!drawnCards || drawnCards.length === 0) return null;
   
   const activePerspective = PERSPECTIVES.some(p => p.key === perspective) ? perspective : "general";
@@ -1289,12 +1293,15 @@ export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "
   const metrics = computePatternMetrics(drawnCards);
   const tension = pickMainTension(drawnCards, metrics, activePerspective, language);
   
-  const rng = createSeededRandom(seed + 2);
+  const summarySeed = Number.isFinite(seed)
+    ? seed
+    : deriveSummarySeed(drawnCards, spreadPresetId, activePerspective, language, question);
+  const rng = createSeededRandom(summarySeed + 2);
   const introBankPerspective = INTRO_BANK[activePerspective] || INTRO_BANK.general;
-  const introText = pickTemplate(introBankPerspective[language] || introBankPerspective.vi, usedIntroIndices, rng);
+  const introText = pickTemplate(introBankPerspective[language] || introBankPerspective.vi, rng);
   
   const adviceBankPerspective = ADVICE_BANK[activePerspective] || ADVICE_BANK.general;
-  const adviceText = pickTemplate(adviceBankPerspective[language] || adviceBankPerspective.vi, usedAdviceIndices, rng);
+  const adviceText = pickTemplate(adviceBankPerspective[language] || adviceBankPerspective.vi, rng);
   
   const interpretedCards = drawnCards.map((card, index) => {
     const isEn = language === 'en';

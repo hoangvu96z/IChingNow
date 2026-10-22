@@ -60,3 +60,16 @@ test('summary positions match the selected five, seven, and ten-card presets', (
   assert.equal(celticCross.positions[3].position, 'Short-term direction ahead');
   assert.equal(celticCross.positions[9].position, 'Outcome if current rhythm is kept');
 });
+
+test('summary templates stay stable for the same reading inputs', () => {
+  const cards = createCards(3);
+  const first = composeSpreadSummary(cards, 'ppf', 'general', 'en', 'same question');
+  const second = composeSpreadSummary(cards, 'ppf', 'general', 'en', 'same question');
+  const explicitlySeededFirst = composeSpreadSummary(cards, 'ppf', 'general', 'en', 'same question', 123);
+  const explicitlySeededSecond = composeSpreadSummary(cards, 'ppf', 'general', 'en', 'same question', 123);
+
+  assert.equal(first.intro, second.intro);
+  assert.equal(first.advice, second.advice);
+  assert.equal(explicitlySeededFirst.intro, explicitlySeededSecond.intro);
+  assert.equal(explicitlySeededFirst.advice, explicitlySeededSecond.advice);
+});
