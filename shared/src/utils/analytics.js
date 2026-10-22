@@ -25,40 +25,23 @@ export function trackPageVisit(appId) {
   const dpr = window.devicePixelRatio || 1;
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
 
-  let userId = undefined;
-  try {
-    const token = localStorage.getItem('sso_token');
-    if (token) {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        const payloadJson = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-        userId = payloadJson.sub || payloadJson.id || payloadJson.userId || undefined;
-      }
-    }
-  } catch {}
-
   const payload = {
     app: appId,
     path: window.location.pathname + (window.location.hash || ''),
     referrer: document.referrer || '',
     screen: screenWidth ? `${screenWidth}x${screenHeight} (DPR ${dpr})` : undefined,
     isMobile,
-    userId,
   };
 
   const url = `${SSO_BASE}/analytics/visit`;
 
   try {
-    if (navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
-    } else {
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => {});
-    }
+    fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {});
   } catch {}
 }

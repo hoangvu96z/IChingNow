@@ -247,7 +247,7 @@ export default function AppFooter({
           opacity: 0.85,
           textAlign: 'center',
         }}>
-          {copyrightText || `© ${year} vunph.id.vn · Made with ❤️ in Việt Nam`}
+          {copyrightText || `© ${year} vunph.click · Made with ❤️ in Việt Nam`}
         </p>
       </div>
     </footer>

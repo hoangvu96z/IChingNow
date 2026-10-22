@@ -21,15 +21,6 @@ const PLAN_APPS = {
   },
 };
 
-function getAuthHeaders() {
-  try {
-    const token = localStorage.getItem('sso_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  } catch {
-    return {};
-  }
-}
-
 export function usePlanForApp(isAuthenticated, app) {
   const appCopy = PLAN_APPS[app];
   if (!appCopy) throw new Error(`Unsupported plan app: ${app}`);
@@ -41,7 +32,7 @@ export function usePlanForApp(isAuthenticated, app) {
     setIsLoadingQuota(true);
     try {
       if (!isAuthenticated) {
-        const configRes = await fetch(`${SSO_BASE}/plans/config`);
+        const configRes = await fetch(`${SSO_BASE}/plans/config`, { credentials: 'include' });
         if (configRes.ok) {
           const configData = await configRes.json();
           const freePlan = configData.plans?.find((plan) => plan.name === 'free');
@@ -73,7 +64,6 @@ export function usePlanForApp(isAuthenticated, app) {
       }
 
       const res = await fetch(`${SSO_BASE}/plans/my-quota?app=${app}`, {
-        headers: getAuthHeaders(),
         credentials: 'include',
       });
       if (res.ok) setQuota(await res.json());
@@ -92,7 +82,7 @@ export function usePlanForApp(isAuthenticated, app) {
     try {
       const res = await fetch(`${SSO_BASE}/plans/consume`, {
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ app }),
       });
@@ -116,7 +106,7 @@ export function usePlanForApp(isAuthenticated, app) {
     try {
       const res = await fetch(`${SSO_BASE}/plans/bonus`, {
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ app }),
       });
@@ -135,7 +125,7 @@ export function usePlanForApp(isAuthenticated, app) {
     try {
       const res = await fetch(`${SSO_BASE}/plans/apply-coupon`, {
         method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ code }),
       });

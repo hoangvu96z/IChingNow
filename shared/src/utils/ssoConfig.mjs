@@ -11,6 +11,11 @@ export function getSsoApiBase(env = {}) {
 
 export function getSsoLoginUrl(env, returnUrl) {
   const target = new URL(returnUrl);
+  // Send legacy frontend visits to the new shared-cookie origin before login.
+  if (['vunph.id.vn', 'www.vunph.id.vn'].includes(target.hostname.toLowerCase())) {
+    target.protocol = 'https:';
+    target.host = 'vunph.click';
+  }
   target.searchParams.delete('sso_token');
   target.searchParams.delete('sso_code');
   return `${getSsoWebBase(env)}/ui/sso?redirect=${encodeURIComponent(target.toString())}`;
@@ -38,7 +43,7 @@ export function takeSsoCodeFromUrl({
   return code || null;
 }
 
-/** Exchange a short-lived OAuth callback code for a normal SSO session token. */
+/** Exchange a short-lived OAuth callback code for an HttpOnly cookie session. */
 export async function exchangeSsoCode(base, code, fetchImpl = fetch) {
   if (!code) throw new Error('Thiếu mã đăng nhập SSO');
   const response = await fetchImpl(`${base}/sso/exchange`, {
@@ -54,7 +59,7 @@ export async function exchangeSsoCode(base, code, fetchImpl = fetch) {
     error.code = data.code;
     throw error;
   }
-  if (data.success !== true || !data.token || !data.user) {
+  if (data.success !== true || !data.user) {
     throw new Error('Máy chủ SSO trả về phiên đăng nhập không hợp lệ');
   }
   return data;
@@ -89,10 +94,9 @@ export function createSsoCodeExchangeCoordinator(exchange = exchangeSsoCode) {
   };
 }
 
-export async function fetchSsoSession(base, token, fetchImpl = fetch) {
+export async function fetchSsoSession(base, fetchImpl = fetch) {
   const response = await fetchImpl(`${base}/sso/me`, {
     credentials: 'include',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!response.ok) {
     const error = new Error(`Không kiểm tra được phiên đăng nhập (${response.status})`);

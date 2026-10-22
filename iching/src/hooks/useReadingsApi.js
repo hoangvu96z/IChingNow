@@ -6,20 +6,6 @@ import { deleteReadingItems } from '../../../shared/src/utils/readingDeletes.mjs
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 const APP = 'iching';
 
-function getToken() {
-  try {
-    return localStorage.getItem('sso_token');
-  } catch {
-    return null;
-  }
-}
-
-function authHeaders() {
-  const token = getToken();
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
-}
-
 /**
  * Hook quản lý lịch sử gieo quẻ. Các bản ghi mới được mã hóa lưu trữ ở phía máy chủ;
  * decryptData chỉ giữ tương thích với các bản ghi enc_v1 cũ.
@@ -78,7 +64,6 @@ export function useReadingsApi(isAuthenticated, userId) {
 
     try {
       const res = await fetch(`${SSO_BASE}/readings?app=${APP}`, {
-        headers: authHeaders(),
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to load readings');
@@ -119,7 +104,7 @@ export function useReadingsApi(isAuthenticated, userId) {
     try {
       const res = await fetch(`${SSO_BASE}/readings`, {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           app: APP,
@@ -155,7 +140,6 @@ export function useReadingsApi(isAuthenticated, userId) {
       isAuthenticated,
       deleteRemote: (remoteId) => fetch(`${SSO_BASE}/readings/${remoteId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
         credentials: 'include',
       }),
     });
@@ -175,7 +159,6 @@ export function useReadingsApi(isAuthenticated, userId) {
       isAuthenticated,
       deleteRemote: (remoteId) => fetch(`${SSO_BASE}/readings/${remoteId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
         credentials: 'include',
       }),
     });
@@ -193,7 +176,6 @@ export function useReadingsApi(isAuthenticated, userId) {
     if (isAuthenticated) {
       const response = await fetch(`${SSO_BASE}/readings/all?app=${APP}`, {
         method: 'DELETE',
-        headers: authHeaders(),
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Không thể xóa lịch sử trên máy chủ. Lịch sử vẫn được giữ lại.');
@@ -213,7 +195,7 @@ export function useReadingsApi(isAuthenticated, userId) {
       }
       const res = await fetch(`${SSO_BASE}/readings/${readingId}`, {
         method: 'PATCH',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ data: dataToPatch }),
       });

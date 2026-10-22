@@ -105,13 +105,15 @@ const safeStorage = {
     try { localStorage.removeItem(key); } catch {}
   }
 };
+// Remove bearer tokens left by older app versions; auth now lives in an HttpOnly cookie.
+safeStorage.removeItem('sso_token');
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   // Track nếu user đã từng đăng nhập thành công (để phân biệt với lần đầu vào app)
-  const hadToken = useRef(!!safeStorage.getItem('sso_token'));
+  const hadSession = useRef(safeStorage.getItem('sso_session_seen') === '1');
 
   const authRequest = useRef(0);
   const codeExchange = useRef(null);
@@ -125,56 +127,59 @@ export function AuthProvider({ children }) {
       const codeFromUrl = takeSsoCodeFromUrl();
       exchangePromise = codeExchange.current.getOrStart(SSO_BASE, codeFromUrl);
       if (exchangePromise) {
-        const exchanged = await exchangePromise;
+        await exchangePromise;
         if (requestId !== authRequest.current) return;
-        safeStorage.setItem('sso_token', exchanged.token);
         // Xóa flag logout vì user đang đăng nhập lại
         safeStorage.removeItem('sso_logged_out');
-        hadToken.current = true;
+        // The exchange sets the cookie; load the authoritative user from /sso/me.
+        const session = await fetchSsoSession(SSO_BASE);
+        if (requestId !== authRequest.current) return;
+        hadSession.current = !!session.user;
+        if (session.user) safeStorage.setItem('sso_session_seen', '1');
         // Ẩn toast nếu đang hiện
         setSessionExpired(false);
-        setUser(exchanged.user);
+        setUser(session.user || null);
         codeExchange.current.complete();
         return;
       }
 
-      if (safeStorage.getItem('sso_logged_out') && !safeStorage.getItem('sso_token')) {
+      if (safeStorage.getItem('sso_logged_out')) {
         setUser(null);
         return;
       }
 
-      // 2. Đọc token từ localStorage
-      const storedToken = safeStorage.getItem('sso_token');
-      const data = await fetchSsoSession(SSO_BASE, storedToken);
+      // 2. Resolve the current user from the HttpOnly cookie session.
+      const data = await fetchSsoSession(SSO_BASE);
       if (requestId !== authRequest.current) return;
 
       if (data.user) {
         // Xóa flag logout khi xác thực thành công
         safeStorage.removeItem('sso_logged_out');
         setUser(data.user);
-        hadToken.current = true;
+        hadSession.current = true;
+        safeStorage.setItem('sso_session_seen', '1');
         setSessionExpired(false);
       } else {
-        // User null → kiểm tra xem trước đó có token không (= token hết hạn)
-        const wasLoggedIn = hadToken.current || !!storedToken;
-        safeStorage.removeItem('sso_token');
+        // A missing cookie session is a normal first visit unless this tab had one.
+        const wasLoggedIn = hadSession.current;
         setUser(null);
 
         if (wasLoggedIn) {
-          // Chỉ hiện toast khi user đã từng đăng nhập → token hết hạn
+          safeStorage.removeItem('sso_session_seen');
+          // Only show expiry feedback after this tab previously had a session.
           setSessionExpired(true);
-          hadToken.current = false;
+          hadSession.current = false;
         }
       }
     } catch (error) {
       if (requestId !== authRequest.current) return;
       // Only an explicit authentication rejection expires the session.
       if (isSessionRejected(error)) {
-        const wasLoggedIn = !!safeStorage.getItem('sso_token') || hadToken.current;
-        safeStorage.removeItem('sso_token');
+        const wasLoggedIn = hadSession.current;
+        safeStorage.removeItem('sso_session_seen');
         setUser(null);
         setSessionExpired(wasLoggedIn);
-        hadToken.current = false;
+        hadSession.current = false;
       }
     } finally {
       if (exchangePromise) codeExchange.current.finish(exchangePromise);
@@ -187,17 +192,17 @@ export function AuthProvider({ children }) {
 
     // Lắng nghe sự thay đổi trạng thái SSO từ các tab khác
     const handleStorage = (e) => {
-      if (e.key === 'vInfiSSO-state') {
+      if (e.key === 'vInfiSSO-state' || e.key === 'sso_logged_out') {
         try {
           const payload = JSON.parse(e.newValue);
           if (payload?.type === 'logout') {
             // Tab khác đã logout → xóa local state, không gọi lại /sso/me
             ++authRequest.current;
             codeExchange.current.cancel();
-            safeStorage.removeItem('sso_token');
             safeStorage.setItem('sso_logged_out', '1');
+            safeStorage.removeItem('sso_session_seen');
             setUser(null);
-            hadToken.current = false;
+            hadSession.current = false;
             return;
           }
         } catch {}
@@ -211,7 +216,6 @@ export function AuthProvider({ children }) {
       if (loggedOut) {
         ++authRequest.current;
         codeExchange.current.cancel();
-        safeStorage.removeItem('sso_token');
         setUser(null);
         return;
       }
@@ -238,25 +242,21 @@ export function AuthProvider({ children }) {
     ++authRequest.current;
     codeExchange.current.cancel();
     try {
-      const storedToken = safeStorage.getItem('sso_token');
-      const headers = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
-
-      // Revoke the presented server-side session and clear this app's local state.
+      // Revoke the cookie session and clear this app's local state.
       await fetch(`${SSO_BASE}/sso/logout`, {
         method: 'POST',
-        headers,
         credentials: 'include',
       });
     } catch (e) {
       console.error('Logout API failed', e);
     } finally {
       // Always clear local state regardless of API result
-      safeStorage.removeItem('sso_token');
       // Đặt flag để ngăn tự đăng nhập lại khi SSO page reload
       safeStorage.setItem('sso_logged_out', '1');
+      safeStorage.removeItem('sso_session_seen');
       safeStorage.setItem('vInfiSSO-state', JSON.stringify({ type: 'logout', t: Date.now() }));
       setUser(null);
-      hadToken.current = false;
+      hadSession.current = false;
       // Không hiện toast khi user chủ động logout
       setSessionExpired(false);
     }

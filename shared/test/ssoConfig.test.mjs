@@ -18,13 +18,15 @@ test('local API uses a proxy while login returns to the original app, query and 
   }
   const codeRedirect = new URL(getSsoLoginUrl(env, 'http://localhost:5173/kinhdich/?invite=abc&sso_code=old#reading'));
   assert.equal(codeRedirect.searchParams.get('redirect'), 'http://localhost:5173/kinhdich/?invite=abc#reading');
+  const legacyRedirect = new URL(getSsoLoginUrl(env, 'https://vunph.id.vn/note/?invite=abc#editor'));
+  assert.equal(legacyRedirect.searchParams.get('redirect'), 'https://vunph.click/note/?invite=abc#editor');
   assert.equal(getSsoApiBase({ DEV: false }), 'https://sso.vunph.click');
   const custom = { DEV: true, VITE_SSO_URL: 'http://localhost:3000/' };
   assert.equal(new URL(getSsoLoginUrl(custom, 'http://localhost:5177/note/')).origin, 'http://localhost:3000');
   for (const options of Object.values(createSsoProxy(custom))) assert.equal(options.target, getSsoWebBase(custom));
 });
 
-test('OAuth callback code is removed from the URL and exchanged without a bearer token', async () => {
+test('OAuth callback code is removed from the URL and exchanged for a cookie session', async () => {
   const historyState = { router: 'state' };
   let replaced;
   const code = takeSsoCodeFromUrl({
@@ -38,20 +40,24 @@ test('OAuth callback code is removed from the URL and exchanged without a bearer
   let request;
   const result = await exchangeSsoCode('https://sso.vunph.click', code, async (url, options) => {
     request = { url, options };
-    return new Response(JSON.stringify({ success: true, token: 'session-token', user: { id: 'u1' } }));
+    return new Response(JSON.stringify({ success: true, user: { id: 'u1' } }));
   });
   assert.equal(request.url, 'https://sso.vunph.click/sso/exchange');
   assert.equal(request.options.method, 'POST');
   assert.equal(request.options.credentials, 'include');
   assert.deepEqual(request.options.headers, { 'Content-Type': 'application/json' });
   assert.deepEqual(JSON.parse(request.options.body), { code: 'one-time' });
-  assert.deepEqual(result, { success: true, token: 'session-token', user: { id: 'u1' } });
+  assert.deepEqual(result, { success: true, user: { id: 'u1' } });
+  await assert.rejects(
+    exchangeSsoCode('https://sso.vunph.click', code, async () => new Response(JSON.stringify({ success: true, token: 'legacy-token' }))),
+    /phiên đăng nhập không hợp lệ/,
+  );
 });
 
 test('concurrent callback refreshes share one exchange and keep its result until committed', async () => {
   let resolveExchange;
   let exchangeCount = 0;
-  const expected = { success: true, token: 'session-token', user: { id: 'u1' } };
+  const expected = { success: true, user: { id: 'u1' } };
   const coordinator = createSsoCodeExchangeCoordinator(() => {
     exchangeCount += 1;
     return new Promise(resolve => { resolveExchange = resolve; });
@@ -75,23 +81,23 @@ test('concurrent callback refreshes share one exchange and keep its result until
   assert.equal(exchangeCount, 1);
 });
 
-test('session verification sends bearer token, separates rejection from outages', async () => {
+test('session verification uses only the HttpOnly cookie and separates rejection from outages', async () => {
   const request = async (url, options) => {
     assert.equal(url, '/sso/me');
-    assert.deepEqual(options.headers, { Authorization: 'Bearer test-token' });
+    assert.equal(options.headers, undefined);
     assert.equal(options.credentials, 'include');
     return new Response(JSON.stringify({ user: { id: 'test-user' } }));
   };
-  assert.deepEqual(await fetchSsoSession('', 'test-token', request), { user: { id: 'test-user' } });
+  assert.deepEqual(await fetchSsoSession('', request), { user: { id: 'test-user' } });
   for (const status of [401, 403, 500, 502, 503]) {
-    await assert.rejects(fetchSsoSession('', null, async () => new Response('', { status })), error => {
+    await assert.rejects(fetchSsoSession('', async () => new Response('', { status })), error => {
       assert.equal(error.status, status);
       assert.equal(isSessionRejected(error), status === 401 || status === 403);
       return true;
     });
   }
   const network = new TypeError('Failed to fetch');
-  await assert.rejects(fetchSsoSession('', 'test-token', async () => { throw network; }), error => {
+  await assert.rejects(fetchSsoSession('', async () => { throw network; }), error => {
     assert.equal(error, network);
     assert.equal(isSessionRejected(error), false);
     return true;

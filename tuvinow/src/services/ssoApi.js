@@ -4,12 +4,11 @@ import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 const BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
 export async function ssoRequest(path, { method = 'GET', body, signal } = {}) {
-  const token = localStorage.getItem('sso_token');
   let response;
   try {
     response = await fetch(`${BASE}${path}`, {
     method, signal, credentials: 'include',
-    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: body ? { 'Content-Type': 'application/json' } : {},
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   } catch (error) {

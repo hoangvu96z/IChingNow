@@ -20,6 +20,8 @@ export const safeStorage = {
     try { localStorage.removeItem(key); } catch {}
   },
 };
+// Remove bearer tokens left by older app versions; auth now lives in an HttpOnly cookie.
+safeStorage.removeItem('sso_token');
 
 /**
  * Extracts an OAuth code from the callback URL and cleans the address bar.
@@ -52,10 +54,6 @@ function getHeaders(extraHeaders = {}) {
     'x-guest-token': guestToken,
     ...extraHeaders,
   };
-  const ssoToken = safeStorage.getItem('sso_token');
-  if (ssoToken) {
-    headers['Authorization'] = `Bearer ${ssoToken}`;
-  }
   return headers;
 }
 
@@ -211,11 +209,8 @@ export const notesApi = {
 
     const headers = {};
     if (!shareToken) {
-      const ssoToken = safeStorage.getItem('sso_token');
-      if (guestOwned || !ssoToken) {
+      if (guestOwned) {
         headers['x-guest-token'] = getOrCreateGuestToken();
-      } else {
-        headers.Authorization = `Bearer ${ssoToken}`;
       }
     }
 
@@ -356,13 +351,9 @@ export const notesApi = {
   uploadImage: async (noteId, file) => {
     try {
       const guestToken = getOrCreateGuestToken();
-      const ssoToken = safeStorage.getItem('sso_token');
       const formData = new FormData();
       formData.append('image', file);
       const headers = { 'x-guest-token': guestToken };
-      if (ssoToken) {
-        headers['Authorization'] = `Bearer ${ssoToken}`;
-      }
       const res = await fetch(`${SSO_BASE}/notes/${noteId}/images`, {
         method: 'POST',
         credentials: 'include',
@@ -406,11 +397,7 @@ export const notesApi = {
       const formData = new FormData();
       formData.append('image', file);
       const guestToken = getOrCreateGuestToken();
-      const ssoToken = safeStorage.getItem('sso_token');
       const headers = { 'x-guest-token': guestToken };
-      if (ssoToken) {
-        headers['Authorization'] = `Bearer ${ssoToken}`;
-      }
       const res = await fetch(`${SSO_BASE}/notes/share/${shareToken}/images`, {
         method: 'POST',
         credentials: 'include',
@@ -454,7 +441,7 @@ export const notesApi = {
 
 export const ssoApi = {
   getLoginUrl: (customRedirect) => {
-    const returnUrl = customRedirect || (typeof window !== 'undefined' ? window.location.href : 'https://vunph.id.vn/note/');
+    const returnUrl = customRedirect || (typeof window !== 'undefined' ? window.location.href : 'https://vunph.click/note/');
     return getSsoLoginUrl({ VITE_SSO_URL: import.meta.env.VITE_SSO_URL }, returnUrl);
   },
 
@@ -464,34 +451,29 @@ export const ssoApi = {
     const exchangePromise = ssoCodeExchange.getOrStart(SSO_BASE, code);
     if (exchangePromise) {
       try {
-        const exchanged = await exchangePromise;
+        await exchangePromise;
         if (generation !== ssoAuthGeneration) return null;
-        safeStorage.setItem('sso_token', exchanged.token);
         safeStorage.removeItem('sso_logged_out');
         ssoCodeExchange.complete();
-        return exchanged;
+        const session = await fetchSsoSession(SSO_BASE);
+        if (generation !== ssoAuthGeneration) return null;
+        return session?.user ? session : null;
       } finally {
         ssoCodeExchange.finish(exchangePromise);
       }
     }
-    const token = safeStorage.getItem('sso_token');
     const loggedOut = safeStorage.getItem('sso_logged_out');
-    if (loggedOut && !token) return null;
+    if (loggedOut) return null;
 
     try {
-      const data = await fetchSsoSession(SSO_BASE, token);
+      const data = await fetchSsoSession(SSO_BASE);
       if (data?.user) {
         safeStorage.removeItem('sso_logged_out');
         return data;
-      } else {
-        if (token) {
-          safeStorage.removeItem('sso_token');
-        }
-        return null;
       }
+      return null;
     } catch (error) {
       if (isSessionRejected(error)) {
-        safeStorage.removeItem('sso_token');
         return null;
       }
       throw error;
@@ -504,7 +486,6 @@ export const ssoApi = {
     try {
       await apiFetch('/sso/logout', { method: 'POST', body: '{}' });
     } catch {}
-    safeStorage.removeItem('sso_token');
     safeStorage.setItem('sso_logged_out', '1');
     safeStorage.setItem('vInfiSSO-state', JSON.stringify({ type: 'logout', t: Date.now() }));
   },

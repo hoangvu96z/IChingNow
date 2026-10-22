@@ -229,7 +229,7 @@ jobs:
           <head>
             <meta charset="utf-8">
             <meta http-equiv="refresh" content="0; url=/talk/">
-            <link rel="canonical" href="https://vunph.id.vn/talk/">
+            <link rel="canonical" href="https://vunph.click/talk/">
             <title>Chuyển hướng đến TalkWithMe...</title>
             <script>window.location.replace('/talk/' + window.location.search + window.location.hash);</script>
           </head>
@@ -304,7 +304,7 @@ jobs:
           <head>
             <meta charset="utf-8">
             <meta http-equiv="refresh" content="0; url=/note/">
-            <link rel="canonical" href="https://vunph.id.vn/note/">
+            <link rel="canonical" href="https://vunph.click/note/">
             <title>Chuyển hướng đến NoteNow...</title>
             <script>window.location.replace('/note/' + window.location.search + window.location.hash);</script>
           </head>

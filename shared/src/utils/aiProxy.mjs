@@ -2,15 +2,6 @@ import { getSsoApiBase } from './ssoConfig.mjs';
 
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
-function getAuthHeaders() {
-  try {
-    const token = localStorage.getItem('sso_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  } catch {
-    return {};
-  }
-}
-
 export class AiProxyError extends Error {
   constructor(message, { status, code, data } = {}) {
     super(message);
@@ -35,7 +26,6 @@ export async function requestAiChat({
     credentials: 'include',
     signal,
     headers: {
-      ...getAuthHeaders(),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -73,7 +63,6 @@ export async function refreshAiQuota(app) {
 
   const response = await fetch(`${SSO_BASE}/plans/my-quota?app=${quotaApp}`, {
     credentials: 'include',
-    headers: getAuthHeaders(),
   });
   if (!response.ok) return null;
   return response.json().catch(() => null);

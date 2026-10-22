@@ -2,6 +2,19 @@
 <html lang="vi" data-theme="light">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        var host = window.location.hostname.toLowerCase();
+        if (host !== 'vunph.id.vn' && host !== 'www.vunph.id.vn') return;
+        try { window.localStorage.removeItem('sso_token'); } catch (_) {}
+        var target = new URL(window.location.href);
+        target.protocol = 'https:';
+        target.host = 'vunph.click';
+        target.searchParams.delete('sso_code');
+        target.searchParams.delete('sso_token');
+        window.location.replace(target.toString());
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/note/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="NoteNow — Ghi chú nhanh, chia sẻ dễ dàng. Hỗ trợ định dạng văn bản, hình ảnh và chia sẻ qua link." />
