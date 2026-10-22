@@ -26,9 +26,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
-import TextStyle from '@tiptap/extension-text-style';
-import UnderlineExt from '@tiptap/extension-underline';
-import Placeholder from '@tiptap/extension-placeholder';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Placeholder } from '@tiptap/extensions';
 import NoteInlineImagePlaceholder from '../extensions/NoteInlineImagePlaceholder.js';
 
 function ToolbarButton({ onClick, title, isActive, children, id }) {
@@ -96,13 +95,14 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
       Highlight,
       TextAlign.configure({ types: ['paragraph'] }),
       TextStyle,
-      UnderlineExt,
       Placeholder.configure({ placeholder: t('editor.content_placeholder', 'Viết ghi chú của bạn ở đây…') }),
       NoteInlineImagePlaceholder,
     ],
     content: editorContent,
     editable: !isReadOnly,
     immediatelyRender: false,
+    // Toolbar state reads editor.isActive() during render; preserve v2 transaction updates in v3.
+    shouldRerenderOnTransaction: true,
     onUpdate: () => {
       setContentRevision((revision) => revision + 1);
       triggerAutoSave();
