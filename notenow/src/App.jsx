@@ -529,7 +529,7 @@ export default function App() {
         tagline={t('footer.tagline', 'NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú')}
         supportLabel={t('footer.support_label', 'Hỗ trợ & Góp ý:')}
         supportBtnText={t('footer.support_btn', 'Liên hệ qua TalkWithMe')}
-        copyrightText={t('footer.copyright', `© ${new Date().getFullYear()} vunph.click · Made with ❤️ in Việt Nam`).replace('{year}', new Date().getFullYear())}
+        copyrightText={t('footer.copyright', `© ${new Date().getFullYear()} vunph.id.vn · Made with ❤️ in Việt Nam`).replace('{year}', new Date().getFullYear())}
       />
     </>
   );

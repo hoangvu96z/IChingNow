@@ -15,7 +15,7 @@ export const en = {
   'footer.tagline': 'NoteNow — Quick notes, easy sharing, rich text support',
   'footer.support_label': 'Support & Feedback:',
   'footer.support_btn': 'Support & Feedback via TalkWithMe',
-  'footer.copyright': '© {year} vunph.click · Made with ❤️ in Vietnam',
+  'footer.copyright': '© {year} vunph.id.vn · Made with ❤️ in Vietnam',
 
   // Board
   'board.create_placeholder': 'Take a note…',

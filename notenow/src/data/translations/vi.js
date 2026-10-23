@@ -15,7 +15,7 @@ export const vi = {
   'footer.tagline': 'NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú',
   'footer.support_label': 'Hỗ trợ & Góp ý:',
   'footer.support_btn': 'Hỗ trợ & Góp ý qua TalkWithMe',
-  'footer.copyright': '© {year} vunph.click · Made with ❤️ in Việt Nam',
+  'footer.copyright': '© {year} vunph.id.vn · Made with ❤️ in Việt Nam',
 
   // Board
   'board.create_placeholder': 'Tạo ghi chú mới…',
