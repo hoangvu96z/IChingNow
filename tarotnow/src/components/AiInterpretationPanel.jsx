@@ -123,9 +123,9 @@ export default function AiInterpretationPanel({
             : activeSettings.model,
         };
       }
-    } catch (e) {}
+    } catch {}
     setSettings(activeSettings);
-    try { localStorage.setItem('tarot_ai_settings', JSON.stringify(activeSettings)); } catch (e) {}
+    try { localStorage.setItem('tarot_ai_settings', JSON.stringify(activeSettings)); } catch {}
   }, []);
 
   // Sync settings to form when settings modal opens

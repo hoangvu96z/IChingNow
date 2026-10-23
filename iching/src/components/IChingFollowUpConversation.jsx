@@ -15,6 +15,8 @@ export default function IChingFollowUpConversation({
   charCount,
   isCharCountValid,
 }) {
+  const uniqueSuggestedQuestions = Array.from(new Set(aiSuggestedQuestions || []));
+
   return (
     <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px dashed rgba(184,134,11,0.25)', display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Interactive Follow-up Q&A Section */}
@@ -110,15 +112,15 @@ export default function IChingFollowUpConversation({
       {followUps.length < 5 ? (
         <form onSubmit={onSendFollowUp} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
           {/* 3 AI Suggested Questions Pill Buttons */}
-          {!askingFollowUp && aiSuggestedQuestions.length > 0 && (
+          {!askingFollowUp && uniqueSuggestedQuestions.length > 0 && (
             <div>
               <div style={{ fontSize: '0.8rem', color: 'var(--color-gold)', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>💡</span> {isEn ? 'AI Suggested follow-up questions (Click to ask AI immediately):' : 'AI gợi ý câu hỏi thêm (Bấm vào để hỏi AI ngay):'}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {aiSuggestedQuestions.map((qText, idx) => (
+                {uniqueSuggestedQuestions.map((qText) => (
                   <button
-                    key={idx}
+                    key={qText}
                     type="button"
                     disabled={askingFollowUp}
                     onClick={() => onSendFollowUp(null, qText)}

@@ -15,6 +15,8 @@ export default function TarotFollowUpSection({
   charCount,
   isCharCountValid,
 }) {
+  const uniqueSuggestedQuestions = Array.from(new Set(aiSuggestedQuestions || []));
+
   return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
             {/* Divider */}
@@ -93,15 +95,15 @@ export default function TarotFollowUpSection({
             {followUps.length < 5 ? (
               <form onSubmit={handleSendFollowUp} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {/* 3 AI Suggested Questions Pill Buttons */}
-                {!askingFollowUp && aiSuggestedQuestions.length > 0 && (
+                {!askingFollowUp && uniqueSuggestedQuestions.length > 0 && (
                   <div>
                     <div style={{ fontSize: '0.78rem', color: '#c4b5fd', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>💡</span> {isEn ? 'AI Suggested Follow-up Questions (Click to ask immediately):' : 'AI gợi ý 3 câu hỏi tiếp theo (Bấm vào để hỏi ngay):'}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {aiSuggestedQuestions.map((qText, idx) => (
+                      {uniqueSuggestedQuestions.map((qText) => (
                         <button
-                          key={idx}
+                          key={qText}
                           type="button"
                           disabled={askingFollowUp}
                           onClick={() => handleSendFollowUp(null, qText)}
