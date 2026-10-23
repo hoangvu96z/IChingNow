@@ -17,6 +17,7 @@ import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
 import IChingShareCard from './components/IChingShareCard.jsx';
 import AppHeader from './components/AppHeader.jsx';
+import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { ichingTheme } from '@shared/themes/iching.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
@@ -568,7 +569,8 @@ export default function App() {
   }, []);
 
   // ─── Auth + Readings API ──────────────────────────────────────────────────
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, login } = useAuth();
+  const [isJournalOpen, setIsJournalOpen] = useState(false);
   const {
     history,
     historyLoaded,
@@ -772,6 +774,7 @@ export default function App() {
         colors={ichingTheme}
         onLogoClick={handleFullReset}
         useAuthHook={useAuth}
+        onOpenJournal={() => setIsJournalOpen(true)}
         logo={
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {[true, false, true].map((yang, i) => (
@@ -1039,6 +1042,16 @@ export default function App() {
         appId="iching"
         colors={ichingTheme}
         tagline={t('footer.text', '易 IChingNow — Công cụ lập quẻ Kinh Dịch · Chỉ lập quẻ, không luận giải')}
+      />
+
+      <SpiritualJournal
+        key={user?.id || 'anonymous'}
+        isOpen={isJournalOpen}
+        onClose={() => setIsJournalOpen(false)}
+        isAuthenticated={isAuthenticated}
+        userId={user?.id}
+        onLogin={login}
+        currentApp="iching"
       />
 
       {/* Responsive grid styles */}

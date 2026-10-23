@@ -1,0 +1,94 @@
+.sj-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 12, 20, 0.76);
+  backdrop-filter: blur(8px);
+}
+
+.sj-dialog {
+  width: min(1120px, 100%);
+  max-height: min(92vh, 920px);
+  overflow: auto;
+  color: var(--text-primary, #f5f5f5);
+  background: var(--bg-card, #151923);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  border-radius: 20px;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+  font-family: inherit;
+}
+
+.sj-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
+.sj-header h2,
+.sj-header p,
+.sj-column h3,
+.sj-report h3 { margin: 0; }
+.sj-header h2 { font-size: 1.45rem; }
+.sj-header p:last-child,.sj-caption { color: var(--text-muted, #aeb6c4); font-size: 0.84rem; }
+.sj-eyebrow { margin: 0 0 6px; color: var(--accent, #d4a017); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.sj-close { border: 0; background: transparent; color: inherit; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+.sj-content { display: grid; grid-template-columns: minmax(280px, 0.8fr) minmax(360px, 1.2fr); gap: 24px; padding: 22px 28px 28px; }
+.sj-column { min-width: 0; }
+.sj-column h3,.sj-report h3 { margin: 0 0 14px; font-size: 1rem; }
+.sj-field { display: grid; gap: 7px; margin: 14px 0; }
+.sj-field > span,.sj-filters label > span { font-size: 0.8rem; font-weight: 700; }
+.sj-field select,.sj-field textarea,.sj-filters input,.sj-filters select,.sj-report-controls input,.sj-report-controls select { box-sizing: border-box; width: 100%; min-height: 40px; padding: 9px 11px; color: inherit; background: rgba(255,255,255,0.05); border: 1px solid var(--border, rgba(255,255,255,0.18)); border-radius: 9px; font: inherit; }
+.sj-field textarea { resize: vertical; line-height: 1.55; }
+.sj-field small { color: var(--text-muted, #aeb6c4); font-size: 0.76rem; }
+.sj-tags { margin: 14px 0; padding: 0; border: 0; }
+.sj-tags legend { margin-bottom: 8px; font-size: 0.8rem; font-weight: 700; }
+.sj-tags > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.sj-tags button,.sj-entry-actions button,.sj-text-button { padding: 6px 10px; color: inherit; background: transparent; border: 1px solid var(--border, rgba(255,255,255,0.16)); border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.77rem; }
+.sj-tags button.is-selected { color: #17130a; background: var(--accent, #e2b544); border-color: var(--accent, #e2b544); font-weight: 700; }
+.sj-actions,.sj-entry-actions,.sj-report-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sj-primary,.sj-secondary { min-height: 38px; padding: 8px 13px; color: inherit; background: transparent; border: 1px solid var(--border, rgba(255,255,255,0.2)); border-radius: 9px; cursor: pointer; font: inherit; font-size: 0.84rem; font-weight: 700; }
+.sj-primary { color: #17130a; background: var(--accent, #e2b544); border-color: var(--accent, #e2b544); }
+.sj-primary:disabled,.sj-secondary:disabled,.sj-text-button:disabled { cursor: not-allowed; opacity: 0.5; }
+.sj-secondary:hover,.sj-text-button:hover,.sj-entry-actions button:hover { border-color: var(--accent, #e2b544); }
+.sj-status { color: #8dd9ab; font-size: 0.82rem; }
+.sj-error { color: #ffaaa5; font-size: 0.84rem; }
+.sj-login-state { padding: 32px 28px; text-align: center; }
+.sj-reading-selected { padding: 10px 12px; color: var(--text-muted, #aeb6c4); background: rgba(255,255,255,0.04); border-radius: 9px; font-size: 0.82rem; }
+.sj-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sj-section-heading h3 { margin-bottom: 10px; }
+.sj-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 8px 0 12px; }
+.sj-filters label { display: grid; gap: 5px; min-width: 0; }
+.sj-filters input,.sj-filters select,.sj-report-controls input,.sj-report-controls select { min-height: 36px; padding: 7px 9px; font-size: 0.8rem; }
+.sj-filters .sj-search { grid-column: 1 / -1; }
+.sj-entry-list { display: grid; gap: 9px; max-height: 370px; overflow: auto; padding-right: 3px; }
+.sj-entry { padding: 12px; background: rgba(255,255,255,0.035); border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 12px; }
+.sj-entry.is-editing { border-color: var(--accent, #e2b544); }
+.sj-entry-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 0.79rem; }
+.sj-entry-meta time,.sj-entry-tags { color: var(--text-muted, #aeb6c4); font-size: 0.75rem; }
+.sj-entry-tags { margin-top: 5px; }
+.sj-entry p { margin: 8px 0 10px; line-height: 1.52; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.87rem; }
+.sj-entry-actions button { padding: 4px 8px; }
+.sj-entry-actions button:last-child { color: #ffaaa5; }
+.sj-empty { padding: 18px; color: var(--text-muted, #aeb6c4); text-align: center; font-size: 0.85rem; }
+.sj-report { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border, rgba(255,255,255,0.12)); }
+.sj-report-controls select { width: auto; }
+.sj-report-controls input { width: 140px; }
+.sj-consent { display: flex; gap: 8px; margin: 12px 0; color: var(--text-muted, #aeb6c4); font-size: 0.78rem; line-height: 1.45; }
+.sj-consent input { flex: 0 0 auto; accent-color: var(--accent, #e2b544); }
+.sj-ai-result { margin-top: 12px; padding: 12px; border-left: 3px solid var(--accent, #e2b544); background: rgba(255,255,255,0.04); border-radius: 7px; }
+.sj-ai-result strong { font-size: 0.82rem; }
+.sj-ai-result p { margin: 8px 0 0; white-space: pre-wrap; line-height: 1.55; font-size: 0.85rem; }
+.sj-content button:focus-visible,.sj-content input:focus-visible,.sj-content select:focus-visible,.sj-content textarea:focus-visible,.sj-close:focus-visible { outline: 2px solid var(--accent, #e2b544); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .sj-backdrop { padding: 8px; align-items: start; }
+  .sj-dialog { max-height: calc(100vh - 16px); border-radius: 15px; }
+  .sj-header { padding: 18px 18px 14px; }
+  .sj-content { grid-template-columns: 1fr; gap: 25px; padding: 18px; }
+  .sj-entry-list { max-height: 300px; }
+}

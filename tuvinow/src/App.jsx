@@ -18,6 +18,7 @@ import { trackPageVisit } from '@shared/utils/analytics.js';
 import ShareCard from './components/ShareCard.jsx';
 import { useStreak } from '@shared/utils/useStreak.js';
 import CombinedReadingModal from '@shared/components/CombinedReading/CombinedReadingModal.jsx';
+import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
 
 // Generate star particles for background
 function StarParticles() {
@@ -116,6 +117,7 @@ export default function App() {
   const [showForm, setShowForm] = useState(true);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCombinedModal, setShowCombinedModal] = useState(false);
+  const [showJournal, setShowJournal] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [retrySave, setRetrySave] = useState(0);
   const chartSaveRef = useRef(null);
@@ -233,6 +235,7 @@ export default function App() {
         colors={tuviTheme}
         onLogoClick={() => { window.location.hash = 'la-so'; handleNewReading(); }}
         useAuthHook={useAuth}
+        onOpenJournal={() => setShowJournal(true)}
         logo={
           <img
             src={`${import.meta.env.BASE_URL}favicon.svg`}
@@ -366,6 +369,16 @@ export default function App() {
         language="vi"
         isAuthenticated={isAuthenticated}
         onLogin={login}
+      />
+
+      <SpiritualJournal
+        key={user?.id || 'anonymous'}
+        isOpen={showJournal}
+        onClose={() => setShowJournal(false)}
+        isAuthenticated={isAuthenticated}
+        userId={user?.id}
+        onLogin={login}
+        currentApp="tuvi"
       />
 
       {/* ===== FOOTER ===== */}

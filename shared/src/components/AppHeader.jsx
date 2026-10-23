@@ -322,6 +322,7 @@ export default function AppHeader({
   onLanguageToggle,
   languageLabel,
   themeToggle,
+  onOpenJournal,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef(null);
@@ -421,6 +422,21 @@ export default function AppHeader({
             {/* Apps dropdown */}
             <AppsDropdown appId={appId} colors={colors} />
 
+            {onOpenJournal && (
+              <button
+                type="button"
+                onClick={onOpenJournal}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  padding: '6px 11px', borderRadius: 8,
+                  color: colors.accent, background: colors.accentSoft,
+                  border: `1px solid ${colors.border}`, cursor: 'pointer',
+                  font: 'inherit', fontSize: '0.8125rem', fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}
+              >📓 Nhật ký</button>
+            )}
+
             {/* Language toggle */}
             {onLanguageToggle && (
               <button
@@ -506,6 +522,19 @@ export default function AppHeader({
 
         {/* Apps list */}
         <MobileAppsList appId={appId} colors={colors} />
+
+        {onOpenJournal && (
+          <button
+            type="button"
+            onClick={() => { setDrawerOpen(false); onOpenJournal(); }}
+            style={{
+              background: colors.accentSoft, border: `1px solid ${colors.border}`,
+              borderRadius: 8, color: colors.accent, padding: '12px 16px',
+              cursor: 'pointer', fontSize: '0.9375rem', fontWeight: 700,
+              textAlign: 'center', fontFamily: 'inherit',
+            }}
+          >📓 Nhật ký chiêm nghiệm</button>
+        )}
 
         {/* Language toggle */}
         {onLanguageToggle && (

@@ -18,6 +18,7 @@ import PromptExporter from './components/PromptExporter';
 import ManualPickMode from './components/ManualPickMode';
 import AiInterpretationPanel from './components/AiInterpretationPanel';
 import AppHeader from './components/AppHeader.jsx';
+import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { tarotTheme } from '@shared/themes/tarot.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
@@ -56,6 +57,7 @@ export default function App() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedModalCard, setSelectedModalCard] = useState(null);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [isJournalOpen, setIsJournalOpen] = useState(false);
 
   // ─── Auth + Readings API ──────────────────────────────────────────────────
   const { isAuthenticated, user, login } = useAuth();
@@ -430,6 +432,7 @@ ${summaryObj.advice}
         colors={tarotTheme}
         onLogoClick={handleResetApp}
         useAuthHook={useAuth}
+        onOpenJournal={() => setIsJournalOpen(true)}
         logo={
           <div style={{
             width: 20,
@@ -968,6 +971,15 @@ ${summaryObj.advice}
         appId="tarot"
         colors={tarotTheme}
         tagline={t('footer.text', 'Tarot & AI Oracle App. Made with ❤️. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.')}
+      />
+      <SpiritualJournal
+        key={user?.id || 'anonymous'}
+        isOpen={isJournalOpen}
+        onClose={() => setIsJournalOpen(false)}
+        isAuthenticated={isAuthenticated}
+        userId={user?.id}
+        onLogin={login}
+        currentApp="tarot"
       />
     </>
   );
