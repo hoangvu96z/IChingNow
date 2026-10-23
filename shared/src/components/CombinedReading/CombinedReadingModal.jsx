@@ -21,9 +21,10 @@ import {
   useCombinedReading,
   summarizeRelevantPalaces,
   normalizeHexResult,
-  GIO_SINH_OPTIONS,
+  resolveEffectiveBirthInfo,
 } from './useCombinedReading.js';
 import { calculateChartFromBirthInfo } from '../../utils/tuViCalculator.js';
+import { resolveAllowedAiModel } from '../../utils/aiProxy.mjs';
 
 // ─── Main Modal ─────────────────────────────────────────────────────────
 export default function CombinedReadingModal({
@@ -47,7 +48,7 @@ export default function CombinedReadingModal({
     }
   }, []);
 
-  const aiModel = import.meta.env.VITE_AI_MODEL || userAiSettings.model || 'combo1';
+  const aiModel = resolveAllowedAiModel(userAiSettings.model);
 
   const {
     topic, setTopic,
@@ -134,59 +135,20 @@ export default function CombinedReadingModal({
   // Tự động an lá số Tử Vi hoàn chỉnh từ thông tin ngày/giờ sinh nếu chưa có lá số sẵn
   const calculatedChart = useMemo(() => {
     if (chartResult) return null;
-    if (!localBirthInfo?.day || !localBirthInfo?.month || !localBirthInfo?.year) return null;
-    return calculateChartFromBirthInfo(localBirthInfo);
-  }, [chartResult, localBirthInfo]);
+    const source = inputData || localBirthInfo;
+    if (!source) return null;
+    return calculateChartFromBirthInfo(source);
+  }, [chartResult, inputData, localBirthInfo]);
 
   const effectiveChart = chartResult || calculatedChart;
 
   const effectiveBirthInfo = useMemo(() => {
-    if (inputData) {
-      const hIdx = inputData.lunarHourIndex !== undefined ? inputData.lunarHourIndex : 6;
-      const hOpt = GIO_SINH_OPTIONS[hIdx] || GIO_SINH_OPTIONS[6];
-      const sDay = inputData.solarInput?.day || inputData.day || '';
-      const sMonth = inputData.solarInput?.month || inputData.month || '';
-      const sYear = inputData.solarInput?.year || inputData.year || '';
-      return {
-        yearCan: inputData.yearCan || '',
-        yearChi: inputData.yearChi || '',
-        canChi: (inputData.yearCan && inputData.yearChi) ? `${inputData.yearCan} ${inputData.yearChi}` : '',
-        menh: chartResult?.banMenhNapAm || chartResult?.nguHanh || '',
-        cuc: chartResult?.cucName || chartResult?.cuc || '',
-        chuMenh: chartResult?.chuMenh || '',
-        chuThan: chartResult?.chuThan || '',
-        menhCung: chartResult?.menhCung || '',
-        thanCung: chartResult?.thanCung || '',
-        name: inputData.name || '',
-        gender: (inputData.gender === 1 || inputData.gender === 'nam') ? 'nam' : 'nu',
-        day: sDay,
-        month: sMonth,
-        year: sYear,
-        hourIndex: hIdx,
-        hourName: hOpt.name,
-        hourLabel: hOpt.label,
-      };
-    }
-    if (localBirthInfo) {
-      const hIdx = (localBirthInfo.hourIndex !== undefined && localBirthInfo.hourIndex !== null)
-        ? Number(localBirthInfo.hourIndex)
-        : 6;
-      const hOpt = GIO_SINH_OPTIONS[hIdx] || GIO_SINH_OPTIONS[6];
-      return {
-        ...localBirthInfo,
-        hourIndex: hIdx,
-        hourName: localBirthInfo.hourName || hOpt.name,
-        hourLabel: localBirthInfo.hourLabel || hOpt.label,
-        canChi: calculatedChart?.canChiNam || localBirthInfo.canChi || '',
-        menh: calculatedChart?.banMenhNapAm || localBirthInfo.menh || '',
-        cuc: calculatedChart?.cucName || localBirthInfo.cuc || '',
-        chuMenh: calculatedChart?.chuMenh || '',
-        chuThan: calculatedChart?.chuThan || '',
-        menhCung: calculatedChart?.menhCung || '',
-        thanCung: calculatedChart?.thanCung || '',
-      };
-    }
-    return null;
+    return resolveEffectiveBirthInfo({
+      inputData,
+      chartResult,
+      localBirthInfo,
+      calculatedChart,
+    });
   }, [inputData, chartResult, localBirthInfo, calculatedChart]);
 
   const handleCastAndAsk = () => {

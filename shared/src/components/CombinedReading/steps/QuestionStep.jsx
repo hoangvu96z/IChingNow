@@ -72,10 +72,12 @@ export default function QuestionStep({
                     </span>
                   )}
                 </div>
-                {effectiveBirthInfo?.day && (
+                {(effectiveBirthInfo?.day || effectiveBirthInfo?.lunarDay) && (
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
                     👤 {effectiveBirthInfo.name && effectiveBirthInfo.name !== 'Người hỏi' ? `${effectiveBirthInfo.name} · ` : ''}
-                    {isVi ? 'Sinh ngày' : 'Born:'} {effectiveBirthInfo.day}/{effectiveBirthInfo.month}/{effectiveBirthInfo.year}
+                    {isVi ? 'Sinh ngày' : 'Born:'} {effectiveBirthInfo.isLunar
+                      ? `${effectiveBirthInfo.lunarDay}/${effectiveBirthInfo.lunarMonth}/${effectiveBirthInfo.lunarYear} (Âm lịch)`
+                      : `${effectiveBirthInfo.day}/${effectiveBirthInfo.month}/${effectiveBirthInfo.year}`}
                     {effectiveBirthInfo.hourLabel ? ` · Giờ ${effectiveBirthInfo.hourLabel}` : (effectiveBirthInfo.hourName ? ` · Giờ ${effectiveBirthInfo.hourName}` : '')} · {effectiveBirthInfo.gender === 'nam' ? '♂ Nam' : '♀ Nữ'}
                   </div>
                 )}

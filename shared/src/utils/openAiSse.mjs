@@ -5,7 +5,7 @@ function getErrorMessage(error) {
 }
 
 /** Read an OpenAI-compatible chat completion stream and reject incomplete/error streams. */
-export async function readOpenAiChatStream(response) {
+export async function readOpenAiChatStream(response, { onText } = {}) {
   if (!response?.body) throw new Error('AI proxy returned an empty stream');
 
   const reader = response.body.getReader();
@@ -38,7 +38,10 @@ export async function readOpenAiChatStream(response) {
       throw new Error('Phản hồi luồng AI không đúng định dạng. Vui lòng thử lại.');
     }
     const content = choices[0]?.delta?.content;
-    if (typeof content === 'string') text += content;
+    if (typeof content === 'string') {
+      text += content;
+      onText?.(text);
+    }
   };
 
   try {

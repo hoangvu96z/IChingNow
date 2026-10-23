@@ -69,7 +69,7 @@ function PersonForm({ label, value, onChange, side }) {
   };
 
   const hasValidDate = value.nam && value.thang && value.ngay;
-  const canChiYear = hasValidDate ? getYearCanChi(value.nam) : '';
+  const canChiYear = hasValidDate ? getYearCanChi(value.nam, value.thang, value.ngay) : '';
   const hourNum = value.gio !== '' ? Number(value.gio) : null;
   const canhGioName = (hourNum !== null && Number.isInteger(hourNum) && hourNum >= 0 && hourNum <= 23)
     ? CANH_GIO[Math.floor((hourNum + 1) / 2) % 12]

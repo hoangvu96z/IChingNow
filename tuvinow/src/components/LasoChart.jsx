@@ -219,7 +219,9 @@ export default function LasoChart({ result, inputData }) {
             <div className="center-info-row">
               <span className="label">Sinh:</span>
               <span className="value">
-                {inputData?.solarInput ? `${inputData.solarInput.day}/${inputData.solarInput.month}/${inputData.solarInput.year}` : ''}
+                {!inputData?.isLunar && inputData?.solarInput
+                  ? `${inputData.solarInput.day}/${inputData.solarInput.month}/${inputData.solarInput.year}`
+                  : (inputData?.isLunar ? '(Nhập âm lịch)' : '')}
               </span>
               <span className="label">|</span>
               <span className="value">{hourLabel}</span>

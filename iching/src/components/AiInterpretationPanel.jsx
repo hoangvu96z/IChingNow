@@ -8,16 +8,16 @@ import { useLanguage } from '../context/useLanguage.js';
 import { usePlan } from '../hooks/usePlan.js';
 import PricingModal from './PricingModal.jsx';
 import { useAuth } from '../context/useAuth.js';
-import { requestAiChat } from '../../../shared/src/utils/aiProxy.mjs';
+import {
+  DEFAULT_AI_MODEL,
+  PREDEFINED_AI_MODELS,
+  loadSanitizedAiSettings,
+  resolveAllowedAiModel,
+  requestAiChat,
+} from '../../../shared/src/utils/aiProxy.mjs';
 import { readOpenAiChatStream } from '../../../shared/src/utils/openAiSse.mjs';
 
-const PREDEFINED_MODELS = [
-  { value: 'combo1', label: 'combo1 (Combo)' },
-  { value: 'openrouter/tencent/hy3:free', label: 'hy3:free' },
-  { value: 'openrouter/openai/gpt-oss-20b:free', label: 'gpt-oss-20b:free' },
-  { value: 'openrouter/poolside/laguna-xs-2.1:free', label: 'laguna-xs-2.1:free' },
-  { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'gemma-4-26b-a4b-it:free' }
-];
+const PREDEFINED_MODELS = PREDEFINED_AI_MODELS;
 
 export default function AiInterpretationPanel({ result, plainTextResult, readingId, onSaveAiConversation }) {
   const evidence = useEvidence();
@@ -31,7 +31,7 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
 
   const { t, language } = useLanguage();
   const isEn = language === 'en';
-  const [settings, setSettings] = useState({ model: import.meta.env.VITE_AI_MODEL || 'combo1' });
+  const [settings, setSettings] = useState({ model: DEFAULT_AI_MODEL });
   const [showSettings, setShowSettings] = useState(false);
   const [formSettings, setFormSettings] = useState({ model: '' });
   const [interpretation, setInterpretation] = useState('');
@@ -87,21 +87,7 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
 
   // Load settings
   useEffect(() => {
-    let activeSettings = { model: import.meta.env.VITE_AI_MODEL || 'combo1' };
-    try {
-      const saved = localStorage.getItem('iching_ai_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const savedModel = parsed.model;
-        activeSettings = {
-          model: PREDEFINED_MODELS.some(({ value }) => value === savedModel)
-            ? savedModel
-            : activeSettings.model,
-        };
-      }
-    } catch {}
-    setSettings(activeSettings);
-    try { localStorage.setItem('iching_ai_settings', JSON.stringify(activeSettings)); } catch {}
+    setSettings(loadSanitizedAiSettings('iching_ai_settings'));
   }, []);
 
   // Sync settings to form when settings modal opens
@@ -114,7 +100,7 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
   // Save settings
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    const newSettings = { model: formSettings.model };
+    const newSettings = { model: resolveAllowedAiModel(formSettings.model) };
     try {
       localStorage.setItem('iching_ai_settings', JSON.stringify(newSettings));
     } catch {}
@@ -150,7 +136,7 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
     try {
       const response = await requestAiChat({
         app: 'iching',
-        model: settings.model || 'combo1',
+        model: resolveAllowedAiModel(settings.model),
         messages,
         stream: true,
         signal: controller.signal,
@@ -164,11 +150,11 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
         error.retryable = false;
         throw error;
       }
-      await fetchQuota();
       return accumulatedText.trim();
     } finally {
       clearTimeout(timeoutId);
       requestController.current = null;
+      if (active.current) await fetchQuota();
     }
   };
 

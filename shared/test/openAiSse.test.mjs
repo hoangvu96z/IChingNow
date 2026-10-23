@@ -22,7 +22,9 @@ test('reads fragmented OpenAI SSE chunks and the final unterminated DONE line', 
     'data: {"choices":[{"delta":{"content":"chào"}}]}\n\ndata: [DONE]',
   ]);
 
-  assert.equal(await readOpenAiChatStream(response), 'Xin chào');
+  const progressive = [];
+  assert.equal(await readOpenAiChatStream(response, { onText: text => progressive.push(text) }), 'Xin chào');
+  assert.deepEqual(progressive, ['Xin ', 'Xin chào']);
 });
 
 test('surfaces an SSE error even after partial assistant text', async () => {

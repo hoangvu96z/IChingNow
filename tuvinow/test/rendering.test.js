@@ -41,5 +41,59 @@ test('answer and actual palace components render evidence and legacy text', asyn
     assert.ok(!html.includes('id="tuvi-palace.99"'));
     assert.ok(render('Luận giải cũ').includes('Luận giải cũ'));
     assert.ok(render('---SUGGESTED_QUESTIONS---\n1. Hỏi tiếp?').includes('AI chưa trả về nội dung luận giải'));
+
+    const { buildBirthInputPayload } = await server.ssrLoadModule('/src/components/BirthInputForm.jsx');
+    const { default: LasoChart } = await server.ssrLoadModule('/src/components/LasoChart.jsx');
+
+    // Solar 2024-02-05 (pre-Tết) => Lunar 2023-12-26 Quý Mão, accepts viewYear=2023
+    const solarPreTet = buildBirthInputPayload({
+      name: 'Nguyễn Quý Mão',
+      day: 5,
+      month: 2,
+      year: 2024,
+      hourIndex: 3,
+      gender: 1,
+      isLunar: false,
+      viewYear: 2023,
+    });
+    assert.equal(solarPreTet.lunarYear, 2023);
+    assert.equal(solarPreTet.lunarMonth, 12);
+    assert.equal(solarPreTet.lunarDay, 26);
+    assert.equal(solarPreTet.yearCanName, 'Quý');
+    assert.equal(solarPreTet.yearChiName, 'Mão');
+    assert.equal(solarPreTet.viewYear, 2023);
+    const solarPreTetChart = anLaSoTuVi(solarPreTet);
+    assert.equal(solarPreTetChart.canChiNam, 'Quý Mão');
+    assert.equal(solarPreTetChart.banMenhNapAm, 'Kim Bạc Kim');
+    assert.equal(solarPreTetChart.tuoiAm, 1);
+
+    // Rejects viewYear before lunarYear (2022 < 2023)
+    assert.throws(() => buildBirthInputPayload({
+      name: 'Nguyễn Quý Mão',
+      day: 5,
+      month: 2,
+      year: 2024,
+      hourIndex: 3,
+      gender: 1,
+      isLunar: false,
+      viewYear: 2022,
+    }), /năm sinh âm lịch/i);
+
+    // Lunar mode does not populate solarInput with lunar numbers or render lunar date as solar
+    const lunarInput = buildBirthInputPayload({
+      name: 'Nguyễn Âm Lịch',
+      day: 26,
+      month: 12,
+      year: 2023,
+      hourIndex: 3,
+      gender: 1,
+      isLunar: true,
+    });
+    assert.equal(lunarInput.solarInput, null);
+    assert.equal(lunarInput.yearCanName, 'Quý');
+    assert.equal(lunarInput.yearChiName, 'Mão');
+    const chartHtml = renderToStaticMarkup(React.createElement(LasoChart, { result: solarPreTetChart, inputData: lunarInput }));
+    assert.ok(chartHtml.includes('(Nhập âm lịch)'));
+    assert.ok(chartHtml.includes('26/12/2023'));
   } finally { await server.close(); }
 });

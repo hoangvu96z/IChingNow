@@ -1,5 +1,70 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { solarToLunar, validateLunarDate, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYearOptions, getViewYearOptions } from '../utils/lunarConverter';
+import { solarToLunar, validateLunarDate, validateSolarDate, getYearCanChi, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYearOptions, getViewYearOptions } from '../utils/lunarConverter';
+
+export function buildBirthInputPayload({
+  name,
+  day,
+  month,
+  year,
+  hourIndex = 0,
+  gender = 1,
+  isLunar = false,
+  viewYear = '',
+}) {
+  const trimmedName = (name || '').trim();
+  if (!trimmedName) {
+    throw new Error('Vui lòng nhập họ tên trước khi lập lá số!');
+  }
+
+  let lunarData;
+  if (isLunar) {
+    if (!validateLunarDate(year, month, day)) {
+      throw new Error('Ngày âm lịch không tồn tại trong tháng đã chọn.');
+    }
+    const yearCanIndex = ((year - 4) % 10 + 10) % 10;
+    const yearChiIndex = ((year - 4) % 12 + 12) % 12;
+    const [yearCanName, yearChiName] = getYearCanChi(year).split(' ');
+    lunarData = {
+      lunarYear: year,
+      lunarMonth: month,
+      lunarDay: day,
+      yearCanIndex,
+      yearChiIndex,
+      yearCanName,
+      yearChiName,
+      isLeap: false,
+      solarDateStr: '(Nhập âm lịch)',
+      lunarDateStr: `${month}/${day}/${year} (Âm lịch)`,
+    };
+  } else {
+    if (!validateSolarDate(year, month, day)) {
+      throw new Error('Ngày dương lịch không tồn tại trong tháng đã chọn.');
+    }
+    lunarData = solarToLunar(year, month, day);
+  }
+
+  const annualYear = viewYear === '' || viewYear === undefined || viewYear === null ? undefined : Number(viewYear);
+  if (annualYear !== undefined && (!Number.isInteger(annualYear) || annualYear < 1900 || annualYear > 2100)) {
+    throw new Error('Năm xem phải là số nguyên từ 1900 đến 2100.');
+  }
+  if (annualYear !== undefined && annualYear < lunarData.lunarYear) {
+    throw new Error(`Năm xem lưu niên (${annualYear}) không thể trước năm sinh âm lịch (${lunarData.lunarYear}).`);
+  }
+
+  return {
+    name: trimmedName,
+    ...lunarData,
+    lunarHourIndex: hourIndex,
+    gender,
+    isLunar,
+    solarInput: isLunar ? null : { day, month, year },
+    ...(annualYear === undefined ? {} : {
+      viewYear: annualYear,
+      viewYearCanIndex: ((annualYear - 4) % 10 + 10) % 10,
+      viewYearChiIndex: ((annualYear - 4) % 12 + 12) % 12,
+    }),
+  };
+}
 
 export default function BirthInputForm({ onSubmit }) {
   const [name, setName] = useState('');
@@ -20,7 +85,8 @@ export default function BirthInputForm({ onSubmit }) {
   const dayOptions = useMemo(() => getDaysInMonth(isLunar, year, month), [isLunar, year, month]);
 
   useEffect(() => {
-    if (!isLunar || validateLunarDate(year, month, day)) return;
+    const isValid = isLunar ? validateLunarDate(year, month, day) : validateSolarDate(year, month, day);
+    if (isValid) return;
     const lastValidDay = dayOptions.at(-1)?.value;
     if (lastValidDay) setDay(lastValidDay);
   }, [day, dayOptions, isLunar, month, year]);
@@ -46,49 +112,17 @@ export default function BirthInputForm({ onSubmit }) {
 
     setFormError('');
     try {
-      let lunarData;
-      if (isLunar) {
-        // User nhập trực tiếp âm lịch
-        if (!validateLunarDate(year, month, day)) {
-          throw new Error('Ngày âm lịch không tồn tại trong tháng đã chọn.');
-        }
-        const yearCanIndex = (year - 4) % 10;
-        const yearChiIndex = (year - 4) % 12;
-        lunarData = {
-          lunarYear: year,
-          lunarMonth: month,
-          lunarDay: day,
-          yearCanIndex: yearCanIndex < 0 ? yearCanIndex + 10 : yearCanIndex,
-          yearChiIndex: yearChiIndex < 0 ? yearChiIndex + 12 : yearChiIndex,
-          isLeap: false,
-          solarDateStr: '(Nhập âm lịch)',
-          lunarDateStr: `${month}/${day}/${year} (Âm lịch)`,
-        };
-      } else {
-        // Convert dương lịch → âm lịch
-        lunarData = solarToLunar(year, month, day);
-      }
-
-      const annualYear = viewYear === '' ? undefined : Number(viewYear);
-      if (annualYear !== undefined && (!Number.isInteger(annualYear) || annualYear < 1900 || annualYear > 2100)) {
-        throw new Error('Năm xem phải là số nguyên từ 1900 đến 2100.');
-      }
-      if (annualYear !== undefined && annualYear < year) {
-        throw new Error(`Năm xem lưu niên (${annualYear}) không thể trước năm sinh (${year}).`);
-      }
-      onSubmit({
+      const payload = buildBirthInputPayload({
         name: trimmedName,
-        ...lunarData,
-        lunarHourIndex: hourIndex,
+        day,
+        month,
+        year,
+        hourIndex,
         gender,
         isLunar,
-        solarInput: { day, month, year },
-        ...(annualYear === undefined ? {} : {
-          viewYear: annualYear,
-          viewYearCanIndex: (annualYear - 4) % 10,
-          viewYearChiIndex: (annualYear - 4) % 12,
-        }),
+        viewYear,
       });
+      onSubmit(payload);
     } catch (error) {
       setFormError(error.message || 'Không thể lập lá số từ thông tin này.');
     }

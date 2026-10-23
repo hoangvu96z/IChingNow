@@ -82,9 +82,11 @@ export default function AiResultStep({
 
               <div style={{ textAlign: 'right', fontSize: '12px', color: '#c4b5fd' }}>
                 <div style={{ fontWeight: 600 }}>{TOPIC_LABELS[topic]?.[isVi ? 'vi' : 'en']}</div>
-                {effectiveBirthInfo?.day && (
+                {(effectiveBirthInfo?.day || effectiveBirthInfo?.lunarDay) && (
                   <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
-                    {effectiveBirthInfo.day}/{effectiveBirthInfo.month}/{effectiveBirthInfo.year}
+                    {effectiveBirthInfo.isLunar
+                      ? `${effectiveBirthInfo.lunarDay}/${effectiveBirthInfo.lunarMonth}/${effectiveBirthInfo.lunarYear} (Âm lịch)`
+                      : `${effectiveBirthInfo.day}/${effectiveBirthInfo.month}/${effectiveBirthInfo.year}`}
                     {effectiveBirthInfo.hourName ? ` · Giờ ${effectiveBirthInfo.hourName}` : ''}
                     {effectiveBirthInfo.canChi ? ` · ${effectiveBirthInfo.canChi}` : ''}
                   </div>

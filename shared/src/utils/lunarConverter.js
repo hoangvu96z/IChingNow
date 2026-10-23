@@ -3,7 +3,7 @@
  * Wrapper around lunar-javascript to convert Solar → Lunar dates
  * and extract Can-Chi information needed by the TuVi engine.
  */
-import { Solar } from 'lunar-javascript';
+import { Lunar, Solar } from 'lunar-javascript';
 
 const THIEN_CAN_VI = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"];
 const DIA_CHI_VI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
@@ -33,7 +33,13 @@ export const GIO_SINH_OPTIONS = [
  */
 export function solarToLunar(year, month, day) {
   try {
-    const solar = Solar.fromYmd(year, month, day);
+    const y = Number(year);
+    const m = Number(month);
+    const d = Number(day);
+    if (!validateSolarDate(y, m, d)) {
+      throw new Error('Ngày dương lịch không hợp lệ.');
+    }
+    const solar = Solar.fromYmd(y, m, d);
     const lunar = solar.getLunar();
 
     const lunarYear = lunar.getYear();
@@ -55,7 +61,7 @@ export function solarToLunar(year, month, day) {
       yearCanName: THIEN_CAN_VI[yearCanIndex],
       yearChiName: DIA_CHI_VI[yearChiIndex],
       lunarDateStr: `${Math.abs(lunarMonth)}/${lunarDay}/${lunarYear} (Âm lịch)`,
-      solarDateStr: `${day}/${month}/${year} (Dương lịch)`,
+      solarDateStr: `${d}/${m}/${y} (Dương lịch)`,
     };
   } catch (err) {
     console.error('Solar to Lunar conversion error:', err);
@@ -64,13 +70,36 @@ export function solarToLunar(year, month, day) {
 }
 
 /**
+ * Validate nếu ngày dương lịch hợp lệ
+ */
+export function validateSolarDate(year, month, day) {
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) return false;
+  if (!Number.isInteger(month) || month < 1 || month > 12) return false;
+  const maxDay = new Date(year, month, 0).getDate();
+  if (!Number.isInteger(day) || day < 1 || day > maxDay) return false;
+
+  try {
+    const solar = Solar.fromYmd(year, month, day);
+    return solar.getYear() === year && solar.getMonth() === month && solar.getDay() === day;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Validate nếu ngày âm lịch hợp lệ
  */
 export function validateLunarDate(year, month, day) {
-  if (year < 1900 || year > 2100) return false;
-  if (month < 1 || month > 12) return false;
-  if (day < 1 || day > 30) return false;
-  return true;
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) return false;
+  if (!Number.isInteger(month) || month < 1 || month > 12) return false;
+  if (!Number.isInteger(day) || day < 1 || day > 30) return false;
+
+  try {
+    const lunar = Lunar.fromYmd(year, month, day);
+    return lunar.getYear() === year && lunar.getMonth() === month && lunar.getDay() === day;
+  } catch {
+    return false;
+  }
 }
 
 function yearCanIndexFromLunarYear(lunarYear) {
@@ -94,7 +123,21 @@ export function getMonthsInYear() {
 /**
  * Generate day options
  */
-export function getDaysInMonth(isLunar = false) {
+export function getDaysInMonth(isLunar = false, year, month) {
+  if (isLunar && Number.isInteger(year) && Number.isInteger(month)) {
+    return Array.from({ length: 30 }, (_, i) => i + 1)
+      .filter((day) => validateLunarDate(year, month, day))
+      .map((day) => ({ value: day, label: `${day}` }));
+  }
+
+  if (!isLunar && Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+    const maxSolarDay = new Date(year, month, 0).getDate();
+    return Array.from({ length: maxSolarDay }, (_, i) => ({
+      value: i + 1,
+      label: `${i + 1}`
+    }));
+  }
+
   const maxDay = isLunar ? 30 : 31;
   return Array.from({ length: maxDay }, (_, i) => ({
     value: i + 1,
@@ -115,13 +158,24 @@ export function getYearOptions() {
 }
 
 /**
- * Lấy chuỗi Can Chi của một năm
+ * Lấy chuỗi Can Chi của một năm (hoặc ngày dương lịch nếu truyền đủ year, month, day)
  * @param {number} year
+ * @param {number} [month]
+ * @param {number} [day]
  * @returns {string} ví dụ: "Bính Ngọ", "Ất Tỵ"
  */
-export function getYearCanChi(year) {
-  const canIndex = yearCanIndexFromLunarYear(year);
-  const chiIndex = yearChiIndexFromLunarYear(year);
+export function getYearCanChi(year, month, day) {
+  const y = Number(year);
+  if (month !== undefined && day !== undefined && month !== '' && day !== '') {
+    const m = Number(month);
+    const d = Number(day);
+    if (validateSolarDate(y, m, d)) {
+      const lunar = solarToLunar(y, m, d);
+      return `${lunar.yearCanName} ${lunar.yearChiName}`;
+    }
+  }
+  const canIndex = yearCanIndexFromLunarYear(y);
+  const chiIndex = yearChiIndexFromLunarYear(y);
   return `${THIEN_CAN_VI[canIndex]} ${DIA_CHI_VI[chiIndex]}`;
 }
 

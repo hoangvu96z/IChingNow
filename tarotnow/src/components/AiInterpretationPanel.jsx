@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { usePlan } from '../hooks/usePlan.js';
 import PricingModal from './PricingModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { requestAiChat } from '../../../shared/src/utils/aiProxy.mjs';
+import {
+  DEFAULT_AI_MODEL,
+  PREDEFINED_AI_MODELS,
+  loadSanitizedAiSettings,
+  resolveAllowedAiModel,
+  requestAiChat,
+} from '../../../shared/src/utils/aiProxy.mjs';
 import { readOpenAiChatStream } from '../../../shared/src/utils/openAiSse.mjs';
 import TarotMarkdown from './TarotMarkdown.mjs';
 
@@ -13,13 +19,7 @@ import TarotSettingsPanel from './TarotSettingsPanel.jsx';
 import TarotPromptTemplateSelector from './TarotPromptTemplateSelector.jsx';
 import TarotAiAnimations from './TarotAiAnimations.jsx';
 
-const PREDEFINED_MODELS = [
-  { value: 'combo1', label: 'combo1 (Combo)' },
-  { value: 'openrouter/tencent/hy3:free', label: 'hy3:free' },
-  { value: 'openrouter/openai/gpt-oss-20b:free', label: 'gpt-oss-20b:free' },
-  { value: 'openrouter/poolside/laguna-xs-2.1:free', label: 'laguna-xs-2.1:free' },
-  { value: 'openrouter/google/gemma-4-26b-a4b-it:free', label: 'gemma-4-26b-a4b-it:free' }
-];
+const PREDEFINED_MODELS = PREDEFINED_AI_MODELS;
 
 
 export default function AiInterpretationPanel({ 
@@ -34,8 +34,19 @@ export default function AiInterpretationPanel({
   onSaveAiConversation,
   savedConversation,
 }) {
+  const active = useRef(false);
+  const requestController = useRef(null);
+  const requestLock = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+      requestController.current?.abort();
+    };
+  }, []);
+
   const { t, language } = useLanguage();
-  const [settings, setSettings] = useState({ model: import.meta.env.VITE_AI_MODEL || 'combo1' });
+  const [settings, setSettings] = useState({ model: DEFAULT_AI_MODEL });
   const [showSettings, setShowSettings] = useState(false);
   const [formSettings, setFormSettings] = useState({ model: '' });
   const [promptTemplate, setPromptTemplate] = useState('standard'); // 'standard' | 'love' | 'career'
@@ -111,21 +122,7 @@ export default function AiInterpretationPanel({
 
   // Load settings
   useEffect(() => {
-    let activeSettings = { model: import.meta.env.VITE_AI_MODEL || 'combo1' };
-    try {
-      const saved = localStorage.getItem('tarot_ai_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const savedModel = parsed.model;
-        activeSettings = {
-          model: PREDEFINED_MODELS.some(({ value }) => value === savedModel)
-            ? savedModel
-            : activeSettings.model,
-        };
-      }
-    } catch {}
-    setSettings(activeSettings);
-    try { localStorage.setItem('tarot_ai_settings', JSON.stringify(activeSettings)); } catch {}
+    setSettings(loadSanitizedAiSettings('tarot_ai_settings'));
   }, []);
 
   // Sync settings to form when settings modal opens
@@ -138,9 +135,11 @@ export default function AiInterpretationPanel({
   // Save settings
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    const newSettings = { model: formSettings.model };
+    const newSettings = { model: resolveAllowedAiModel(formSettings.model) };
     setSettings(newSettings);
-    localStorage.setItem('tarot_ai_settings', JSON.stringify(newSettings));
+    try {
+      localStorage.setItem('tarot_ai_settings', JSON.stringify(newSettings));
+    } catch {}
     setShowSettings(false);
   };
 
@@ -208,12 +207,14 @@ export default function AiInterpretationPanel({
   // ─── HÀM GỌI AI CHỐNG MẤT KẾT NỐI VÀ TỰ ĐỘNG RETRY ───
   const fetchAiWithRetry = async (messages, onStatusUpdate) => {
     if (onStatusUpdate) onStatusUpdate('');
+    if (!active.current) throw new Error('Reading changed');
     const controller = new AbortController();
+    requestController.current = controller;
     const timeoutId = setTimeout(() => controller.abort(), 65000);
     try {
       const response = await requestAiChat({
         app: 'tarot',
-        model: settings.model || 'combo1',
+        model: resolveAllowedAiModel(settings.model),
         messages,
         stream: true,
         signal: controller.signal,
@@ -225,16 +226,23 @@ export default function AiInterpretationPanel({
       if (!accumulatedText || accumulatedText.trim().length < 40) {
         throw new Error('Dữ liệu Tarot trả về bị ngắt quãng hoặc không hoàn chỉnh');
       }
-      await fetchQuota();
       return accumulatedText.trim();
     } finally {
       clearTimeout(timeoutId);
+      requestController.current = null;
+      if (active.current) await fetchQuota();
     }
   };
 
   const handleInterpret = async () => {
-    if (!drawnCards || drawnCards.length === 0) return;
+    if (!drawnCards || drawnCards.length === 0 || requestLock.current) return;
+    requestLock.current = true;
+    if (!active.current) {
+      requestLock.current = false;
+      return;
+    }
     if (!isAuthenticated) {
+      requestLock.current = false;
       login();
       return;
     }
@@ -262,6 +270,7 @@ export default function AiInterpretationPanel({
       });
 
       // Render 1 lần trọn vẹn
+      if (!active.current) return;
       setInterpretation(fullText);
 
       // Successful run, persist
@@ -275,16 +284,21 @@ export default function AiInterpretationPanel({
             }
           });
         } catch (saveError) {
+          if (!active.current) return;
           setError(`${isEn ? 'The interpretation was generated, but could not be saved' : 'Đã tạo lời luận giải nhưng không thể lưu'}: ${saveError.message || (isEn ? 'please try again.' : 'vui lòng thử lại.')}`);
         }
       }
     } catch (err) {
+      if (!active.current) return;
       console.error(err);
       if (err.code === 'QUOTA_EXCEEDED') setShowPricing(true);
       setError(err.message || (isEn ? 'Error occurred while calling the AI server API.' : 'Lỗi khi gọi API của server AI. Vui lòng bấm thử lại.'));
     } finally {
-      setLoading(false);
-      setRetryStatus('');
+      requestLock.current = false;
+      if (active.current) {
+        setLoading(false);
+        setRetryStatus('');
+      }
     }
   };
 
@@ -348,8 +362,10 @@ export default function AiInterpretationPanel({
   const handleSendFollowUp = async (e, textOverride = null) => {
     if (e) e.preventDefault();
     const questionToSend = (textOverride || userQuestion).trim();
-    if (!questionToSend || askingFollowUp || followUps.length >= 5) return;
+    if (!questionToSend || questionToSend.length > 2048 || requestLock.current || askingFollowUp || followUps.length >= 5) return;
+    requestLock.current = true;
     if (!isAuthenticated) {
+      requestLock.current = false;
       login();
       return;
     }
@@ -383,6 +399,7 @@ export default function AiInterpretationPanel({
         setFollowUpRetryStatus(status);
       });
 
+      if (!active.current) return;
       const newFollowUp = {
         id: Date.now().toString(),
         question: questionToSend,
@@ -405,16 +422,21 @@ export default function AiInterpretationPanel({
             }
           });
         } catch (saveError) {
+          if (!active.current) return;
           setFollowUpError(`${isEn ? 'The answer was generated, but could not be saved' : 'Đã tạo câu trả lời nhưng không thể lưu'}: ${saveError.message || (isEn ? 'please try again.' : 'vui lòng thử lại.')}`);
         }
       }
     } catch (err) {
+      if (!active.current) return;
       console.error(err);
       if (err.code === 'QUOTA_EXCEEDED') setShowPricing(true);
       setFollowUpError(err.message || (isEn ? 'Error connecting to AI. Please try again.' : 'Lỗi khi kết nối AI để trả lời câu hỏi. Vui lòng bấm gửi lại.'));
     } finally {
-      setAskingFollowUp(false);
-      setFollowUpRetryStatus('');
+      requestLock.current = false;
+      if (active.current) {
+        setAskingFollowUp(false);
+        setFollowUpRetryStatus('');
+      }
     }
   };
 

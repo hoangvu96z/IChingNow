@@ -1,6 +1,17 @@
 import { getSsoApiBase, ssoFetch } from '../../shared/src/utils/ssoConfig.mjs';
 
-const APP_ENV = import.meta.env || {};
+function resolveDefaultEnv() {
+  try {
+    return {
+      DEV: Boolean(import.meta.env.DEV),
+      VITE_SSO_URL: import.meta.env.VITE_SSO_URL,
+    };
+  } catch {
+    return { DEV: false, VITE_SSO_URL: undefined };
+  }
+}
+
+const APP_ENV = resolveDefaultEnv();
 const SSO_BASE = getSsoApiBase({
   DEV: APP_ENV.DEV,
   VITE_SSO_URL: APP_ENV.VITE_SSO_URL,

@@ -1,22 +1,27 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getSsoApiBase, ssoFetch } from '../utils/ssoConfig.mjs';
 
-const SSO_BASE = getSsoApiBase({
-  DEV: import.meta.env.DEV,
-  VITE_SSO_URL: import.meta.env.VITE_SSO_URL,
-});
+function resolveDefaultSsoBase() {
+  try {
+    return getSsoApiBase({
+      DEV: import.meta.env.DEV,
+      VITE_SSO_URL: import.meta.env.VITE_SSO_URL,
+    });
+  } catch {
+    return getSsoApiBase({});
+  }
+}
+
+const SSO_BASE = resolveDefaultSsoBase();
 
 const PLAN_APPS = {
   ichingnow: {
-    quotaError: 'Hết lượt hỏi AI',
     bonusError: 'Không thể xin thêm câu',
   },
   tarotnow: {
-    quotaError: 'Hết lượt hỏi AI',
     bonusError: 'Không thể xin thêm câu',
   },
   tuvinow: {
-    quotaError: 'Hết lượt sử dụng',
     bonusError: 'Không thể xin thêm lượt',
   },
 };
@@ -78,30 +83,6 @@ export function usePlanForApp(isAuthenticated, app) {
     fetchQuota();
   }, [fetchQuota]);
 
-  const consumeQuota = useCallback(async () => {
-    try {
-      const res = await ssoFetch(`${SSO_BASE}/plans/consume`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ app }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setQuota(data.quota);
-        return { ok: true };
-      }
-      return {
-        ok: false,
-        error: data.message || appCopy.quotaError,
-        plan: data.plan,
-        canBonus: data.canBonus,
-      };
-    } catch {
-      return { ok: false, error: 'Lỗi kết nối' };
-    }
-  }, [app, appCopy]);
-
   const requestBonus = useCallback(async () => {
     try {
       const res = await ssoFetch(`${SSO_BASE}/plans/bonus`, {
@@ -153,7 +134,6 @@ export function usePlanForApp(isAuthenticated, app) {
     isExpiringSoon: quota?.isExpiringSoon ?? false,
     isOverride: quota?.isOverride ?? false,
     fetchQuota,
-    consumeQuota,
     requestBonus,
     applyCoupon,
   };

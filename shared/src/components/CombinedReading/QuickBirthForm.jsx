@@ -100,17 +100,22 @@ export default function QuickBirthForm({ onSubmit, language, initialData }) {
     }
   };
 
-  const canChiMenh = getBirthCanChiAndMenh(year);
+  const canChiMenh = getBirthCanChiAndMenh(year, month, day);
   const currentHourOpt = GIO_SINH_OPTIONS[hourIndex] || GIO_SINH_OPTIONS[6];
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const canChiInfo = getBirthCanChiAndMenh(year);
+    const canChiInfo = getBirthCanChiAndMenh(year, month, day);
     const hourOpt = GIO_SINH_OPTIONS[hourIndex] || GIO_SINH_OPTIONS[6];
     const birthInfo = {
       year,
       month,
       day,
+      ...(canChiInfo?.lunarYear ? {
+        lunarYear: canChiInfo.lunarYear,
+        lunarMonth: canChiInfo.lunarMonth,
+        lunarDay: canChiInfo.lunarDay,
+      } : {}),
       hourIndex,
       hourLabel: hourOpt.label,
       hourName: hourOpt.name,
@@ -305,7 +310,7 @@ export default function QuickBirthForm({ onSubmit, language, initialData }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '14px' }}>✨</span>
-            <span>{isVi ? `Năm ${canChiMenh.canChi} (${year})` : `${canChiMenh.canChi} (${year})`}</span>
+            <span>{isVi ? `Năm ${canChiMenh.canChi} (${canChiMenh.lunarYear ?? year})` : `${canChiMenh.canChi} (${canChiMenh.lunarYear ?? year})`}</span>
             <span style={{ color: 'rgba(255,255,255,0.6)' }}>· Giờ {currentHourOpt.name}</span>
           </div>
           {canChiMenh.menh && (
