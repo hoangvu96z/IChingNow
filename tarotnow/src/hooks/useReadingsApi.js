@@ -2,9 +2,18 @@ import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import { useState, useCallback } from 'react';
 import { decryptData } from '../utils/cryptoUtils';
 import { deleteReadingItems } from '../../../shared/src/utils/readingDeletes.mjs';
+import { decryptLegacyReadingFields } from '../../../shared/src/utils/decryptLegacyReadingFields.mjs';
+import {
+  createReadingsApi,
+  createReadingsApiRequest,
+} from '../../../shared/src/utils/readingsApi.mjs';
 
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 const APP = 'tarot';
+const readingsApi = createReadingsApi({
+  app: APP,
+  request: createReadingsApiRequest(SSO_BASE),
+});
 
 export function useReadingsApi(isAuthenticated, userId) {
   const [history, setHistory] = useState([]);
@@ -12,29 +21,30 @@ export function useReadingsApi(isAuthenticated, userId) {
 
   // Helper giải mã đối tượng reading khi tải về từ server
   const decryptReadingObject = async (r) => {
-    let decryptionError = false;
-    let question = r.question;
-    if (question && typeof question === 'string' && question.startsWith('enc_v1::')) {
-      const dec = await decryptData(question, userId);
-      if (dec === null) decryptionError = true;
-      question = dec || r.title || '(Trải bài Tarot)';
-    }
-
-    let dataObj = r.data || {};
-    if (dataObj.question && typeof dataObj.question === 'string' && dataObj.question.startsWith('enc_v1::')) {
-      const dec = await decryptData(dataObj.question, userId);
-      if (dec === null) decryptionError = true;
-      else dataObj = { ...dataObj, question: dec };
+    const topLevel = await decryptLegacyReadingFields(
+      { question: r.question },
+      ['question'],
+      userId,
+      decryptData,
+    );
+    const nested = await decryptLegacyReadingFields(
+      r.data || {},
+      ['question', 'aiConversation'],
+      userId,
+      decryptData,
+    );
+    let decryptionError = topLevel.decryptionError || nested.decryptionError;
+    let question = topLevel.data.question;
+    let dataObj = nested.data;
+    if (
+      typeof r.question === 'string' &&
+      r.question.startsWith('enc_v1::') &&
+      (topLevel.decryptionError || !question)
+    ) {
+      question = r.title || '(Trải bài Tarot)';
     }
     if ((!question || String(question).startsWith('enc_v1::')) && typeof dataObj.question === 'string' && !dataObj.question.startsWith('enc_v1::')) {
       question = dataObj.question;
-    }
-    if (dataObj.aiConversation) {
-      if (typeof dataObj.aiConversation === 'string' && dataObj.aiConversation.startsWith('enc_v1::')) {
-        const decryptedAi = await decryptData(dataObj.aiConversation, userId);
-        if (decryptedAi === null) decryptionError = true;
-        else dataObj = { ...dataObj, aiConversation: decryptedAi };
-      }
     }
 
     return {
@@ -59,11 +69,7 @@ export function useReadingsApi(isAuthenticated, userId) {
     }
 
     try {
-      const res = await fetch(`${SSO_BASE}/readings?app=${APP}`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to load readings');
-      const data = await res.json();
+      const data = await readingsApi.list();
 
       const mapped = await Promise.all((data.readings || []).map(decryptReadingObject));
       setHistory(mapped);
@@ -83,20 +89,13 @@ export function useReadingsApi(isAuthenticated, userId) {
     const dataToSave = { ...newEntry, question: plainQuestion };
 
     try {
-      const res = await fetch(`${SSO_BASE}/readings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
+      const data = await readingsApi.create({
           app: APP,
           type: newEntry.spread || 'custom',
           question: plainQuestion,
           title: newEntry.title || `Trải bài ${newEntry.spread || ''}`,
           data: dataToSave,
-        }),
       });
-      if (!res.ok) throw new Error('Failed to save reading');
-      const data = await res.json();
       const saved = data.reading;
       const mappedItem = { ...newEntry, id: saved.id, _remoteId: saved.id };
       setHistory((prev) => [mappedItem, ...prev]);
@@ -111,10 +110,7 @@ export function useReadingsApi(isAuthenticated, userId) {
   const deleteReading = useCallback(async (item) => {
     const { deletedItems, failedItems } = await deleteReadingItems([item], {
       isAuthenticated,
-      deleteRemote: (remoteId) => fetch(`${SSO_BASE}/readings/${remoteId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      }),
+      deleteRemote: (remoteId) => readingsApi.delete(remoteId),
     });
     if (deletedItems.length) {
       setHistory((prev) => prev.filter((h) => h.id !== item.id));
@@ -130,10 +126,7 @@ export function useReadingsApi(isAuthenticated, userId) {
 
     const { deletedItems, failedItems } = await deleteReadingItems(itemsToDelete, {
       isAuthenticated,
-      deleteRemote: (remoteId) => fetch(`${SSO_BASE}/readings/${remoteId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      }),
+      deleteRemote: (remoteId) => readingsApi.delete(remoteId),
     });
     const deletedIds = new Set(deletedItems.map((item) => item.id));
     if (deletedIds.size) setHistory((prev) => prev.filter((item) => !deletedIds.has(item.id)));
@@ -147,11 +140,7 @@ export function useReadingsApi(isAuthenticated, userId) {
   // ─── Xoá toàn bộ ───────────────────────────────────────────────────────────
   const clearHistory = useCallback(async () => {
     if (isAuthenticated) {
-      const response = await fetch(`${SSO_BASE}/readings/all?app=${APP}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Không thể xóa lịch sử trên máy chủ. Lịch sử vẫn được giữ lại.');
+      await readingsApi.clear();
     }
     setHistory([]);
   }, [isAuthenticated]);
@@ -166,14 +155,7 @@ export function useReadingsApi(isAuthenticated, userId) {
       if (existing?._decryptionError) {
         throw new Error('Không thể giải mã dữ liệu đã lưu; bản ghi cũ được giữ nguyên và chưa có nội dung mới nào được ghi đè.');
       }
-      const res = await fetch(`${SSO_BASE}/readings/${readingId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ data: dataToPatch }),
-      });
-      if (!res.ok) throw new Error('Failed to update reading data');
-      const responseData = await res.json();
+      const responseData = await readingsApi.update(readingId, dataToPatch);
       setHistory((prev) =>
         prev.map((item) =>
           item.id === readingId

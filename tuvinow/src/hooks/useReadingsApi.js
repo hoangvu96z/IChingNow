@@ -1,6 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { decryptData } from '../utils/cryptoUtils';
 import { ssoRequest } from '../services/ssoApi';
+import { decryptLegacyReadingFields } from '../../../shared/src/utils/decryptLegacyReadingFields.mjs';
+import { createReadingsApi } from '../../../shared/src/utils/readingsApi.mjs';
+
+const readingsApi = createReadingsApi({ app: 'tuvi', request: ssoRequest });
 
 // Readings use 'tuvi'; quota uses 'tuvinow', matching the existing SSO contract.
 export function useReadingsApi(isAuthenticated, userId) {
@@ -15,17 +19,14 @@ export function useReadingsApi(isAuthenticated, userId) {
     if (!isAuthenticated || !userId) return;
     setLoading(true);
     try {
-      const { readings = [] } = await ssoRequest('/readings?app=tuvi');
+      const { readings = [] } = await readingsApi.list();
       const rows = await Promise.all(readings.map(async reading => {
-        const data = { ...reading.data };
-        let decryptionError = false;
-        for (const key of ['inputData', 'aiConversation', 'question']) {
-          if (typeof data[key] === 'string' && data[key].startsWith('enc_v1::')) {
-            const decrypted = await decryptData(data[key], userId);
-            if (decrypted === null) decryptionError = true;
-            else data[key] = decrypted;
-          }
-        }
+        const { data, decryptionError } = await decryptLegacyReadingFields(
+          reading.data,
+          ['inputData', 'aiConversation', 'question'],
+          userId,
+          decryptData,
+        );
         return { ...reading, data, ...(decryptionError ? { _decryptionError: true } : {}) };
       }));
       if (generation.current === current) setHistory(rows);
@@ -43,12 +44,15 @@ export function useReadingsApi(isAuthenticated, userId) {
       throw new Error('Không thể giải mã dữ liệu đã lưu; bản ghi cũ được giữ nguyên và chưa có nội dung mới nào được ghi đè.');
     }
     const current = generation.current;
-    const { reading } = await ssoRequest(id ? `/readings/${id}` : '/readings', {
-      method: id ? 'PATCH' : 'POST',
-      body: id
-        ? { data }
-        : { app: 'tuvi', type: 'tuvi-laso', title: 'Lá số Tử Vi', question: 'Lá số Tử Vi', data },
-    });
+    const { reading } = id
+      ? await readingsApi.update(id, data)
+      : await readingsApi.create({
+        app: 'tuvi',
+        type: 'tuvi-laso',
+        title: 'Lá số Tử Vi',
+        question: 'Lá số Tử Vi',
+        data,
+      });
     if (!reading?.id) throw new Error('Máy chủ chưa xác nhận đã lưu lá số');
     if (generation.current === current && reading) {
       setHistory(previous => [{ ...reading, data }, ...previous.filter(row => row.id !== reading.id)]);
@@ -57,12 +61,12 @@ export function useReadingsApi(isAuthenticated, userId) {
   }, [history, isAuthenticated, userId]);
   const deleteReading = async (id) => {
     const current = generation.current;
-    await ssoRequest(`/readings/${id}`, { method: 'DELETE' });
+    await readingsApi.delete(id);
     if (generation.current === current) setHistory(previous => previous.filter(row => row.id !== id));
   };
   const deleteAllReadings = async () => {
     const current = generation.current;
-    await ssoRequest('/readings/all?app=tuvi', { method: 'DELETE' });
+    await readingsApi.clear();
     if (generation.current === current) setHistory([]);
   };
   return { history, error, loading, loadHistory, persistReading, deleteReading, deleteAllReadings };
