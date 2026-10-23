@@ -2180,28 +2180,16 @@ body {
   display: none;
 }
 
-/* ─── Mobile header: keep all controls inside the viewport ────── */
-@media (max-width: 640px) {
-  .nn-logo {
-    min-width: 0;
-    flex-shrink: 1;
+/* Tablet header: optimize header actions and logo to keep search readable without clipping */
+@media (max-width: 900px) {
+  .nn-logo-sub {
+    display: none;
   }
-  .nn-logo > div:last-child {
-    min-width: 0;
-    overflow: hidden;
-  }
-  .nn-logo-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  /* Apps switcher: icon-only trigger (text stays in the accessible name) */
   .nn-header-actions #apps-dropdown-btn {
     font-size: 0 !important;
     padding: 6px 8px !important;
     gap: 4px !important;
   }
-  /* Auth: icon-only login/logout, avatar-only account chip */
   .nn-header-actions .nn-auth-text,
   .nn-header-actions .nn-auth-name {
     display: none;
@@ -2218,7 +2206,23 @@ body {
   .nn-header-actions > div {
     gap: 4px !important;
   }
+}
 
+/* ─── Mobile header: keep all controls inside the viewport ────── */
+@media (max-width: 640px) {
+  .nn-logo {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .nn-logo > div:last-child {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .nn-logo-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   /* Onboarding sheet: fit viewport width, scroll vertically */
   .nn-onboarding-modal {
     width: 100%;
