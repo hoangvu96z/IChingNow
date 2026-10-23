@@ -259,6 +259,10 @@
   color: var(--accent-cyan);
   font-size: 0.75rem;
   font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .twm-session-dot {
@@ -501,6 +505,14 @@
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
   background: var(--accent-cyan-dim);
+}
+
+.twm-upload-dropzone:focus-visible,
+.twm-file-hidden:focus-visible + * .twm-upload-dropzone,
+.twm-file-hidden:focus-visible ~ .twm-upload-dropzone {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 3px;
+  border-color: var(--accent-cyan);
 }
 
 .twm-upload-dropzone.is-compressing {

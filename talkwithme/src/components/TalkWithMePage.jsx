@@ -1,5 +1,5 @@
 import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
-import { loadContactSessionMessages, sendContactMessage } from '../contactApi.mjs';
+import { loadContactSessionMessages, normalizeContactMessage, sendContactMessage } from '../contactApi.mjs';
 import React, { useState, useEffect, useRef } from 'react';
 import './TalkWithMePage.css';
 
@@ -148,7 +148,8 @@ async function loadSessionMessages({ id: sessionId, guestToken }) {
 // ─── Main Component ────────────────────────────────────────────────────────
 
 export default function TalkWithMePage() {
-  const [session, setSession] = useState(getOrCreateSession);
+  const [initialSession] = useState(getOrCreateSession);
+  const [session, setSession] = useState(initialSession);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -156,8 +157,8 @@ export default function TalkWithMePage() {
   const [success, setSuccess] = useState('');
 
   // Form state
-  const [name, setName] = useState(session?.name || '');
-  const [email, setEmail] = useState(session?.email || '');
+  const [name, setName] = useState(initialSession?.name || '');
+  const [email, setEmail] = useState(initialSession?.email || '');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [attachedImages, setAttachedImages] = useState([]);
@@ -168,11 +169,11 @@ export default function TalkWithMePage() {
 
   const hasSession = !!session?.id;
 
-  // Load previous messages on mount
+  // Load previous messages only for the session restored at initial mount
   useEffect(() => {
     let isCurrent = true;
-    if (session?.id) {
-      if (!session.guestToken) {
+    if (initialSession?.id) {
+      if (!initialSession.guestToken) {
         clearSession();
         setSession(null);
         setMessages([]);
@@ -180,10 +181,13 @@ export default function TalkWithMePage() {
         return () => { isCurrent = false; };
       }
       setLoading(true);
-      loadSessionMessages(session)
+      loadSessionMessages(initialSession)
         .then(msgs => {
           if (!isCurrent) return;
-          setMessages(msgs);
+          const normalizedList = Array.isArray(msgs)
+            ? msgs.map(m => normalizeContactMessage(m))
+            : [];
+          setMessages(normalizedList);
           setError('');
         })
         .catch(err => {
@@ -200,7 +204,7 @@ export default function TalkWithMePage() {
         .finally(() => { if (isCurrent) setLoading(false); });
     }
     return () => { isCurrent = false; };
-  }, [session?.id, session?.guestToken]);
+  }, [initialSession]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -278,24 +282,31 @@ export default function TalkWithMePage() {
         sid = generateSessionId();
       }
 
-      const result = await sendMessage({
+      const submittedPayload = {
         sessionId: sid,
-        guestToken: session?.guestToken,
         name: name.trim(),
         email: email.trim() || undefined,
         title: title.trim() || undefined,
         message: message.trim(),
         images: attachedImages,
+      };
+
+      const result = await sendMessage({
+        ...submittedPayload,
+        guestToken: session?.guestToken,
       });
 
+      // Guard and normalize response
+      const normalizedMsg = normalizeContactMessage(result?.message, submittedPayload);
+
       // Save session
-      const guestToken = result.guestToken || session?.guestToken || null;
+      const guestToken = result?.guestToken || session?.guestToken || null;
       const newSession = { id: sid, name: name.trim(), email: email.trim() || '', guestToken };
       setSession(newSession);
       saveSession(newSession);
 
       // Add to messages list
-      setMessages(prev => [...prev, result.message]);
+      setMessages(prev => [...prev, normalizedMsg]);
 
       // Reset form fields (keep name & email)
       setTitle('');
@@ -463,11 +474,12 @@ export default function TalkWithMePage() {
             </label>
 
             {/* Message */}
-            <label className="twm-field">
-              <span className="twm-label">
+            <div className="twm-field">
+              <label htmlFor="twm-message-input" className="twm-label">
                 Nội dung <span className="twm-req">*</span>
-              </span>
+              </label>
               <textarea
+                id="twm-message-input"
                 ref={textareaRef}
                 value={message}
                 onChange={e => setMessage(e.target.value)}
@@ -475,13 +487,14 @@ export default function TalkWithMePage() {
                 rows={5}
                 maxLength={5000}
                 required
+                aria-describedby="twm-char-count-info"
               />
               <div className="twm-textarea-footer">
-                <span className="twm-char-count">
+                <span id="twm-char-count-info" className="twm-char-count" aria-live="polite">
                   {message.length} <span>/ 5000</span>
                 </span>
               </div>
-            </label>
+            </div>
 
             {/* Image Upload Area — Max 3 images & Auto 720p compression */}
             <div className="twm-upload-section">
@@ -523,6 +536,13 @@ export default function TalkWithMePage() {
               {attachedImages.length < 3 ? (
                 <label
                   htmlFor="twm-file-input"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
                   className={`twm-upload-dropzone ${compressing ? 'is-compressing' : ''}`}
                 >
                   <span className="twm-upload-icon">{compressing ? '⚙️' : '🖼️'}</span>

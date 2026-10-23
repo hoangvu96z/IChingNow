@@ -106,3 +106,37 @@ export async function loadContactSessionMessages({
   const data = await response.json();
   return data.messages || [];
 }
+
+export function normalizeContactMessage(rawMessage, fallbackFields = {}) {
+  const source = rawMessage && typeof rawMessage === 'object' ? rawMessage : {};
+  const hasImagesFallback = Array.isArray(fallbackFields.images) && fallbackFields.images.length > 0;
+  const imageCountFallback = hasImagesFallback
+    ? fallbackFields.images.length
+    : fallbackFields.imageData ? 1 : 0;
+
+  const rawImageCount = typeof source.imageCount === 'number'
+    ? source.imageCount
+    : (Array.isArray(source.images) ? source.images.length : (source.imageData ? 1 : undefined));
+
+  const imageCount = typeof rawImageCount === 'number'
+    ? rawImageCount
+    : imageCountFallback;
+
+  const hasImage = typeof source.hasImage === 'boolean'
+    ? source.hasImage
+    : (imageCount > 0 || !!source.imageData || (Array.isArray(source.images) && source.images.length > 0) || hasImagesFallback);
+
+  return {
+    id: source.id ?? fallbackFields.id ?? `local_${Date.now()}`,
+    sessionId: source.sessionId || fallbackFields.sessionId || '',
+    name: source.name || fallbackFields.name || '',
+    email: source.email ?? fallbackFields.email,
+    title: source.title ?? fallbackFields.title,
+    message: typeof source.message === 'string' && source.message
+      ? source.message
+      : (fallbackFields.message || ''),
+    hasImage: !!hasImage,
+    imageCount: Number.isFinite(imageCount) ? imageCount : 0,
+    createdAt: source.createdAt || fallbackFields.createdAt || new Date().toISOString(),
+  };
+}

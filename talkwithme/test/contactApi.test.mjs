@@ -4,6 +4,7 @@ import {
   loadContactSessionMessages,
   MAX_CONTACT_IMAGE_B64_LENGTH,
   MAX_TOTAL_CONTACT_IMAGE_B64_LENGTH,
+  normalizeContactMessage,
   sendContactMessage,
   validateContactImages,
 } from '../src/contactApi.mjs';
@@ -113,4 +114,67 @@ test('legacy contact history without a guest token fails closed without a reques
     /không có mã truy cập lịch sử/,
   );
   assert.equal(requestCount, 0);
+});
+
+test('normalizeContactMessage preserves valid complete backend response message', () => {
+  const raw = {
+    id: 101,
+    sessionId: 'twm_123',
+    name: 'Alice',
+    email: 'alice@example.com',
+    title: 'Hello',
+    message: 'Message from server',
+    hasImage: true,
+    imageCount: 2,
+    createdAt: '2026-10-24T00:00:00.000Z',
+  };
+  const normalized = normalizeContactMessage(raw);
+  assert.deepEqual(normalized, raw);
+});
+
+test('normalizeContactMessage falls back to submitted fields when response is null or message field is missing', () => {
+  const fallback = {
+    sessionId: 'twm_abc',
+    name: 'Bob',
+    email: 'bob@example.com',
+    title: 'Issue',
+    message: 'Need help',
+    images: [{ data: 'xyz', mime: 'image/jpeg' }],
+  };
+
+  // Case 1: response message object is null / undefined
+  const norm1 = normalizeContactMessage(null, fallback);
+  assert.equal(norm1.sessionId, 'twm_abc');
+  assert.equal(norm1.name, 'Bob');
+  assert.equal(norm1.email, 'bob@example.com');
+  assert.equal(norm1.title, 'Issue');
+  assert.equal(norm1.message, 'Need help');
+  assert.equal(norm1.hasImage, true);
+  assert.equal(norm1.imageCount, 1);
+  assert.ok(typeof norm1.id === 'string' && norm1.id.startsWith('local_'));
+  assert.ok(norm1.createdAt);
+
+  // Case 2: response message object is missing 'message' field or empty
+  const rawPartial = {
+    id: 999,
+    sessionId: 'twm_abc',
+    name: 'Bob',
+  };
+  const norm2 = normalizeContactMessage(rawPartial, fallback);
+  assert.equal(norm2.id, 999);
+  assert.equal(norm2.message, 'Need help');
+  assert.equal(norm2.hasImage, true);
+  assert.equal(norm2.imageCount, 1);
+});
+
+test('normalizeContactMessage handles images without images array fallback correctly', () => {
+  const fallbackNoImg = {
+    sessionId: 'twm_plain',
+    name: 'Charlie',
+    message: 'Text only',
+  };
+  const norm = normalizeContactMessage({ id: 5, message: 'Text only' }, fallbackNoImg);
+  assert.equal(norm.hasImage, false);
+  assert.equal(norm.imageCount, 0);
+  assert.equal(norm.name, 'Charlie');
 });
