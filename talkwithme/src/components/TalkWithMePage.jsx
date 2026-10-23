@@ -161,10 +161,12 @@ export default function TalkWithMePage() {
   const [email, setEmail] = useState(initialSession?.email || '');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({ name: '', message: '' });
   const [attachedImages, setAttachedImages] = useState([]);
   const [compressing, setCompressing] = useState(false);
   const fileInputRef = useRef(null);
   const messageListRef = useRef(null);
+  const nameInputRef = useRef(null);
   const textareaRef = useRef(null);
 
   const hasSession = !!session?.id;
@@ -271,8 +273,21 @@ export default function TalkWithMePage() {
     setSuccess('');
 
     if (compressing) { setError('Vui lòng chờ nén ảnh hoàn tất trước khi gửi.'); return; }
-    if (!name.trim()) { setError('Vui lòng nhập tên.'); return; }
-    if (!message.trim()) { setError('Vui lòng nhập nội dung tin nhắn.'); return; }
+
+    const nextFieldErrors = {
+      name: !name.trim() ? 'Vui lòng nhập tên của bạn.' : '',
+      message: !message.trim() ? 'Vui lòng nhập nội dung tin nhắn.' : '',
+    };
+    if (nextFieldErrors.name || nextFieldErrors.message) {
+      setFieldErrors(nextFieldErrors);
+      if (nextFieldErrors.name) {
+        nameInputRef.current?.focus();
+      } else if (nextFieldErrors.message) {
+        textareaRef.current?.focus();
+      }
+      return;
+    }
+    setFieldErrors({ name: '', message: '' });
 
     setSending(true);
 
@@ -350,6 +365,7 @@ export default function TalkWithMePage() {
     setEmail('');
     setTitle('');
     setMessage('');
+    setFieldErrors({ name: '', message: '' });
     setAttachedImages([]);
     setError('');
     setSuccess('');
@@ -422,27 +438,47 @@ export default function TalkWithMePage() {
             )}
           </div>
 
-          <form className="twm-form" onSubmit={handleSubmit}>
+          <form className="twm-form" onSubmit={handleSubmit} noValidate>
             {/* Name & Email row */}
             <div className="twm-row-2">
-              <label className="twm-field">
-                <span className="twm-label">
+              <div className="twm-field">
+                <label htmlFor="twm-name-input" className="twm-label">
                   Tên của bạn <span className="twm-req">*</span>
-                </span>
-                <div className="twm-input-wrap">
-                  <span className="twm-input-icon">👤</span>
+                </label>
+                <div className={`twm-input-wrap${fieldErrors.name ? ' is-invalid' : ''}`}>
+                  <span className="twm-input-icon" aria-hidden="true">👤</span>
                   <input
+                    id="twm-name-input"
+                    ref={nameInputRef}
                     type="text"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setName(val);
+                      if (fieldErrors.name && val.trim()) {
+                        setFieldErrors(prev => ({ ...prev, name: '' }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!hasSession && !name.trim() && fieldErrors.name) {
+                        setFieldErrors(prev => ({ ...prev, name: 'Vui lòng nhập tên của bạn.' }));
+                      }
+                    }}
                     placeholder="Nhập tên..."
                     maxLength={100}
                     required
                     disabled={hasSession}
                     autoComplete="name"
+                    aria-invalid={fieldErrors.name ? 'true' : 'false'}
+                    aria-describedby={fieldErrors.name ? 'twm-name-error' : undefined}
                   />
                 </div>
-              </label>
+                {fieldErrors.name && (
+                  <span id="twm-name-error" className="twm-field-error" role="alert">
+                    <span aria-hidden="true">⚠️</span> {fieldErrors.name}
+                  </span>
+                )}
+              </div>
               <label className="twm-field">
                 <span className="twm-label">
                   Email <span className="twm-opt">(tuỳ chọn)</span>
@@ -487,15 +523,28 @@ export default function TalkWithMePage() {
               <textarea
                 id="twm-message-input"
                 ref={textareaRef}
+                className={fieldErrors.message ? 'is-invalid' : undefined}
                 value={message}
-                onChange={e => setMessage(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setMessage(val);
+                  if (fieldErrors.message && val.trim()) {
+                    setFieldErrors(prev => ({ ...prev, message: '' }));
+                  }
+                }}
                 placeholder="Viết gì đó cho tôi..."
                 rows={5}
                 maxLength={5000}
                 required
-                aria-describedby="twm-char-count-info"
+                aria-invalid={fieldErrors.message ? 'true' : 'false'}
+                aria-describedby={fieldErrors.message ? 'twm-message-error twm-char-count-info' : 'twm-char-count-info'}
               />
               <div className="twm-textarea-footer">
+                {fieldErrors.message ? (
+                  <span id="twm-message-error" className="twm-field-error" role="alert">
+                    <span aria-hidden="true">⚠️</span> {fieldErrors.message}
+                  </span>
+                ) : <span />}
                 <span id="twm-char-count-info" className="twm-char-count" aria-live="polite">
                   {message.length} <span>/ 5000</span>
                 </span>

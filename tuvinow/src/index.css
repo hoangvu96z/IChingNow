@@ -72,12 +72,12 @@
   --badge-than-color: #0f766e;
   
   /* Submit Button */
-  --btn-submit-bg: linear-gradient(135deg, #78350f 0%, #92400e 50%, #78350f 100%);
+  --btn-submit-bg: linear-gradient(135deg, #92400e 0%, #b45309 50%, #78350f 100%);
   --btn-submit-color: #ffffff;
-  --btn-submit-glow: rgba(120, 53, 15, 0.35);
-  --btn-submit-disabled-bg: #e2e8f0;
-  --btn-submit-disabled-color: #334155;
-  --btn-submit-disabled-border: #94a3b8;
+  --btn-submit-glow: rgba(146, 64, 14, 0.38);
+  --btn-submit-disabled-bg: #eef2f6;
+  --btn-submit-disabled-color: #64748b;
+  --btn-submit-disabled-border: #cbd5e1;
   
   /* Spacing */
   --gap-xs: 4px;
@@ -333,17 +333,21 @@ body {
 /* Compact TuVi navigation on the shared dark header. */
 .theme-toggle,
 .tuvi-header-new {
-  width: 38px;
+  min-width: 38px;
   height: 38px;
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: 1px solid rgba(255, 255, 255, .4);
   border-radius: 10px;
   background: rgba(255, 255, 255, .09);
   color: #fff;
-  font: 600 19px var(--font-sans);
+  font: 600 16px var(--font-sans);
   cursor: pointer;
   transition: background .2s, border-color .2s;
+  padding: 0 10px;
+  white-space: nowrap;
 }
 .theme-toggle:hover,
 .tuvi-header-new:hover {
@@ -356,7 +360,78 @@ body {
   outline: 2px solid #6dd5b0;
   outline-offset: 3px;
 }
-.tuvi-header-new { color: #a9f0d5; font-size: 25px; }
+.tuvi-header-new {
+  color: #a9f0d5;
+  font-size: 0.85rem;
+  padding: 0 12px;
+}
+.tuvi-header-btn-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.app-header-desktop-nav .theme-toggle {
+  width: 38px;
+  padding: 0;
+}
+.app-header-desktop-nav .theme-toggle .tuvi-header-btn-label {
+  display: none;
+}
+.app-header-drawer .theme-toggle,
+.app-header-drawer .tuvi-header-new {
+  width: 100%;
+  height: auto;
+  padding: 11px 16px;
+  font-size: 0.9375rem;
+}
+.app-header-drawer .theme-toggle .tuvi-header-btn-label,
+.app-header-drawer .tuvi-header-new .tuvi-header-btn-label {
+  display: inline;
+  font-size: 0.9375rem;
+}
+
+.tuvi-ask-iching-btn {
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.14), rgba(180, 83, 9, 0.1));
+  border: 1.5px solid rgba(109, 40, 217, 0.48);
+  border-radius: 20px;
+  color: #4c1d95;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.tuvi-ask-iching-btn:hover {
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.22), rgba(180, 83, 9, 0.18));
+  border-color: #6d28d9;
+}
+[data-theme="dark"] .tuvi-ask-iching-btn {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(229, 193, 88, 0.14));
+  border-color: rgba(167, 139, 250, 0.55);
+  color: #ede9fe;
+}
+[data-theme="dark"] .tuvi-ask-iching-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.34), rgba(229, 193, 88, 0.22));
+  border-color: #c4b5fd;
+}
+
+.tuvi-tap-to-learn-banner {
+  margin: 0 0 10px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: var(--accent-gold-dim);
+  border: 1px dashed var(--border-gold);
+  color: var(--accent-gold-bright);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 /* Improve contrast for login button on mint accent */
 #sso-login-btn {
@@ -501,6 +576,75 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
+/* Quick Year Chips in BirthInputForm */
+.quick-year-chips {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.quick-year-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold-bright);
+  border: 1px solid var(--accent-gold);
+  border-radius: 6px;
+  padding: 4px 9px;
+  min-height: 28px;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  line-height: 1.25;
+}
+
+.quick-year-chip:hover {
+  background: var(--accent-gold);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .quick-year-chip:hover {
+  color: #1a1005;
+}
+
+.quick-year-chip.is-active {
+  background: var(--accent-gold);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .quick-year-chip.is-active {
+  background: var(--accent-gold);
+  color: #160c04;
+  font-weight: 700;
+}
+
+.quick-year-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 4px 8px;
+  min-height: 28px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  line-height: 1.25;
+}
+
+.quick-year-clear-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-gold);
+}
+
 .form-row {
   display: grid;
   gap: var(--gap-sm);
@@ -618,25 +762,26 @@ body {
 /* Submit Button */
 .btn-submit {
   width: 100%;
-  padding: 12px;
+  padding: 13px 16px;
   margin-top: 12px;
   background: var(--btn-submit-bg);
   background-size: 200% 200%;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--radius-md);
   color: var(--btn-submit-color);
   font-family: var(--font-serif);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: box-shadow 0.3s, transform 0.15s, opacity 0.2s;
+  box-shadow: 0 4px 14px var(--btn-submit-glow);
+  transition: box-shadow 0.3s, transform 0.15s, opacity 0.2s, background 0.2s;
   position: relative;
   overflow: hidden;
 }
 
 .btn-submit:hover:not(:disabled) {
-  box-shadow: 0 4px 20px var(--btn-submit-glow);
+  box-shadow: 0 6px 22px var(--btn-submit-glow);
   transform: translateY(-1px);
 }
 
@@ -666,14 +811,21 @@ body {
 }
 
 .btn-submit:disabled {
-  opacity: 1;
+  opacity: 0.78;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
   filter: none;
-  background: var(--btn-submit-disabled-bg, #e2e8f0);
-  color: var(--btn-submit-disabled-color, #475569);
-  border: 1px solid var(--btn-submit-disabled-border, #cbd5e1);
+  background: var(--btn-submit-disabled-bg, #eef2f6);
+  color: var(--btn-submit-disabled-color, #64748b);
+  border: 1.5px dashed var(--btn-submit-disabled-border, #cbd5e1);
+}
+
+.btn-submit-hint {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 /* New Reading Button */
@@ -799,9 +951,16 @@ body {
   padding: 4px;
 }
 
+.chart-export-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
   grid-template-rows: repeat(4, 1fr);
   gap: 2px;
   background: var(--border-subtle);
@@ -967,12 +1126,16 @@ body {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .palace-daihan {
   font-size: 0.85rem;
   color: var(--accent-purple);
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Stars */
@@ -1179,10 +1342,11 @@ body {
 
   .chart-grid {
     font-size: 0.85em;
+    min-width: 680px;
   }
 
   .palace-card {
-    padding: 6px 4px;
+    padding: 6px 6px;
     min-height: 110px;
   }
 
@@ -1206,12 +1370,13 @@ body {
 
 @media (max-width: 520px) {
   .chart-grid {
-    font-size: 0.75em;
+    font-size: 0.82em;
+    min-width: 660px;
   }
 
   .palace-card {
-    min-height: 90px;
-    padding: 4px 3px;
+    min-height: 105px;
+    padding: 6px 5px;
   }
 
   .center-name {

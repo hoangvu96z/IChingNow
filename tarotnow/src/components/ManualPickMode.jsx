@@ -406,14 +406,14 @@ export default function ManualPickMode({
                   onClick={login}
                   style={{
                     padding: '8px 20px',
-                    background: 'linear-gradient(135deg, #7c5cfc, #a78bfa)',
-                    border: 'none',
+                    background: 'linear-gradient(135deg, #e5c158 0%, #c5a059 100%)',
+                    border: '1px solid rgba(229, 193, 88, 0.6)',
                     borderRadius: 10,
-                    color: '#ffffff',
+                    color: '#0f0622',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(124,92,252,0.4)',
+                    boxShadow: '0 4px 14px rgba(229, 193, 88, 0.35)',
                   }}
                 >
                   🔑 {language === 'en' ? 'Log in now' : 'Đăng nhập ngay'}

@@ -133,6 +133,8 @@ html {
   scroll-behavior: smooth;
   overflow-x: hidden;
   max-width: 100%;
+  min-height: 100%;
+  background-color: var(--bg-base);
 }
 
 body {
@@ -152,6 +154,11 @@ body {
   flex-direction: column;
   overflow-x: hidden;
   max-width: 100%;
+  background-color: var(--bg-base);
+}
+
+#root > footer {
+  margin-top: auto !important;
 }
 
 /* ─── Background Ambiance ────────────────────────────────────── */
@@ -2258,6 +2265,13 @@ body {
   .nn-editor-footer {
     padding: 10px 14px;
     gap: 8px;
+    flex-wrap: wrap;
+  }
+  .nn-editor-footer > div:last-child {
+    gap: 8px !important;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   .nn-color-picker {
     padding: 10px 14px;
@@ -2297,11 +2311,22 @@ body {
     text-align: center;
   }
 
-  /* Compact footer on mobile — ensure space above and below so fixed FAB with notes never covers footer content */
+  /* Compact footer on mobile — pinned to bottom of flex root without detached white slab */
   footer {
-    margin-top: 24px !important;
-    padding: 20px 14px 96px !important;
-    padding-bottom: max(96px, calc(72px + env(safe-area-inset-bottom, 0px))) !important;
+    margin-top: auto !important;
+    padding: 20px 14px calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Keep AppsDropdown inside viewport with >= 8px gutter on small screens */
+  .apps-dropdown-menu {
+    position: fixed !important;
+    top: 56px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 16px) !important;
+    box-sizing: border-box !important;
   }
 
   /* Onboarding sheet: fit viewport width, scroll vertically */
@@ -2355,6 +2380,83 @@ body {
   .nn-toolbar {
     padding: 5px 6px;
     gap: 2px;
+  }
+  .nn-editor-footer {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  .nn-editor-actions {
+    gap: 4px;
+  }
+  .nn-editor-actions .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+  .nn-editor-footer > div:last-child {
+    gap: 6px !important;
+  }
+  .nn-editor-footer .btn:not(.btn-icon) {
+    padding: 6px 10px;
+    font-size: 0.8125rem;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 360px) {
+  .nn-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding: 4px 6px;
+    gap: 2px;
+  }
+  .nn-tb-btn {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .nn-toolbar-sep {
+    height: 14px;
+    margin: 0 1px;
+    flex-shrink: 0;
+  }
+  .nn-editor-footer {
+    padding: 8px 8px;
+    gap: 4px;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+  .nn-editor-actions {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .nn-editor-actions .btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+  }
+  .nn-editor-footer > div:last-child {
+    gap: 6px !important;
+    margin-left: auto;
+    flex-wrap: nowrap !important;
+    justify-content: flex-end;
+    align-items: center;
+    max-width: 100%;
+  }
+  .nn-char-counter {
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .nn-editor-footer .btn:not(.btn-icon) {
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 }
 

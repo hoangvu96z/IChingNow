@@ -75,14 +75,21 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
         <div>
           <label className="form-label">{t('form.algorithm_label', 'Thuật toán gieo Lục Hào')}</label>
           <select
-            className="form-input"
+            className="form-input form-select"
             value={formData.lucHaoAlgorithm || 'three-coin'}
             onChange={e => set('lucHaoAlgorithm', e.target.value)}
           >
-            <option value="three-coin">{t('form.alg_three_coin', '🪙 3 Đồng xu truyền thống (Cân bằng)')}</option>
-            <option value="yarrow-stalks">{t('form.alg_yarrow', '🌿 Phác thảo Cỏ Thi (Cổ xưa)')}</option>
-            <option value="equal-prob">{t('form.alg_equal', '⚖️ Đồng xác suất (25% mỗi loại)')}</option>
+            <option value="three-coin">{t('form.alg_three_coin', '🪙 3 Đồng xu truyền thống')}</option>
+            <option value="yarrow-stalks">{t('form.alg_yarrow', '🌿 Phác thảo Cỏ Thi')}</option>
+            <option value="equal-prob">{t('form.alg_equal', '⚖️ Đồng xác suất (25%)')}</option>
           </select>
+          <div className="form-select-helper">
+            {(formData.lucHaoAlgorithm || 'three-coin') === 'yarrow-stalks'
+              ? t('form.alg_hint_yarrow', 'Cổ xưa · Mô phỏng phép chia 49 cọng Cỏ Thi')
+              : (formData.lucHaoAlgorithm || 'three-coin') === 'equal-prob'
+                ? t('form.alg_hint_equal', 'Đồng đều · 25% xác suất cho mỗi loại hào')
+                : t('form.alg_hint_three_coin', 'Cân bằng · Mô phỏng tung 3 đồng xu truyền thống')}
+          </div>
         </div>
       )}
 

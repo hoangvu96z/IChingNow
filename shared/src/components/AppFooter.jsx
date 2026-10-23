@@ -2,28 +2,18 @@ import React from 'react';
 import { getAppLink } from '../utils/appLinks.mjs';
 
 /**
- * Shared AppFooter — used by IChingNow, TarotNow, TuViNow, TalkWithMe
+ * Shared AppFooter — used by IChingNow, TarotNow, TuViNow, TalkWithMe, NoteNow, SpiritNow
  *
  * Props:
  *   colors: ColorTheme (from shared/src/themes/*.js)
- *   appId: 'iching' | 'tarot' | 'tuvi' | 'talkwithme' | 'spiritnow'
+ *   appId: 'iching' | 'tarot' | 'tuvi' | 'talkwithme' | 'spiritnow' | 'notenow'
  *   tagline: string — optional custom tagline
  */
-
-const APPS = [
-  { id: 'spiritnow', icon: '✨', name: 'SpiritNow', url: '/spiritnow/' },
-  { id: 'iching',  icon: '☯️', name: 'IChingNow', url: '/kinhdich/' },
-  { id: 'tarot',   icon: '🃏', name: 'TarotNow',  url: '/tarot/' },
-  { id: 'tuvi',    icon: '🔮', name: 'TuViNow',   url: '/tuvi/' },
-  { id: 'notenow', icon: '📝', name: 'NoteNow',   url: '/note/' },
-];
 
 export default function AppFooter({
   colors = {},
   appId,
   tagline,
-  showApps = true,
-  hideApps = false,
   compact = false,
   supportLabel,
   supportBtnText,
@@ -31,12 +21,10 @@ export default function AppFooter({
 }) {
   const year = new Date().getFullYear();
 
-  const shouldShowApps = showApps && !hideApps;
   const accentColor = colors.accent || '#38bdf8';
   const accentSoft = colors.accentSoft || 'rgba(56, 189, 248, 0.14)';
   const borderColor = colors.footerBorder || 'var(--border-subtle, rgba(255, 255, 255, 0.12))';
   const textColor = colors.footerText || 'var(--text-muted, var(--color-ink-muted, rgba(255, 255, 255, 0.65)))';
-  const linkColor = colors.footerLink || 'var(--text-primary, var(--color-ink, rgba(255, 255, 255, 0.9)))';
   const footerBg = colors.footerBg || colors.bg || 'transparent';
 
   return (
@@ -58,99 +46,6 @@ export default function AppFooter({
         alignItems: 'center',
         gap: compact ? 14 : 20,
       }}>
-        {/* App Switcher Pills */}
-        {shouldShowApps && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-          }}>
-            {APPS.map((app) => {
-              const isActive = app.id === appId;
-              if (isActive) {
-                return (
-                  <div
-                  key={app.id}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 18px',
-                    borderRadius: 24,
-                    fontSize: '0.875rem',
-                    fontWeight: 700,
-                    color: accentColor,
-                    background: accentSoft,
-                    border: `1.5px solid ${accentColor}`,
-                    boxShadow: `0 0 16px ${accentSoft}`,
-                    letterSpacing: '0.01em',
-                  }}
-                >
-                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>{app.icon}</span>
-                  <span>{app.name}</span>
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: accentColor,
-                      boxShadow: `0 0 6px ${accentColor}`,
-                      display: 'inline-block',
-                      marginLeft: 2,
-                    }}
-                    title="Đang xem"
-                  />
-                </div>
-              );
-            }
-
-            return (
-              <a
-                key={app.id}
-                href={getAppLink(app.url, { DEV: import.meta.env.DEV }, typeof window !== 'undefined' ? window.location : null)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '8px 18px',
-                  borderRadius: 24,
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  color: linkColor,
-                  textDecoration: 'none',
-                  background: 'var(--bg-glass, var(--bg-card, rgba(255, 255, 255, 0.05)))',
-                  border: `1px solid ${borderColor}`,
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  letterSpacing: '0.01em',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = accentColor;
-                  e.currentTarget.style.color = accentColor;
-                  e.currentTarget.style.background = accentSoft;
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = `0 6px 16px ${accentSoft}`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = borderColor;
-                  e.currentTarget.style.color = linkColor;
-                  e.currentTarget.style.background = 'var(--bg-glass, var(--bg-card, rgba(255, 255, 255, 0.05)))';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-                }}
-              >
-                <span style={{ fontSize: '1rem', lineHeight: 1 }}>{app.icon}</span>
-                <span>{app.name}</span>
-              </a>
-            );
-          })}
-        </div>
-      )}
-
         {/* Contact CTA Row */}
         <div style={{
           display: 'inline-flex',
@@ -235,6 +130,7 @@ export default function AppFooter({
             lineHeight: 1.6,
             color: textColor,
             textAlign: 'center',
+            textWrap: 'pretty',
           }}>
             {tagline}
           </p>

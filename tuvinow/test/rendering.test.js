@@ -95,5 +95,7 @@ test('answer and actual palace components render evidence and legacy text', asyn
     const chartHtml = renderToStaticMarkup(React.createElement(LasoChart, { result: solarPreTetChart, inputData: lunarInput }));
     assert.ok(chartHtml.includes('(Nhập âm lịch)'));
     assert.ok(chartHtml.includes('26/12/2023'));
+    assert.ok(chartHtml.includes('tuvi-tap-to-learn-banner'));
+    assert.ok(chartHtml.includes('chart-export-wrapper'));
   } finally { await server.close(); }
 });

@@ -456,29 +456,32 @@ export default function AiInterpretationPanel({
     />
     <div className="interpretation-section glass-panel" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(229,193,88,0.2)', paddingBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '1.25rem' }}>🤖</span>
+      <div className="ai-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(229,193,88,0.2)', paddingBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="ai-panel-title-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🤖</span>
           <h2 className="results-title" style={{ fontSize: '20px', margin: 0, textAlign: 'left' }}>
             {t('ai.title', 'Luận giải Tarot bằng AI')}
           </h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="ai-panel-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* Quota badge */}
-          <div style={{
+          <div className="ai-quota-badge" style={{
             fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: '20px',
             background: 'rgba(255,255,255,0.06)', color: remaining === 0 ? '#ef4444' : '#94a3b8',
             border: `1px solid ${remaining === 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+            whiteSpace: 'nowrap',
           }}>
             ⚡ {remaining} lượt còn lại
           </div>
           <button
+            className="ai-settings-btn"
             onClick={() => setShowSettings(!showSettings)}
             style={{
               background: 'none', color: 'var(--text-muted)',
               cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px',
               borderRadius: '4px', border: '1px solid rgba(255,255,255,0.08)',
               display: 'flex', alignItems: 'center', gap: '4px',
+              whiteSpace: 'nowrap',
             }}
           >
             ⚙️ <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{t('ai.settings', 'Cấu hình')}</span>
@@ -507,7 +510,7 @@ export default function AiInterpretationPanel({
               fontSize: '14px'
             }}
           >
-            <span>✨</span> {t('ai.button_cast_tarot', 'Luận giải Tarot bằng AI')}
+            {t('ai.button_cast_tarot', 'Luận giải Tarot bằng AI')}
           </button>
         </div>
       )}

@@ -4,7 +4,7 @@ export const vi = {
   'app.subtitle': 'Trải Bài Tarot & Luận Giải AI',
   'nav.new_cast': '🔄 Trải bài mới',
   'nav.iching_link': '☯️ Lập quẻ Dịch',
-  'footer.text': 'Tarot & AI Oracle App. Made with ❤️. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.',
+  'footer.text': 'Tarot & AI Oracle App. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.',
 
   // Form Settings
   'form.question_label': 'Việc cần xem *',

@@ -182,14 +182,14 @@ function MaiHoaExportCard({ result }) {
           onClick={login}
           style={{
             padding: '8px 20px',
-            background: 'linear-gradient(135deg, #7c5cfc, #a78bfa)',
-            border: 'none',
+            background: 'linear-gradient(135deg, #d4a017 0%, #b8860b 100%)',
+            border: '1px solid rgba(212, 160, 23, 0.55)',
             borderRadius: 10,
-            color: '#ffffff',
+            color: '#1a0a06',
             fontSize: '0.85rem',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(124,92,252,0.4)',
+            boxShadow: '0 4px 14px rgba(184, 134, 11, 0.3)',
           }}
         >
           🔑 {t('auth.login_now', 'Đăng nhập ngay')}
@@ -776,15 +776,31 @@ export default function App() {
         useAuthHook={useAuth}
         onOpenJournal={() => setIsJournalOpen(true)}
         logo={
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {[true, false, true].map((yang, i) => (
-              yang
-                ? <div key={i} style={{ width: 22, height: 4, background: '#d4a017', borderRadius: 2 }} />
-                : <div key={i} style={{ display: 'flex', gap: 4 }}>
-                    <div style={{ width: 9, height: 4, background: '#d4a017', borderRadius: 2 }} />
-                    <div style={{ width: 9, height: 4, background: '#d4a017', borderRadius: 2 }} />
-                  </div>
-            ))}
+          <div
+            aria-hidden="true"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 30% 30%, rgba(212, 160, 23, 0.28), rgba(26, 10, 6, 0.92))',
+              border: '1.5px solid #d4a017',
+              boxShadow: '0 0 12px rgba(212, 160, 23, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" stroke="#d4a017" strokeWidth="1.75" />
+              <path
+                d="M12 2a10 10 0 0 1 0 20 5 5 0 0 1 0-10 5 5 0 0 0 0-10z"
+                fill="#d4a017"
+                fillOpacity="0.9"
+              />
+              <circle cx="12" cy="7" r="1.6" fill="#1a0a06" />
+              <circle cx="12" cy="17" r="1.6" fill="#d4a017" />
+            </svg>
           </div>
         }
         title="易 IChingNow"
@@ -1042,7 +1058,7 @@ export default function App() {
         appId="iching"
         showApps={false}
         colors={ichingTheme}
-        tagline={t('footer.text', '易 IChingNow — Công cụ lập quẻ Kinh Dịch · Chỉ lập quẻ, không luận giải')}
+        tagline={t('footer.text', '易 IChingNow — Công cụ lập quẻ Kinh Dịch. Chỉ lập quẻ, không luận giải')}
       />
 
       <SpiritualJournal

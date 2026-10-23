@@ -95,11 +95,12 @@ export function AppsDropdown({ appId = 'iching', colors = {}, label, chooseLabel
     border: colors?.border || 'rgba(255, 255, 255, 0.15)',
     textMuted: colors?.textMuted || 'rgba(255, 255, 255, 0.6)',
     dropdownBg: colors?.dropdownBg || 'var(--bg-card, #12121e)',
-    dropdownBorder: colors?.dropdownBorder || 'var(--border, rgba(255, 255, 255, 0.08))',
-    dropdownItemText: colors?.dropdownItemText || 'var(--text-primary, rgba(255, 255, 255, 0.85))',
-    dropdownItemSub: colors?.dropdownItemSub || 'var(--text-muted, rgba(255, 255, 255, 0.4))',
-    dropdownHeader: colors?.dropdownHeader || 'var(--text-muted, rgba(255, 255, 255, 0.35))',
-    hoverBg: colors?.hoverBg || 'var(--bg-card-hover, rgba(255, 255, 255, 0.06))',
+    dropdownBorder: colors?.dropdownBorder || 'var(--border, rgba(255, 255, 255, 0.12))',
+    dropdownItemText: colors?.dropdownItemText || 'var(--text-primary, rgba(255, 255, 255, 0.92))',
+    dropdownItemSub: colors?.dropdownItemSub || 'var(--text-muted, rgba(255, 255, 255, 0.65))',
+    dropdownHeader: colors?.dropdownHeader || 'var(--text-muted, rgba(255, 255, 255, 0.6))',
+    dropdownArrow: colors?.dropdownArrow || colors?.accent || 'var(--text-primary, rgba(255, 255, 255, 0.85))',
+    hoverBg: colors?.hoverBg || 'var(--bg-card-hover, rgba(255, 255, 255, 0.08))',
     ...colors,
   };
 
@@ -120,7 +121,21 @@ export function AppsDropdown({ appId = 'iching', colors = {}, label, chooseLabel
   }, []);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className="apps-dropdown-wrap" style={{ position: 'relative' }}>
+      <style>{`
+        @media (max-width: 480px) {
+          .apps-dropdown-menu {
+            position: fixed !important;
+            top: 56px !important;
+            left: 8px !important;
+            right: 8px !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-width: calc(100vw - 16px) !important;
+            box-sizing: border-box !important;
+          }
+        }
+      `}</style>
       <button
         id="apps-dropdown-btn"
         onClick={() => setOpen(v => !v)}
@@ -172,18 +187,23 @@ export function AppsDropdown({ appId = 'iching', colors = {}, label, chooseLabel
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 8px)',
-          right: 0,
-          background: c.dropdownBg,
-          border: `1px solid ${c.dropdownBorder}`,
-          borderRadius: 14,
-          padding: 8,
-          minWidth: 240,
-          boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-          zIndex: 2000,
-        }}>
+        <div
+          className="apps-dropdown-menu"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            background: c.dropdownBg,
+            border: `1px solid ${c.dropdownBorder}`,
+            borderRadius: 14,
+            padding: 8,
+            minWidth: 240,
+            maxWidth: 'calc(100vw - 16px)',
+            boxSizing: 'border-box',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+            zIndex: 2000,
+          }}
+        >
           <div style={{
             padding: '6px 12px 8px',
             fontSize: '0.7rem',
@@ -237,6 +257,7 @@ export function AppsDropdown({ appId = 'iching', colors = {}, label, chooseLabel
                   padding: '10px 12px',
                   borderRadius: 10,
                   marginBottom: 4,
+                  color: c.dropdownItemText,
                   textDecoration: 'none',
                   transition: 'background 0.15s',
                   cursor: 'pointer',
@@ -253,7 +274,18 @@ export function AppsDropdown({ appId = 'iching', colors = {}, label, chooseLabel
                     {app.tagline}
                   </div>
                 </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}>
+                <svg
+                  className="apps-dropdown-arrow"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={c.dropdownArrow}
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ color: c.dropdownArrow, opacity: 0.85, flexShrink: 0 }}
+                >
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </a>

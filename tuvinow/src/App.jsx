@@ -56,6 +56,7 @@ function StarParticles() {
 
 // Theme toggle button component
 function ThemeToggleButton({ theme, onToggle }) {
+  const labelText = theme === 'light' ? 'Giao diện tối' : 'Giao diện sáng';
   return (
     <button
       className="theme-toggle"
@@ -66,6 +67,7 @@ function ThemeToggleButton({ theme, onToggle }) {
       id="theme-toggle-btn"
     >
       <span aria-hidden="true">{theme === 'light' ? '🌙' : '☀️'}</span>
+      <span className="tuvi-header-btn-label">{labelText}</span>
     </button>
   );
 }
@@ -259,6 +261,7 @@ export default function App() {
             aria-label="Lập lá số mới"
           >
             <span aria-hidden="true">✦</span>
+            <span className="tuvi-header-btn-label">Lập lá số mới</span>
           </button>
         )}
       />
@@ -305,27 +308,10 @@ export default function App() {
                 {/* Nút kết hợp Kinh Dịch */}
                 <button
                   type="button"
+                  className="tuvi-ask-iching-btn"
                   onClick={() => setShowCombinedModal(true)}
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(229,193,88,0.12))',
-                    border: '1px solid rgba(139,92,246,0.4)',
-                    borderRadius: '20px',
-                    color: '#c4b5fd',
-                    padding: '6px 14px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    fontFamily: "'Inter', sans-serif",
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(229,193,88,0.2))'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.6)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(229,193,88,0.12))'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.4)'; }}
                 >
-                  🔮 Hỏi Kinh Dịch
+                  <span aria-hidden="true">🔮</span> Hỏi Kinh Dịch
                 </button>
                 {isAuthenticated && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -589,9 +589,11 @@ ${summaryObj.advice}
             </div>
 
             {/* Reversed Options */}
-            <div className="settings-grid" style={{ alignItems: 'center' }}>
+            <div className="settings-grid-3 settings-reversed-row">
               <div className="settings-col">
-                <label className="form-label">{t('form.reversed_mode', 'Chế độ lá ngược')}</label>
+                <div className="settings-label-row">
+                  <label className="form-label">{t('form.reversed_mode', 'Chế độ lá ngược')}</label>
+                </div>
                 <div className="toggle-wrapper">
                   <label className="toggle-switch">
                     <input
@@ -611,25 +613,27 @@ ${summaryObj.advice}
               </div>
 
               {reversedEnabled && (
-                <div className="settings-col">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <label className="form-label" style={{ margin: 0 }}>{t('form.reversed_rate', 'Tỷ lệ lá ngược')}</label>
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{Math.round(reversedRate * 100)}%</span>
+                <div className="settings-col settings-col-span-2">
+                  <div className="settings-label-row">
+                    <label className="form-label">{t('form.reversed_rate', 'Tỷ lệ lá ngược')}</label>
+                    <span className="settings-rate-value">{Math.round(reversedRate * 100)}%</span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={reversedRate}
-                    onChange={(e) => setReversedRate(parseFloat(e.target.value))}
-                    className="custom-range-slider"
-                    style={{
-                      '--track-fill': `${reversedRate * 100}%`,
-                      '--thumb-color': 'var(--gold-color)'
-                    }}
-                    disabled={isDrawing || isShuffling}
-                  />
+                  <div className="range-control-wrapper">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={reversedRate}
+                      onChange={(e) => setReversedRate(parseFloat(e.target.value))}
+                      className="custom-range-slider"
+                      style={{
+                        '--track-fill': `${reversedRate * 100}%`,
+                        '--thumb-color': 'var(--gold-color)'
+                      }}
+                      disabled={isDrawing || isShuffling}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -691,7 +695,7 @@ ${summaryObj.advice}
           {/* Basic Interpretation Section */}
           {drawnCards.length > 0 && !isDrawing && summaryObj && (
             <div className="interpretation-section glass-panel" style={{ marginTop: '32px' }}>
-              <h2 className="results-title" style={{ fontSize: '20px', borderBottom: '1px solid rgba(229,193,88,0.2)', paddingBottom: '12px', marginBottom: '20px', textAlign: 'left' }}>
+              <h2 className="results-title interpretation-results-title" style={{ fontSize: '20px', borderBottom: '1px solid rgba(229,193,88,0.2)', paddingBottom: '12px', marginBottom: '20px', textAlign: 'left' }}>
                 {t('result.interpretation_title', '🔮 Luận giải cơ bản (Interpretation Overview)')}
               </h2>
 
@@ -724,24 +728,24 @@ ${summaryObj.advice}
                 {summaryObj.positions.map((p, idx) => {
                   const isRev = p.card.orientation === 'reversed';
                   return (
-                    <div key={idx} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', borderBottom: idx < summaryObj.positions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '16px' }}>
+                    <div key={idx} className="card-detail-item" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', borderBottom: idx < summaryObj.positions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '16px' }}>
                       <img
                         src={import.meta.env.BASE_URL + p.card.image.replace(/^\//, '')}
                         alt={p.card.name}
                         style={{ width: '48px', height: '80px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(229,193,88,0.2)', flexShrink: 0, transform: isRev ? 'rotate(180deg)' : 'none' }}
                       />
-                      <div style={{ flexGrow: 1 }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <span style={{ fontWeight: '600', color: '#fff', fontSize: '14px' }}>{p.card.name}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--gold-color)' }}>({p.position})</span>
-                          <span className={`card-orientation-badge ${p.card.orientation}`} style={{ fontSize: '9px', padding: '1px 6px' }}>
+                      <div className="card-detail-content" style={{ flexGrow: 1, minWidth: 0 }}>
+                        <div className="card-detail-header">
+                          <span className="card-detail-name">{p.card.name}</span>
+                          <span className="card-detail-pos">({p.position})</span>
+                          <span className={`card-orientation-badge ${p.card.orientation} card-detail-badge`}>
                             {isRev ? t('result.mini_reversed', 'Ngược') : t('result.mini_upright', 'Xuôi')}
                           </span>
                         </div>
                         <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
                           {p.humanMeaning}
                         </p>
-                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: '1.4' }}>
+                        <p className="card-impact-hint" style={{ margin: 0, fontSize: '12.5px', lineHeight: '1.45' }}>
                           👉 {p.impact}
                         </p>
                       </div>
@@ -869,14 +873,14 @@ ${summaryObj.advice}
                   onClick={login}
                   style={{
                     padding: '6px 16px',
-                    background: 'linear-gradient(135deg, #7c5cfc, #a78bfa)',
-                    border: 'none',
+                    background: 'linear-gradient(135deg, #e5c158 0%, #c5a059 100%)',
+                    border: '1px solid rgba(229, 193, 88, 0.6)',
                     borderRadius: 8,
-                    color: '#ffffff',
+                    color: '#0f0622',
                     fontSize: '0.8rem',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(124,92,252,0.3)',
+                    boxShadow: '0 4px 12px rgba(229, 193, 88, 0.35)',
                   }}
                 >
                   🔑 {t('auth.login_now', 'Đăng nhập ngay')}
@@ -971,7 +975,7 @@ ${summaryObj.advice}
         appId="tarot"
         showApps={false}
         colors={tarotTheme}
-        tagline={t('footer.text', 'Tarot & AI Oracle App. Made with ❤️. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.')}
+        tagline={t('footer.text', 'Tarot & AI Oracle App. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.')}
       />
       <SpiritualJournal
         key={user?.id || 'anonymous'}

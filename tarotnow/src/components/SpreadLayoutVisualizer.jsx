@@ -6,7 +6,7 @@ import React, { useState } from 'react';
  * Supported layouts: celtic-cross, horseshoe, cross-5, row, yes-no
  */
 
-function CardSlot({ card, position, positionLabel, index, onCardClick, baseUrl, revealDelay = 0, isCrossed = false }) {
+function CardSlot({ card, position, positionLabel, index, onCardClick, baseUrl, revealDelay = 0, isCrossed = false, compact = false }) {
   const [revealed, setRevealed] = useState(false);
 
   React.useEffect(() => {
@@ -21,66 +21,64 @@ function CardSlot({ card, position, positionLabel, index, onCardClick, baseUrl, 
 
   return (
     <div
-      className="spread-card-slot"
+      className={`spread-card-slot${compact ? ' spread-card-slot--compact' : ' spread-card-slot--featured'}${isCrossed ? ' is-crossed' : ''}`}
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '6px',
         cursor: card ? 'pointer' : 'default',
         position: 'relative',
       }}
       onClick={() => card && onCardClick && onCardClick(card)}
     >
       {/* Position number badge */}
-      <div style={{
-        position: 'absolute',
-        top: '-8px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 2,
-        width: '18px',
-        height: '18px',
-        borderRadius: '50%',
-        background: card ? 'rgba(229,193,88,0.9)' : 'rgba(255,255,255,0.12)',
-        color: card ? '#1a1430' : 'rgba(255,255,255,0.4)',
-        fontSize: '10px',
-        fontWeight: 700,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: "'Inter', sans-serif",
-        boxShadow: card ? '0 2px 8px rgba(229,193,88,0.4)' : 'none',
-      }}>
+      <div
+        className="spread-card-badge"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 2,
+          borderRadius: '50%',
+          background: card ? 'rgba(229,193,88,0.92)' : 'rgba(255,255,255,0.12)',
+          color: card ? '#1a1430' : 'rgba(255,255,255,0.4)',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'Inter', sans-serif",
+          boxShadow: card ? '0 2px 8px rgba(229,193,88,0.4)' : 'none',
+        }}
+      >
         {index + 1}
       </div>
 
       {/* Card visual */}
-      <div style={{
-        width: isCrossed ? '44px' : '52px',
-        height: isCrossed ? '52px' : '80px',
-        borderRadius: '6px',
-        border: card
-          ? `1px solid rgba(229,193,88,${revealed ? '0.5' : '0.15'})`
-          : '1px dashed rgba(255,255,255,0.12)',
-        background: card ? 'transparent' : 'rgba(255,255,255,0.03)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        transition: 'all 0.4s ease',
-        transform: isCrossed
-          ? `rotate(90deg)${isReversed ? ' rotate(180deg)' : ''}`
-          : isReversed
-          ? 'rotate(180deg)'
-          : 'none',
-        boxShadow: card && revealed ? '0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(229,193,88,0.15)' : 'none',
-        opacity: revealed ? 1 : 0,
-        animation: revealed ? 'cardReveal 0.4s ease forwards' : 'none',
-        marginTop: '8px',
-      }}>
+      <div
+        className="spread-card-visual"
+        style={{
+          border: card
+            ? `1.5px solid rgba(229,193,88,${revealed ? '0.55' : '0.15'})`
+            : '1px dashed rgba(255,255,255,0.12)',
+          background: card ? 'transparent' : 'rgba(255,255,255,0.03)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          transition: 'all 0.4s ease',
+          transform: isCrossed
+            ? `rotate(90deg)${isReversed ? ' rotate(180deg)' : ''}`
+            : isReversed
+            ? 'rotate(180deg)'
+            : 'none',
+          boxShadow: card && revealed ? '0 8px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(229,193,88,0.18)' : 'none',
+          opacity: revealed ? 1 : 0,
+          animation: revealed ? 'cardReveal 0.4s ease forwards' : 'none',
+        }}
+      >
         {card ? (
           <img
+            className="spread-card-img"
             src={baseUrl + card.image.replace(/^\//, '')}
             alt={card.name}
             style={{
@@ -96,31 +94,27 @@ function CardSlot({ card, position, positionLabel, index, onCardClick, baseUrl, 
       </div>
 
       {/* Position label */}
-      <div style={{
-        fontSize: '9px',
-        color: card ? 'rgba(229,193,88,0.7)' : 'rgba(255,255,255,0.2)',
-        textAlign: 'center',
-        maxWidth: isCrossed ? '60px' : '72px',
-        lineHeight: '1.3',
-        fontFamily: "'Inter', sans-serif",
-        fontWeight: 500,
-        marginTop: '2px',
-      }}>
+      <div
+        className="spread-card-pos-label"
+        style={{
+          color: card ? 'rgba(229,193,88,0.88)' : 'rgba(255,255,255,0.2)',
+          textAlign: 'center',
+          fontFamily: "'Inter', sans-serif",
+        }}
+      >
         {positionLabel}
       </div>
 
       {/* Card name tooltip */}
       {card && revealed && (
-        <div style={{
-          fontSize: '10px',
-          color: '#fff',
-          textAlign: 'center',
-          maxWidth: '72px',
-          lineHeight: '1.3',
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 600,
-          opacity: 0.85,
-        }}>
+        <div
+          className="spread-card-name"
+          style={{
+            color: '#fff',
+            textAlign: 'center',
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
           {card.name}
         </div>
       )}
@@ -140,29 +134,29 @@ function CelticCrossLayout({ cards, positions, onCardClick, baseUrl }) {
       <div style={{ position: 'relative', width: '200px', height: '300px', flexShrink: 0 }}>
         {/* Card 5 — Above (top center) */}
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)' }}>
-          <CardSlot card={c(4)} position={4} positionLabel={p(4)} index={4} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={200} />
+          <CardSlot card={c(4)} position={4} positionLabel={p(4)} index={4} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={200} compact />
         </div>
         {/* Card 4 — Left */}
         <div style={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)' }}>
-          <CardSlot card={c(3)} position={3} positionLabel={p(3)} index={3} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={150} />
+          <CardSlot card={c(3)} position={3} positionLabel={p(3)} index={3} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={150} compact />
         </div>
         {/* Card 1 — Center (Present) */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-          <CardSlot card={c(0)} position={0} positionLabel={p(0)} index={0} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={0} />
+          <CardSlot card={c(0)} position={0} positionLabel={p(0)} index={0} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={0} compact />
         </div>
         {/* Card 2 — Crossing (rotated 90°) */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 2, pointerEvents: 'none' }}>
           <div style={{ opacity: 0.85 }}>
-            <CardSlot card={c(1)} position={1} positionLabel={p(1)} index={1} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={50} isCrossed={true} />
+            <CardSlot card={c(1)} position={1} positionLabel={p(1)} index={1} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={50} isCrossed={true} compact />
           </div>
         </div>
         {/* Card 6 — Right */}
         <div style={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)' }}>
-          <CardSlot card={c(5)} position={5} positionLabel={p(5)} index={5} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={250} />
+          <CardSlot card={c(5)} position={5} positionLabel={p(5)} index={5} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={250} compact />
         </div>
         {/* Card 3 — Below (bottom center) */}
         <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)' }}>
-          <CardSlot card={c(2)} position={2} positionLabel={p(2)} index={2} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={100} />
+          <CardSlot card={c(2)} position={2} positionLabel={p(2)} index={2} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={100} compact />
         </div>
       </div>
 
@@ -181,6 +175,7 @@ function CelticCrossLayout({ cards, positions, onCardClick, baseUrl }) {
             onCardClick={onCardClick}
             baseUrl={baseUrl}
             revealDelay={300 + staffIdx * 80}
+            compact
           />
         ))}
       </div>
@@ -225,6 +220,7 @@ function HorseshoeLayout({ cards, positions, onCardClick, baseUrl }) {
               onCardClick={onCardClick}
               baseUrl={baseUrl}
               revealDelay={i * 120}
+              compact
             />
           </div>
         );
@@ -245,23 +241,23 @@ function Cross5Layout({ cards, positions, onCardClick, baseUrl }) {
     <div style={{ position: 'relative', width: '200px', height: '240px', margin: '0 auto' }}>
       {/* Top */}
       <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)' }}>
-        <CardSlot card={c(4)} position={4} positionLabel={p(4)} index={4} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={200} />
+        <CardSlot card={c(4)} position={4} positionLabel={p(4)} index={4} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={200} compact />
       </div>
       {/* Left */}
       <div style={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)' }}>
-        <CardSlot card={c(0)} position={0} positionLabel={p(0)} index={0} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={0} />
+        <CardSlot card={c(0)} position={0} positionLabel={p(0)} index={0} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={0} compact />
       </div>
       {/* Center */}
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-        <CardSlot card={c(1)} position={1} positionLabel={p(1)} index={1} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={80} />
+        <CardSlot card={c(1)} position={1} positionLabel={p(1)} index={1} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={80} compact />
       </div>
       {/* Right */}
       <div style={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)' }}>
-        <CardSlot card={c(2)} position={2} positionLabel={p(2)} index={2} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={120} />
+        <CardSlot card={c(2)} position={2} positionLabel={p(2)} index={2} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={120} compact />
       </div>
       {/* Bottom */}
       <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)' }}>
-        <CardSlot card={c(3)} position={3} positionLabel={p(3)} index={3} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={160} />
+        <CardSlot card={c(3)} position={3} positionLabel={p(3)} index={3} onCardClick={onCardClick} baseUrl={baseUrl} revealDelay={160} compact />
       </div>
     </div>
   );
@@ -270,13 +266,7 @@ function Cross5Layout({ cards, positions, onCardClick, baseUrl }) {
 /* ─── Row Layout ───────────────────────────────────────────────────── */
 function RowLayout({ cards, positions, onCardClick, baseUrl }) {
   return (
-    <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '16px',
-      justifyContent: 'center',
-      alignItems: 'flex-start',
-    }}>
+    <div className={`spread-row-layout spread-row-count-${positions.length}`}>
       {positions.map((pos, i) => (
         <CardSlot
           key={i}

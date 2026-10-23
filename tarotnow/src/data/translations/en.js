@@ -4,7 +4,7 @@ export const en = {
   'app.subtitle': 'Tarot Spread & AI Interpretations',
   'nav.new_cast': '🔄 New Spread',
   'nav.iching_link': '☯️ IChing Casting',
-  'footer.text': 'Tarot & AI Oracle App. Made with ❤️. Using Rider-Waite-Smith Public Domain Card Images.',
+  'footer.text': 'Tarot & AI Oracle App. Using Rider-Waite-Smith Public Domain Card Images.',
 
   // Form Settings
   'form.question_label': 'Question *',

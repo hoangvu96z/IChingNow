@@ -181,19 +181,8 @@ export default function LasoChart({ result, inputData }) {
       </div>
 
       {/* Tap-to-learn hint banner */}
-      <div style={{
-        margin: '0 0 10px',
-        padding: '8px 14px',
-        borderRadius: 8,
-        background: 'rgba(229, 193, 88, 0.08)',
-        border: '1px dashed rgba(229, 193, 88, 0.3)',
-        color: 'var(--color-gold, #e5c158)',
-        fontSize: '0.85rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}>
-        <span>💡</span>
+      <div className="tuvi-tap-to-learn-banner">
+        <span aria-hidden="true">💡</span>
         <span>
           <strong>Tra cứu nhanh (Tap-to-learn):</strong> Chạm vào bất kỳ <strong>sao</strong>, <strong>tên cung</strong>, hoặc <strong>Tuần / Triệt</strong> trên lá số để xem giải nghĩa chi tiết.
         </span>

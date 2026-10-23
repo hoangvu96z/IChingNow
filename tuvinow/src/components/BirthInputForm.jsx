@@ -282,55 +282,27 @@ export default function BirthInputForm({ onSubmit }) {
             <label className="form-label" htmlFor="view-year" style={{ margin: 0 }}>
               Năm xem lưu niên <span className="text-muted">(không bắt buộc)</span>
             </label>
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <div className="quick-year-chips">
               <button
                 type="button"
+                className={`quick-year-chip ${viewYear === String(currentYear) ? 'is-active' : ''}`}
                 onClick={() => setViewYear(String(currentYear))}
-                style={{
-                  background: viewYear === String(currentYear) ? 'var(--accent-gold)' : 'var(--accent-gold-dim)',
-                  color: viewYear === String(currentYear) ? '#ffffff' : 'var(--accent-gold-bright)',
-                  border: '1px solid var(--accent-gold)',
-                  borderRadius: '6px',
-                  padding: '2px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
               >
                 Năm nay ({currentYear})
               </button>
               <button
                 type="button"
+                className={`quick-year-chip ${viewYear === String(currentYear + 1) ? 'is-active' : ''}`}
                 onClick={() => setViewYear(String(currentYear + 1))}
-                style={{
-                  background: viewYear === String(currentYear + 1) ? 'var(--accent-gold)' : 'var(--accent-gold-dim)',
-                  color: viewYear === String(currentYear + 1) ? '#ffffff' : 'var(--accent-gold-bright)',
-                  border: '1px solid var(--accent-gold)',
-                  borderRadius: '6px',
-                  padding: '2px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
               >
                 Năm sau ({currentYear + 1})
               </button>
               {viewYear !== '' && (
                 <button
                   type="button"
+                  className="quick-year-clear-btn"
                   onClick={() => setViewYear('')}
                   title="Bỏ chọn năm lưu niên"
-                  style={{
-                    background: 'transparent',
-                    color: 'var(--text-muted)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '6px',
-                    padding: '2px 6px',
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                  }}
                 >
                   ✕ Bỏ
                 </button>
@@ -361,6 +333,11 @@ export default function BirthInputForm({ onSubmit }) {
         >
           ✦ Lập Lá Số ✦
         </button>
+        {!isFormValid && (
+          <p className="btn-submit-hint" aria-live="polite">
+            Nhập họ tên ở trên để kích hoạt nút Lập Lá Số
+          </p>
+        )}
       </form>
     </div>
   );

@@ -60,3 +60,25 @@ test('NoteNow header compacts auth text on mobile to keep logout reachable witho
   assert.match(appJsx, /id="btn-logout"/, 'logout button id must be btn-logout');
   assert.match(appJsx, /aria-label=\{t\('header\.logout'/, 'logout button must retain accessible label');
 });
+
+test('NoteNow mobile apps dropdown and footer stay constrained and pinned without detached bottom gap', () => {
+  const css = fs.readFileSync(cssPath, 'utf8');
+
+  assert.match(css, /#root\s*>\s*footer\s*\{[^}]*margin-top:\s*auto\s*!important/, 'footer must push to bottom of flex root');
+  assert.match(css, /\.apps-dropdown-menu\s*\{[^}]*left:\s*8px\s*!important/, 'mobile apps dropdown must keep >= 8px left gutter');
+  assert.match(css, /\.apps-dropdown-menu\s*\{[^}]*right:\s*8px\s*!important/, 'mobile apps dropdown must keep >= 8px right gutter');
+});
+
+test('NoteNow narrow mobile (320px) compacts editor toolbar and footer controls so all buttons fit without orphan wrap or right overflow', () => {
+  const css = fs.readFileSync(cssPath, 'utf8');
+
+  const narrowMediaMatch = css.match(/@media\s*\(\s*max-width:\s*360px\s*\)\s*\{([\s\S]+?)\n\}/);
+  assert.ok(narrowMediaMatch, '@media (max-width: 360px) block must exist');
+  const narrowCss = narrowMediaMatch[1];
+
+  assert.match(narrowCss, /\.nn-tb-btn\s*\{[^}]*width:\s*26px/, 'narrow toolbar buttons must compact to 26px so 10 icons fit on one row at 320px');
+  assert.match(narrowCss, /\.nn-toolbar\s*\{[^}]*flex-wrap:\s*nowrap/, 'narrow toolbar must use nowrap to prevent orphan icons');
+  assert.match(narrowCss, /\.nn-toolbar\s*\{[^}]*overflow-x:\s*auto/, 'narrow toolbar must allow horizontal scrolling when needed');
+  assert.match(narrowCss, /\.nn-editor-footer > div:last-child\s*\{[^}]*flex-wrap:\s*nowrap\s*!important/, 'footer action container must not wrap controls');
+  assert.match(narrowCss, /\.nn-editor-footer\s+\.btn:not\(\.btn-icon\)/, 'narrow editor footer action buttons must compact padding/font-size at 320px');
+});

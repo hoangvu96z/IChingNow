@@ -75,14 +75,14 @@ export default function PlainTextExportCard({ result }) {
           onClick={login}
           style={{
             padding: '8px 20px',
-            background: 'linear-gradient(135deg, #7c5cfc, #a78bfa)',
-            border: 'none',
+            background: 'linear-gradient(135deg, #d4a017 0%, #b8860b 100%)',
+            border: '1px solid rgba(212, 160, 23, 0.55)',
             borderRadius: 10,
-            color: '#ffffff',
+            color: '#1a0a06',
             fontSize: '0.85rem',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(124,92,252,0.4)',
+            boxShadow: '0 4px 14px rgba(184, 134, 11, 0.3)',
           }}
         >
           🔑 {t('auth.login_now', 'Đăng nhập ngay')}
