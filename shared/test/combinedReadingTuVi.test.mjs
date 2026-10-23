@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { anLaSoTuVi } from '../src/utils/tuViEngine.js';
 import { calculateChartFromBirthInfo } from '../src/utils/tuViCalculator.js';
 import {
@@ -231,5 +232,40 @@ test('resolveCurrentDaiHan returns empty string and omits current-period claim w
   assert.equal(
     resolveCurrentDaiHan(chartWithLnMenh),
     'Cung Phụ Mẫu (Sửu), 12–21 tuổi'
+  );
+});
+
+test('shared package manifest and CI workflow declare isolated dependency install for lunar-javascript', () => {
+  const sharedPkgPath = new URL('../package.json', import.meta.url);
+  const sharedPkg = JSON.parse(fs.readFileSync(sharedPkgPath, 'utf8'));
+  assert.ok(
+    sharedPkg.dependencies && sharedPkg.dependencies['lunar-javascript'],
+    'shared/package.json must declare lunar-javascript dependency so clean CI installs resolve it'
+  );
+
+  const sharedLockPath = new URL('../package-lock.json', import.meta.url);
+  assert.ok(
+    fs.existsSync(sharedLockPath),
+    'shared/package-lock.json must exist for npm ci --prefix shared'
+  );
+
+  const ciWorkflowPath = new URL('../../.github/workflows/frontend-ci.yml', import.meta.url);
+  const ciWorkflow = fs.readFileSync(ciWorkflowPath, 'utf8');
+  assert.match(
+    ciWorkflow,
+    /npm ci --prefix shared/,
+    'frontend-ci.yml must install shared dependencies prior to running shared tests'
+  );
+
+  const rootPkgPath = new URL('../../package.json', import.meta.url);
+  const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf8'));
+  assert.ok(
+    rootPkg.scripts && rootPkg.scripts['install:shared'],
+    'root package.json should define install:shared'
+  );
+  assert.match(
+    rootPkg.scripts['install:all'],
+    /npm install --prefix shared/,
+    'root package.json install:all must include shared'
   );
 });

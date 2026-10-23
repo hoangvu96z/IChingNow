@@ -131,6 +131,8 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -140,6 +142,7 @@ body {
   min-height: 100dvh;
   line-height: 1.5;
   overflow-x: hidden;
+  max-width: 100%;
   transition: background-color var(--transition-slow), color var(--transition-slow);
 }
 
@@ -147,6 +150,8 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* ─── Background Ambiance ────────────────────────────────────── */
@@ -204,6 +209,8 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(1.6);
   border-bottom: 1px solid var(--border);
   gap: 12px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 [data-theme='light'] .nn-header {
@@ -390,29 +397,33 @@ body {
   flex: 1;
   position: relative;
   z-index: 1;
-  padding: 0 16px 80px;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+  box-sizing: border-box;
 }
 
 .nn-section-label {
-  font: 500 0.7rem var(--font-body);
+  font: 500 0.75rem var(--font-body);
   color: var(--text-muted);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin: 0 4px 12px;
+  margin: 0 4px 14px;
 }
 
 .nn-masonry {
   column-count: 4;
-  column-gap: 12px;
+  column-gap: 16px;
 }
 
-@media (max-width: 1200px) { .nn-masonry { column-count: 3; } }
-@media (max-width: 800px)  { .nn-masonry { column-count: 2; } }
-@media (max-width: 480px)  { .nn-masonry { column-count: 1; } }
+@media (max-width: 1200px) { .nn-masonry { column-count: 3; column-gap: 14px; } }
+@media (max-width: 800px)  { .nn-masonry { column-count: 2; column-gap: 12px; } }
+@media (max-width: 480px)  { .nn-masonry { column-count: 1; column-gap: 12px; } }
 
 .nn-masonry-item {
   break-inside: avoid;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 /* ─── Note Card ──────────────────────────────────────────────── */
@@ -1944,26 +1955,77 @@ body {
   display: none;
 }
 
+/* Mobile-only icons inside header auth controls (hidden on desktop) */
+.nn-auth-icon-mobile {
+  display: none;
+}
+
+/* Tablet header: optimize header actions and logo to keep search readable without clipping */
+@media (max-width: 900px) {
+  .nn-logo-sub {
+    display: none;
+  }
+  .nn-header-actions #apps-dropdown-btn {
+    font-size: 0 !important;
+    padding: 6px 8px !important;
+    gap: 4px !important;
+  }
+  .nn-header-actions .nn-auth-text,
+  .nn-header-actions .nn-auth-name {
+    display: none !important;
+  }
+  .nn-header-actions .nn-auth-icon-mobile {
+    display: inline-block !important;
+  }
+  .nn-header-actions .nn-auth-btn {
+    padding: 5px 7px !important;
+  }
+  .nn-header-actions #btn-logout {
+    padding: 6px 8px !important;
+    min-width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nn-header-actions > div {
+    gap: 4px !important;
+  }
+}
+
 /* ─── Responsive (Mobile & iPhone) ───────────────────────────── */
 @media (max-width: 640px) {
   /* Header — compact, zero clipping */
   .nn-header {
-    padding: 0 12px;
+    padding: 0 10px;
     height: 52px;
-    gap: 6px;
+    gap: 4px;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: clip;
   }
   .nn-logo {
-    gap: 8px;
+    gap: 6px;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .nn-logo > div:last-child {
+    min-width: 0;
+    overflow: hidden;
   }
   .nn-logo-icon {
     width: 32px;
     height: 32px;
     font-size: 16px;
     border-radius: 8px;
+    flex-shrink: 0;
   }
   .nn-logo-text {
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .nn-logo-sub {
     display: none;
@@ -1972,17 +2034,55 @@ body {
     display: none;
   }
   .nn-header-actions {
-    gap: 6px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .nn-header-actions #apps-dropdown-btn {
+    font-size: 0 !important;
+    padding: 5px 6px !important;
+    gap: 3px !important;
   }
   .nn-theme-toggle {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+    flex-shrink: 0;
   }
   .nn-auth-btn {
-    padding: 5px 9px;
+    padding: 4px 6px !important;
     font-size: 0.75rem;
     gap: 4px;
+    flex-shrink: 0;
+  }
+  .nn-auth-avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+  .nn-header-actions .nn-auth-text,
+  .nn-header-actions .nn-auth-name {
+    display: none !important;
+  }
+  .nn-header-actions .nn-auth-icon-mobile {
+    display: inline-block !important;
+  }
+  .nn-header-actions #btn-logout {
+    padding: 5px 6px !important;
+    min-width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nn-header-actions #btn-login {
+    padding: 5px 8px !important;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .nn-header-actions > div {
+    gap: 4px !important;
   }
 
   /* Top search bar on mobile */
@@ -2071,7 +2171,8 @@ body {
 
   /* Main Workspace */
   .nn-main {
-    padding: 0 12px 110px; /* leaves room so cards are never covered by the FAB */
+    padding: 0 12px 140px; /* ample room so cards and all actions can be scrolled completely clear of the FAB */
+    padding-bottom: max(140px, calc(110px + env(safe-area-inset-bottom, 0px)));
   }
 
   /* Note cards on mobile */
@@ -2130,16 +2231,24 @@ body {
     font-size: 1.15rem;
     padding: 12px 16px 8px;
   }
-  /* TipTap toolbar — single smooth horizontal swipe row */
+  /* TipTap toolbar — wrap controls so all alignment actions remain reachable */
   .nn-toolbar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 6px 12px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding: 6px 10px;
     gap: 3px;
   }
   .nn-toolbar::-webkit-scrollbar {
     display: none;
+  }
+  .nn-tb-btn {
+    width: 29px;
+    height: 29px;
+    font-size: 12px;
+  }
+  .nn-toolbar-sep {
+    height: 16px;
+    margin: 0 2px;
   }
   .nn-tiptap-wrap {
     padding: 12px 16px;
@@ -2191,58 +2300,10 @@ body {
   /* Compact footer on mobile — ensure space above and below so fixed FAB with notes never covers footer content */
   footer {
     margin-top: 24px !important;
-    padding: 20px 14px 80px !important;
+    padding: 20px 14px 96px !important;
+    padding-bottom: max(96px, calc(72px + env(safe-area-inset-bottom, 0px))) !important;
   }
-}
 
-/* Mobile-only icons inside header auth controls (hidden on desktop) */
-.nn-auth-icon-mobile {
-  display: none;
-}
-
-/* Tablet header: optimize header actions and logo to keep search readable without clipping */
-@media (max-width: 900px) {
-  .nn-logo-sub {
-    display: none;
-  }
-  .nn-header-actions #apps-dropdown-btn {
-    font-size: 0 !important;
-    padding: 6px 8px !important;
-    gap: 4px !important;
-  }
-  .nn-header-actions .nn-auth-text,
-  .nn-header-actions .nn-auth-name {
-    display: none;
-  }
-  .nn-header-actions .nn-auth-icon-mobile {
-    display: inline-block;
-  }
-  .nn-header-actions .nn-auth-btn {
-    padding: 5px 7px;
-  }
-  .nn-header-actions #btn-logout {
-    padding: 6px 8px !important;
-  }
-  .nn-header-actions > div {
-    gap: 4px !important;
-  }
-}
-
-/* ─── Mobile header: keep all controls inside the viewport ────── */
-@media (max-width: 640px) {
-  .nn-logo {
-    min-width: 0;
-    flex-shrink: 1;
-  }
-  .nn-logo > div:last-child {
-    min-width: 0;
-    overflow: hidden;
-  }
-  .nn-logo-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   /* Onboarding sheet: fit viewport width, scroll vertically */
   .nn-onboarding-modal {
     width: 100%;
@@ -2251,17 +2312,59 @@ body {
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 390px) {
   .nn-header {
     padding: 0 8px;
     gap: 4px;
   }
   .nn-header-actions {
-    gap: 4px;
+    gap: 3px;
   }
   .nn-theme-toggle {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .nn-header-actions #apps-dropdown-btn {
+    padding: 4px 5px !important;
+  }
+  .nn-header-actions #btn-logout {
+    min-width: 28px;
+    height: 28px;
+    padding: 4px 5px !important;
+  }
+  .nn-auth-avatar {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+  }
+  .nn-auth-btn {
+    padding: 3px 5px !important;
+  }
+  .nn-logo {
+    min-width: 0;
+    max-width: 105px;
+  }
+  .nn-logo-text {
+    font-size: 0.95rem;
+  }
+  .nn-tb-btn {
+    width: 28px;
+    height: 28px;
+  }
+  .nn-toolbar {
+    padding: 5px 6px;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 340px) {
+  .nn-header {
+    padding: 0 6px;
+    gap: 3px;
+  }
+  .nn-header-actions {
+    gap: 2px;
   }
   /* Logo icon alone carries the brand on the narrowest phones */
   .nn-logo > div:last-child {

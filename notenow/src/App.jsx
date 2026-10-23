@@ -457,7 +457,7 @@ export default function App() {
           {authLoading ? (
             <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-full)' }} className="nn-skeleton" />
           ) : user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="nn-header-auth" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="nn-auth-btn" style={{ cursor: 'default' }} title={user.displayName || user.email}>
                 <div className="nn-auth-avatar">{(user.displayName || user.email || '?')[0].toUpperCase()}</div>
                 <span className="nn-auth-name" style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

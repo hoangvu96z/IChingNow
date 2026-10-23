@@ -23,6 +23,7 @@ jobs:
 
       - name: Install app dependencies
         run: |
+          npm ci --prefix shared
           npm ci --prefix iching
           npm ci --prefix tarotnow
           npm ci --prefix tuvinow

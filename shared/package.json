@@ -1,4 +1,8 @@
 {
+  "name": "shared",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "lunar-javascript": "^1.7.7"
+  }
 }
