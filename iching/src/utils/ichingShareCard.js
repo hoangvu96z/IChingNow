@@ -1,4 +1,9 @@
+import classicalChineseJudgements from '../data/classicalChineseJudgements.js';
+
 const HEXAGRAM_BITS = /^[01]{6}$/;
+const JUDGEMENTS_BY_ID = new Map(
+  classicalChineseJudgements.map((entry) => [Number(entry.id), entry]),
+);
 
 function getBinary(hexagram, fallbackBinary, lines) {
   if (HEXAGRAM_BITS.test(hexagram?.binary || '')) return hexagram.binary;
@@ -20,6 +25,8 @@ function getBinary(hexagram, fallbackBinary, lines) {
 function createHexagramModel(hexagram, fallbackBinary, lines) {
   const binary = getBinary(hexagram, fallbackBinary, lines);
   if (!hexagram || !binary) return null;
+  const source = JUDGEMENTS_BY_ID.get(Number(hexagram.id));
+  if (!source?.classicalChineseJudgement || !source.sourceUrl) return null;
 
   const sourceLines = Array.isArray(lines) ? lines : [];
   const linesByIndex = new Map(sourceLines.map((line) => [Number(line.index), line]));
@@ -28,6 +35,9 @@ function createHexagramModel(hexagram, fallbackBinary, lines) {
     id: hexagram.id,
     name: hexagram.nameVi || '',
     chinese: hexagram.nameZh || '',
+    classicalChineseJudgement: source.classicalChineseJudgement,
+    sourceUrl: source.sourceUrl,
+    attributionLicenseNote: source.attributionLicenseNote,
     lines: Array.from({ length: 6 }, (_, offset) => {
       const index = offset + 1;
       return {
@@ -66,6 +76,8 @@ export function buildIChingShareCardModel(result) {
       result.changedLines,
     )
     : null;
+
+  if (hasMovingLines && result.changedHexagram && !changed) return null;
 
   return { primary, changed };
 }

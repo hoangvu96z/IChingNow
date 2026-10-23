@@ -153,9 +153,9 @@ export default function IChingShareCard({ result, language = 'vi' }) {
             </header>
 
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: model.changed ? '1fr 1fr' : '1fr', gap: 12, alignItems: 'start' }}>
-              <ShareHexagram hexagram={model.primary} label={copy('QUẺ CHỦ', 'PRIMARY')} accent="#e5c158" />
+              <ShareHexagram hexagram={model.primary} label={copy('QUẺ CHỦ', 'PRIMARY')} accent="#e5c158" copy={copy} />
               {model.changed && (
-                <ShareHexagram hexagram={model.changed} label={copy('QUẺ BIẾN', 'CHANGED')} accent="#78bd98" />
+                <ShareHexagram hexagram={model.changed} label={copy('QUẺ BIẾN', 'CHANGED')} accent="#78bd98" copy={copy} />
               )}
             </div>
 
@@ -174,6 +174,13 @@ export default function IChingShareCard({ result, language = 'vi' }) {
               <span>{copy('GIEO QUẺ · CHIÊM NGHIỆM', 'CAST · REFLECT')}</span>
               <span style={{ fontWeight: 800, color: '#e5c158' }}>IChingNow</span>
             </footer>
+            <div style={{ position: 'relative', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2px 4px', color: '#bda978', fontSize: 9, lineHeight: 1.4, textAlign: 'center' }}>
+              <span>{copy('Thoán từ được chép nguyên văn từ Wikisource · người đóng góp Wikimedia ·', 'Judgment reproduced unchanged from Wikisource · Wikimedia contributors ·')}</span>
+              <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer" style={{ color: '#e5c158', overflowWrap: 'anywhere' }}>
+                CC BY-SA 4.0 · creativecommons.org/licenses/by-sa/4.0/
+              </a>
+              <span>{copy('· Chia sẻ tương tự', '· ShareAlike')}</span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -194,7 +201,7 @@ export default function IChingShareCard({ result, language = 'vi' }) {
   );
 }
 
-function ShareHexagram({ hexagram, label, accent }) {
+function ShareHexagram({ hexagram, label, accent, copy }) {
   return (
     <div style={{ minWidth: 0, display: 'grid', justifyItems: 'center', gap: 5, textAlign: 'center' }}>
       <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: accent }}>{label}</div>
@@ -206,6 +213,23 @@ function ShareHexagram({ hexagram, label, accent }) {
         {hexagram.name || `#${hexagram.id}`}
       </div>
       <div style={{ color: '#bda978', fontSize: 10 }}>{`#${hexagram.id}`}</div>
+      <div style={{ width: '100%', borderTop: '1px solid rgba(229,193,88,0.24)', paddingTop: 6 }}>
+        <div style={{ color: accent, fontSize: 9, fontWeight: 800, lineHeight: 1.3 }}>
+          {copy('Thoán từ (卦辭)', 'Judgment (卦辭)')}
+        </div>
+        <p lang="zh-Hant" style={{ margin: '4px 0', color: '#eee4ce', fontFamily: "'Noto Serif', serif", fontSize: 11, lineHeight: 1.5, whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
+          {hexagram.classicalChineseJudgement}
+        </p>
+        <a
+          href={hexagram.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          title={hexagram.attributionLicenseNote}
+          style={{ display: 'block', color: '#bda978', fontSize: 8, lineHeight: 1.25, overflowWrap: 'anywhere' }}
+        >
+          {hexagram.sourceUrl.replace(/^https?:\/\//, '')}
+        </a>
+      </div>
     </div>
   );
 }
