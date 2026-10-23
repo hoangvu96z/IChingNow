@@ -169,6 +169,12 @@ export default function TalkWithMePage() {
 
   const hasSession = !!session?.id;
 
+  const uploadActionLabel = compressing
+    ? 'Đang tự động nén chuẩn 720p...'
+    : attachedImages.length === 0
+    ? 'Đính kèm ảnh (tối đa 3 ảnh)'
+    : `Thêm ảnh (${attachedImages.length}/3)`;
+
   // Load previous messages only for the session restored at initial mount
   useEffect(() => {
     let isCurrent = true;
@@ -507,6 +513,8 @@ export default function TalkWithMePage() {
                 id="twm-file-input"
                 multiple
                 disabled={attachedImages.length >= 3 || compressing}
+                aria-label={uploadActionLabel}
+                aria-describedby="twm-upload-desc"
               />
 
               {/* Grid of attached images */}
@@ -536,26 +544,18 @@ export default function TalkWithMePage() {
               {attachedImages.length < 3 ? (
                 <label
                   htmlFor="twm-file-input"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      fileInputRef.current?.click();
-                    }
-                  }}
                   className={`twm-upload-dropzone ${compressing ? 'is-compressing' : ''}`}
                 >
-                  <span className="twm-upload-icon">{compressing ? '⚙️' : '🖼️'}</span>
-                  <div className="twm-upload-text">
-                    <strong>
-                      {compressing
-                        ? 'Đang tự động nén chuẩn 720p...'
-                        : attachedImages.length === 0
-                        ? 'Đính kèm ảnh (tối đa 3 ảnh)'
-                        : `Thêm ảnh (${attachedImages.length}/3)`}
-                    </strong>
-                    <small>Tự động nén chuẩn 720p HD · Hỗ trợ JPG, PNG, WebP</small>
+                  <div className="twm-upload-main">
+                    <span className="twm-upload-icon" aria-hidden="true">{compressing ? '⚙️' : '🖼️'}</span>
+                    <div className="twm-upload-text">
+                      <strong>{uploadActionLabel}</strong>
+                      <small id="twm-upload-desc">Tự động nén chuẩn 720p HD · Hỗ trợ JPG, PNG, WebP</small>
+                    </div>
                   </div>
+                  <span className="twm-upload-cta-btn" aria-hidden="true">
+                    {attachedImages.length === 0 ? 'Chọn ảnh' : '+ Thêm'}
+                  </span>
                 </label>
               ) : (
                 <div className="twm-upload-full-badge">
