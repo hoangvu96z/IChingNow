@@ -137,18 +137,20 @@ function App() {
   return (
     <div className="spirit-shell">
       <header className="spirit-header">
-        <a className="brand" href="/spiritnow/" aria-label="SpiritNow trang tổng quan">
-          <span className="brand-mark">✦</span>
-          <span>Spirit<span>Now</span></span>
-        </a>
-        <div className="header-actions">
-          {isAuthenticated ? (
-            <span className="session-label">Đã kết nối SSO</span>
-          ) : (
-            <button className="button button-quiet" type="button" onClick={login} disabled={authLoading}>
-              {authLoading ? 'Đang kiểm tra…' : 'Đăng nhập'}
-            </button>
-          )}
+        <div className="spirit-header-inner">
+          <a className="brand" href="/spiritnow/" aria-label="SpiritNow trang tổng quan">
+            <span className="brand-mark">✦</span>
+            <span>Spirit<span>Now</span></span>
+          </a>
+          <div className="header-actions">
+            {isAuthenticated ? (
+              <span className="session-label">Đã kết nối SSO</span>
+            ) : (
+              <button className="button button-quiet" type="button" onClick={login} disabled={authLoading}>
+                {authLoading ? 'Đang kiểm tra…' : 'Đăng nhập'}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -165,7 +167,6 @@ function App() {
         <section className="streak-section" aria-labelledby="streak-heading">
           <div className="section-heading">
             <div><p className="eyebrow">NHỊP ĐỘ CỦA BẠN</p><h2 id="streak-heading">Tiến độ gần đây</h2></div>
-            {!isAuthenticated && !authLoading && <span className="section-note">Đăng nhập để đồng bộ tiến độ</span>}
           </div>
           {overviewState === 'loading' ? (
             <StreakSummary apps={model.apps} loading />
@@ -235,7 +236,7 @@ function App() {
         </section>
       </main>
 
-      <AppFooter compact tagline="Một nơi để tiếp tục hành trình qua Kinh Dịch, Tarot, Tử Vi và ghi chú." />
+      <AppFooter compact showApps={false} tagline="Một nơi để tiếp tục hành trình qua Kinh Dịch, Tarot, Tử Vi và ghi chú." />
     </div>
   );
 }

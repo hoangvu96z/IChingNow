@@ -14,7 +14,7 @@ export const vi = {
   'header.lang_title': 'Chuyển đổi ngôn ngữ (VI / EN)',
   'footer.tagline': 'NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú',
   'footer.support_label': 'Hỗ trợ & Góp ý:',
-  'footer.support_btn': 'Hỗ trợ & Góp ý qua TalkWithMe',
+  'footer.support_btn': 'Góp ý qua TalkWithMe',
   'footer.copyright': '© {year} vunph.id.vn · Made with ❤️ in Việt Nam',
 
   // Board

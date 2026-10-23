@@ -1006,12 +1006,12 @@ body {
 /* ─── Onboarding Modal ────────────────────────────────────────── */
 .nn-onboarding-modal {
   max-width: 540px;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
-  /* Never clip horizontally, but let tall content (and the CTA) scroll into view */
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -1021,6 +1021,7 @@ body {
   padding: 28px 24px 20px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .nn-onboarding-icon {
@@ -1049,6 +1050,10 @@ body {
 }
 
 .nn-onboarding-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px 24px 16px;
   display: flex;
   flex-direction: column;
@@ -1118,6 +1123,21 @@ body {
   padding: 14px 24px 22px;
   text-align: center;
   background: var(--bg-surface);
+  flex-shrink: 0;
+  position: relative;
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.nn-onboarding-footer::before {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to top, var(--bg-surface), transparent);
+  pointer-events: none;
 }
 
 .nn-onboarding-start-btn {

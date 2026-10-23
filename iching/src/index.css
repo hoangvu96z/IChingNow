@@ -784,9 +784,79 @@ body {
   50%       { box-shadow: 0 0 0 6px rgba(124,58,237,0.28), 0 6px 26px rgba(124,58,237,0.55); }
 }
 
-/* Date/time row in CastingForm: stack on the narrowest phones only (390px keeps side-by-side) */
-@media (max-width: 359px) {
+/* Date/time row in CastingForm: stack responsively on mobile so time value stays readable without colliding with native clock icon at 320/390 */
+.casting-datetime-row input[type="time"] {
+  min-width: 0;
+}
+
+.casting-datetime-row > .casting-date-field {
+  flex: 1.4 1 140px;
+}
+
+.casting-datetime-row > .casting-time-field {
+  flex: 1 1 110px;
+}
+
+/* Scoped divider for CastingForm: parent flex has gap 16px, reset margins to 0 so total spacing is 16px */
+.casting-form .divider,
+.casting-form-divider {
+  margin: 0;
+}
+
+@media (max-width: 480px) {
   .casting-datetime-row {
     flex-direction: column;
+    gap: 16px !important;
+  }
+  .casting-datetime-row > .casting-date-field,
+  .casting-datetime-row > .casting-time-field {
+    flex: none;
+    width: 100%;
+  }
+}
+
+/* ─── Toolbar row responsive balance ───────────────────────────────────── */
+@media (max-width: 540px) {
+  .iching-toolbar-spacer {
+    display: none;
+  }
+  .iching-toolbar-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100%;
+  }
+  .iching-toolbar-row > :not(.iching-toolbar-spacer) {
+    min-width: 0;
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+    text-align: center;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    font-size: 0.75rem !important;
+    gap: 4px !important;
+  }
+  .iching-toolbar-row #daily-cast-quick {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    font-size: 0.72rem !important;
+    letter-spacing: -0.01em;
+  }
+}
+
+@media (max-width: 340px) {
+  .iching-toolbar-row {
+    gap: 6px !important;
+  }
+  .iching-toolbar-row > :not(.iching-toolbar-spacer) {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    font-size: 0.72rem !important;
+  }
+  .iching-toolbar-row #daily-cast-quick {
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    font-size: 0.71rem !important;
   }
 }

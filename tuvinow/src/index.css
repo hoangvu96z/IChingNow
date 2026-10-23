@@ -72,9 +72,12 @@
   --badge-than-color: #0f766e;
   
   /* Submit Button */
-  --btn-submit-bg: linear-gradient(135deg, #854d0e 0%, #b45309 50%, #854d0e 100%);
+  --btn-submit-bg: linear-gradient(135deg, #78350f 0%, #92400e 50%, #78350f 100%);
   --btn-submit-color: #ffffff;
-  --btn-submit-glow: rgba(133, 77, 14, 0.35);
+  --btn-submit-glow: rgba(120, 53, 15, 0.35);
+  --btn-submit-disabled-bg: #e2e8f0;
+  --btn-submit-disabled-color: #334155;
+  --btn-submit-disabled-border: #94a3b8;
   
   /* Spacing */
   --gap-xs: 4px;
@@ -160,6 +163,9 @@
   --btn-submit-bg: linear-gradient(135deg, #b8860b 0%, #d4a574 50%, #b8860b 100%);
   --btn-submit-color: #1a0a06;
   --btn-submit-glow: rgba(212, 165, 116, 0.4);
+  --btn-submit-disabled-bg: rgba(255, 255, 255, 0.12);
+  --btn-submit-disabled-color: rgba(255, 255, 255, 0.82);
+  --btn-submit-disabled-border: rgba(255, 255, 255, 0.22);
   
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border-subtle);
   --shadow-glow-gold: 0 0 20px rgba(212, 165, 116, 0.15);
@@ -351,6 +357,12 @@ body {
   outline-offset: 3px;
 }
 .tuvi-header-new { color: #a9f0d5; font-size: 25px; }
+
+/* Improve contrast for login button on mint accent */
+#sso-login-btn {
+  color: #0a2e23 !important;
+  font-weight: 700 !important;
+}
 .tuvi-chart-toolbar {
   width: 98%; max-width: 1200px; margin: 0 auto 8px;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -431,6 +443,7 @@ body {
   color: var(--text-secondary);
   font-size: 0.82rem;
   margin-bottom: 16px;
+  text-wrap: balance;
 }
 
 .form-group {
@@ -653,11 +666,14 @@ body {
 }
 
 .btn-submit:disabled {
-  opacity: 0.45;
+  opacity: 1;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-  filter: grayscale(0.2);
+  filter: none;
+  background: var(--btn-submit-disabled-bg, #e2e8f0);
+  color: var(--btn-submit-disabled-color, #475569);
+  border: 1px solid var(--btn-submit-disabled-border, #cbd5e1);
 }
 
 /* New Reading Button */

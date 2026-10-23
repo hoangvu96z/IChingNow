@@ -37,9 +37,11 @@ export default function AuthUserBadge({ useAuthHook, accentColor }) {
   }
 
   if (!isAuthenticated) {
+    const isMint = accentColor === '#6dd5b0';
     const loginBg = accentColor
       ? `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`
       : 'linear-gradient(135deg, #7c5cfc, #a78bfa)';
+    const loginColor = isMint ? '#0a2e23' : 'white';
     return (
       <button
         id="sso-login-btn"
@@ -49,9 +51,9 @@ export default function AuthUserBadge({ useAuthHook, accentColor }) {
           background: loginBg,
           border: 'none',
           borderRadius: 8,
-          color: 'white',
+          color: loginColor,
           fontSize: '0.8rem',
-          fontWeight: 600,
+          fontWeight: isMint ? 750 : 600,
           cursor: 'pointer',
           fontFamily: 'inherit',
           transition: 'opacity 0.2s',

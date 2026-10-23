@@ -298,9 +298,14 @@
 }
 
 .twm-opt {
-  color: var(--text-secondary);
-  font-weight: 400;
-  font-size: 0.75rem;
+  color: #9cb0cb;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  margin-left: 3px;
+}
+
+[data-theme="light"] .twm-opt {
+  color: #475569;
 }
 
 .twm-input-wrap {
@@ -377,13 +382,14 @@
 }
 
 .twm-char-count {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
+  font-size: 0.75rem;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  opacity: 0.85;
 }
 
 .twm-char-count span {
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 /* ── Upload ── */
@@ -522,8 +528,14 @@
 }
 
 .twm-upload-text small {
-  font-size: 0.72rem;
-  opacity: 0.65;
+  font-size: 0.8125rem;
+  color: #9cb0cb;
+  line-height: 1.4;
+  opacity: 1;
+}
+
+[data-theme="light"] .twm-upload-text small {
+  color: #475569;
 }
 
 .twm-upload-full-badge {

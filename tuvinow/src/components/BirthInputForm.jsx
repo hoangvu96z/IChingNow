@@ -100,7 +100,7 @@ export default function BirthInputForm({ onSubmit }) {
     <div className="form-container">
       <form className="form-card" onSubmit={handleSubmit}>
         <h2 className="form-title">🔮 Lập Lá Số Tử Vi</h2>
-        <p className="form-subtitle">Nhập thông tin ngày giờ sinh để an lá số Tử Vi Đẩu Số</p>
+        <p className="form-subtitle">Nhập thông tin ngày giờ sinh để an lá số Tử Vi Đẩu{'\u00A0'}Số</p>
 
         {/* Họ Tên */}
         <div className="form-group">
@@ -309,7 +309,7 @@ export default function BirthInputForm({ onSubmit }) {
             value={viewYear}
             onChange={(event) => setViewYear(event.target.value)}
           >
-            <option value="">-- Để trống nếu chỉ xem lá số gốc --</option>
+            <option value="">-- Giữ nguyên lá số gốc --</option>
             {viewYearOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}

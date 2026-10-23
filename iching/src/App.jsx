@@ -828,7 +828,7 @@ export default function App() {
           )}
           
           {/* ── Thanh công cụ gọn: Streak · Game · Kiến thức · Gieo nhanh ── */}
-          <div style={{
+          <div className="iching-toolbar-row" style={{
             display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
             padding: '8px 0',
           }}>
@@ -874,7 +874,7 @@ export default function App() {
             </button>
 
             {/* Spacer */}
-            <div style={{ flex: 1 }} />
+            <div className="iching-toolbar-spacer" style={{ flex: 1 }} />
 
             {/* Gieo nhanh hôm nay */}
             {!result && !maiHoaResult && (
@@ -885,7 +885,7 @@ export default function App() {
                 )}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '5px 14px', borderRadius: 20, cursor: 'pointer',
+                  padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
                   background: 'var(--color-gold, #b8860b)', border: '1px solid var(--color-gold, #b8860b)',
                   fontSize: '0.8rem', fontWeight: 700, color: '#fff',
                   whiteSpace: 'nowrap', transition: 'all 0.2s',

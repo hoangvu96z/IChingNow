@@ -171,7 +171,7 @@ function MethodCard({ method, disabled, onClick }) {
         }`,
         background: hovered && !disabled ? method.hoverBg : method.gradient,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.55 : 1,
+        opacity: disabled ? 0.82 : 1,
         transform: hovered && !disabled ? 'translateY(-2px)' : 'translateY(0)',
         boxShadow:
           hovered && !disabled
