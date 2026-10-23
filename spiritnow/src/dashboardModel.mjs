@@ -32,6 +32,25 @@ export function dashboardApps(overview) {
     : DASHBOARD_APP_LINKS;
 }
 
+export function dashboardOverviewState({
+  authLoading,
+  isAuthenticated,
+  overviewLoading,
+  overviewError,
+  overviewOwnerId,
+  userId,
+}) {
+  if (authLoading) return 'loading';
+  if (!isAuthenticated) return 'guest';
+  if (overviewError) return 'error';
+  if (overviewLoading || !userId || overviewOwnerId !== userId) return 'loading';
+  return 'ready';
+}
+
+export function dashboardOverviewForUser(result, userId) {
+  return userId && result?.ownerId === userId ? result.data : null;
+}
+
 export function createDashboardModel({ date = new Date(), tarotCards = [], overview = null } = {}) {
   const knowledgeDate = localDateKey(date);
   const knowledgePost = postOfTheDay(knowledgeDate);

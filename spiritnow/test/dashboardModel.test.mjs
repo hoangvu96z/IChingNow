@@ -5,6 +5,8 @@ import { postOfTheDay } from '../../iching/src/data/knowledgePosts.js';
 import {
   createDashboardModel,
   dashboardApps,
+  dashboardOverviewForUser,
+  dashboardOverviewState,
   localDateKey,
   millisecondsUntilNextLocalMidnight,
 } from '../src/dashboardModel.mjs';
@@ -60,6 +62,42 @@ test('dashboard fallback includes all known app links, including link-only TalkW
     { id: 'note', href: '/note/', streak: null },
   ]);
   assert.deepEqual(dashboardApps({ apps: [] }), apps);
+});
+
+test('dashboard overview waits for auth and never renders another account snapshot', () => {
+  const accountAResult = {
+    ownerId: 'user-a',
+    data: { apps: [{ id: 'iching', streak: { currentStreak: 12 } }] },
+  };
+
+  assert.equal(dashboardOverviewState({ authLoading: true, isAuthenticated: false }), 'loading');
+  assert.equal(dashboardOverviewState({ authLoading: false, isAuthenticated: false }), 'guest');
+  assert.equal(dashboardOverviewForUser(accountAResult, 'user-b'), null);
+  assert.equal(dashboardOverviewState({
+    authLoading: false,
+    isAuthenticated: true,
+    overviewLoading: false,
+    overviewError: '',
+    overviewOwnerId: 'user-a',
+    userId: 'user-b',
+  }), 'loading');
+  assert.equal(dashboardOverviewForUser(accountAResult, 'user-a'), accountAResult.data);
+  assert.equal(dashboardOverviewState({
+    authLoading: false,
+    isAuthenticated: true,
+    overviewLoading: false,
+    overviewError: '',
+    overviewOwnerId: 'user-b',
+    userId: 'user-b',
+  }), 'ready');
+  assert.equal(dashboardOverviewState({
+    authLoading: false,
+    isAuthenticated: true,
+    overviewLoading: false,
+    overviewError: 'server unavailable',
+    overviewOwnerId: null,
+    userId: 'user-b',
+  }), 'error');
 });
 
 test('date refresh helper schedules the next local midnight', () => {

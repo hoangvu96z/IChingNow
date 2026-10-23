@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { useAuth } from '@shared/context/AuthContext.jsx';
 import { getAppLink } from '@shared/utils/appLinks.mjs';
-import { createDashboardModel, millisecondsUntilNextLocalMidnight } from './dashboardModel.mjs';
+import {
+  createDashboardModel,
+  dashboardOverviewForUser,
+  dashboardOverviewState,
+  millisecondsUntilNextLocalMidnight,
+} from './dashboardModel.mjs';
 import { fetchMeOverview, fetchTarotCards } from './overviewApi.mjs';
 
 function appHref(path) {
@@ -46,7 +51,7 @@ function StreakSummary({ apps, loading }) {
 
 function App() {
   const { user, isLoading: authLoading, isAuthenticated, login } = useAuth();
-  const [overview, setOverview] = useState(null);
+  const [overviewResult, setOverviewResult] = useState({ ownerId: null, data: null });
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewError, setOverviewError] = useState('');
   const [tarotCards, setTarotCards] = useState([]);
@@ -91,18 +96,18 @@ function App() {
 
   useEffect(() => {
     if (authLoading || !isAuthenticated || !user?.id) {
-      setOverview(null);
+      setOverviewResult({ ownerId: null, data: null });
       setOverviewLoading(false);
       setOverviewError('');
       return undefined;
     }
 
     const controller = new AbortController();
-    setOverview(null);
+    setOverviewResult({ ownerId: null, data: null });
     setOverviewLoading(true);
     setOverviewError('');
     fetchMeOverview({ signal: controller.signal })
-      .then((data) => setOverview(data))
+      .then((data) => setOverviewResult({ ownerId: user.id, data }))
       .catch((error) => {
         if (!controller.signal.aborted) setOverviewError(error.message || 'Không tải được tổng quan.');
       })
@@ -112,6 +117,15 @@ function App() {
     return () => controller.abort();
   }, [authLoading, isAuthenticated, user?.id, retryKey]);
 
+  const overview = dashboardOverviewForUser(overviewResult, user?.id);
+  const overviewState = dashboardOverviewState({
+    authLoading,
+    isAuthenticated,
+    overviewLoading,
+    overviewError,
+    overviewOwnerId: overviewResult.ownerId,
+    userId: user?.id,
+  });
   const model = useMemo(
     () => createDashboardModel({ date: dashboardDate, tarotCards, overview }),
     [dashboardDate, tarotCards, overview],
@@ -153,15 +167,17 @@ function App() {
             <div><p className="eyebrow">NHỊP ĐỘ CỦA BẠN</p><h2 id="streak-heading">Tiến độ gần đây</h2></div>
             {!isAuthenticated && !authLoading && <span className="section-note">Đăng nhập để đồng bộ tiến độ</span>}
           </div>
-          {overviewError ? (
+          {overviewState === 'loading' ? (
+            <StreakSummary apps={model.apps} loading />
+          ) : overviewState === 'guest' ? (
+            <div className="guest-state">Đăng nhập để xem streak được đồng bộ giữa các thiết bị.</div>
+          ) : overviewState === 'error' ? (
             <div className="notice" role="alert">
               <span>{overviewError}</span>
               <button className="text-link button-link" type="button" onClick={() => setRetryKey((key) => key + 1)}>Thử lại</button>
             </div>
-          ) : !isAuthenticated ? (
-            <div className="guest-state">Đăng nhập để xem streak được đồng bộ giữa các thiết bị.</div>
           ) : (
-            <StreakSummary apps={model.apps} loading={overviewLoading} />
+            <StreakSummary apps={model.apps} loading={false} />
           )}
         </section>
 
