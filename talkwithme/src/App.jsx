@@ -94,7 +94,7 @@ export default function App() {
           accent: '#38bdf8',
           footerBorder: 'rgba(56, 189, 248, 0.18)',
           footerLink: 'var(--text-secondary, rgba(255,255,255,0.65))',
-          footerText: 'var(--text-muted, rgba(255,255,255,0.45))',
+          footerText: 'var(--text-muted, rgba(255,255,255,0.68))',
           footerDot: 'rgba(56, 189, 248, 0.3)',
         }}
         tagline="TalkWithMe — Hòm thư trực tuyến, kết nối và gửi phản hồi ẩn danh hoặc định danh"

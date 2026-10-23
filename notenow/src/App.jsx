@@ -10,7 +10,7 @@ import { AppsDropdown } from '@shared/components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { trackPageVisit } from '@shared/utils/analytics.js';
 import {
-  FileText, Search, Sun, Moon, LogIn,
+  FileText, Search, Sun, Moon, LogIn, LogOut,
   Lock, AlertCircle, Share2, Plus,
   HelpCircle, Loader2, KeyRound,
 } from 'lucide-react';
@@ -458,9 +458,9 @@ export default function App() {
             <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-full)' }} className="nn-skeleton" />
           ) : user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="nn-auth-btn" style={{ cursor: 'default' }}>
+              <span className="nn-auth-btn" style={{ cursor: 'default' }} title={user.displayName || user.email}>
                 <div className="nn-auth-avatar">{(user.displayName || user.email || '?')[0].toUpperCase()}</div>
-                <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="nn-auth-name" style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {user.displayName || user.email}
                 </span>
               </span>
@@ -470,8 +470,11 @@ export default function App() {
                 onClick={handleLogout}
                 type="button"
                 id="btn-logout"
+                aria-label={t('header.logout', 'Đăng xuất')}
+                title={t('header.logout', 'Đăng xuất')}
               >
-                {t('header.logout', 'Đăng xuất')}
+                <LogOut className="nn-auth-icon-mobile" size={15} strokeWidth={2.2} aria-hidden="true" />
+                <span className="nn-auth-text">{t('header.logout', 'Đăng xuất')}</span>
               </button>
             </div>
           ) : (
@@ -479,6 +482,8 @@ export default function App() {
               href={ssoApi.getLoginUrl()}
               className="nn-auth-btn"
               id="btn-login"
+              aria-label={t('header.login', 'Đăng nhập')}
+              title={t('header.login', 'Đăng nhập')}
             >
               <LogIn size={15} strokeWidth={2.2} />
               <span className="nn-auth-text">{t('header.login', 'Đăng nhập')}</span>

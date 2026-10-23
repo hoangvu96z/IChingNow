@@ -24,6 +24,8 @@ export const en = {
   'board.empty_search_desc': 'No notes matching "{query}"',
   'board.empty_user_desc': 'Click above to create your first note!',
   'board.empty_guest_desc': 'Click above to create a note. No sign-in required!',
+  'board.empty_user_cta_desc': 'Tap the button below to create your first note!',
+  'board.empty_guest_cta_desc': 'Tap the button below to create a note. No sign-in required!',
   'board.create_first': 'Create first note',
   'board.section_pinned': 'Pinned',
   'board.section_others': 'Others',

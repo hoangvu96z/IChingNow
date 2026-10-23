@@ -783,3 +783,10 @@ body {
   0%, 100% { box-shadow: 0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35); }
   50%       { box-shadow: 0 0 0 6px rgba(124,58,237,0.28), 0 6px 26px rgba(124,58,237,0.55); }
 }
+
+/* Date/time row in CastingForm: stack on the narrowest phones only (390px keeps side-by-side) */
+@media (max-width: 359px) {
+  .casting-datetime-row {
+    flex-direction: column;
+  }
+}

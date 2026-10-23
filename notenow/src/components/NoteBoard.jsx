@@ -188,6 +188,7 @@ export default function NoteBoard({ user }) {
 
   const pinnedNotes = filteredNotes.filter((n) => n.isPinned);
   const unpinnedNotes = filteredNotes.filter((n) => !n.isPinned);
+  const isEmpty = notes.length === 0 && sharedNotes.length === 0;
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
@@ -353,8 +354,8 @@ export default function NoteBoard({ user }) {
               {search
                 ? t('board.empty_search_desc', `Không có ghi chú nào khớp với "${search}"`, { query: search })
                 : isLoggedIn
-                ? t('board.empty_user_desc', 'Bấm vào ô trên để tạo ghi chú đầu tiên của bạn!')
-                : t('board.empty_guest_desc', 'Bấm vào ô trên để tạo ghi chú. Không cần đăng nhập!')}
+                ? t('board.empty_user_cta_desc', 'Bấm nút bên dưới để tạo ghi chú đầu tiên của bạn!')
+                : t('board.empty_guest_cta_desc', 'Bấm nút bên dưới để tạo ghi chú. Không cần đăng nhập!')}
             </p>
             {!search && (
               <button
@@ -454,19 +455,21 @@ export default function NoteBoard({ user }) {
         />
       )}
 
-      {/* Mobile Floating Action Button (FAB) */}
-      <button
-        className="nn-fab"
-        onClick={openNewNoteEditor}
-        aria-label={t('board.create_placeholder', 'Tạo ghi chú mới')}
-        title={t('board.create_placeholder', 'Tạo ghi chú mới')}
-        type="button"
-        id="btn-fab-new-note"
-      >
-        <span className="nn-fab-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Plus size={22} strokeWidth={2.5} />
-        </span>
-      </button>
+      {/* Mobile Floating Action Button (FAB) - only shown when there are notes to avoid duplicating the empty-state CTA and overlapping footer content */}
+      {!loading && !isEmpty && (
+        <button
+          className="nn-fab"
+          onClick={openNewNoteEditor}
+          aria-label={t('board.create_placeholder', 'Tạo ghi chú mới')}
+          title={t('board.create_placeholder', 'Tạo ghi chú mới')}
+          type="button"
+          id="btn-fab-new-note"
+        >
+          <span className="nn-fab-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Plus size={22} strokeWidth={2.5} />
+          </span>
+        </button>
+      )}
 
       {/* Toasts */}
       <Toast toasts={toasts} />

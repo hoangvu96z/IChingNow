@@ -49,8 +49,8 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
       </div>
 
       {/* Ngày giờ lập quẻ */}
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 2 }}>
+      <div className="casting-datetime-row" style={{ display: 'flex', gap: 10 }}>
+        <div style={{ flex: 2, minWidth: 0 }}>
           <label className="form-label">{t('form.date_label', 'Ngày lập quẻ')}</label>
           <input
             className="form-input"
@@ -59,7 +59,7 @@ export default function CastingForm({ formData, onChange, showLucHaoOptions }) {
             onChange={e => set('castDate', e.target.value)}
           />
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <label className="form-label">{t('form.time_label', 'Giờ')}</label>
           <input
             className="form-input"

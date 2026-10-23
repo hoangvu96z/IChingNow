@@ -969,6 +969,7 @@ ${summaryObj.advice}
 
       <AppFooter
         appId="tarot"
+        showApps={false}
         colors={tarotTheme}
         tagline={t('footer.text', 'Tarot & AI Oracle App. Made with ❤️. Sử dụng bộ ảnh Rider-Waite-Smith Public Domain.')}
       />

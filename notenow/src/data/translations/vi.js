@@ -24,6 +24,8 @@ export const vi = {
   'board.empty_search_desc': 'Không có ghi chú nào khớp với "{query}"',
   'board.empty_user_desc': 'Bấm vào ô trên để tạo ghi chú đầu tiên của bạn!',
   'board.empty_guest_desc': 'Bấm vào ô trên để tạo ghi chú. Không cần đăng nhập!',
+  'board.empty_user_cta_desc': 'Bấm nút bên dưới để tạo ghi chú đầu tiên của bạn!',
+  'board.empty_guest_cta_desc': 'Bấm nút bên dưới để tạo ghi chú. Không cần đăng nhập!',
   'board.create_first': 'Tạo ghi chú đầu tiên',
   'board.section_pinned': 'Đã ghim',
   'board.section_others': 'Ghi chú khác',

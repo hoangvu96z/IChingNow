@@ -222,6 +222,27 @@ body {
   flex-direction: column;
 }
 
+/* Narrow phones: let settings columns shrink to the viewport instead of
+   growing to their nowrap content (prevented 34px overflow at 320px). */
+@media (max-width: 599px) {
+  .settings-grid,
+  .settings-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-col {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .settings-col .custom-select,
+  .settings-col .custom-range-slider {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .toggle-wrapper {
+    flex-wrap: wrap;
+  }
+}
+
 .custom-select {
   width: 100%;
   background: rgba(10, 8, 22, 0.8);

@@ -386,6 +386,7 @@ export default function App() {
       {/* ===== FOOTER ===== */}
       <AppFooter
         appId="tuvi"
+        showApps={false}
         colors={tuviTheme}
         tagline="Tử Vi Đẩu Số — Lập lá số, luận giải AI và lưu lịch sử khi đăng nhập"
       />

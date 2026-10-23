@@ -1040,6 +1040,7 @@ export default function App() {
       {/* ===== FOOTER ===== */}
       <AppFooter
         appId="iching"
+        showApps={false}
         colors={ichingTheme}
         tagline={t('footer.text', '易 IChingNow — Công cụ lập quẻ Kinh Dịch · Chỉ lập quẻ, không luận giải')}
       />

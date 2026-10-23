@@ -12,13 +12,15 @@ export const tuviTheme = {
   accent: '#6dd5b0',
   accentSoft: 'rgba(109,213,176,0.18)',
   accentHover: 'rgba(109,213,176,0.28)',
-  text: 'var(--text-primary, rgba(255,255,255,0.92))',
-  textMuted: 'var(--text-muted, rgba(255,255,255,0.65))',
+  // Literal light values: header/drawer surfaces are always dark navy, so
+  // page-level light-mode tokens (dark ink) must not leak in here.
+  text: '#e2e8f0',
+  textMuted: '#a8b5c7',
   border: 'var(--border-subtle, rgba(109,213,176,0.25))',
   drawerBg: '#0d1b2a',
   footerBorder: 'var(--border-subtle, rgba(109,213,176,0.25))',
-  footerLink: 'var(--text-primary, rgba(255,255,255,0.92))',
-  footerText: 'var(--text-secondary, rgba(255,255,255,0.7))',
+  footerLink: '#e2e8f0',
+  footerText: '#cbd5e1',
   footerDot: 'rgba(109,213,176,0.5)',
   titleFont: "'Be Vietnam Pro', sans-serif",
 };
