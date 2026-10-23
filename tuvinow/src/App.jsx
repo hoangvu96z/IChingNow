@@ -11,6 +11,7 @@ import HopHonPage from './components/HopHonPage.jsx';
 import { useReadingsApi } from './hooks/useReadingsApi';
 import { getHistoryRestoreError } from './utils/historyRestore.js';
 import TuViHistoryModal from './components/TuViHistoryModal.jsx';
+import HistoryLoadErrorNotice from './components/HistoryLoadErrorNotice.mjs';
 import AppHeader from '@shared/components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { tuviTheme } from '@shared/themes/tuvi.js';
@@ -273,6 +274,7 @@ export default function App() {
             ⚠ {historyActionError}
           </div>
         )}
+        <HistoryLoadErrorNotice error={historyError} onRetry={loadHistory} />
         {page === 'hop-hon' && <HopHonPage />}
         {page === 'la-so' && showForm && !chartResult && (
           <>
