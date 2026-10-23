@@ -15,6 +15,7 @@ import MaiHoaResultCard from './components/MaiHoaResultCard.jsx';
 import HistoryList from './components/HistoryList.jsx';
 import HistoryManagementModal from './components/HistoryManagementModal.jsx';
 import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
+import IChingShareCard from './components/IChingShareCard.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { ichingTheme } from '@shared/themes/iching.js';
@@ -306,6 +307,8 @@ function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMetho
         </div>
       </section>
 
+      <IChingShareCard result={result} language={language} />
+
       {/* Combined Reading Modal — tự điền câu hỏi và quẻ đã lập từ result */}
       <CombinedReadingModal
         isOpen={showCombinedModal}
@@ -441,6 +444,8 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
           <MaiHoaResultCard result={result} />
         </div>
       </section>
+
+      <IChingShareCard result={result} language={language} />
 
       {/* Combined Reading Modal cho Mai Hoa */}
       <CombinedReadingModal
