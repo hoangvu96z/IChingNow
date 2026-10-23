@@ -15,7 +15,7 @@
 | **Shared Hook `useStreak`** | Cả 3 apps | ✅ **Đã xong** | Nằm tại `shared/src/utils/useStreak.js`, lưu `localStorage`, cơ chế bảo vệ chuỗi (Streak Freeze) |
 | **Multiple Spread Layouts cho TarotNow** | TarotNow | ✅ **Đã xong** | Celtic Cross (10 lá), Horseshoe (7 lá), Relationship (7 lá), Career (5 lá), Yes/No — layout visualizer theo vị trí, SpreadSelector có category tabs |
 | **Kết hợp Tử Vi + Kinh Dịch (Combined Reading)** | IChingNow + TuViNow | ✅ **Đã xong** | Shared module `CombinedReadingModal` — chọn chủ đề (sự nghiệp/tình duyên/tài lộc...), gieo quẻ 3 xu, AI tổng hợp cả hai nguồn. Tích hợp nút "🔮 Hỏi Kinh Dịch" ở TuViNow và "⭐ Kết hợp Tử Vi" ở IChingNow |
-| **Quick Win #4: Social Share Card cho Kinh Dịch** | IChingNow | ⏳ **Kế tiếp** | Thẻ ảnh đồ họa Quẻ Chủ, Quẻ Biến, Lời Thoán để share FB/Zalo |
+| **Quick Win #4: Social Share Card cho Kinh Dịch** | IChingNow | ✅ **Đã xong** | Thẻ ảnh xuất PNG/Web Share cho Quẻ Chủ và Quẻ Biến, có đồ hình hào, Lời Thoán cổ văn kèm nguồn và CC BY-SA 4.0 attribution, watermark IChingNow |
 | **Quick Win #5: Tap-to-learn (Tra cứu nhanh)** | Cả 3 apps | ✅ **Đã xong** | Chạm vào sao/cung/Tuần/Triệt (TuViNow), lá bài 4 khía cạnh xuôi-ngược (TarotNow), và quẻ/quái/Lục Hào (IChingNow) hiển thị bottom sheet giải nghĩa chi tiết |
 | **Hợp Hôn Chuyên Sâu (4 tiêu chí + AI)** | TuViNow | ⏳ **Đang chờ thuật toán** | Đã có `HOP_HON_PLAN.md`, cần nguồn thuật toán đầy đủ |
 | **Học xem quẻ Lục Hào — Engine phân tích + Glossary (Tuần 1)** | IChingNow | ✅ **Đã xong** | `lucHaoAnalysis.js` (6 bước: Dụng Thần → Nguyệt/Nhật → Vượng/Suy → Hào động → Tuần Không → Kết luận), `lucHaoRules.js`, `glossary.js` (22 thuật ngữ), 39 test pass |
