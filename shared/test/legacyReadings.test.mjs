@@ -62,4 +62,20 @@ for (const [app, decryptData] of [
       else globalThis.window = originalWindow;
     }
   });
+
+  test(`${app} returns null when a legacy payload cannot be decrypted`, async () => {
+    const originalWindow = globalThis.window;
+    const originalWarn = console.warn;
+    globalThis.window = { crypto: webcrypto };
+    console.warn = () => {};
+
+    try {
+      assert.equal(await decryptData('enc_v1::malformed', legacyAccountId), null);
+      assert.equal(await decryptData(legacyCiphertext, 'different-account'), null);
+    } finally {
+      console.warn = originalWarn;
+      if (originalWindow === undefined) delete globalThis.window;
+      else globalThis.window = originalWindow;
+    }
+  });
 }
