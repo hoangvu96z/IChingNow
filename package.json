@@ -14,15 +14,18 @@
     "build:tuvi": "npm run build --prefix tuvinow",
     "build:talk": "npm run build --prefix talkwithme",
     "build:note": "npm run build --prefix notenow",
-    "build:all": "npm run build --prefix iching && npm run build --prefix tarotnow && npm run build --prefix tuvinow && npm run build --prefix talkwithme && npm run build --prefix notenow",
+    "build:spiritnow": "npm run build --prefix spiritnow",
+    "build:all": "npm run build --prefix iching && npm run build --prefix tarotnow && npm run build --prefix tuvinow && npm run build --prefix talkwithme && npm run build --prefix notenow && npm run build --prefix spiritnow",
     "install:iching": "npm install --prefix iching",
     "install:tarot": "npm install --prefix tarotnow",
     "install:tuvi": "npm install --prefix tuvinow",
     "install:talk": "npm install --prefix talkwithme",
     "install:note": "npm install --prefix notenow",
-    "install:all": "npm install --prefix iching && npm install --prefix tarotnow && npm install --prefix tuvinow && npm install --prefix talkwithme && npm install --prefix notenow",
+    "install:spiritnow": "npm install --prefix spiritnow",
+    "install:all": "npm install --prefix iching && npm install --prefix tarotnow && npm install --prefix tuvinow && npm install --prefix talkwithme && npm install --prefix notenow && npm install --prefix spiritnow",
     "lint:iching": "npm run lint --prefix iching",
     "lint:tarot": "npm run lint --prefix tarotnow",
-    "lint:tuvi": "npm run lint --prefix tuvinow"
+    "lint:tuvi": "npm run lint --prefix tuvinow",
+    "lint:spiritnow": "npm run lint --prefix spiritnow"
   }
 }

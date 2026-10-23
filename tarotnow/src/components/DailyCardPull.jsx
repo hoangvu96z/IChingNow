@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useStreak } from '@shared/utils/useStreak.js';
-import { drawTarotCards, getCardMeaning } from '../utils/tarotLogic';
+import { getCardMeaning, getDailyTarotCard, getSavedDailyTarotCard } from '../utils/tarotLogic';
 import TarotLearnModal from './TarotLearnModal';
 
 /**
@@ -39,16 +39,9 @@ export default function DailyCardPull({ tarotCards }) {
     if (!tarotCards || tarotCards.length === 0) return;
     const existingCardId = getDailyCard();
     if (existingCardId != null) {
-      const card = tarotCards.find(c => c.id === existingCardId);
+      const card = getSavedDailyTarotCard(tarotCards, existingCardId, new Date());
       if (card) {
-        // Deterministic orientation from date seed
-        const today = new Date();
-        const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-        const orientationRng = ((seed * 16807) % 2147483647) / 2147483646;
-        setDailyCardState({
-          ...card,
-          orientation: orientationRng > 0.7 ? 'reversed' : 'upright',
-        });
+        setDailyCardState(card);
         setIsRevealed(true);
         setShowInsight(true);
       }
@@ -61,29 +54,13 @@ export default function DailyCardPull({ tarotCards }) {
 
     setIsFlipping(true);
 
-    // Date-based seed for deterministic randomness
-    const today = new Date();
-    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-
-    // Simple seeded random
-    let state = seed % 2147483647;
-    if (state <= 0) state += 2147483646;
-    const rng = () => {
-      state = (state * 16807) % 2147483647;
-      return (state - 1) / 2147483646;
-    };
-
-    // Pick a card
-    const cardIndex = Math.floor(rng() * tarotCards.length);
-    const card = tarotCards[cardIndex];
-    const orientation = rng() > 0.7 ? 'reversed' : 'upright';
-
-    const pulledCard = { ...card, orientation };
+    const pulledCard = getDailyTarotCard(tarotCards);
+    if (!pulledCard) return;
 
     // Delay for flip animation
     setTimeout(() => {
       setDailyCardState(pulledCard);
-      setDailyCard(card.id);
+      setDailyCard(pulledCard.id);
       recordActivity();
       setIsRevealed(true);
       setIsFlipping(false);

@@ -6,11 +6,12 @@ import { getAppLink } from '../utils/appLinks.mjs';
  *
  * Props:
  *   colors: ColorTheme (from shared/src/themes/*.js)
- *   appId: 'iching' | 'tarot' | 'tuvi' | 'talkwithme'
+ *   appId: 'iching' | 'tarot' | 'tuvi' | 'talkwithme' | 'spiritnow'
  *   tagline: string — optional custom tagline
  */
 
 const APPS = [
+  { id: 'spiritnow', icon: '✨', name: 'SpiritNow', url: '/spiritnow/' },
   { id: 'iching',  icon: '☯️', name: 'IChingNow', url: '/kinhdich/' },
   { id: 'tarot',   icon: '🃏', name: 'TarotNow',  url: '/tarot/' },
   { id: 'tuvi',    icon: '🔮', name: 'TuViNow',   url: '/tuvi/' },

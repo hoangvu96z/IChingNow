@@ -35,6 +35,14 @@ import { getAppLink } from '../utils/appLinks.mjs';
 // ─── Apps registry ─────────────────────────────────────────────────────────
 const APPS = [
   {
+    id: 'spiritnow',
+    icon: '✨',
+    name: 'SpiritNow',
+    tagline: 'Tổng quan hệ sinh thái',
+    url: '/spiritnow/',
+    color: '#38bdf8',
+  },
+  {
     id: 'iching',
     icon: '☯️',
     name: 'IChingNow',

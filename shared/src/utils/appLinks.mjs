@@ -4,6 +4,7 @@ const LOCAL_PORTS = {
   '/tuvi/': '5175',
   '/talk/': '5176',
   '/note/': '5177',
+  '/spiritnow/': '5178',
 };
 
 export function getAppLink(path, env, location) {

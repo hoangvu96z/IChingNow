@@ -28,6 +28,7 @@ jobs:
           npm ci --prefix tuvinow
           npm ci --prefix talkwithme
           npm ci --prefix notenow
+          npm ci --prefix spiritnow
 
       - name: Run shared tests
         run: npm run test:sso
@@ -47,6 +48,9 @@ jobs:
       - name: Run NoteNow tests
         run: npm test --prefix notenow
 
+      - name: Run SpiritNow tests
+        run: npm test --prefix spiritnow
+
       - name: Lint apps with configured lint scripts
         run: |
           npm run lint:iching
@@ -54,6 +58,7 @@ jobs:
           npm run lint:tuvi
           npm run lint --prefix talkwithme
           npm run lint --prefix notenow
+          npm run lint:spiritnow
 
-      - name: Build all five apps
+      - name: Build all apps
         run: npm run build:all

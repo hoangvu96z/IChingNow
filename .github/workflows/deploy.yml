@@ -17,6 +17,7 @@ jobs:
       tuvi: ${{ steps.filter.outputs.tuvi }}
       talkwithme: ${{ steps.filter.outputs.talkwithme }}
       notenow: ${{ steps.filter.outputs.notenow }}
+      spiritnow: ${{ steps.filter.outputs.spiritnow }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -46,6 +47,53 @@ jobs:
               - 'notenow/**'
               - 'shared/**'
               - '.github/workflows/deploy.yml'
+            spiritnow:
+              - 'spiritnow/**'
+              - 'shared/**'
+              - '.github/workflows/deploy.yml'
+
+  # ─── Deploy SpiritNow Dashboard to vunph.id.vn/spiritnow/ ───
+  deploy-spiritnow:
+    name: ✨ Deploy SpiritNow
+    needs: changes
+    if: needs.changes.outputs.spiritnow == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: spiritnow/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm install
+        working-directory: spiritnow
+
+      - name: 🔨 Build
+        run: npm run build
+        working-directory: spiritnow
+
+      - name: 🚀 Upload SpiritNow to hosting
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          port: 21
+          protocol: ftps
+          security: loose
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./spiritnow/dist/
+          server-dir: ./spiritnow/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
 
   # ─── Deploy IChing ───
   deploy-iching:

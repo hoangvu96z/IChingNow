@@ -381,6 +381,34 @@ export function getCardMeaning(card, context = "general", orientation = "upright
   return getMeaningField(card, context, orientation);
 }
 
+function dailyTarotSeed(date) {
+  return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+/** The same local-date seeded draw used by TarotNow's free daily card. */
+export function getDailyTarotCard(tarotCards, date = new Date()) {
+  if (!Array.isArray(tarotCards) || tarotCards.length === 0) return null;
+
+  let state = dailyTarotSeed(date) % 2147483647;
+  if (state <= 0) state += 2147483646;
+  const rng = () => {
+    state = (state * 16807) % 2147483647;
+    return (state - 1) / 2147483646;
+  };
+
+  const card = tarotCards[Math.floor(rng() * tarotCards.length)];
+  return { ...card, orientation: rng() > 0.7 ? 'reversed' : 'upright' };
+}
+
+/** Reconstruct an already-saved daily card using TarotNow's existing orientation rule. */
+export function getSavedDailyTarotCard(tarotCards, cardId, date = new Date()) {
+  if (!Array.isArray(tarotCards) || cardId == null) return null;
+  const card = tarotCards.find((candidate) => candidate.id === cardId);
+  if (!card) return null;
+  const orientationRng = ((dailyTarotSeed(date) * 16807) % 2147483647) / 2147483646;
+  return { ...card, orientation: orientationRng > 0.7 ? 'reversed' : 'upright' };
+}
+
 /**
  * Capitalize first letter of string
  */
