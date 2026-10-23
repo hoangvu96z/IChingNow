@@ -1,4 +1,13 @@
-import { getSsoApiBase, getSsoLoginUrl, takeSsoCodeFromUrl, createSsoCodeExchangeCoordinator, fetchSsoSession, isSessionRejected } from '../utils/ssoConfig.mjs';
+import {
+  getSsoApiBase,
+  getSsoLoginUrl,
+  takeSsoCodeFromUrl,
+  createSsoCodeExchangeCoordinator,
+  fetchSsoSession,
+  isSessionRejected,
+  ssoFetch,
+  clearSsoBearerToken,
+} from '../utils/ssoConfig.mjs';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 // Dev: VITE_SSO_URL trống → dùng relative path qua vite proxy (/sso/*)
@@ -105,7 +114,7 @@ const safeStorage = {
     try { localStorage.removeItem(key); } catch {}
   }
 };
-// Remove bearer tokens left by older app versions; auth now lives in an HttpOnly cookie.
+// Remove bearer tokens left by older app versions; current bearer state is tab-scoped.
 safeStorage.removeItem('sso_token');
 
 export function AuthProvider({ children }) {
@@ -131,7 +140,7 @@ export function AuthProvider({ children }) {
         if (requestId !== authRequest.current) return;
         // Xóa flag logout vì user đang đăng nhập lại
         safeStorage.removeItem('sso_logged_out');
-        // The exchange sets the cookie; load the authoritative user from /sso/me.
+        // The exchange sets the tab bearer and first-party cookie; /sso/me confirms it.
         const session = await fetchSsoSession(SSO_BASE);
         if (requestId !== authRequest.current) return;
         hadSession.current = !!session.user;
@@ -148,7 +157,7 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // 2. Resolve the current user from the HttpOnly cookie session.
+      // 2. Resolve the current user from the tab bearer or first-party cookie session.
       const data = await fetchSsoSession(SSO_BASE);
       if (requestId !== authRequest.current) return;
 
@@ -160,7 +169,7 @@ export function AuthProvider({ children }) {
         safeStorage.setItem('sso_session_seen', '1');
         setSessionExpired(false);
       } else {
-        // A missing cookie session is a normal first visit unless this tab had one.
+        // A missing SSO session is a normal first visit unless this tab had one.
         const wasLoggedIn = hadSession.current;
         setUser(null);
 
@@ -199,6 +208,7 @@ export function AuthProvider({ children }) {
             // Tab khác đã logout → xóa local state, không gọi lại /sso/me
             ++authRequest.current;
             codeExchange.current.cancel();
+            clearSsoBearerToken();
             safeStorage.setItem('sso_logged_out', '1');
             safeStorage.removeItem('sso_session_seen');
             setUser(null);
@@ -216,6 +226,7 @@ export function AuthProvider({ children }) {
       if (loggedOut) {
         ++authRequest.current;
         codeExchange.current.cancel();
+        clearSsoBearerToken();
         setUser(null);
         return;
       }
@@ -242,14 +253,15 @@ export function AuthProvider({ children }) {
     ++authRequest.current;
     codeExchange.current.cancel();
     try {
-      // Revoke the cookie session and clear this app's local state.
-      await fetch(`${SSO_BASE}/sso/logout`, {
+      // Revoke the active SSO session and clear this app's local state.
+      await ssoFetch(`${SSO_BASE}/sso/logout`, {
         method: 'POST',
         credentials: 'include',
       });
     } catch (e) {
       console.error('Logout API failed', e);
     } finally {
+      clearSsoBearerToken();
       // Always clear local state regardless of API result
       // Đặt flag để ngăn tự đăng nhập lại khi SSO page reload
       safeStorage.setItem('sso_logged_out', '1');

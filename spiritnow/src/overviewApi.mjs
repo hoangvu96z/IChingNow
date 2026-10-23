@@ -1,4 +1,4 @@
-import { getSsoApiBase } from '../../shared/src/utils/ssoConfig.mjs';
+import { getSsoApiBase, ssoFetch } from '../../shared/src/utils/ssoConfig.mjs';
 
 const APP_ENV = import.meta.env || {};
 const SSO_BASE = getSsoApiBase({
@@ -6,7 +6,11 @@ const SSO_BASE = getSsoApiBase({
   VITE_SSO_URL: APP_ENV.VITE_SSO_URL,
 });
 
-export async function fetchMeOverview(fetchImpl = fetch, signal, apiBase = SSO_BASE) {
+export async function fetchMeOverview({
+  signal,
+  apiBase = SSO_BASE,
+  fetchImpl = ssoFetch,
+} = {}) {
   const response = await fetchImpl(`${apiBase}/me/overview`, {
     credentials: 'include',
     signal,

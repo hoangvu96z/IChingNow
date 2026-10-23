@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { getSsoApiBase } from '../utils/ssoConfig.mjs';
+import { getSsoApiBase, ssoFetch } from '../utils/ssoConfig.mjs';
 
 const SSO_BASE = getSsoApiBase({
   DEV: import.meta.env.DEV,
@@ -63,7 +63,7 @@ export function usePlanForApp(isAuthenticated, app) {
         return;
       }
 
-      const res = await fetch(`${SSO_BASE}/plans/my-quota?app=${app}`, {
+      const res = await ssoFetch(`${SSO_BASE}/plans/my-quota?app=${app}`, {
         credentials: 'include',
       });
       if (res.ok) setQuota(await res.json());
@@ -80,7 +80,7 @@ export function usePlanForApp(isAuthenticated, app) {
 
   const consumeQuota = useCallback(async () => {
     try {
-      const res = await fetch(`${SSO_BASE}/plans/consume`, {
+      const res = await ssoFetch(`${SSO_BASE}/plans/consume`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -104,7 +104,7 @@ export function usePlanForApp(isAuthenticated, app) {
 
   const requestBonus = useCallback(async () => {
     try {
-      const res = await fetch(`${SSO_BASE}/plans/bonus`, {
+      const res = await ssoFetch(`${SSO_BASE}/plans/bonus`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -123,7 +123,7 @@ export function usePlanForApp(isAuthenticated, app) {
 
   const applyCoupon = useCallback(async (code) => {
     try {
-      const res = await fetch(`${SSO_BASE}/plans/apply-coupon`, {
+      const res = await ssoFetch(`${SSO_BASE}/plans/apply-coupon`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

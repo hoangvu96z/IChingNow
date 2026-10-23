@@ -1,4 +1,13 @@
-import { getSsoApiBase, getSsoLoginUrl, takeSsoCodeFromUrl, createSsoCodeExchangeCoordinator, fetchSsoSession, isSessionRejected } from '../../shared/src/utils/ssoConfig.mjs';
+import {
+  getSsoApiBase,
+  getSsoLoginUrl,
+  takeSsoCodeFromUrl,
+  createSsoCodeExchangeCoordinator,
+  fetchSsoSession,
+  isSessionRejected,
+  ssoFetch,
+  clearSsoBearerToken,
+} from '../../shared/src/utils/ssoConfig.mjs';
 import { getNoteImageEndpoint } from './noteImages.mjs';
 // NoteNow API utility
 
@@ -20,7 +29,7 @@ export const safeStorage = {
     try { localStorage.removeItem(key); } catch {}
   },
 };
-// Remove bearer tokens left by older app versions; auth now lives in an HttpOnly cookie.
+// Remove bearer tokens left by older app versions; current bearer state is tab-scoped.
 safeStorage.removeItem('sso_token');
 
 /**
@@ -59,7 +68,7 @@ function getHeaders(extraHeaders = {}) {
 
 async function apiFetch(path, options = {}) {
   const url = `${SSO_BASE}${path}`;
-  const res = await fetch(url, {
+  const res = await ssoFetch(url, {
     credentials: 'include',
     headers: getHeaders(options.headers),
     ...options,
@@ -214,7 +223,7 @@ export const notesApi = {
       }
     }
 
-    const response = await fetch(`${SSO_BASE}${endpoint}`, { credentials: 'include', headers });
+    const response = await ssoFetch(`${SSO_BASE}${endpoint}`, { credentials: 'include', headers });
     if (!response.ok) {
       throw new Error(`Không tải được ảnh đính kèm (HTTP ${response.status}).`);
     }
@@ -354,7 +363,7 @@ export const notesApi = {
       const formData = new FormData();
       formData.append('image', file);
       const headers = { 'x-guest-token': guestToken };
-      const res = await fetch(`${SSO_BASE}/notes/${noteId}/images`, {
+      const res = await ssoFetch(`${SSO_BASE}/notes/${noteId}/images`, {
         method: 'POST',
         credentials: 'include',
         headers,
@@ -398,7 +407,7 @@ export const notesApi = {
       formData.append('image', file);
       const guestToken = getOrCreateGuestToken();
       const headers = { 'x-guest-token': guestToken };
-      const res = await fetch(`${SSO_BASE}/notes/share/${shareToken}/images`, {
+      const res = await ssoFetch(`${SSO_BASE}/notes/share/${shareToken}/images`, {
         method: 'POST',
         credentials: 'include',
         headers,
@@ -486,6 +495,7 @@ export const ssoApi = {
     try {
       await apiFetch('/sso/logout', { method: 'POST', body: '{}' });
     } catch {}
+    clearSsoBearerToken();
     safeStorage.setItem('sso_logged_out', '1');
     safeStorage.setItem('vInfiSSO-state', JSON.stringify({ type: 'logout', t: Date.now() }));
   },

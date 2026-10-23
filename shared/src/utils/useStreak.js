@@ -6,7 +6,7 @@
  * local keys prevent progress from one SSO user being sent to another.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getSsoApiBase } from './ssoConfig.mjs';
+import { getSsoApiBase, ssoFetch } from './ssoConfig.mjs';
 import {
   EMPTY_STREAK_DATA,
   applyStreakActivity,
@@ -76,7 +76,7 @@ function saveData(appId, data, ownerId = null, broadcast = true) {
 }
 
 async function readRemoteStreak(appId) {
-  const response = await fetch(`${SSO_BASE}/streaks/${encodeURIComponent(appId)}`, {
+  const response = await ssoFetch(`${SSO_BASE}/streaks/${encodeURIComponent(appId)}`, {
     credentials: 'include',
   });
   if (!response.ok) {
@@ -88,7 +88,7 @@ async function readRemoteStreak(appId) {
 }
 
 async function writeRemoteStreak(appId, ownerId, data, signal) {
-  return fetch(`${SSO_BASE}/streaks/${encodeURIComponent(appId)}`, {
+  return ssoFetch(`${SSO_BASE}/streaks/${encodeURIComponent(appId)}`, {
     method: 'PUT',
     credentials: 'include',
     signal,

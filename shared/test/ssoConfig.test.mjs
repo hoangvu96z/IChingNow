@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getSsoApiBase, getSsoWebBase, getSsoLoginUrl, takeSsoCodeFromUrl, exchangeSsoCode, createSsoCodeExchangeCoordinator, fetchSsoSession, isSessionRejected } from '../src/utils/ssoConfig.mjs';
+import { getSsoApiBase, getSsoWebBase, getSsoLoginUrl, takeSsoCodeFromUrl, exchangeSsoCode, createSsoCodeExchangeCoordinator, fetchSsoSession, isSessionRejected, createSsoAuthFetch, SSO_BEARER_STORAGE_KEY, setSsoBearerToken, clearSsoBearerToken, ssoFetch } from '../src/utils/ssoConfig.mjs';
 import { createSsoProxy } from '../vite/ssoProxy.mjs';
 
 test('local API uses a proxy while login returns to the original app, query and hash', () => {
@@ -29,7 +29,7 @@ test('local API uses a proxy while login returns to the original app, query and 
   for (const options of Object.values(createSsoProxy(custom))) assert.equal(options.target, getSsoWebBase(custom));
 });
 
-test('OAuth callback code is removed from the URL and exchanged for a cookie session', async () => {
+test('OAuth callback code is removed from the URL and exchanged for a tab bearer', async () => {
   const historyState = { router: 'state' };
   let replaced;
   const code = takeSsoCodeFromUrl({
@@ -41,16 +41,18 @@ test('OAuth callback code is removed from the URL and exchanged for a cookie ses
   assert.deepEqual(replaced, [historyState, 'NoteNow', '/note/?invite=abc#editor']);
 
   let request;
+  let savedToken;
   const result = await exchangeSsoCode('https://sso.vunph.click', code, async (url, options) => {
     request = { url, options };
-    return new Response(JSON.stringify({ success: true, user: { id: 'u1' } }));
-  });
+    return new Response(JSON.stringify({ success: true, user: { id: 'u1' }, token: 'short-lived-session' }));
+  }, token => { savedToken = token; return true; });
   assert.equal(request.url, 'https://sso.vunph.click/sso/exchange');
   assert.equal(request.options.method, 'POST');
   assert.equal(request.options.credentials, 'include');
   assert.deepEqual(request.options.headers, { 'Content-Type': 'application/json' });
   assert.deepEqual(JSON.parse(request.options.body), { code: 'one-time' });
-  assert.deepEqual(result, { success: true, user: { id: 'u1' } });
+  assert.equal(savedToken, 'short-lived-session');
+  assert.deepEqual(result, { success: true, user: { id: 'u1' }, token: 'short-lived-session' });
   await assert.rejects(
     exchangeSsoCode('https://sso.vunph.click', code, async () => new Response(JSON.stringify({ success: true, token: 'legacy-token' }))),
     /phiên đăng nhập không hợp lệ/,
@@ -84,7 +86,7 @@ test('concurrent callback refreshes share one exchange and keep its result until
   assert.equal(exchangeCount, 1);
 });
 
-test('session verification uses only the HttpOnly cookie and separates rejection from outages', async () => {
+test('session verification sends credentials and separates rejection from outages', async () => {
   const request = async (url, options) => {
     assert.equal(url, '/sso/me');
     assert.equal(options.headers, undefined);
@@ -105,4 +107,96 @@ test('session verification uses only the HttpOnly cookie and separates rejection
     assert.equal(isSessionRejected(error), false);
     return true;
   });
+});
+
+test('authenticated SSO requests send the tab bearer and accept session rotation', async () => {
+  const values = new Map();
+  const storage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: key => values.delete(key),
+  };
+  const requests = [];
+  const auth = createSsoAuthFetch(async (url, options) => {
+    requests.push({ url, options });
+    return new Response(JSON.stringify({ user: { id: 'u1' } }), {
+      headers: { 'X-Sso-Session-Token': 'rotated-session' },
+    });
+  }, () => storage);
+  auth.setToken('initial-session');
+
+  await fetchSsoSession('/sso', auth.fetch);
+
+  assert.equal(requests[0].url, '/sso/sso/me');
+  assert.equal(new Headers(requests[0].options.headers).get('authorization'), 'Bearer initial-session');
+  assert.equal(requests[0].options.credentials, 'include');
+  assert.equal(auth.getToken(), 'rotated-session');
+  assert.equal(storage.getItem(SSO_BEARER_STORAGE_KEY), 'rotated-session');
+
+  await auth.fetch('/next-request');
+  assert.equal(new Headers(requests[1].options.headers).get('authorization'), 'Bearer rotated-session');
+});
+
+test('401/403 clear a tab bearer, while network errors and server failures preserve it', async () => {
+  for (const status of [401, 403]) {
+    const values = new Map();
+    const storage = {
+      getItem: key => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: key => values.delete(key),
+    };
+    const auth = createSsoAuthFetch(async () => new Response('', { status }), () => storage);
+    auth.setToken('session-to-clear');
+    await auth.fetch('/protected');
+    assert.equal(auth.getToken(), null);
+    assert.equal(values.has(SSO_BEARER_STORAGE_KEY), false);
+  }
+
+  const values = new Map();
+  const storage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: key => values.delete(key),
+  };
+  const serverError = createSsoAuthFetch(async () => new Response('', { status: 503 }), () => storage);
+  serverError.setToken('session-to-keep');
+  await serverError.fetch('/protected');
+  assert.equal(serverError.getToken(), 'session-to-keep');
+
+  const networkError = new TypeError('offline');
+  const offline = createSsoAuthFetch(async () => { throw networkError; }, () => storage);
+  await assert.rejects(offline.fetch('/protected'), error => error === networkError);
+  assert.equal(offline.getToken(), 'session-to-keep');
+});
+
+test('callback exchange clears an old bearer on 401/403 but preserves it on 5xx', async () => {
+  const originalFetch = globalThis.fetch;
+  const subsequentRequests = [];
+  globalThis.fetch = async (url, options) => {
+    subsequentRequests.push({ url, options });
+    return new Response('ok');
+  };
+
+  try {
+    for (const status of [401, 403]) {
+      setSsoBearerToken('old-tab-session');
+      await assert.rejects(
+        exchangeSsoCode('/sso', 'one-time-code', async () => new Response('', { status })),
+        error => error.status === status,
+      );
+      await ssoFetch('/after-rejected-exchange');
+      assert.equal(new Headers(subsequentRequests.at(-1).options.headers).get('authorization'), null);
+    }
+
+    setSsoBearerToken('old-tab-session');
+    await assert.rejects(
+      exchangeSsoCode('/sso', 'one-time-code', async () => new Response('', { status: 503 })),
+      error => error.status === 503,
+    );
+    await ssoFetch('/after-failed-exchange');
+    assert.equal(new Headers(subsequentRequests.at(-1).options.headers).get('authorization'), 'Bearer old-tab-session');
+  } finally {
+    globalThis.fetch = originalFetch;
+    clearSsoBearerToken();
+  }
 });

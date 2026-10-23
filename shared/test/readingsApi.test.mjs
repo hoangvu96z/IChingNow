@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createReadingsApi, createReadingsApiRequest } from '../src/utils/readingsApi.mjs';
+import { setSsoBearerToken, clearSsoBearerToken } from '../src/utils/ssoConfig.mjs';
 
 test('shared readings client uses the app-scoped SSO routes and request bodies', async () => {
   const calls = [];
@@ -63,6 +64,27 @@ test('fetch transport sends cookie credentials and JSON bodies, then parses JSON
       body: JSON.stringify({ app: 'tarot', data: { cards: [] } }),
     },
   ]]);
+});
+
+test('default protected readings transport sends the tab bearer', async () => {
+  const originalFetch = globalThis.fetch;
+  let request;
+  setSsoBearerToken('readings-test-token');
+  globalThis.fetch = async (url, options) => {
+    request = { url, options };
+    return new Response(JSON.stringify({ items: [] }));
+  };
+  try {
+    const read = createReadingsApiRequest('https://sso.example.test');
+    assert.deepEqual(await read('/readings?app=iching'), { items: [] });
+  } finally {
+    globalThis.fetch = originalFetch;
+    clearSsoBearerToken();
+  }
+
+  assert.equal(request.url, 'https://sso.example.test/readings?app=iching');
+  assert.equal(request.options.credentials, 'include');
+  assert.equal(new Headers(request.options.headers).get('authorization'), 'Bearer readings-test-token');
 });
 
 test('fetch transport uses route errors and preserves status codes', async () => {

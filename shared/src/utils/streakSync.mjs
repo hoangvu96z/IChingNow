@@ -1,3 +1,5 @@
+import { ssoFetch } from './ssoConfig.mjs';
+
 import {
   applyStreakActivity,
   isDateOnly,
@@ -405,7 +407,7 @@ export function subscribeLocalStreakUpdates(target, {
 export function createPendingEventQueue({
   apiBase,
   getStorage = () => globalThis.localStorage,
-  fetchImpl = (...args) => globalThis.fetch(...args),
+  fetchImpl = ssoFetch,
 }) {
   const pendingFlushes = new Map();
   const pendingEventCache = new Map();

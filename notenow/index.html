@@ -2,9 +2,7 @@
 <html lang="vi" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <script>
-      try { window.localStorage.removeItem('sso_token'); } catch (_) {}
-    </script>
+    <meta name="referrer" content="no-referrer" />
     <link rel="icon" type="image/svg+xml" href="/note/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="NoteNow — Ghi chú nhanh, chia sẻ dễ dàng. Hỗ trợ định dạng văn bản, hình ảnh và chia sẻ qua link." />
@@ -14,12 +12,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script>
-      (function() {
-        var theme = localStorage.getItem('nn_theme_v2') || 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,3 +1,5 @@
+import { ssoFetch } from './ssoConfig.mjs';
+
 const API_ERRORS = {
   list: 'Failed to load readings',
   create: 'Failed to save reading',
@@ -7,7 +9,7 @@ const API_ERRORS = {
 };
 
 /** Build the shared fetch transport used by apps that talk to SSO directly. */
-export function createReadingsApiRequest(baseUrl, fetchImpl = globalThis.fetch) {
+export function createReadingsApiRequest(baseUrl, fetchImpl = ssoFetch) {
   if (typeof fetchImpl !== 'function') {
     throw new TypeError('A fetch implementation is required');
   }

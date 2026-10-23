@@ -1,4 +1,4 @@
-import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
+import { getSsoApiBase, ssoFetch } from '../../../shared/src/utils/ssoConfig.mjs';
 // In development, use relative paths (Vite proxy → sso.vunph.click) to avoid CORS issues.
 // In production, VITE_SSO_URL should be set to the full SSO server URL.
 const BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
@@ -6,7 +6,7 @@ const BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta
 export async function ssoRequest(path, { method = 'GET', body, signal } = {}) {
   let response;
   try {
-    response = await fetch(`${BASE}${path}`, {
+    response = await ssoFetch(`${BASE}${path}`, {
     method, signal, credentials: 'include',
     headers: body ? { 'Content-Type': 'application/json' } : {},
     ...(body ? { body: JSON.stringify(body) } : {}),

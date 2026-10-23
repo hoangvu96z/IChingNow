@@ -101,7 +101,7 @@ function App() {
     setOverview(null);
     setOverviewLoading(true);
     setOverviewError('');
-    fetchMeOverview(fetch, controller.signal)
+    fetchMeOverview({ signal: controller.signal })
       .then((data) => setOverview(data))
       .catch((error) => {
         if (!controller.signal.aborted) setOverviewError(error.message || 'Không tải được tổng quan.');

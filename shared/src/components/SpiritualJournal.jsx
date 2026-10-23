@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { readOpenAiChatStream } from '../utils/openAiSse.mjs';
 import { requestAiChat } from '../utils/aiProxy.mjs';
-import { getSsoApiBase } from '../utils/ssoConfig.mjs';
+import { getSsoApiBase, ssoFetch } from '../utils/ssoConfig.mjs';
 import {
   buildReflectionReport,
   filterJournalEntries,
@@ -33,7 +33,7 @@ async function parseResponse(response) {
 }
 
 async function journalRequest(path, options = {}) {
-  const response = await fetch(`${SSO_BASE}${path}`, {
+  const response = await ssoFetch(`${SSO_BASE}${path}`, {
     credentials: 'include',
     ...options,
     headers: {

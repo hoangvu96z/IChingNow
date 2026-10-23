@@ -5,6 +5,11 @@ import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { LanguageProvider } from './context/LanguageContext.jsx';
 import './index.css';
 
+try {
+  const theme = localStorage.getItem('nn_theme_v2') || 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+} catch {}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>

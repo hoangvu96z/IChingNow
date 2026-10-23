@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from '../../notenow/node_modules/vite/dist/node/index.js';
 
-test('NoteNow shares callback exchange, resolves the cookie session, and handles outages', async () => {
+test('NoteNow shares callback exchange, resolves the bearer session, and handles outages', async () => {
   const originals = Object.fromEntries(['window', 'document', 'localStorage', 'fetch'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   const items = new Map([['sso_logged_out', '1'], ['sso_token', 'legacy-token']]);
   let cleanedUrl;
@@ -29,7 +29,7 @@ test('NoteNow shares callback exchange, resolves the cookie session, and handles
         return new Promise(resolve => { finishExchange = resolve; });
       }
       assert.equal(url, '/sso/me');
-      assert.equal(options.headers, undefined);
+      assert.equal(new Headers(options.headers).get('authorization'), 'Bearer exchange-bearer');
       sessionCount += 1;
       return Promise.resolve(new Response(JSON.stringify({ user: { id: 'test-user' } })));
     };
@@ -37,7 +37,7 @@ test('NoteNow shares callback exchange, resolves the cookie session, and handles
     const focusRefresh = ssoApi.getMe();
     await Promise.resolve();
     assert.equal(exchangeCount, 1);
-    finishExchange(new Response(JSON.stringify({ success: true, user: { id: 'exchange-user' } })));
+    finishExchange(new Response(JSON.stringify({ success: true, user: { id: 'exchange-user' }, token: 'exchange-bearer' })));
     const [callbackResult, refreshResult] = await Promise.all([callbackRequest, focusRefresh]);
     assert.equal(callbackResult, null);
     assert.equal(refreshResult.user.id, 'test-user');
@@ -48,7 +48,7 @@ test('NoteNow shares callback exchange, resolves the cookie session, and handles
     globalThis.fetch = async (url, options) => {
       assert.equal(url, '/sso/me');
       assert.equal(options.credentials, 'include');
-      assert.equal(options.headers, undefined);
+      assert.equal(new Headers(options.headers).get('authorization'), 'Bearer exchange-bearer');
       return new Response(JSON.stringify({ user: { id: 'test-user' } }));
     };
     assert.equal((await ssoApi.getMe()).user.id, 'test-user');

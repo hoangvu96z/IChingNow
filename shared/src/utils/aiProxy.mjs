@@ -1,4 +1,4 @@
-import { getSsoApiBase } from './ssoConfig.mjs';
+import { getSsoApiBase, ssoFetch } from './ssoConfig.mjs';
 
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 
@@ -21,7 +21,7 @@ export async function requestAiChat({
   temperature,
   signal,
 }) {
-  const response = await fetch(`${SSO_BASE}/plans/ai`, {
+  const response = await ssoFetch(`${SSO_BASE}/plans/ai`, {
     method: 'POST',
     credentials: 'include',
     signal,
@@ -61,7 +61,7 @@ export async function refreshAiQuota(app) {
   }[app];
   if (!quotaApp) return null;
 
-  const response = await fetch(`${SSO_BASE}/plans/my-quota?app=${quotaApp}`, {
+  const response = await ssoFetch(`${SSO_BASE}/plans/my-quota?app=${quotaApp}`, {
     credentials: 'include',
   });
   if (!response.ok) return null;
