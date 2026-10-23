@@ -360,6 +360,7 @@ export function getCardRole(card, orientation) {
  * Get context-specific meaning of a card
  */
 export function getMeaningField(card, perspective, orientation) {
+  if (!card) return "";
   const map = {
     love: card.meanings?.love_upright ? card.meanings : null,
     career: card.meanings?.career_upright ? card.meanings : null,
@@ -389,13 +390,7 @@ function dailyTarotSeed(date) {
 export function getDailyTarotCard(tarotCards, date = new Date()) {
   if (!Array.isArray(tarotCards) || tarotCards.length === 0) return null;
 
-  let state = dailyTarotSeed(date) % 2147483647;
-  if (state <= 0) state += 2147483646;
-  const rng = () => {
-    state = (state * 16807) % 2147483647;
-    return (state - 1) / 2147483646;
-  };
-
+  const rng = createSeededRandom(dailyTarotSeed(date));
   const card = tarotCards[Math.floor(rng() * tarotCards.length)];
   return { ...card, orientation: rng() > 0.7 ? 'reversed' : 'upright' };
 }
@@ -405,8 +400,9 @@ export function getSavedDailyTarotCard(tarotCards, cardId, date = new Date()) {
   if (!Array.isArray(tarotCards) || cardId == null) return null;
   const card = tarotCards.find((candidate) => candidate.id === cardId);
   if (!card) return null;
-  const orientationRng = ((dailyTarotSeed(date) * 16807) % 2147483647) / 2147483646;
-  return { ...card, orientation: orientationRng > 0.7 ? 'reversed' : 'upright' };
+  const rng = createSeededRandom(dailyTarotSeed(date));
+  rng();
+  return { ...card, orientation: rng() > 0.7 ? 'reversed' : 'upright' };
 }
 
 /**
@@ -421,29 +417,47 @@ function capitalize(str) {
  * Pattern metrics computation
  */
 export function computePatternMetrics(cards) {
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return {
+      total: 0,
+      majorRatio: 0,
+      reversedRatio: 0,
+      dominantSuit: null,
+      dominantSuitRatio: 0,
+      supportCount: 0,
+      blockCount: 0,
+      courtRatio: 0
+    };
+  }
+
   const total = cards.length;
-  const majorCount = cards.filter(c => c.arcana === "Major").length;
-  const reversedCount = cards.filter(c => c.orientation === "reversed").length;
+  const majorCount = cards.filter(c => c?.arcana === "Major").length;
+  const reversedCount = cards.filter(c => c?.orientation === "reversed").length;
   const suits = { Cups: 0, Pentacles: 0, Swords: 0, Wands: 0 };
   let supportCount = 0;
   let blockCount = 0;
 
   cards.forEach(c => {
+    if (!c) return;
     if (c.suit && c.suit in suits) suits[c.suit]++;
     const role = getCardRole(c, c.orientation);
     if (role === "support") supportCount++;
     if (role === "block") blockCount++;
   });
 
-  const dominantSuit = Object.keys(suits).reduce((a, b) => suits[a] > suits[b] ? a : b);
-  const courtCount = cards.filter(c => ["Page", "Knight", "Queen", "King"].includes(c.rank)).length;
+  const maxSuitCount = Math.max(...Object.values(suits));
+  const dominantSuit = maxSuitCount > 0
+    ? Object.keys(suits).reduce((a, b) => suits[a] > suits[b] ? a : b)
+    : null;
+  const dominantSuitRatio = dominantSuit ? suits[dominantSuit] / total : 0;
+  const courtCount = cards.filter(c => c && ["Page", "Knight", "Queen", "King"].includes(c.rank)).length;
 
   return {
     total,
     majorRatio: majorCount / total,
     reversedRatio: reversedCount / total,
     dominantSuit,
-    dominantSuitRatio: suits[dominantSuit] / total,
+    dominantSuitRatio,
     supportCount,
     blockCount,
     courtRatio: courtCount / total
@@ -575,6 +589,10 @@ export const POSITION_TABLE = {
 };
 
 const PRESET_POSITION_ROLES = {
+  "yes-no": {
+    vi: ["Câu trả lời"],
+    en: ["Answer"]
+  },
   horseshoe: {
     vi: [
       "Quá khứ xa",
@@ -618,13 +636,14 @@ const PRESET_POSITION_ROLES = {
 };
 
 function getPositionRoles(spreadType, perspective, language = "vi") {
-  const presetRoles = PRESET_POSITION_ROLES[spreadType];
+  const normalizedType = normalizeSpreadId(spreadType);
+  const presetRoles = PRESET_POSITION_ROLES[normalizedType] || PRESET_POSITION_ROLES[spreadType];
   if (presetRoles) return presetRoles[language] || presetRoles.vi;
 
   let spreadKey = "three_card";
-  if (spreadType === "single") spreadKey = "one_card";
-  else if (["five-cross", "five-decision", "five-relationship", "career-5"].includes(spreadType)) spreadKey = "five-card";
-  else if (["celtic-cross", "ten_card"].includes(spreadType)) spreadKey = "ten_card";
+  if (normalizedType === "single") spreadKey = "one_card";
+  else if (["five-cross", "five-decision", "five-relationship", "career-5"].includes(normalizedType)) spreadKey = "five-card";
+  else if (["celtic-cross", "ten_card"].includes(normalizedType)) spreadKey = "ten_card";
   
   const mapKey = spreadKey.replace("-", "_");
   const spreadMap = POSITION_TABLE[mapKey] || POSITION_TABLE.three_card;
@@ -1000,52 +1019,53 @@ function renderTensionText(code, perspective, language = "vi") {
  * Scoring Tension System
  */
 export function pickMainTension(cards, metrics, perspective, language = "vi") {
+  const safeMetrics = metrics || computePatternMetrics(cards);
   const candidates = [];
 
-  if (metrics.reversedRatio >= 0.4) {
+  if (safeMetrics.reversedRatio >= 0.4) {
     let score = 30;
-    if (metrics.blockCount > metrics.supportCount) score += 10;
-    if (metrics.reversedRatio >= 0.6) score += 15;
+    if (safeMetrics.blockCount > safeMetrics.supportCount) score += 10;
+    if (safeMetrics.reversedRatio >= 0.6) score += 15;
     candidates.push({ code: "TENSION_HIDDEN_BLOCK", score });
   }
 
-  if (metrics.dominantSuit === "Swords" && metrics.dominantSuitRatio >= 0.4) {
+  if (safeMetrics.dominantSuit === "Swords" && safeMetrics.dominantSuitRatio >= 0.4) {
     let score = 25;
-    if (metrics.total >= 5 && metrics.dominantSuitRatio >= 0.6) score += 10;
+    if (safeMetrics.total >= 5 && safeMetrics.dominantSuitRatio >= 0.6) score += 10;
     candidates.push({ code: "TENSION_OVERTHINKING", score });
   }
 
-  if (metrics.dominantSuit === "Pentacles" && metrics.dominantSuitRatio >= 0.4) {
+  if (safeMetrics.dominantSuit === "Pentacles" && safeMetrics.dominantSuitRatio >= 0.4) {
     let score = 25;
-    if (metrics.total >= 5 && metrics.dominantSuitRatio >= 0.6) score += 10;
+    if (safeMetrics.total >= 5 && safeMetrics.dominantSuitRatio >= 0.6) score += 10;
     candidates.push({ code: "TENSION_STABILITY_FOCUS", score });
   }
 
-  if (metrics.dominantSuit === "Cups" && metrics.dominantSuitRatio >= 0.4) {
+  if (safeMetrics.dominantSuit === "Cups" && safeMetrics.dominantSuitRatio >= 0.4) {
     let score = 25;
-    if (metrics.total >= 5 && metrics.dominantSuitRatio >= 0.6) score += 10;
+    if (safeMetrics.total >= 5 && safeMetrics.dominantSuitRatio >= 0.6) score += 10;
     candidates.push({ code: "TENSION_EMOTION_FOCUS", score });
   }
 
-  if (metrics.dominantSuit === "Wands" && metrics.dominantSuitRatio >= 0.4) {
+  if (safeMetrics.dominantSuit === "Wands" && safeMetrics.dominantSuitRatio >= 0.4) {
     let score = 25;
-    if (metrics.total >= 5 && metrics.dominantSuitRatio >= 0.6) score += 10;
+    if (safeMetrics.total >= 5 && safeMetrics.dominantSuitRatio >= 0.6) score += 10;
     candidates.push({ code: "TENSION_ACTION_ENERGY", score });
   }
 
-  if (metrics.supportCount > 0 && metrics.blockCount > 0) {
+  if (safeMetrics.supportCount > 0 && safeMetrics.blockCount > 0) {
     let score = 20;
-    if (metrics.supportCount > metrics.blockCount) score -= 10;
+    if (safeMetrics.supportCount > safeMetrics.blockCount) score -= 10;
     candidates.push({ code: "TENSION_MIXED_SIGNAL", score });
   }
 
-  if (metrics.majorRatio >= 0.5) {
+  if (safeMetrics.majorRatio >= 0.5) {
     let score = 35;
-    if (metrics.majorRatio >= 0.7) score += 15;
+    if (safeMetrics.majorRatio >= 0.7) score += 15;
     candidates.push({ code: "TENSION_BIG_LESSON", score });
   }
 
-  if (metrics.courtRatio >= 0.3) {
+  if (safeMetrics.courtRatio >= 0.3) {
     candidates.push({ code: "TENSION_EXTERNAL_INFLUENCE", score: 20 });
   }
 
@@ -1313,17 +1333,18 @@ function deriveSummarySeed(drawnCards, spreadPresetId, perspective, language, qu
  * Generate a multi-dimensional, deep reading summary analysis object
  */
 export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "general", language = "vi", question = "", seed) {
-  if (!drawnCards || drawnCards.length === 0) return null;
+  if (!Array.isArray(drawnCards) || drawnCards.length === 0) return null;
   
+  const normalizedSpreadId = normalizeSpreadId(spreadPresetId);
   const activePerspective = PERSPECTIVES.some(p => p.key === perspective) ? perspective : "general";
-  const positions = getPositionRoles(spreadPresetId, activePerspective, language);
+  const positions = getPositionRoles(normalizedSpreadId, activePerspective, language);
   
   const metrics = computePatternMetrics(drawnCards);
   const tension = pickMainTension(drawnCards, metrics, activePerspective, language);
   
   const summarySeed = Number.isFinite(seed)
     ? seed
-    : deriveSummarySeed(drawnCards, spreadPresetId, activePerspective, language, question);
+    : deriveSummarySeed(drawnCards, normalizedSpreadId, activePerspective, language, question);
   const rng = createSeededRandom(summarySeed + 2);
   const introBankPerspective = INTRO_BANK[activePerspective] || INTRO_BANK.general;
   const introText = pickTemplate(introBankPerspective[language] || introBankPerspective.vi, rng);
@@ -1340,7 +1361,7 @@ export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "
     const position = (Array.isArray(positions) ? positions[index] : positions) || fallbackList[index];
     
     // get basic meaning
-    const orientation = card.orientation || "upright";
+    const orientation = card?.orientation || "upright";
     const humanMeaning = getMeaningField(card, activePerspective, orientation);
     
     // get situation impact
@@ -1368,22 +1389,25 @@ export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "
 export const CONTEXTS = PERSPECTIVES;
 
 export function analyzeSpreadPatterns(cards, language = "vi") {
-  const metrics = computePatternMetrics(cards);
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const metrics = computePatternMetrics(safeCards);
   const tone = [];
-  if (language === 'en') {
-    if (metrics.dominantSuit === "Cups" && metrics.dominantSuitRatio >= 0.4) tone.push("Emotional (Cups)");
-    if (metrics.dominantSuit === "Wands" && metrics.dominantSuitRatio >= 0.4) tone.push("Action-oriented (Wands)");
-    if (metrics.dominantSuit === "Swords" && metrics.dominantSuitRatio >= 0.4) tone.push("Intellectual/Challenging (Swords)");
-    if (metrics.dominantSuit === "Pentacles" && metrics.dominantSuitRatio >= 0.4) tone.push("Practical/Material (Pentacles)");
-  } else {
-    if (metrics.dominantSuit === "Cups" && metrics.dominantSuitRatio >= 0.4) tone.push("Cảm xúc (Emotional)");
-    if (metrics.dominantSuit === "Wands" && metrics.dominantSuitRatio >= 0.4) tone.push("Động lực/Hành động (Action-oriented)");
-    if (metrics.dominantSuit === "Swords" && metrics.dominantSuitRatio >= 0.4) tone.push("Áp lực trí óc/Thách thức (Intellectual/Challenging)");
-    if (metrics.dominantSuit === "Pentacles" && metrics.dominantSuitRatio >= 0.4) tone.push("Thực tế/Vật chất (Practical/Material)");
+  if (metrics.dominantSuit && metrics.dominantSuitRatio >= 0.4) {
+    if (language === 'en') {
+      if (metrics.dominantSuit === "Cups") tone.push("Emotional (Cups)");
+      else if (metrics.dominantSuit === "Wands") tone.push("Action-oriented (Wands)");
+      else if (metrics.dominantSuit === "Swords") tone.push("Intellectual/Challenging (Swords)");
+      else if (metrics.dominantSuit === "Pentacles") tone.push("Practical/Material (Pentacles)");
+    } else {
+      if (metrics.dominantSuit === "Cups") tone.push("Cảm xúc (Emotional)");
+      else if (metrics.dominantSuit === "Wands") tone.push("Động lực/Hành động (Action-oriented)");
+      else if (metrics.dominantSuit === "Swords") tone.push("Áp lực trí óc/Thách thức (Intellectual/Challenging)");
+      else if (metrics.dominantSuit === "Pentacles") tone.push("Thực tế/Vật chất (Practical/Material)");
+    }
   }
   return {
     tone,
-    majorCount: cards.filter(c => c.arcana === "Major").length,
-    reversedCount: cards.filter(c => c.orientation === "reversed").length
+    majorCount: safeCards.filter(c => c?.arcana === "Major").length,
+    reversedCount: safeCards.filter(c => c?.orientation === "reversed").length
   };
 }

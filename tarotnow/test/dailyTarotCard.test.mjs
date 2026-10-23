@@ -22,11 +22,27 @@ test('daily Tarot selection is stable for one local date and follows the date se
   assert.equal(getDailyTarotCard([], day), null);
 });
 
-test('saved daily card is restored by ID with TarotNow’s current orientation rule', () => {
-  const day = new Date(2026, 9, 23, 12);
-  const saved = getSavedDailyTarotCard(cards, 'three', day);
+test('saved daily card is restored by ID and reproduces exactly the orientation chosen by getDailyTarotCard', () => {
+  const uprightDay = new Date(2026, 9, 23, 12);
+  const dailyUpright = getDailyTarotCard(cards, uprightDay);
+  const savedUpright = getSavedDailyTarotCard(cards, dailyUpright.id, uprightDay);
 
-  assert.equal(saved?.id, 'three');
-  assert.equal(saved?.orientation, 'upright');
-  assert.equal(getSavedDailyTarotCard(cards, 'missing', day), null);
+  assert.equal(savedUpright?.id, dailyUpright.id);
+  assert.equal(savedUpright?.orientation, dailyUpright.orientation);
+  assert.equal(savedUpright?.orientation, 'upright');
+
+  // October 5, 2026 selects reversed orientation
+  const reversedDay = new Date(2026, 9, 5, 12);
+  const dailyReversed = getDailyTarotCard(cards, reversedDay);
+  const savedReversed = getSavedDailyTarotCard(cards, dailyReversed.id, reversedDay);
+
+  assert.equal(dailyReversed.orientation, 'reversed');
+  assert.equal(savedReversed?.id, dailyReversed.id);
+  assert.equal(savedReversed?.orientation, dailyReversed.orientation);
+  assert.equal(savedReversed?.orientation, 'reversed');
+
+  assert.equal(getSavedDailyTarotCard(cards, 'missing', uprightDay), null);
+  assert.equal(getSavedDailyTarotCard([], 'two', uprightDay), null);
+  assert.equal(getSavedDailyTarotCard(cards, null, uprightDay), null);
+  assert.equal(getSavedDailyTarotCard(cards, undefined, uprightDay), null);
 });
