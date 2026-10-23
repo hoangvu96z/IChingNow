@@ -11,11 +11,6 @@ export function getSsoApiBase(env = {}) {
 
 export function getSsoLoginUrl(env, returnUrl) {
   const target = new URL(returnUrl);
-  // Send legacy frontend visits to the new shared-cookie origin before login.
-  if (['vunph.id.vn', 'www.vunph.id.vn'].includes(target.hostname.toLowerCase())) {
-    target.protocol = 'https:';
-    target.host = 'vunph.click';
-  }
   target.searchParams.delete('sso_token');
   target.searchParams.delete('sso_code');
   return `${getSsoWebBase(env)}/ui/sso?redirect=${encodeURIComponent(target.toString())}`;

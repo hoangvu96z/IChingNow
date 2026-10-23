@@ -18,8 +18,11 @@ test('local API uses a proxy while login returns to the original app, query and 
   }
   const codeRedirect = new URL(getSsoLoginUrl(env, 'http://localhost:5173/kinhdich/?invite=abc&sso_code=old#reading'));
   assert.equal(codeRedirect.searchParams.get('redirect'), 'http://localhost:5173/kinhdich/?invite=abc#reading');
-  const legacyRedirect = new URL(getSsoLoginUrl(env, 'https://vunph.id.vn/note/?invite=abc#editor'));
-  assert.equal(legacyRedirect.searchParams.get('redirect'), 'https://vunph.click/note/?invite=abc#editor');
+  const productionRedirect = new URL(getSsoLoginUrl(env, 'https://vunph.id.vn/kinhdich/?invite=abc&sso_code=old#reading'));
+  assert.equal(productionRedirect.origin, 'https://sso.vunph.click');
+  assert.equal(productionRedirect.searchParams.get('redirect'), 'https://vunph.id.vn/kinhdich/?invite=abc#reading');
+  const wwwRedirect = new URL(getSsoLoginUrl(env, 'https://www.vunph.id.vn/note/?invite=abc#editor'));
+  assert.equal(wwwRedirect.searchParams.get('redirect'), 'https://www.vunph.id.vn/note/?invite=abc#editor');
   assert.equal(getSsoApiBase({ DEV: false }), 'https://sso.vunph.click');
   const custom = { DEV: true, VITE_SSO_URL: 'http://localhost:3000/' };
   assert.equal(new URL(getSsoLoginUrl(custom, 'http://localhost:5177/note/')).origin, 'http://localhost:3000');

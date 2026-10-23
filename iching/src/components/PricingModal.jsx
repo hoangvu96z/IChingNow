@@ -65,7 +65,7 @@ export default function PricingModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetch(`${SSO_BASE}/plans/config`)
+      fetch(`${SSO_BASE}/plans/config`, { credentials: 'include' })
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data.plans) && data.plans.length > 0) {
