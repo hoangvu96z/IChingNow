@@ -36,6 +36,7 @@ export default function ManualPickMode({
   const [drawnCards, setDrawnCards] = useState([]);
   const [activeCtx, setActiveCtx] = useState('general');
   const [revealedSet, setRevealedSet] = useState(new Set());
+  const trayRef = useRef(null);
   const resultRef = useRef(null);
   const [copyDone, setCopyDone] = useState(false);
   const [copyPromptDone, setCopyPromptDone] = useState(false);
@@ -173,7 +174,11 @@ export default function ManualPickMode({
   }, [drawnCards, isAuthenticated, language, onSaveReading, phase, pickCount, question]);
 
   useEffect(() => {
-    if (phase === 'results' && resultRef.current) {
+    if (phase === 'picking' && trayRef.current) {
+      if (typeof window !== 'undefined' && window.innerWidth <= 767) {
+        trayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (phase === 'results' && resultRef.current) {
       setTimeout(() => resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }), 700);
     }
   }, [phase]);
@@ -253,12 +258,14 @@ export default function ManualPickMode({
 
       {/* ─── PICKING OR RESULTS TRAY STAGE ─── */}
       {(phase === 'picking' || phase === 'results') && (
-        <Manual3DTray
-          pickCount={pickCount}
-          selectedIds={selectedIds}
-          drawnCards={drawnCards}
-          onSelectCard={(card) => setSelectedModalCard(card)}
-        />
+        <div ref={trayRef} className="manual-3d-tray-scroll-target">
+          <Manual3DTray
+            pickCount={pickCount}
+            selectedIds={selectedIds}
+            drawnCards={drawnCards}
+            onSelectCard={(card) => setSelectedModalCard(card)}
+          />
+        </div>
       )}
 
       {/* ─── PICKING DECK STAGE ─── */}

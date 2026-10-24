@@ -1778,6 +1778,10 @@ input:checked + .toggle-slider:before {
   align-items: center;
 }
 
+.manual-3d-tray-scroll-target {
+  scroll-margin-top: 64px;
+}
+
 /* 3D Floating Slot Tray at top - Full Width 1280px */
 .manual-3d-tray {
   width: 100%;
