@@ -146,6 +146,7 @@ test('NoteNow mobile drawer aligns exactly under header at 320px, 390px, 641px, 
 
   // Baseline mobile drawer top must be 60px to align under 60px header at 641px - 768px
   assert.match(css, /\.nn-mobile-drawer\s*\{[^}]*top:\s*60px/, 'drawer base top must be 60px matching 60px header');
+  assert.match(css, /\.nn-mobile-drawer\s*\{[^}]*bottom:\s*0/, 'drawer base rule must have bottom: 0 to extend to viewport bottom');
 
   // Mobile media query (<= 640px) must adjust drawer top to 52px matching 52px header at 320px - 390px
   const mobileMediaMatch = css.match(/@media\s*\(\s*max-width:\s*640px\s*\)\s*\{([\s\S]+?)\n\}/);

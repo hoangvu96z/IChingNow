@@ -365,6 +365,7 @@ body {
 .nn-mobile-drawer {
   position: fixed;
   top: 60px;
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 199;
