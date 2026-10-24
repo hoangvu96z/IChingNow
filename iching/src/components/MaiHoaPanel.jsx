@@ -16,7 +16,7 @@ function LunarPreview({ dateStr, timeStr }) {
   const hourBranchTrans = hourBranchInfo ? t(`branch.${hourBranchInfo.nameVi.replace('Giờ ', '')}`, hourBranchInfo.nameVi) : '';
 
   return (
-    <div style={{
+    <div className="maihoa-lunar-preview" style={{
       marginTop: 10,
       padding: '10px 14px',
       background: 'rgba(184,134,11,0.07)',
@@ -25,10 +25,42 @@ function LunarPreview({ dateStr, timeStr }) {
       fontSize: '0.8125rem',
       lineHeight: 1.7,
     }}>
+      <style>{`
+        .maihoa-lunar-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2px 16px;
+        }
+        .maihoa-lunar-calc-row {
+          margin-top: 6px;
+          padding-top: 6px;
+          border-top: 1px solid rgba(184,134,11,0.15);
+          color: var(--color-ink-muted);
+          font-size: 0.75rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px 12px;
+        }
+        @media (max-width: 359px) {
+          .maihoa-lunar-preview {
+            padding: 8px 10px !important;
+            font-size: 0.75rem !important;
+          }
+          .maihoa-lunar-grid {
+            grid-template-columns: 1fr !important;
+            gap: 2px 0 !important;
+          }
+          .maihoa-lunar-calc-row {
+            flex-direction: column;
+            gap: 2px !important;
+            font-size: 0.72rem !important;
+          }
+        }
+      `}</style>
       <div style={{ fontWeight: 700, color: 'var(--color-gold)', marginBottom: 4, fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
         {t('maihoa.lunar_preview', 'Âm lịch quy đổi')}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
+      <div className="maihoa-lunar-grid">
         <div>
           <span style={{ color: 'var(--color-ink-muted)' }}>{t('maihoa.lunar_year', 'Năm')}: </span>
           <strong style={{ color: 'var(--color-ink)' }}>{stemTrans} {chiTrans}</strong>
@@ -49,10 +81,13 @@ function LunarPreview({ dateStr, timeStr }) {
           <span style={{ color: 'var(--color-gold)', marginLeft: 4 }}>(# {hourBranchInfo?.chiNumber})</span>
         </div>
       </div>
-      <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(184,134,11,0.15)', color: 'var(--color-ink-muted)', fontSize: '0.75rem' }}>
-        {language === 'en' ? 'Upper' : 'Số thượng'} = {yearChiNumber}+{monthNumber}+{dayNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber}</strong>
-        &nbsp;&nbsp;
-        {language === 'en' ? 'Lower' : 'Số hạ'} = +{hourBranchInfo?.chiNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber+hourBranchInfo?.chiNumber}</strong>
+      <div className="maihoa-lunar-calc-row">
+        <span>
+          {language === 'en' ? 'Upper' : 'Số thượng'} = {yearChiNumber}+{monthNumber}+{dayNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber}</strong>
+        </span>
+        <span>
+          {language === 'en' ? 'Lower' : 'Số hạ'} = {yearChiNumber+monthNumber+dayNumber} + {hourBranchInfo?.chiNumber} = <strong style={{ color: 'var(--color-jade)' }}>{yearChiNumber+monthNumber+dayNumber+hourBranchInfo?.chiNumber}</strong>
+        </span>
       </div>
     </div>
   );
@@ -151,7 +186,10 @@ function BanknoteCard({ serial, index, onSelect }) {
 
       {/* Hàng dưới: Nhãn nhỏ Mai Hoa & nút chọn */}
       <div className="banknote-footer">
-        <span className="banknote-tag">MAI HOA #{index + 1}</span>
+        <span className="banknote-tag">
+          <span className="banknote-tag-full">MAI HOA #{index + 1}</span>
+          <span className="banknote-tag-short">MH #{index + 1}</span>
+        </span>
         <span className="banknote-action">CHỌN ↵</span>
       </div>
     </button>
@@ -393,23 +431,36 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
         }
 
         .banknote-tag {
-          font-size: 0.5rem;
-          color: var(--color-ink-muted, #8c6d58);
+          font-size: 10px;
+          color: #4a2e1b;
+          background: rgba(255, 255, 255, 0.78);
+          padding: 1px 4px;
+          border-radius: 3px;
           text-transform: uppercase;
-          letter-spacing: 0.04em;
-          font-weight: 600;
-          line-height: 1;
-          opacity: 0.85;
+          letter-spacing: 0.02em;
+          font-weight: 700;
+          line-height: 1.2;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
+        .banknote-tag-short {
+          display: none;
+        }
+        .banknote-tag-full {
+          display: inline;
+        }
+
         .banknote-action {
-          font-size: 0.55rem;
-          color: var(--color-jade, #1a6b4a);
+          font-size: 10px;
+          color: #0d5f38;
+          background: rgba(26, 107, 74, 0.12);
+          border: 0.5px solid rgba(26, 107, 74, 0.28);
+          padding: 1px 5px;
+          border-radius: 3px;
           font-weight: 700;
-          line-height: 1;
+          line-height: 1.2;
           white-space: nowrap;
           flex-shrink: 0;
         }
@@ -426,8 +477,11 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
             gap: 8px;
           }
           .banknote-bill {
-            padding: 6px 7px;
-            min-height: 60px;
+            padding: 5px 6px;
+            min-height: 62px;
+          }
+          .banknote-inner-border {
+            inset: 2px;
           }
           .banknote-serial {
             font-size: 0.85rem;
@@ -444,11 +498,26 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
           .banknote-security-strip {
             display: none;
           }
+          .banknote-footer {
+            gap: 3px;
+            margin-top: 2px;
+          }
           .banknote-tag {
-            font-size: 0.52rem;
+            font-size: 10px;
+            padding: 1px 3px;
           }
           .banknote-action {
-            font-size: 0.56rem;
+            font-size: 10px;
+            padding: 1px 4px;
+          }
+        }
+
+        @media (max-width: 359px) {
+          .banknote-tag-full {
+            display: none;
+          }
+          .banknote-tag-short {
+            display: inline;
           }
         }
       `}</style>
@@ -461,7 +530,7 @@ function FormulaBox({ mode }) {
   const { language } = useLanguage();
   const isTime = mode === 'time';
   return (
-    <div style={{
+    <div className="maihoa-formula-box" style={{
       padding: '10px 14px',
       background: 'rgba(26,107,74,0.06)',
       borderRadius: 8,
@@ -470,35 +539,108 @@ function FormulaBox({ mode }) {
       color: 'var(--color-ink-muted)',
       lineHeight: 1.8,
     }}>
+      <style>{`
+        .maihoa-formula-row {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 6px;
+        }
+        .maihoa-formula-label {
+          flex-shrink: 0;
+        }
+        .maihoa-formula-calc {
+          text-align: right;
+          white-space: nowrap;
+        }
+        @media (max-width: 520px) {
+          .maihoa-formula-box {
+            padding: 8px 10px !important;
+            font-size: 0.74rem !important;
+            line-height: 1.65 !important;
+          }
+        }
+        @media (max-width: 359px) {
+          .maihoa-formula-box {
+            font-size: 0.7rem !important;
+          }
+          .maihoa-formula-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1px;
+            margin-bottom: 4px;
+          }
+          .maihoa-formula-calc {
+            text-align: left;
+            padding-left: 8px;
+          }
+        }
+      `}</style>
       <div style={{ fontWeight: 700, color: 'var(--color-jade)', marginBottom: 3 }}>
         {language === 'en' ? 'Formula' : 'Công thức'}
       </div>
       {isTime ? (
         language === 'en' ? (
           <>
-            Upper Trigram = (Year + Month + Day) mod 8<br />
-            Lower Trigram = (Year + Month + Day + Hour) mod 8<br />
-            Changing Line = (Year + Month + Day + Hour) mod 6
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Upper Trigram</span>
+              <span className="maihoa-formula-calc">=&nbsp;(Year + Month + Day)&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Lower Trigram</span>
+              <span className="maihoa-formula-calc">=&nbsp;(Year + Month + Day + Hour)&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Changing Line</span>
+              <span className="maihoa-formula-calc">=&nbsp;(Year + Month + Day + Hour)&nbsp;mod&nbsp;6</span>
+            </div>
           </>
         ) : (
           <>
-            Thượng quái = (Năm + Tháng + Ngày) mod 8<br />
-            Hạ quái = (Năm + Tháng + Ngày + Giờ) mod 8<br />
-            Hào động = (Năm + Tháng + Ngày + Giờ) mod 6
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Thượng quái</span>
+              <span className="maihoa-formula-calc">=&nbsp;(Năm + Tháng + Ngày)&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Hạ quái</span>
+              <span className="maihoa-formula-calc">=&nbsp;(Năm + Tháng + Ngày + Giờ)&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Hào động</span>
+              <span className="maihoa-formula-calc">=&nbsp;(Năm + Tháng + Ngày + Giờ)&nbsp;mod&nbsp;6</span>
+            </div>
           </>
         )
       ) : (
         language === 'en' ? (
           <>
-            Upper Trigram = Sum of first half mod 8<br />
-            Lower Trigram = Sum of second half mod 8<br />
-            Changing Line = Sum of all digits mod 6
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Upper Trigram</span>
+              <span className="maihoa-formula-calc">=&nbsp;Sum of first half&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Lower Trigram</span>
+              <span className="maihoa-formula-calc">=&nbsp;Sum of second half&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Changing Line</span>
+              <span className="maihoa-formula-calc">=&nbsp;Sum of all digits&nbsp;mod&nbsp;6</span>
+            </div>
           </>
         ) : (
           <>
-            Thượng quái = Tổng nửa đầu mod 8<br />
-            Hạ quái = Tổng nửa sau mod 8<br />
-            Hào động = Tổng tất cả chữ số mod 6
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Thượng quái</span>
+              <span className="maihoa-formula-calc">=&nbsp;Tổng nửa đầu&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Hạ quái</span>
+              <span className="maihoa-formula-calc">=&nbsp;Tổng nửa sau&nbsp;mod&nbsp;8</span>
+            </div>
+            <div className="maihoa-formula-row">
+              <span className="maihoa-formula-label">Hào động</span>
+              <span className="maihoa-formula-calc">=&nbsp;Tổng tất cả chữ số&nbsp;mod&nbsp;6</span>
+            </div>
           </>
         )
       )}
@@ -556,7 +698,20 @@ function TimeModePanel({ question, onResult, onReset }) {
       </button>
 
       {/* Ngày + Giờ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <style>{`
+        .maihoa-datetime-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        @media (max-width: 359px) {
+          .maihoa-datetime-grid {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+        }
+      `}</style>
+      <div className="maihoa-datetime-grid">
         <div>
           <label className="form-label">{t('form.moving_date_label', 'Ngày động tâm')}</label>
           <input type="date" className="form-input" value={dateStr}
