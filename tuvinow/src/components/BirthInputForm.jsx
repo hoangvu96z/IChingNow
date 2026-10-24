@@ -335,7 +335,7 @@ export default function BirthInputForm({ onSubmit }) {
         </button>
         {!isFormValid && (
           <p className="btn-submit-hint" aria-live="polite">
-            Nhập họ tên ở trên để kích hoạt nút Lập Lá Số
+            Nhập họ tên để lập lá số Tử Vi.
           </p>
         )}
       </form>
