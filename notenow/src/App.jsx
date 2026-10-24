@@ -3,6 +3,7 @@ import NoteBoard from './components/NoteBoard.jsx';
 import InviteAcceptPage from './components/InviteAcceptPage.jsx';
 import NoteEditor from './components/NoteEditor.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
+import HelpModal from './components/HelpModal.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { ssoApi, notesApi, safeStorage } from './api.js';
 import { useLanguage } from './context/LanguageContext.jsx';
@@ -287,6 +288,7 @@ export default function App() {
   });
   const [route, setRoute] = useState(getRoute);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     trackPageVisit('notenow');
@@ -432,7 +434,7 @@ export default function App() {
           {/* Guide / Feature Intro */}
           <button
             className="nn-theme-toggle"
-            onClick={() => setShowOnboarding(true)}
+            onClick={() => setShowHelp(true)}
             title={t('header.help_title', 'Hướng dẫn & Tính năng')}
             aria-label={t('header.help_title', 'Hướng dẫn & Tính năng')}
             type="button"
@@ -516,6 +518,12 @@ export default function App() {
           localStorage.setItem('notenow_onboarded_v2', 'true');
           setShowOnboarding(false);
         }}
+      />
+
+      {/* Repeatable Help / Guide Modal */}
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
       />
 
       {/* Shared Footer — compact, distinct background, no app pills */}

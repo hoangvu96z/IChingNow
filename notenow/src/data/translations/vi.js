@@ -181,6 +181,11 @@ export const vi = {
   'onboarding.f3_desc': 'Tạo liên kết chia sẻ cho phép xem hoặc sửa trực tiếp. Người dùng SSO có thể mời bạn bè qua email dễ dàng.',
   'onboarding.start_btn': 'Bắt đầu ghi chú',
 
+  // Help Modal
+  'help.title': 'Hướng dẫn & Tính năng',
+  'help.sub': 'Khám phá các tính năng và cách sử dụng NoteNow hiệu quả',
+  'help.close_btn': 'Đóng',
+
   // Invite Page
   'invite.loading': 'Đang xử lý…',
   'invite.login_title': 'Đăng nhập để chấp nhận',

@@ -181,6 +181,11 @@ export const en = {
   'onboarding.f3_desc': 'Create shareable links for direct viewing or editing. SSO users can easily invite friends via email.',
   'onboarding.start_btn': 'Get Started',
 
+  // Help Modal
+  'help.title': 'Guide & Features',
+  'help.sub': 'Explore NoteNow features and handy tips',
+  'help.close_btn': 'Close',
+
   // Invite Page
   'invite.loading': 'Processing…',
   'invite.login_title': 'Sign in to accept',
