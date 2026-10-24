@@ -366,11 +366,16 @@ export default function AppHeader({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef(null);
+  const hamburgerRef = useRef(null);
 
   // Close drawer on outside click
   useEffect(() => {
     function handleClick(e) {
-      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+      if (
+        drawerRef.current &&
+        !drawerRef.current.contains(e.target) &&
+        (!hamburgerRef.current || !hamburgerRef.current.contains(e.target))
+      ) {
         setDrawerOpen(false);
       }
     }
@@ -510,6 +515,7 @@ export default function AppHeader({
 
           {/* ── Hamburger (Mobile) ── */}
           <button
+            ref={hamburgerRef}
             className="app-header-hamburger"
             style={hamburgerStyle}
             onClick={() => setDrawerOpen(o => !o)}
