@@ -8,10 +8,19 @@ const LOCAL_PORTS = {
 };
 
 export function getAppLink(path, env, location) {
-  if (!env?.DEV || !location || !LOCAL_PORTS[path]) return path;
-  // Keep the current app's link on its actual port, including custom preview ports.
-  if (location.pathname.startsWith(path)) return path;
-  const target = new URL(path, location.href);
-  target.port = LOCAL_PORTS[path];
-  return target.toString();
+  if (!location || !LOCAL_PORTS[path]) return path;
+
+  if (env?.DEV) {
+    // Keep the current app's link on its actual port, including custom preview ports.
+    if (location.pathname?.startsWith(path)) return path;
+    const target = new URL(path, location.href);
+    target.port = LOCAL_PORTS[path];
+    return target.toString();
+  }
+
+  if (location.hostname === 'vunph.click') {
+    return new URL(path, 'https://vunph.id.vn').toString();
+  }
+
+  return path;
 }
