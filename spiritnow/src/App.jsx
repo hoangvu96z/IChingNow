@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppFooter from '@shared/components/AppFooter.jsx';
+import AppHeader from '@shared/components/AppHeader.jsx';
 import { useAuth } from '@shared/context/AuthContext.jsx';
 import { getAppLink } from '@shared/utils/appLinks.mjs';
 import {
@@ -9,6 +10,25 @@ import {
   millisecondsUntilNextLocalMidnight,
 } from './dashboardModel.mjs';
 import { fetchMeOverview, fetchTarotCards } from './overviewApi.mjs';
+
+const spiritNowTheme = {
+  bg: 'rgba(7, 15, 27, 0.88)',
+  accent: '#7dd3c7',
+  accentSoft: 'rgba(125, 211, 199, 0.14)',
+  accentHover: 'rgba(125, 211, 199, 0.24)',
+  text: '#eef2f8',
+  textMuted: '#9aaabe',
+  border: 'rgba(211, 223, 242, 0.12)',
+  drawerBg: '#08111f',
+  dropdownBg: '#0b1626',
+  dropdownBorder: 'rgba(125, 211, 199, 0.25)',
+  dropdownItemText: '#eef2f8',
+  dropdownItemSub: '#9aaabe',
+  dropdownHeader: '#7dd3c7',
+  dropdownArrow: '#7dd3c7',
+  hoverBg: 'rgba(125, 211, 199, 0.12)',
+  titleFont: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+};
 
 function appHref(path) {
   return getAppLink(path, { DEV: import.meta.env.DEV }, window.location);
@@ -50,7 +70,7 @@ function StreakSummary({ apps, loading }) {
 }
 
 function App() {
-  const { user, isLoading: authLoading, isAuthenticated, login } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [overviewResult, setOverviewResult] = useState({ ownerId: null, data: null });
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewError, setOverviewError] = useState('');
@@ -136,23 +156,21 @@ function App() {
 
   return (
     <div className="spirit-shell">
-      <header className="spirit-header">
-        <div className="spirit-header-inner">
-          <a className="brand" href="/spiritnow/" aria-label="SpiritNow trang tổng quan">
-            <span className="brand-mark">✦</span>
-            <span>Spirit<span>Now</span></span>
-          </a>
-          <div className="header-actions">
-            {isAuthenticated ? (
-              <span className="session-label">Đã kết nối SSO</span>
-            ) : (
-              <button className="button button-quiet" type="button" onClick={login} disabled={authLoading}>
-                {authLoading ? 'Đang kiểm tra…' : 'Đăng nhập'}
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        appId="spiritnow"
+        colors={spiritNowTheme}
+        title="SpiritNow"
+        subtitle="Hệ sinh thái SpiritNow"
+        onLogoClick={() => {
+          window.location.href = appHref('/spiritnow/');
+        }}
+        useAuthHook={useAuth}
+        logo={
+          <span className="brand-mark" aria-hidden="true">
+            ✦
+          </span>
+        }
+      />
 
       <main className="dashboard-content">
         <section className="hero">

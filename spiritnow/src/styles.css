@@ -19,30 +19,13 @@ a { color: inherit; }
     radial-gradient(ellipse at 88% 13%, rgba(98, 67, 136, .18), transparent 34%),
     #08111f;
 }
-.spirit-header {
-  width: 100%;
+.spirit-shell > header {
   border-bottom: 1px solid rgba(211, 223, 242, .09);
-  background: rgba(7, 15, 27, .7);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
-.spirit-header-inner {
-  height: 68px;
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.brand { display: inline-flex; gap: 10px; align-items: center; text-decoration: none; font-size: 18px; font-weight: 750; letter-spacing: -.04em; }
-.brand > span:last-child > span { color: #7dd3c7; }
-.brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(125, 211, 199, .4); border-radius: 10px; color: #8be0d2; background: rgba(125, 211, 199, .1); }
-.header-actions { display: flex; align-items: center; gap: 14px; }
-.session-label, .section-note { color: #9aaabe; font-size: 13px; }
-.button { border: 0; border-radius: 10px; cursor: pointer; font-weight: 650; }
-.button-quiet { padding: 10px 16px; color: #e7f3f2; background: rgba(125, 211, 199, .13); border: 1px solid rgba(125, 211, 199, .25); }
-.button-quiet:hover { background: rgba(125, 211, 199, .2); }
-.button:disabled { opacity: .6; cursor: default; }
+.brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(125, 211, 199, .4); border-radius: 10px; color: #8be0d2; background: rgba(125, 211, 199, .1); flex-shrink: 0; }
+.section-note { color: #9aaabe; font-size: 13px; }
 
 .dashboard-content { max-width: 1160px; padding: 0 24px; margin: 0 auto; }
 .hero { min-height: 244px; position: relative; display: flex; align-items: center; justify-content: space-between; padding: 44px 0 36px; }
@@ -103,11 +86,13 @@ a { color: inherit; }
   .app-link-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 480px) {
-  .spirit-header-inner { padding: 0 16px; }
   .dashboard-content { padding: 0 16px; }
   .hero { min-height: 200px; padding: 35px 0 28px; }
   .hero-orbit { width: 65px; height: 65px; font-size: 23px; }
   .hero-copy { font-size: 13px; }
   .section-heading { align-items: start; flex-direction: column; }
   .section-note { font-size: 11px; }
+}
+@media (max-width: 320px) {
+  body { min-width: 0; }
 }
