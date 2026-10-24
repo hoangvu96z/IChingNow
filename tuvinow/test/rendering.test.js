@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
@@ -97,5 +98,15 @@ test('answer and actual palace components render evidence and legacy text', asyn
     assert.ok(chartHtml.includes('26/12/2023'));
     assert.ok(chartHtml.includes('tuvi-tap-to-learn-banner'));
     assert.ok(chartHtml.includes('chart-export-wrapper'));
+    assert.equal((chartHtml.match(/class="palace-card /g) || []).length, 12);
+    assert.ok(chartHtml.includes('class="chart-center"'));
+
+    // Mobile responsive CSS keeps center info first and stacks 12 palaces below 480px while preserving 4x4 export capture
+    const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+    assert.match(css, /\.chart-export-wrapper\.is-exporting\s*\{[\s\S]*?min-width:\s*1024px/);
+    assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.center-name\s*\{[\s\S]*?white-space:\s*nowrap/);
+    assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.center-info-row\s*\{[\s\S]*?flex-wrap:\s*nowrap/);
+    assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-grid\s*\{[\s\S]*?flex-direction:\s*column[\s\S]*?min-width:\s*0/);
+    assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-center\s*\{[\s\S]*?order:\s*-1/);
   } finally { await server.close(); }
 });

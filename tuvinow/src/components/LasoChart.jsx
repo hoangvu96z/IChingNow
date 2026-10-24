@@ -189,7 +189,12 @@ export default function LasoChart({ result, inputData }) {
       </div>
 
       {/* Captured Export Wrapper */}
-      <div ref={chartRef} className="chart-export-wrapper" id="tuvi-chart-capture">
+      <div
+        ref={chartRef}
+        className={`chart-export-wrapper${isExporting ? ' is-exporting' : ''}`}
+        data-exporting={isExporting ? 'true' : undefined}
+        id="tuvi-chart-capture"
+      >
         <div className="chart-grid">
           {/* Render 12 palace cards */}
           {palates.map((palace, i) => (
