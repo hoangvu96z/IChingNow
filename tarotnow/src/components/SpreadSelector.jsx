@@ -31,6 +31,16 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
 
   return (
     <div className="spread-selector-wrapper" style={{ position: 'relative' }}>
+      <style>{`
+        @media (max-width: 360px) {
+          .spread-selector-row-title {
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+          }
+        }
+      `}</style>
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -170,14 +180,18 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                     </div>
                     <div style={{ flexGrow: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '2px' }}>
-                        <span style={{
-                          flex: '1 1 auto',
-                          minWidth: 0,
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: isActive ? '#e5c158' : '#fff',
-                          lineHeight: 1.35,
-                        }}>
+                        <span
+                          className="spread-selector-row-title"
+                          title={spread.name}
+                          style={{
+                            flex: '1 1 auto',
+                            minWidth: 0,
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: isActive ? '#e5c158' : '#fff',
+                            lineHeight: 1.35,
+                          }}
+                        >
                           {spread.name}
                         </span>
                         <span style={{
