@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import NoteBoard from './components/NoteBoard.jsx';
 import InviteAcceptPage from './components/InviteAcceptPage.jsx';
 import NoteEditor from './components/NoteEditor.jsx';
-import OnboardingModal from './components/OnboardingModal.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import NoteNavDrawer from './components/NoteNavDrawer.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
@@ -288,14 +287,10 @@ export default function App() {
     return 'light';
   });
   const [route, setRoute] = useState(getRoute);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     trackPageVisit('notenow');
-    if (route.page === 'board' && !localStorage.getItem('notenow_onboarded_v2')) {
-      setShowOnboarding(true);
-    }
   }, []);
 
   useEffect(() => {
@@ -549,15 +544,6 @@ export default function App() {
           onAccepted={() => navigateTo(`${import.meta.env.BASE_URL || '/note/'}`)}
         />
       )}
-
-      {/* Onboarding Flash Modal */}
-      <OnboardingModal
-        isOpen={showOnboarding}
-        onClose={() => {
-          localStorage.setItem('notenow_onboarded_v2', 'true');
-          setShowOnboarding(false);
-        }}
-      />
 
       {/* Repeatable Help / Guide Modal */}
       <HelpModal

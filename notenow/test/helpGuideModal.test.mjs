@@ -28,28 +28,29 @@ test('Help and Onboarding separation: translations define expected keys', () => 
   assert.equal(en['help.close_btn'], 'Close');
 });
 
-test('App.jsx separates showOnboarding and showHelp states', () => {
+test('App.jsx has no automatic welcome modal and retains manual HelpModal flow', () => {
   const appJsx = fs.readFileSync(appJsxPath, 'utf8');
 
-  // Must import HelpModal
+  // Must import HelpModal and NOT OnboardingModal
   assert.match(appJsx, /import\s+HelpModal\s+from\s+'\.\/components\/HelpModal\.jsx'/, 'App.jsx must import HelpModal');
+  assert.doesNotMatch(appJsx, /import\s+OnboardingModal\s+from\s+'\.\/components\/OnboardingModal\.jsx'/, 'App.jsx must not import OnboardingModal');
 
-  // Must have separate state for showOnboarding and showHelp
-  assert.match(appJsx, /const\s+\[showOnboarding,\s*setShowOnboarding\]\s*=\s*useState\(false\)/, 'App.jsx must define showOnboarding state');
+  // Must have showHelp state but no showOnboarding state
   assert.match(appJsx, /const\s+\[showHelp,\s*setShowHelp\]\s*=\s*useState\(false\)/, 'App.jsx must define showHelp state');
+  assert.doesNotMatch(appJsx, /showOnboarding/, 'App.jsx must not define or use showOnboarding state');
 
-  // Header button must trigger setShowHelp(true), NOT setShowOnboarding(true)
+  // Header button must trigger setShowHelp(true)
   const headerBtnMatch = appJsx.match(/id="btn-help-guide"[^>]*>|onClick=\{[^}]*\}\s*[^>]*id="btn-help-guide"/);
   assert.ok(headerBtnMatch, 'Header help button must exist');
   assert.match(appJsx, /onClick=\{[^}]*setShowHelp\(true\)[^}]*\}[\s\S]*?id="btn-help-guide"/, 'Header help button must call setShowHelp(true)');
-  assert.doesNotMatch(appJsx, /onClick=\{[^}]*setShowOnboarding\(true\)[^}]*\}[\s\S]*?id="btn-help-guide"/, 'Header help button must not trigger onboarding');
 
-  // Closing help does not mark onboarding complete
+  // Closing help only sets showHelp false, and OnboardingModal is not rendered
   assert.match(appJsx, /<HelpModal\s+isOpen=\{showHelp\}\s+onClose=\{\(\)\s*=>\s*setShowHelp\(false\)\}\s*\/>/, 'HelpModal close only sets showHelp false');
+  assert.doesNotMatch(appJsx, /<OnboardingModal/, 'App.jsx must not render OnboardingModal');
 
-  // First-visit onboarding behavior is retained
-  assert.match(appJsx, /localStorage\.getItem\('notenow_onboarded_v2'\)/, 'First-visit check remains');
-  assert.match(appJsx, /localStorage\.setItem\('notenow_onboarded_v2',\s*'true'\)/, 'Onboarding completion persists in localStorage');
+  // No automatic first-visit onboarding logic remains
+  assert.doesNotMatch(appJsx, /localStorage\.getItem\('notenow_onboarded_v2'\)/, 'First-visit check must be removed');
+  assert.doesNotMatch(appJsx, /localStorage\.setItem\('notenow_onboarded_v2'/, 'Onboarding completion write must be removed');
 });
 
 test('HelpModal renders clear Hướng dẫn & Tính năng view with feature cards and dismiss action', () => {
