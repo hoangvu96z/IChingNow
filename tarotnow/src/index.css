@@ -518,6 +518,7 @@ input:checked + .toggle-slider:before {
   box-shadow: 0 4px 15px rgba(229, 193, 88, 0.4);
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
   letter-spacing: 1px;
+  scroll-margin-top: 64px;
 }
 
 .draw-trigger-btn:hover:not(:disabled) {
