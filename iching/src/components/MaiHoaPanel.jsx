@@ -499,16 +499,16 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
             display: none;
           }
           .banknote-footer {
-            gap: 3px;
+            gap: 2px;
             margin-top: 2px;
           }
           .banknote-tag {
-            font-size: 10px;
-            padding: 1px 3px;
+            font-size: 11px;
+            padding: 1px 1px;
           }
           .banknote-action {
-            font-size: 10px;
-            padding: 1px 4px;
+            font-size: 11px;
+            padding: 1px 2px;
           }
         }
 
