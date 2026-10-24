@@ -12,6 +12,8 @@ export const vi = {
   'header.login': 'Đăng nhập',
   'header.logout': 'Đăng xuất',
   'header.lang_title': 'Chuyển đổi ngôn ngữ (VI / EN)',
+  'header.menu': 'Menu',
+  'header.close_menu': 'Đóng menu',
   'footer.tagline': 'NoteNow — Ghi chú nhanh, chia sẻ dễ dàng, hỗ trợ định dạng phong phú',
   'footer.support_label': 'Hỗ trợ & Góp ý:',
   'footer.support_btn': 'Góp ý qua TalkWithMe',

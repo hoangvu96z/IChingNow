@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import NoteBoard from './components/NoteBoard.jsx';
 import InviteAcceptPage from './components/InviteAcceptPage.jsx';
 import NoteEditor from './components/NoteEditor.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import HelpModal from './components/HelpModal.jsx';
+import NoteNavDrawer from './components/NoteNavDrawer.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { ssoApi, notesApi, safeStorage } from './api.js';
 import { useLanguage } from './context/LanguageContext.jsx';
@@ -354,6 +355,14 @@ export default function App() {
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
   }, []);
 
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const hamburgerRef = useRef(null);
+
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    hamburgerRef.current?.focus();
+  }, []);
+
   const navigateTo = useCallback((path) => {
     window.history.pushState({}, '', path);
     setRoute(getRoute());
@@ -395,7 +404,7 @@ export default function App() {
           </div>
         )}
 
-        <div className="nn-header-actions">
+        <div className="nn-header-actions nn-desktop-actions">
           {/* Shared Apps Dropdown */}
           <AppsDropdown
             appId="notenow"
@@ -492,7 +501,37 @@ export default function App() {
             </a>
           )}
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          ref={hamburgerRef}
+          className="nn-mobile-hamburger"
+          id="btn-mobile-menu"
+          type="button"
+          onClick={() => setDrawerOpen((o) => !o)}
+          aria-label={drawerOpen ? t('header.close_menu', 'Đóng menu') : t('header.menu', 'Menu')}
+          aria-expanded={drawerOpen}
+          aria-controls="nn-mobile-drawer"
+        >
+          <span className={`nn-hamburger-bar ${drawerOpen ? 'open bar-1' : ''}`} />
+          <span className={`nn-hamburger-bar ${drawerOpen ? 'open bar-2' : ''}`} />
+          <span className={`nn-hamburger-bar ${drawerOpen ? 'open bar-3' : ''}`} />
+        </button>
       </header>
+
+      {/* Mobile Navigation Drawer */}
+      <NoteNavDrawer
+        isOpen={drawerOpen}
+        onClose={closeDrawer}
+        user={user}
+        authLoading={authLoading}
+        onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        language={language}
+        onToggleLanguage={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+        onOpenHelp={() => setShowHelp(true)}
+      />
 
       {/* Content routing */}
       {route.page === 'board' && (

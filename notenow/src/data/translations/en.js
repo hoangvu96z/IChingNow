@@ -12,6 +12,8 @@ export const en = {
   'header.login': 'Sign in',
   'header.logout': 'Sign out',
   'header.lang_title': 'Toggle language (VI / EN)',
+  'header.menu': 'Menu',
+  'header.close_menu': 'Close menu',
   'footer.tagline': 'NoteNow — Quick notes, easy sharing, rich text support',
   'footer.support_label': 'Support & Feedback:',
   'footer.support_btn': 'Support & Feedback via TalkWithMe',

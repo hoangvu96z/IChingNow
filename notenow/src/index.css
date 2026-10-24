@@ -205,7 +205,7 @@ body {
 .nn-header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 200;
   height: 60px;
   display: flex;
   align-items: center;
@@ -298,6 +298,132 @@ body {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* ─── Mobile Navigation Hamburger ────────────────────────────── */
+.nn-mobile-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.nn-mobile-hamburger:hover,
+.nn-mobile-hamburger:focus-visible {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+  outline: none;
+}
+
+.nn-hamburger-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+  transform-origin: center;
+}
+
+.nn-hamburger-bar.open.bar-1 {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.nn-hamburger-bar.open.bar-2 {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.nn-hamburger-bar.open.bar-3 {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ─── NoteNow Mobile Drawer & Backdrop ──────────────────────── */
+.nn-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 198;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: nnFadeIn 0.2s ease;
+}
+
+.nn-mobile-drawer {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 199;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  max-height: calc(100vh - 60px);
+  max-height: calc(100dvh - 60px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  animation: nnSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes nnFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes nnSlideDown {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.nn-drawer-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.nn-drawer-action-btn:hover,
+.nn-drawer-action-btn:focus-visible {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+  outline: none;
+}
+
+@media (min-width: 769px) {
+  .nn-mobile-hamburger,
+  .nn-drawer-backdrop,
+  .nn-mobile-drawer {
+    display: none !important;
+  }
 }
 
 /* ─── Buttons ─────────────────────────────────────────────────── */
@@ -951,7 +1077,7 @@ body {
   background: var(--bg-overlay);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 200;
+  z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2005,6 +2131,25 @@ body {
   }
 }
 
+/* Mobile header navigation (<= 768px): replace inline desktop actions with accessible hamburger button */
+@media (max-width: 768px) {
+  .nn-desktop-actions {
+    display: none !important;
+  }
+  .nn-mobile-hamburger {
+    display: inline-flex !important;
+  }
+  .nn-logo-sub {
+    display: none !important;
+  }
+  .nn-logo-text {
+    display: block !important;
+    font-size: 1.05rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+}
+
 /* ─── Responsive (Mobile & iPhone) ───────────────────────────── */
 @media (max-width: 640px) {
   /* Header — compact, zero clipping */
@@ -2015,6 +2160,11 @@ body {
     max-width: 100vw;
     box-sizing: border-box;
     overflow-x: clip;
+  }
+  .nn-mobile-drawer {
+    top: 52px;
+    max-height: calc(100vh - 52px);
+    max-height: calc(100dvh - 52px);
   }
   .nn-logo {
     gap: 6px;
@@ -2556,14 +2706,21 @@ body {
 @media (max-width: 340px) {
   .nn-header {
     padding: 0 6px;
-    gap: 3px;
+    gap: 4px;
   }
   .nn-header-actions {
     gap: 2px;
   }
-  /* Logo icon alone carries the brand on the narrowest phones */
-  .nn-logo > div:last-child {
-    display: none;
+  .nn-logo {
+    gap: 5px;
+  }
+  .nn-logo-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .nn-logo-text {
+    font-size: 0.95rem;
+    display: block !important;
   }
 }
 
