@@ -367,7 +367,7 @@ export default function App() {
       <header className="nn-header">
         <a href={import.meta.env.BASE_URL || '/note/'} className="nn-logo" aria-label={`${t('app.title', 'NoteNow')} — ${t('share_view.back_home', 'Về trang chính')}`}>
           <div className="nn-logo-icon" aria-hidden="true">
-            <FileText size={20} strokeWidth={2.4} color="var(--accent)" />
+            <FileText size={20} strokeWidth={2.4} color="currentColor" />
           </div>
           <div>
             <div className="nn-logo-text">{t('app.title', 'NoteNow')}</div>

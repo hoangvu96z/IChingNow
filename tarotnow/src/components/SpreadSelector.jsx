@@ -19,6 +19,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
   const [isOpen, setIsOpen] = useState(false);
 
   const currentSpread = SPREADS.find(s => s.id === activeSpread) || SPREADS[0];
+  const summaryTitle = currentSpread.name.replace(/^\d+\s*Lá\s*—\s*/i, '');
   const filteredSpreads = activeCategory === 'all'
     ? SPREADS
     : SPREADS.filter(s => (s.category || 'classic') === activeCategory);
@@ -54,10 +55,10 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
       >
         <span style={{ fontSize: '20px', lineHeight: 1 }}>{currentSpread.icon || '🃏'}</span>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, color: '#e5c158', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {currentSpread.name}
+          <div style={{ fontWeight: 600, color: '#e5c158', fontSize: '13px', lineHeight: 1.35 }}>
+            {summaryTitle}
           </div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '2px', lineHeight: 1.35 }}>
             {currentSpread.count} {language === 'en' ? 'card(s)' : 'lá'} · {currentSpread.positions.length > 0 ? currentSpread.positions.slice(0,2).join(' · ') + (currentSpread.positions.length > 2 ? '...' : '') : (language === 'en' ? 'Custom' : 'Tự chọn')}
           </div>
         </div>
@@ -168,14 +169,14 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                       {spread.icon || '🃏'}
                     </div>
                     <div style={{ flexGrow: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '2px' }}>
                         <span style={{
+                          flex: '1 1 auto',
+                          minWidth: 0,
                           fontSize: '13px',
                           fontWeight: 600,
                           color: isActive ? '#e5c158' : '#fff',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
+                          lineHeight: 1.35,
                         }}>
                           {spread.name}
                         </span>

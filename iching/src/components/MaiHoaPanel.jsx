@@ -163,13 +163,15 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
   const { t } = useLanguage();
   return (
     <div style={{ marginTop: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: '1rem' }}>💵</span>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-ink)' }}>
-            {t('maihoa.serial_tip', 'Gợi ý từ số hiện tại:')}
-          </span>
-          <span style={{ fontSize: '0.725rem', color: 'var(--color-ink-muted)', opacity: 0.85 }}>
+      <div className="banknote-header-row">
+        <div className="banknote-header-left">
+          <div className="banknote-header-primary">
+            <span style={{ fontSize: '1rem', lineHeight: 1, flexShrink: 0 }}>💵</span>
+            <span className="banknote-header-title">
+              {t('maihoa.serial_tip', 'Gợi ý từ số hiện tại:')}
+            </span>
+          </div>
+          <span className="banknote-header-sub">
             (8 tờ tiền ngẫu nhiên)
           </span>
         </div>
@@ -177,22 +179,6 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
           type="button"
           onClick={onRefresh}
           className="banknote-refresh-btn"
-          style={{
-            background: 'rgba(184, 134, 11, 0.08)',
-            border: '1px solid rgba(184, 134, 11, 0.25)',
-            cursor: 'pointer',
-            fontSize: '0.775rem',
-            color: 'var(--color-gold)',
-            fontWeight: 600,
-            padding: '3px 8px',
-            borderRadius: 6,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184, 134, 11, 0.18)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(184, 134, 11, 0.08)'; }}
         >
           🔄 {t('history.clear_all', 'Làm mới').replace('Xóa tất cả', 'Làm mới').replace('Clear All', 'Refresh')}
         </button>
@@ -211,6 +197,62 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
       </div>
 
       <style>{`
+        .banknote-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+          margin-bottom: 8px;
+        }
+
+        .banknote-header-left {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 3px 6px;
+          min-width: 0;
+        }
+
+        .banknote-header-primary {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+        }
+
+        .banknote-header-title {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--color-ink);
+          white-space: nowrap;
+        }
+
+        .banknote-header-sub {
+          font-size: 0.725rem;
+          color: var(--color-ink-muted);
+          opacity: 0.85;
+          white-space: nowrap;
+        }
+
+        .banknote-refresh-btn {
+          flex-shrink: 0;
+          background: rgba(184, 134, 11, 0.08);
+          border: 1px solid rgba(184, 134, 11, 0.25);
+          cursor: pointer;
+          font-size: 0.775rem;
+          color: var(--color-gold);
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          transition: all 0.2s;
+        }
+        .banknote-refresh-btn:hover {
+          background: rgba(184, 134, 11, 0.18);
+        }
+
         .banknote-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -317,6 +359,7 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
           color: var(--color-gold, #b8860b);
           letter-spacing: 0.03em;
           line-height: 1;
+          white-space: nowrap;
         }
 
         .banknote-serial {
@@ -345,6 +388,7 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 4px;
           z-index: 1;
         }
 
@@ -356,6 +400,9 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
           font-weight: 600;
           line-height: 1;
           opacity: 0.85;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .banknote-action {
@@ -363,19 +410,45 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
           color: var(--color-jade, #1a6b4a);
           font-weight: 700;
           line-height: 1;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
-        @media (max-width: 480px) {
+        .maihoa-serial-input::placeholder {
+          font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+          letter-spacing: normal;
+          font-size: 0.875rem;
+        }
+
+        @media (max-width: 520px) {
           .banknote-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 6px 4px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
           }
           .banknote-bill {
-            padding: 4px 4px;
-            min-height: 58px;
+            padding: 6px 7px;
+            min-height: 60px;
+          }
+          .banknote-serial {
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+          }
+          .banknote-watermark {
+            right: 2px;
+            bottom: -6px;
+            width: 24px;
+            height: 24px;
+            font-size: 11px;
+            opacity: 0.15;
+          }
+          .banknote-security-strip {
+            display: none;
           }
           .banknote-tag {
-            display: none;
+            font-size: 0.52rem;
+          }
+          .banknote-action {
+            font-size: 0.56rem;
           }
         }
       `}</style>
@@ -545,8 +618,8 @@ function SerialModePanel({ question, onResult, onReset }) {
           <input
             type="text"
             inputMode="numeric"
-            className="form-input"
-            placeholder={t('maihoa.input_serial_placeholder', 'Nhập 2–8 chữ số (VD: 123456 hoặc 19452026)')}
+            className="form-input maihoa-serial-input"
+            placeholder={t('maihoa.input_serial_placeholder', 'Nhập 2–8 chữ số')}
             value={serial}
             maxLength={8}
             onChange={e => handleInput(e.target.value)}
@@ -559,6 +632,9 @@ function SerialModePanel({ question, onResult, onReset }) {
           }}>
             {serial.length}/8
           </div>
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginTop: 4 }}>
+          {t('maihoa.input_serial_hint', 'Ví dụ: 123456, 19452026 (2–8 số)')}
         </div>
         <SerialPreview serial={serial} />
       </div>

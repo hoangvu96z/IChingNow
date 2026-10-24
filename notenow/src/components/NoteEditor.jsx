@@ -558,7 +558,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                   className={`nn-char-counter${overLimit ? ' over' : nearLimit ? ' warn' : ''}`}
                   aria-live="polite"
                 >
-                  {chars.toLocaleString()}/{MAX_CHARS.toLocaleString()}
+                  {chars.toLocaleString('vi-VN')}/{MAX_CHARS.toLocaleString('vi-VN')}
                 </span>
               )}
 

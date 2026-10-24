@@ -940,7 +940,13 @@ export default function App() {
           {/* ─── STATE 2: Đã chọn phương pháp nhưng chưa gieo → Casting Panel ─── */}
           {hasPickedMethod && !hasResult && (
             <section className="card animate-in" style={{ padding: 24 }}>
-              <div className="section-title" style={{ marginBottom: 12 }}>
+              <div
+                className="section-title"
+                style={{
+                  marginBottom: 12,
+                  fontSize: mode === 'mai-hoa-serial' ? 'clamp(1rem, 4.5vw, 1.25rem)' : undefined,
+                }}
+              >
                 {mode === 'quick'          && `⚡ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.quick.title', 'Gieo nhanh')}`}
                 {mode === 'manual-step'    && `🪙 ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.manual.title', 'Gieo từng hào')}`}
                 {mode === 'mai-hoa-time'   && t('maihoa.time_title', '🕐 Mai Hoa — Ngày giờ động tâm')}

@@ -236,6 +236,7 @@ body {
   width: 36px;
   height: 36px;
   background: linear-gradient(135deg, #059669, #34d399);
+  color: #022c22;
   border-radius: 10px;
   display: flex;
   align-items: center;

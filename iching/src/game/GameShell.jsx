@@ -350,8 +350,8 @@ export default function GameShell({ onExit }) {
               <span style={{ display: 'block', fontSize: '0.85rem', color: '#a9a6c9', lineHeight: 1.5 }}>
                 Biến quẻ này thành quẻ kia bằng Động hào, Thác, Tổng, Hỗ. Phá phong ấn, giành 3 sao, thuộc 64 quẻ lúc nào không hay.
               </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, fontSize: '0.85rem' }}>
-                <span style={{ fontSize: '1.5rem', color: '#f2c86b' }}>{glyph(bqDaily.start)} ➜ {glyph(bqDaily.target)}</span>
+              <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 10, rowGap: 4, marginTop: 14, fontSize: '0.85rem' }}>
+                <span style={{ fontSize: '1.5rem', color: '#f2c86b', whiteSpace: 'nowrap', flexShrink: 0 }}>{glyph(bqDaily.start)} ➜ {glyph(bqDaily.target)}</span>
                 <span>
                   Đề hôm nay #{bqDaily.number}
                   {bqDone ? ` · đã giải ${'⭐'.repeat(bqDone.stars)}` : ` · tối ưu ${bqDaily.optimal} nước`}

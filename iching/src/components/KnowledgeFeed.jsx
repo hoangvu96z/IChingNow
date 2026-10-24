@@ -51,8 +51,8 @@ export default function KnowledgeFeed({ onExit }) {
     >
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 14px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#f5d78e' }}>
-          <h2 style={{ margin: 0, fontFamily: "'Noto Serif', serif", fontSize: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, color: '#f5d78e' }}>
+          <h2 style={{ margin: 0, fontFamily: "'Noto Serif', serif", fontSize: 'clamp(1.05rem, 4.5vw, 1.25rem)', minWidth: 0 }}>
             📖 Dịch Học mỗi ngày
           </h2>
           <button
@@ -61,8 +61,9 @@ export default function KnowledgeFeed({ onExit }) {
             style={{
               background: 'rgba(255,255,255,0.12)', color: '#f5d78e',
               border: '1px solid rgba(245,215,142,0.4)',
-              padding: '6px 14px', borderRadius: 10, fontWeight: 700,
-              fontSize: '0.9rem', cursor: 'pointer',
+              padding: '6px 12px', borderRadius: 10, fontWeight: 700,
+              fontSize: '0.85rem', cursor: 'pointer',
+              flexShrink: 0, whiteSpace: 'nowrap',
             }}
           >
             ✕ Đóng
@@ -75,8 +76,8 @@ export default function KnowledgeFeed({ onExit }) {
           borderRadius: 16, padding: '16px 18px',
           border: '1px solid rgba(184,134,11,0.3)',
         }}>
-          <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: gold, fontWeight: 800, marginBottom: 10 }}>
-            ⭐ Kiến thức hôm nay — {todayStr}
+          <div style={{ fontSize: 'clamp(0.65rem, 2.8vw, 0.72rem)', letterSpacing: '0.08em', textTransform: 'uppercase', color: gold, fontWeight: 800, marginBottom: 10 }}>
+            ⭐ Kiến thức hôm nay — <span style={{ whiteSpace: 'nowrap' }}>{todayStr}</span>
           </div>
           <KnowledgeCard post={todayPost} compact />
         </div>
