@@ -210,7 +210,11 @@ export default function AiInterpretationPanel({
     if (!active.current) throw new Error('Reading changed');
     const controller = new AbortController();
     requestController.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 65000);
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 195000);
     try {
       const response = await requestAiChat({
         app: 'tarot',
@@ -227,6 +231,15 @@ export default function AiInterpretationPanel({
         throw new Error('Dữ liệu Tarot trả về bị ngắt quãng hoặc không hoàn chỉnh');
       }
       return accumulatedText.trim();
+    } catch (err) {
+      if (timedOut) {
+        throw new Error(
+          isEn
+            ? 'AI server took too long to respond. Please try again.'
+            : 'Máy chủ AI phản hồi quá thời gian chờ. Vui lòng bấm thử lại.',
+        );
+      }
+      throw err;
     } finally {
       clearTimeout(timeoutId);
       requestController.current = null;

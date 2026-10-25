@@ -132,7 +132,11 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
     if (!active.current) throw new Error('Reading changed');
     const controller = new AbortController();
     requestController.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 65000);
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 195000);
     try {
       const response = await requestAiChat({
         app: 'iching',
@@ -151,6 +155,15 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
         throw error;
       }
       return accumulatedText.trim();
+    } catch (err) {
+      if (timedOut) {
+        throw new Error(
+          isEn
+            ? 'AI server took too long to respond. Please try again.'
+            : 'Máy chủ AI phản hồi quá thời gian chờ. Vui lòng bấm thử lại.',
+        );
+      }
+      throw err;
     } finally {
       clearTimeout(timeoutId);
       requestController.current = null;
