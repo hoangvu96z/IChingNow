@@ -38,3 +38,7 @@ tarotnow/Cards-jpg/
 
 # Codegraph
 .codegraph
+
+# Local browser and UI review artifacts
+**/.playwright-cli/
+/output/
