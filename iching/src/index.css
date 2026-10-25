@@ -917,14 +917,18 @@ select.form-input,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 11px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
   border-radius: 8px;
   background: rgba(212, 160, 23, 0.14);
   border: 1px solid rgba(212, 160, 23, 0.32);
   color: #f5d78e;
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 1rem;
+  line-height: 1;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -938,8 +942,10 @@ select.form-input,
 
 .app-header-drawer .theme-toggle {
   width: 100%;
-  padding: 12px 16px;
-  font-size: 0.9375rem;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.15rem;
 }
 
 [data-theme="dark"] .card {

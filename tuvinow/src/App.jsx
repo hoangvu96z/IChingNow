@@ -56,18 +56,17 @@ function StarParticles() {
 
 // Theme toggle button component
 function ThemeToggleButton({ theme, onToggle }) {
-  const labelText = theme === 'light' ? 'Giao diện tối' : 'Giao diện sáng';
+  const isLight = theme === 'light';
   return (
     <button
       className="theme-toggle"
       onClick={onToggle}
-      title={theme === 'light' ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
-      aria-label={theme === 'light' ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
+      title={isLight ? 'Chuyển sang giao diện tối' : 'Chuyển sang giao diện sáng'}
+      aria-label={isLight ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
       type="button"
       id="theme-toggle-btn"
     >
-      <span aria-hidden="true">{theme === 'light' ? '🌙' : '☀️'}</span>
-      <span className="tuvi-header-btn-label">{labelText}</span>
+      <span aria-hidden="true">{isLight ? '🌙' : '☀️'}</span>
     </button>
   );
 }

@@ -216,23 +216,8 @@ export default function DailyCardPull({ tarotCards }) {
               {/* CTA Tap-to-learn button */}
               <button
                 type="button"
+                className="daily-learn-btn"
                 onClick={() => setLearnCard(dailyCard)}
-                style={{
-                  marginTop: 8,
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(229, 193, 88, 0.12)',
-                  border: '1px solid rgba(229, 193, 88, 0.35)',
-                  color: 'var(--gold-color, #e5c158)',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  alignSelf: 'flex-start',
-                  transition: 'all 0.2s',
-                }}
               >
                 <span>🔍</span>
                 <span>{language === 'en' ? 'Tap to Learn Card Meaning' : 'Tra cứu ý nghĩa lá bài'}</span>

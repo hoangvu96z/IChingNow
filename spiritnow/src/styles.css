@@ -84,14 +84,18 @@ a { color: inherit; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 11px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
   border-radius: 8px;
   background: rgba(125, 211, 199, 0.16);
   border: 1px solid rgba(125, 211, 199, 0.34);
   color: #8be0d2;
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 1rem;
+  line-height: 1;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -105,8 +109,10 @@ a { color: inherit; }
 
 .app-header-drawer .theme-toggle {
   width: 100%;
-  padding: 12px 16px;
-  font-size: 0.9375rem;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.15rem;
 }
 
 .dashboard-content { max-width: 1160px; padding: 0 24px; margin: 0 auto; }

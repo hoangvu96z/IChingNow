@@ -57,17 +57,15 @@ const spiritNowThemes = {
 
 function ThemeToggleButton({ theme, onToggle }) {
   const isLight = theme === 'light';
-  const labelText = isLight ? 'Giao diện tối' : 'Giao diện sáng';
   return (
     <button
       className="theme-toggle"
       onClick={onToggle}
-      title={isLight ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
+      title={isLight ? 'Chuyển sang giao diện tối' : 'Chuyển sang giao diện sáng'}
       aria-label={isLight ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
       type="button"
     >
       <span aria-hidden="true">{isLight ? '🌙' : '☀️'}</span>
-      <span className="spirit-theme-btn-label">{labelText}</span>
     </button>
   );
 }

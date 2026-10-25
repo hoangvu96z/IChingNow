@@ -451,7 +451,7 @@ export default function App() {
           <button
             className="nn-theme-toggle"
             onClick={toggleTheme}
-            title={theme === 'dark' ? t('header.theme_to_light', 'Chuyển sang sáng') : t('header.theme_to_dark', 'Chuyển sang tối')}
+            title={theme === 'dark' ? t('header.theme_to_light', 'Chuyển sang giao diện sáng') : t('header.theme_to_dark', 'Chuyển sang giao diện tối')}
             aria-label={theme === 'dark' ? t('header.theme_to_light', 'Bật chế độ sáng') : t('header.theme_to_dark', 'Bật chế độ tối')}
             type="button"
             id="btn-theme-toggle"

@@ -3270,14 +3270,18 @@ input:checked + .toggle-slider:before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 11px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
   border-radius: 8px;
   background: rgba(229, 193, 88, 0.14);
   border: 1px solid rgba(229, 193, 88, 0.32);
   color: #e5c158;
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 1rem;
+  line-height: 1;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -3291,8 +3295,31 @@ input:checked + .toggle-slider:before {
 
 .app-header-drawer .theme-toggle {
   width: 100%;
-  padding: 12px 16px;
-  font-size: 0.9375rem;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.15rem;
+}
+
+.daily-learn-btn {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(229, 193, 88, 0.12);
+  border: 1px solid rgba(229, 193, 88, 0.35);
+  color: var(--gold-color, #e5c158);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  transition: all 0.2s;
+}
+
+.daily-learn-btn:hover {
+  background: rgba(229, 193, 88, 0.22);
 }
 
 [data-theme="light"] .stars-background {
@@ -3370,4 +3397,125 @@ input:checked + .toggle-slider:before {
 [data-theme="light"] .tarot-markdown h6,
 [data-theme="light"] .tarot-markdown a {
   color: var(--gold-color);
+}
+
+[data-theme="light"] .daily-greeting-text {
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .daily-streak-badge {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(180, 115, 25, 0.35);
+  box-shadow: 0 4px 16px rgba(42, 31, 61, 0.06);
+}
+
+[data-theme="light"] .streak-number {
+  color: #92400e;
+  text-shadow: none;
+}
+
+[data-theme="light"] .streak-best {
+  color: #7c5208;
+}
+
+[data-theme="light"] .daily-card-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .daily-card-orientation.upright {
+  background: rgba(27, 94, 32, 0.1);
+  color: #1b5e20;
+  border-color: rgba(27, 94, 32, 0.3);
+}
+
+[data-theme="light"] .daily-card-orientation.reversed {
+  background: rgba(183, 28, 28, 0.1);
+  color: #b71c1c;
+  border-color: rgba(183, 28, 28, 0.3);
+}
+
+[data-theme="light"] .daily-keyword-tag {
+  background: rgba(124, 82, 8, 0.08);
+  color: #7c5208;
+  border-color: rgba(124, 82, 8, 0.25);
+  font-weight: 600;
+}
+
+[data-theme="light"] .daily-insight-box {
+  background: #ffffff;
+  border-color: rgba(164, 120, 18, 0.28);
+  box-shadow: 0 4px 18px rgba(42, 31, 61, 0.05);
+}
+
+[data-theme="light"] .daily-insight-box::before {
+  background: linear-gradient(to bottom, #9e6f0c, #7c3aed);
+}
+
+[data-theme="light"] .daily-insight-title {
+  color: #7c5208;
+}
+
+[data-theme="light"] .daily-insight-text {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .daily-learn-btn {
+  background: rgba(124, 82, 8, 0.08);
+  border-color: rgba(124, 82, 8, 0.28);
+  color: #7c5208;
+}
+
+[data-theme="light"] .daily-learn-btn:hover {
+  background: rgba(124, 82, 8, 0.14);
+}
+
+[data-theme="light"] .daily-stats-bar {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(164, 120, 18, 0.24);
+  box-shadow: 0 4px 16px rgba(42, 31, 61, 0.04);
+}
+
+[data-theme="light"] .daily-stat-value {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .card-detail-name,
+[data-theme="light"] .card-overlay-title,
+[data-theme="light"] .manual-interp-card-name,
+[data-theme="light"] .modal-title {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .card-kw-badge {
+  background: rgba(124, 82, 8, 0.08);
+  border-color: rgba(124, 82, 8, 0.25);
+  color: #7c5208;
+}
+
+[data-theme="light"] .card-modal-content {
+  background: var(--bg-panel);
+  border-color: var(--border-gold);
+  box-shadow: 0 16px 40px rgba(42, 31, 61, 0.16);
+}
+
+[data-theme="light"] .card-modal-overlay {
+  background: rgba(42, 31, 61, 0.45);
+}
+
+[data-theme="light"] .modal-close-btn {
+  background: rgba(164, 120, 18, 0.08);
+  border-color: rgba(164, 120, 18, 0.25);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .modal-left-col {
+  background: rgba(164, 120, 18, 0.05);
+}
+
+[data-theme="light"] .ai-template-tab-btn.active {
+  color: #7c5208 !important;
+  background: rgba(164, 120, 18, 0.16) !important;
+  border-color: rgba(164, 120, 18, 0.45) !important;
 }

@@ -537,19 +537,21 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
 
 function ThemeToggleButton({ theme, onToggle, language }) {
   const isLight = theme === 'light';
-  const labelText = language === 'en'
-    ? (isLight ? 'Dark mode' : 'Light mode')
-    : (isLight ? 'Giao diện tối' : 'Giao diện sáng');
+  const titleText = language === 'en'
+    ? (isLight ? 'Switch to Dark mode' : 'Switch to Light mode')
+    : (isLight ? 'Chuyển sang giao diện tối' : 'Chuyển sang giao diện sáng');
+  const ariaText = language === 'en'
+    ? (isLight ? 'Switch to Dark mode' : 'Switch to Light mode')
+    : (isLight ? 'Bật chế độ tối' : 'Bật chế độ sáng');
   return (
     <button
       className="theme-toggle"
       onClick={onToggle}
-      title={isLight ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
-      aria-label={isLight ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
+      title={titleText}
+      aria-label={ariaText}
       type="button"
     >
       <span aria-hidden="true">{isLight ? '🌙' : '☀️'}</span>
-      <span className="iching-theme-btn-label">{labelText}</span>
     </button>
   );
 }
