@@ -5,6 +5,9 @@ import App from './App.jsx'
 import { LanguageProvider } from './context/LanguageContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 
+const savedTarotTheme = localStorage.getItem('tarotnow_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTarotTheme);
+
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker

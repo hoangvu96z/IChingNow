@@ -3244,3 +3244,130 @@ input:checked + .toggle-slider:before {
   font-size: 0.82rem;
   line-height: 1.65;
 }
+
+/* ─── Theme toggle & Light mode palette for TarotNow (default stays dark) ─── */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-dark: #f7f4ec;
+  --bg-panel: rgba(255, 252, 245, 0.92);
+  --bg-panel-hover: rgba(255, 249, 236, 0.98);
+  --border-gold: rgba(164, 120, 18, 0.34);
+  --border-gold-hover: rgba(164, 120, 18, 0.65);
+  --gold-color: #9e6f0c;
+  --gold-glow: rgba(158, 111, 12, 0.16);
+  --text-primary: #201a30;
+  --text-muted: #5e5478;
+  --violet-glow: rgba(124, 58, 237, 0.14);
+  --accent-purple: #7c3aed;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: rgba(229, 193, 88, 0.14);
+  border: 1px solid rgba(229, 193, 88, 0.32);
+  color: #e5c158;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(229, 193, 88, 0.24);
+  border-color: #e5c158;
+}
+
+.app-header-drawer .theme-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.9375rem;
+}
+
+[data-theme="light"] .stars-background {
+  background: radial-gradient(circle at 50% 25%, #fffdf7 0%, #f4efe2 65%, #ebe3d0 100%);
+}
+
+[data-theme="light"] .stars-background::before {
+  opacity: 0.12;
+}
+
+[data-theme="light"] .nebula-glow,
+[data-theme="light"] .nebula-glow-right {
+  opacity: 0.25;
+}
+
+[data-theme="light"] .glass-panel {
+  background: var(--bg-panel);
+  border-color: var(--border-gold);
+  box-shadow: 0 10px 30px rgba(42, 31, 61, 0.08);
+}
+
+[data-theme="light"] .custom-textarea,
+[data-theme="light"] .custom-select {
+  background: #ffffff;
+  color: var(--text-primary);
+  border-color: rgba(164, 120, 18, 0.36);
+}
+
+[data-theme="light"] .custom-select option {
+  background: #ffffff;
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .mode-switcher {
+  background: rgba(242, 235, 220, 0.92);
+  border-color: rgba(164, 120, 18, 0.32);
+}
+
+[data-theme="light"] .mode-switcher-btn {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .mode-switcher-btn.active {
+  background: #ffffff;
+  color: var(--gold-color);
+  border-color: rgba(164, 120, 18, 0.42);
+  box-shadow: 0 2px 10px rgba(42, 31, 61, 0.08);
+}
+
+[data-theme="light"] .mode-switcher-btn:not(.active):hover {
+  color: var(--text-primary);
+  background: rgba(164, 120, 18, 0.08);
+}
+
+[data-theme="light"] .history-item {
+  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(164, 120, 18, 0.26);
+}
+
+[data-theme="light"] .history-question,
+[data-theme="light"] .tarot-markdown strong {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .tarot-markdown,
+[data-theme="light"] .tarot-markdown--compact {
+  color: #2f2744;
+}
+
+[data-theme="light"] .tarot-markdown h1,
+[data-theme="light"] .tarot-markdown h2,
+[data-theme="light"] .tarot-markdown h3,
+[data-theme="light"] .tarot-markdown h4,
+[data-theme="light"] .tarot-markdown h5,
+[data-theme="light"] .tarot-markdown h6,
+[data-theme="light"] .tarot-markdown a {
+  color: var(--gold-color);
+}

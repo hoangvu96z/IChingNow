@@ -4,6 +4,9 @@ import { AuthProvider } from '@shared/context/AuthContext.jsx';
 import App from './App.jsx';
 import './styles.css';
 
+const savedSpiritTheme = localStorage.getItem('spiritnow_theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedSpiritTheme);
+
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>

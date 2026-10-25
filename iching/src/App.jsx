@@ -535,9 +535,43 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
   );
 }
 
+function ThemeToggleButton({ theme, onToggle, language }) {
+  const isLight = theme === 'light';
+  const labelText = language === 'en'
+    ? (isLight ? 'Dark mode' : 'Light mode')
+    : (isLight ? 'Giao diện tối' : 'Giao diện sáng');
+  return (
+    <button
+      className="theme-toggle"
+      onClick={onToggle}
+      title={isLight ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
+      aria-label={isLight ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
+      type="button"
+    >
+      <span aria-hidden="true">{isLight ? '🌙' : '☀️'}</span>
+      <span className="iching-theme-btn-label">{labelText}</span>
+    </button>
+  );
+}
+
 export default function App() {
   const { t, language, setLanguage } = useLanguage();
+  const [theme, setTheme] = useState(() => localStorage.getItem('iching_theme') || 'light');
   const { streak, recordActivity } = useStreak('iching');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('iching_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('iching_theme', next);
+      return next;
+    });
+  }, []);
   const [showGame, setShowGame] = useState(false);
   const [showKnowledge, setShowKnowledge] = useState(false);
   const [formData,         setFormData]         = useState(getDefaultForm());
@@ -807,6 +841,7 @@ export default function App() {
         subtitle={t('app.subtitle', 'Lập Quẻ Kinh Dịch')}
         onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
         languageLabel={language === 'vi' ? 'VI' : 'EN'}
+        themeToggle={<ThemeToggleButton theme={theme} onToggle={toggleTheme} language={language} />}
         primaryAction={
           (result || maiHoaResult) ? (
             <button

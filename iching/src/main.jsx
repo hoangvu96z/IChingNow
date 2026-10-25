@@ -5,6 +5,9 @@ import App from './App.jsx'
 import { LanguageProvider } from './context/LanguageContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 
+const savedIchingTheme = localStorage.getItem('iching_theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedIchingTheme);
+
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker

@@ -106,7 +106,12 @@ export default function App() {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('tuvinow_theme', next);
+      return next;
+    });
   }, []);
 
   const { user, isAuthenticated, login } = useAuth();

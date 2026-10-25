@@ -51,7 +51,7 @@ function ThemeToggleButton({ theme, onToggle }) {
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('twm_theme') || 'dark';
+    return localStorage.getItem('twm_theme') || 'light';
   });
 
   useEffect(() => {
@@ -64,7 +64,12 @@ export default function App() {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('twm_theme', next);
+      return next;
+    });
   }, []);
 
   return (

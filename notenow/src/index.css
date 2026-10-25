@@ -7,6 +7,7 @@
 
 /* ─── CSS Variables ─────────────────────────────────────────── */
 :root, [data-theme='light'] {
+  color-scheme: light;
   /* Fonts */
   --font-body: 'Inter', system-ui, sans-serif;
   --font-display: 'Outfit', 'Inter', sans-serif;
@@ -72,6 +73,7 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   /* Base background */
   --bg-base: #0b0f17;
   --bg-surface: #141c2b;

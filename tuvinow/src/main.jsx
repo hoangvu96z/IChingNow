@@ -5,6 +5,9 @@ import App from './App.jsx'
 import { LanguageProvider } from './context/LanguageContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 
+const savedTuviTheme = localStorage.getItem('tuvinow_theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTuviTheme);
+
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker

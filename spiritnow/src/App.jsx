@@ -11,24 +11,66 @@ import {
 } from './dashboardModel.mjs';
 import { fetchMeOverview, fetchTarotCards } from './overviewApi.mjs';
 
-const spiritNowTheme = {
-  bg: 'rgba(7, 15, 27, 0.88)',
-  accent: '#7dd3c7',
-  accentSoft: 'rgba(125, 211, 199, 0.14)',
-  accentHover: 'rgba(125, 211, 199, 0.24)',
-  text: '#eef2f8',
-  textMuted: '#9aaabe',
-  border: 'rgba(211, 223, 242, 0.12)',
-  drawerBg: '#08111f',
-  dropdownBg: '#0b1626',
-  dropdownBorder: 'rgba(125, 211, 199, 0.25)',
-  dropdownItemText: '#eef2f8',
-  dropdownItemSub: '#9aaabe',
-  dropdownHeader: '#7dd3c7',
-  dropdownArrow: '#7dd3c7',
-  hoverBg: 'rgba(125, 211, 199, 0.12)',
-  titleFont: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+const spiritNowThemes = {
+  light: {
+    bg: 'linear-gradient(135deg, #0d1f33 0%, #16324f 50%, #0d1f33 100%)',
+    accent: '#7dd3c7',
+    accentSoft: 'rgba(125, 211, 199, 0.16)',
+    accentHover: 'rgba(125, 211, 199, 0.26)',
+    text: '#eef2f8',
+    textMuted: '#b6c5d8',
+    border: 'rgba(125, 211, 199, 0.24)',
+    drawerBg: '#0d1f33',
+    dropdownBg: '#ffffff',
+    dropdownBorder: 'rgba(13, 130, 118, 0.28)',
+    dropdownItemText: '#142032',
+    dropdownItemSub: '#52637a',
+    dropdownHeader: '#0d8276',
+    dropdownArrow: '#0d8276',
+    hoverBg: 'rgba(13, 130, 118, 0.08)',
+    footerBg: 'transparent',
+    footerBorder: 'var(--sp-card-border)',
+    footerText: 'var(--sp-text-muted)',
+    titleFont: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  dark: {
+    bg: 'rgba(7, 15, 27, 0.88)',
+    accent: '#7dd3c7',
+    accentSoft: 'rgba(125, 211, 199, 0.14)',
+    accentHover: 'rgba(125, 211, 199, 0.24)',
+    text: '#eef2f8',
+    textMuted: '#9aaabe',
+    border: 'rgba(211, 223, 242, 0.12)',
+    drawerBg: '#08111f',
+    dropdownBg: '#0b1626',
+    dropdownBorder: 'rgba(125, 211, 199, 0.25)',
+    dropdownItemText: '#eef2f8',
+    dropdownItemSub: '#9aaabe',
+    dropdownHeader: '#7dd3c7',
+    dropdownArrow: '#7dd3c7',
+    hoverBg: 'rgba(125, 211, 199, 0.12)',
+    footerBorder: 'rgba(211, 223, 242, 0.12)',
+    footerText: '#9aaabe',
+    titleFont: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
 };
+
+function ThemeToggleButton({ theme, onToggle }) {
+  const isLight = theme === 'light';
+  const labelText = isLight ? 'Giao diện tối' : 'Giao diện sáng';
+  return (
+    <button
+      className="theme-toggle"
+      onClick={onToggle}
+      title={isLight ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
+      aria-label={isLight ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
+      type="button"
+    >
+      <span aria-hidden="true">{isLight ? '🌙' : '☀️'}</span>
+      <span className="spirit-theme-btn-label">{labelText}</span>
+    </button>
+  );
+}
 
 function appHref(path) {
   return getAppLink(path, { DEV: import.meta.env.DEV }, window.location);
@@ -70,6 +112,7 @@ function StreakSummary({ apps, loading }) {
 }
 
 function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('spiritnow_theme') || 'light');
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [overviewResult, setOverviewResult] = useState({ ownerId: null, data: null });
   const [overviewLoading, setOverviewLoading] = useState(false);
@@ -78,6 +121,21 @@ function App() {
   const [tarotError, setTarotError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const [dashboardDate, setDashboardDate] = useState(() => new Date());
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('spiritnow_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('spiritnow_theme', next);
+      return next;
+    });
+  };
+  const activeSpiritTheme = spiritNowThemes[theme] || spiritNowThemes.light;
 
   useEffect(() => {
     let midnightTimer;
@@ -158,13 +216,14 @@ function App() {
     <div className="spirit-shell">
       <AppHeader
         appId="spiritnow"
-        colors={spiritNowTheme}
+        colors={activeSpiritTheme}
         title="SpiritNow"
         subtitle="Hệ sinh thái SpiritNow"
         onLogoClick={() => {
           window.location.href = appHref('/spiritnow/');
         }}
         useAuthHook={useAuth}
+        themeToggle={<ThemeToggleButton theme={theme} onToggle={toggleTheme} />}
         logo={
           <span className="brand-mark" aria-hidden="true">
             ✦
@@ -254,7 +313,7 @@ function App() {
         </section>
       </main>
 
-      <AppFooter compact showApps={false} tagline="Một nơi để tiếp tục hành trình qua Kinh Dịch, Tarot, Tử Vi và ghi chú." />
+      <AppFooter compact showApps={false} colors={activeSpiritTheme} tagline="Một nơi để tiếp tục hành trình qua Kinh Dịch, Tarot, Tử Vi và ghi chú." />
     </div>
   );
 }

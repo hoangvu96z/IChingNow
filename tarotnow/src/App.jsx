@@ -29,8 +29,42 @@ import SpreadLayoutVisualizer from './components/SpreadLayoutVisualizer.jsx';
 import TarotLearnModal from './components/TarotLearnModal.jsx';
 import { useLanguage } from './context/LanguageContext';
 
+function ThemeToggleButton({ theme, onToggle, language }) {
+  const isLight = theme === 'light';
+  const labelText = language === 'en'
+    ? (isLight ? 'Dark mode' : 'Light mode')
+    : (isLight ? 'Giao diện tối' : 'Giao diện sáng');
+  return (
+    <button
+      className="theme-toggle"
+      onClick={onToggle}
+      title={isLight ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng'}
+      aria-label={isLight ? 'Bật chế độ tối' : 'Bật chế độ sáng'}
+      type="button"
+    >
+      <span aria-hidden="true">{isLight ? '🌙' : '☀️'}</span>
+      <span className="tarot-theme-btn-label">{labelText}</span>
+    </button>
+  );
+}
+
 export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('tarotnow_theme') || 'dark');
   const [tarotCards, setTarotCards] = useState([]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('tarotnow_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('tarotnow_theme', next);
+      return next;
+    });
+  }, []);
   const [activeMode, setActiveMode] = useState('random'); // 'random' | 'manual'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -452,6 +486,7 @@ ${summaryObj.advice}
         subtitle={t('app.subtitle', 'Trải Bài Tarot & Luận Giải AI')}
         onLanguageToggle={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
         languageLabel={language === 'vi' ? 'VI' : 'EN'}
+        themeToggle={<ThemeToggleButton theme={theme} onToggle={toggleTheme} language={language} />}
         primaryAction={
           drawnCards.length > 0 ? (
             <button

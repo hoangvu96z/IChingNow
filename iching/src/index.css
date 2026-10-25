@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 /* ===== CSS CUSTOM PROPERTIES ===== */
-:root {
+:root,
+[data-theme="light"] {
+  color-scheme: light;
   --color-paper:      #faf3e0;
   --color-paper-dark: #f0e6c8;
   --color-ink:        #2c1810;
@@ -17,6 +19,19 @@
   --color-terminal-border: #2d3748;
   --color-terminal-text:   #e2e8f0;
   --color-terminal-accent: #f6c90e;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper:      #18120e;
+  --color-paper-dark: #241b15;
+  --color-ink:        #f5ece0;
+  --color-ink-muted:  #c5b19b;
+  --color-vermillion: #e36655;
+  --color-gold:       #e2b544;
+  --color-gold-light: #f0ca67;
+  --color-jade:       #4bc092;
+  --color-shadow:     rgba(0, 0, 0, 0.48);
 }
 
 /* ===== BASE ===== */
@@ -895,4 +910,74 @@ select.form-input,
     font-size: 0.75rem !important;
     letter-spacing: -0.01em;
   }
+}
+
+/* ─── Theme toggle & Dark mode surface refinements ─────────────────────── */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: rgba(212, 160, 23, 0.14);
+  border: 1px solid rgba(212, 160, 23, 0.32);
+  color: #f5d78e;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(212, 160, 23, 0.24);
+  border-color: #d4a017;
+}
+
+.app-header-drawer .theme-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.9375rem;
+}
+
+[data-theme="dark"] .card {
+  background: rgba(34, 25, 19, 0.88);
+  border-color: rgba(226, 181, 68, 0.26);
+}
+
+[data-theme="dark"] .form-input {
+  background: rgba(20, 14, 10, 0.85);
+  border-color: rgba(226, 181, 68, 0.32);
+  color: var(--color-ink);
+}
+
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #9e8a78;
+}
+
+[data-theme="dark"] .tab-bar {
+  background: rgba(255, 248, 231, 0.06);
+}
+
+[data-theme="dark"] .tab-item.active {
+  background: #2d2119;
+  color: var(--color-gold);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .btn-ghost {
+  border-color: rgba(226, 181, 68, 0.25);
+}
+
+[data-theme="dark"] .btn-ghost:hover:not(:disabled) {
+  background: rgba(226, 181, 68, 0.1);
+}
+
+[data-theme="dark"] .iching-streak-bar {
+  background: linear-gradient(135deg, rgba(40, 29, 22, 0.92) 0%, rgba(28, 20, 15, 0.88) 100%);
+  border-color: rgba(226, 181, 68, 0.32);
 }
