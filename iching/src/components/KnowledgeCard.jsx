@@ -220,13 +220,13 @@ export default function KnowledgeCard({ post, compact = false, onQuizAnswer }) {
             marginTop: compact ? 18 : 24,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             paddingTop: 12,
-            borderTop: '1px solid #2a241a',
+            borderTop: '1px solid rgba(255, 255, 255, 0.12)',
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: '#5a5040', fontWeight: 700, letterSpacing: '0.12em' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted, #a89f91)', fontWeight: 700, letterSpacing: '0.12em' }}>
             ICHINGNOW.COM
           </span>
-          <span style={{ fontSize: '0.65rem', color: '#4a4030' }}>
+          <span style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted, #a89f91)' }}>
             Dịch Học mỗi ngày
           </span>
         </div>

@@ -4,7 +4,8 @@ import HexagramDisplay from './HexagramDisplay.jsx';
 import { buildIChingShareCardModel } from '../utils/ichingShareCard.js';
 
 const CARD_STYLE = {
-  width: 360,
+  width: 'min(360px, calc(100vw - 32px))',
+  maxWidth: '100%',
   minHeight: 450,
   boxSizing: 'border-box',
   padding: 26,

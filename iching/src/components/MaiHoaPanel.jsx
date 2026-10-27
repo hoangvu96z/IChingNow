@@ -465,6 +465,27 @@ function SerialSuggestions({ suggestions, onSelect, onRefresh }) {
           flex-shrink: 0;
         }
 
+        [data-theme="dark"] .banknote-bill {
+          background: linear-gradient(135deg, #251c14 0%, #1c140e 50%, #150f0a 100%);
+          border-color: rgba(226, 181, 68, 0.35);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(226, 181, 68, 0.12);
+        }
+        [data-theme="dark"] .banknote-bill:hover {
+          background: linear-gradient(135deg, #2d2218 0%, #231911 50%, #19120c 100%);
+          border-color: var(--color-gold, #e2b544);
+          box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6), 0 0 12px rgba(226, 181, 68, 0.2);
+        }
+        [data-theme="dark"] .banknote-tag {
+          color: #f5ece0;
+          background: rgba(45, 33, 24, 0.88);
+          border: 0.5px solid rgba(226, 181, 68, 0.3);
+        }
+        [data-theme="dark"] .banknote-action {
+          color: #4bc092;
+          background: rgba(75, 192, 146, 0.15);
+          border-color: rgba(75, 192, 146, 0.35);
+        }
+
         .maihoa-serial-input::placeholder {
           font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
           letter-spacing: normal;

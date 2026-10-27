@@ -23,6 +23,19 @@ const ICHING_WAIT_QUOTES = {
   ]
 };
 
+function getProgressiveStatus(elapsedSeconds = 0, isEn = false) {
+  if (isEn) {
+    if (elapsedSeconds < 4) return 'Contemplating question & hexagram signs...';
+    if (elapsedSeconds < 8) return 'Analyzing Subject-Object & changing lines...';
+    if (elapsedSeconds < 13) return 'Correlating Useful God & actionable advice...';
+    return 'Finalizing comprehensive interpretation...';
+  }
+  if (elapsedSeconds < 4) return 'Đang thấu suốt câu hỏi & tượng quẻ...';
+  if (elapsedSeconds < 8) return 'Đang phân tích tương quan Thể - Dụng & hào động...';
+  if (elapsedSeconds < 13) return 'Đang đối chiếu Dụng Thần & đúc kết lời khuyên hành động...';
+  return 'Đang hoàn tất văn bản luận giải chi tiết...';
+}
+
 // ─── Component Animation Đợi Luận Giải Kinh Dịch ───
 function IChingWaitingAnimation({ isEn, retryInfo, elapsedSeconds }) {
   const quotes = isEn ? ICHING_WAIT_QUOTES.en : ICHING_WAIT_QUOTES.vi;
@@ -200,7 +213,7 @@ function IChingWaitingAnimation({ isEn, retryInfo, elapsedSeconds }) {
           color: 'var(--color-ink-muted)',
           fontWeight: 500
         }}>
-          <span>{isEn ? 'Synthesizing full interpretation...' : 'Đang đúc kết trọn vẹn luận giải...'}</span>
+          <span>{getProgressiveStatus(elapsedSeconds, isEn)}</span>
           <span>{elapsedSeconds}s</span>
         </div>
       </div>

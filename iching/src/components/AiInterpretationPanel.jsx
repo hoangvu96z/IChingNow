@@ -200,9 +200,16 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
       const castDate = result.castDate || '';
       const castTime = result.castTime || '';
 
+      const lucHaoDetails = [];
+      if (result.theHao) lucHaoDetails.push(isEn ? `Subject Line (Hào Thế): Line ${result.theHao}` : `Hào Thế: Hào ${result.theHao}`);
+      if (result.ungHao) lucHaoDetails.push(isEn ? `Object Line (Hào Ứng): Line ${result.ungHao}` : `Hào Ứng: Hào ${result.ungHao}`);
+      if (result.khongVong?.length > 0) lucHaoDetails.push(isEn ? `Void/Empty Branches (Tuần Không): ${result.khongVong.join(', ')}` : `Tuần Không: ${result.khongVong.join(', ')}`);
+      if (result.dungThan) lucHaoDetails.push(isEn ? `Useful God (Dụng Thần): ${result.dungThan}` : `Dụng Thần: ${result.dungThan}`);
+      const extraContext = lucHaoDetails.length > 0 ? `\n- ${lucHaoDetails.join('\n- ')}` : '';
+
       const userPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInclude the following topics in your interpretation sections:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation and potential obstacles.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải các nội dung sau trong các mục luận giải:\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại ra sao, có thuận lợi hay trở ngại gì.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
+        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInclude the following topics in your interpretation sections:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation, Subject-Object (Thế/Ứng) dynamics, Useful God (Dụng Thần), and Void branches (Tuần Không) if relevant.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải các nội dung sau trong các mục luận giải:\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại, tương quan Hào Thế/Ứng, Dụng Thần và Tuần Không (nếu có).\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
 
       const messages = [
         { role: 'system', content: sysPrompt },
@@ -273,9 +280,16 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
       const castDate = result?.castDate || '';
       const castTime = result?.castTime || '';
 
+      const lucHaoDetails = [];
+      if (result?.theHao) lucHaoDetails.push(isEn ? `Subject Line (Hào Thế): Line ${result.theHao}` : `Hào Thế: Hào ${result.theHao}`);
+      if (result?.ungHao) lucHaoDetails.push(isEn ? `Object Line (Hào Ứng): Line ${result.ungHao}` : `Hào Ứng: Hào ${result.ungHao}`);
+      if (result?.khongVong?.length > 0) lucHaoDetails.push(isEn ? `Void/Empty Branches (Tuần Không): ${result.khongVong.join(', ')}` : `Tuần Không: ${result.khongVong.join(', ')}`);
+      if (result?.dungThan) lucHaoDetails.push(isEn ? `Useful God (Dụng Thần): ${result.dungThan}` : `Dụng Thần: ${result.dungThan}`);
+      const extraContext = lucHaoDetails.length > 0 ? `\n- ${lucHaoDetails.join('\n- ')}` : '';
+
       const initialUserPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Anonymous'}\n- Date & Time: ${castDate} ${castTime}\n- Hexagram details:\n${plainTextResult}`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Ẩn danh'}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}`;
+        ? `Please interpret the following I Ching hexagram reading:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Hexagram details:\n${plainTextResult}`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}`;
 
       const messages = [
         { role: 'system', content: sysPrompt },

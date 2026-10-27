@@ -4,7 +4,7 @@ import { TOPICS } from '../data/lucHaoRules.js';
 import { GLOSSARY } from '../data/glossary.js';
 
 const VERDICT_LABEL = { cat: 'Cát', binh: 'Bình', hung: 'Hung' };
-const VERDICT_COLOR = { cat: 'var(--color-jade)', binh: '#7b6f3a', hung: 'var(--color-vermillion)' };
+const VERDICT_COLOR = { cat: 'var(--color-jade)', binh: 'var(--color-gold, #b8860b)', hung: 'var(--color-vermillion)' };
 
 const btn = (active) => ({
   background: active ? 'var(--color-gold, #b8860b)' : 'rgba(184,134,11,0.07)',
@@ -74,7 +74,7 @@ export default function LearnPanel({ result, onHighlight, onLearn }) {
       )}
 
       {started && step && (
-        <div className="animate-in" style={{ padding: 16, borderRadius: 10, border: '1px solid rgba(184,134,11,0.3)', background: '#fff8' }}>
+        <div className="animate-in" style={{ padding: 16, borderRadius: 10, border: '1px solid rgba(184,134,11,0.3)', background: 'var(--color-paper-dark, rgba(184,134,11,0.06))' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 4 }}>
             Bước {stepIdx + 1}/{analysis.steps.length}
           </div>

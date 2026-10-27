@@ -19,6 +19,14 @@
   --color-terminal-border: #2d3748;
   --color-terminal-text:   #e2e8f0;
   --color-terminal-accent: #f6c90e;
+
+  /* Lục Thú colors */
+  --color-lucthu-thanhlong: #1a6b4a;
+  --color-lucthu-chutuoc:   #c0392b;
+  --color-lucthu-cautran:   #8b6914;
+  --color-lucthu-dangxa:    #6a0dad;
+  --color-lucthu-bachho:    #555555;
+  --color-lucthu-huyenvu:   #1a4a6b;
 }
 
 [data-theme="dark"] {
@@ -32,6 +40,14 @@
   --color-gold-light: #f0ca67;
   --color-jade:       #4bc092;
   --color-shadow:     rgba(0, 0, 0, 0.48);
+
+  /* Lục Thú colors (high contrast for dark background) */
+  --color-lucthu-thanhlong: #4bc092;
+  --color-lucthu-chutuoc:   #e36655;
+  --color-lucthu-cautran:   #f0ca67;
+  --color-lucthu-dangxa:    #b388ff;
+  --color-lucthu-bachho:    #d5d8dc;
+  --color-lucthu-huyenvu:   #5dade2;
 }
 
 /* ===== BASE ===== */

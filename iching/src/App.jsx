@@ -978,16 +978,48 @@ export default function App() {
           {hasPickedMethod && !hasResult && (
             <section className="card animate-in" style={{ padding: 24 }}>
               <div
-                className="section-title"
                 style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px 12px',
                   marginBottom: 12,
-                  fontSize: mode === 'mai-hoa-serial' ? 'clamp(1rem, 4.5vw, 1.25rem)' : undefined,
                 }}
               >
-                {mode === 'quick'          && `⚡ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.quick.title', 'Gieo nhanh')}`}
-                {mode === 'manual-step'    && `🪙 ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.manual.title', 'Gieo từng hào')}`}
-                {mode === 'mai-hoa-time'   && t('maihoa.time_title', '🕐 Mai Hoa — Ngày giờ động tâm')}
-                {mode === 'mai-hoa-serial' && t('maihoa.serial_title', '💵 Mai Hoa — Số seri tiền')}
+                <div
+                  className="section-title"
+                  style={{
+                    margin: 0,
+                    fontSize: mode === 'mai-hoa-serial' ? 'clamp(1rem, 4.5vw, 1.25rem)' : undefined,
+                  }}
+                >
+                  {mode === 'quick'          && `⚡ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.quick.title', 'Gieo nhanh')}`}
+                  {mode === 'manual-step'    && `🪙 ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.manual.title', 'Gieo từng hào')}`}
+                  {mode === 'mai-hoa-time'   && t('maihoa.time_title', '🕐 Mai Hoa — Ngày giờ động tâm')}
+                  {mode === 'mai-hoa-serial' && t('maihoa.serial_title', '💵 Mai Hoa — Số seri tiền')}
+                </div>
+                <button
+                  type="button"
+                  id="btn-change-casting-method"
+                  onClick={handleChangeMethod}
+                  style={{
+                    background: 'rgba(184, 134, 11, 0.08)',
+                    border: '1px solid rgba(184, 134, 11, 0.28)',
+                    borderRadius: 8,
+                    padding: '6px 12px',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    color: 'var(--color-gold, #b8860b)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {t('nav.change_method', '← Đổi phương pháp')}
+                </button>
               </div>
 
               {mode === 'quick' ? (

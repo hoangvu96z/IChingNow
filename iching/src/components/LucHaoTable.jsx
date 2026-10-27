@@ -251,7 +251,7 @@ function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentCol
                 {line.phucThan && (
                   <Tap k="phucThan" onLearn={onLearn}>
                     <div style={{ fontSize: '0.75rem' }}>
-                      <div style={{ color: '#7b6f3a', fontWeight: 600 }}>{phucThanLabel}</div>
+                      <div style={{ color: 'var(--color-gold, #b8860b)', fontWeight: 600 }}>{phucThanLabel}</div>
                       <div style={{ color: 'var(--color-ink-muted)' }}>{ptChiTrans}-{ptElementTrans}</div>
                     </div>
                   </Tap>
@@ -263,10 +263,10 @@ function HaoTableSection({ evidenceKind, lines, khongVong, showLucThu, accentCol
                 {isKV && (
                   <Tap k="khongVong" onLearn={onLearn}>
                     <span style={{
-                      color: '#7b6f3a',
+                      color: 'var(--color-gold, #b8860b)',
                       fontWeight: 700,
                       fontSize: '0.75rem',
-                      border: '1px solid #b8860b55',
+                      border: '1px solid rgba(184, 134, 11, 0.35)',
                       borderRadius: 3,
                       padding: '1px 4px',
                     }}>
@@ -323,7 +323,7 @@ function InfoFooter({ result }) {
       <InfoItem label={t('info.the_h', 'Thế H')} value={result.theHao} />
       <InfoItem label={t('info.ung_h', 'Ứng H')} value={result.ungHao} />
       {result.khongVong?.length > 0 && (
-        <InfoItem label={t('info.tuan_khong', 'Tuần Không')} value={khongVongTrans} color="#7b6f3a" />
+        <InfoItem label={t('info.tuan_khong', 'Tuần Không')} value={khongVongTrans} color="var(--color-gold, #b8860b)" />
       )}
       {canNgayTrans && (
         <InfoItem label={t('info.can_ngay', 'Can Ngày')} value={canNgayTrans} />
@@ -406,19 +406,19 @@ function InfoItem({ label, value, color }) {
 // ── Utilities ──────────────────────────────────────────────────────────────
 
 const LUC_THU_COLORS = {
-  'Thanh Long': '#1a6b4a',
-  'Chu Tước':   '#c0392b',
-  'Câu Trận':   '#8B6914',
-  'Đằng Xà':    '#6A0DAD',
-  'Bạch Hổ':    '#555',
-  'Huyền Vũ':   '#1a4a6b',
+  'Thanh Long': 'var(--color-lucthu-thanhlong, #1a6b4a)',
+  'Chu Tước':   'var(--color-lucthu-chutuoc, #c0392b)',
+  'Câu Trận':   'var(--color-lucthu-cautran, #8b6914)',
+  'Đằng Xà':    'var(--color-lucthu-dangxa, #6a0dad)',
+  'Bạch Hổ':    'var(--color-lucthu-bachho, #555555)',
+  'Huyền Vũ':   'var(--color-lucthu-huyenvu, #1a4a6b)',
   
-  'Azure Dragon': '#1a6b4a',
-  'Vermilion Bird': '#c0392b',
-  'Curving Snake': '#8B6914',
-  'Soaring Serpent': '#6A0DAD',
-  'White Tiger': '#555',
-  'Black Tortoise': '#1a4a6b',
+  'Azure Dragon': 'var(--color-lucthu-thanhlong, #1a6b4a)',
+  'Vermilion Bird': 'var(--color-lucthu-chutuoc, #c0392b)',
+  'Curving Snake': 'var(--color-lucthu-cautran, #8b6914)',
+  'Soaring Serpent': 'var(--color-lucthu-dangxa, #6a0dad)',
+  'White Tiger': 'var(--color-lucthu-bachho, #555555)',
+  'Black Tortoise': 'var(--color-lucthu-huyenvu, #1a4a6b)',
 };
 
 function getLucThuColor(name) {

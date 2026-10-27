@@ -58,11 +58,11 @@ export default function IChingFollowUpConversation({
               <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 <div style={{
                   maxWidth: '85%',
-                  background: 'rgba(255,255,255,0.7)',
-                  border: '1px solid rgba(184,134,11,0.2)',
+                  background: 'var(--color-paper-dark, rgba(184,134,11,0.06))',
+                  border: '1px solid rgba(184,134,11,0.25)',
                   borderRadius: '4px 12px 12px 12px',
                   padding: '12px 16px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 }}>
                   <EvidenceInterpretation text={item.answer} />
                   {item.answerTimestamp && (
