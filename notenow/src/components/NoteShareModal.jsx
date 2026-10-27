@@ -9,7 +9,7 @@ import {
 
 const APP_BASE = typeof window !== 'undefined'
   ? window.location.origin
-  : (import.meta.env.VITE_APP_URL || 'https://vunph.click');
+  : (import.meta.env.VITE_APP_URL || 'https://vunph.id.vn');
 
 export default function NoteShareModal({ note, onClose, onUpdate, isLoggedIn }) {
   const { t } = useLanguage();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NOTE_COLORS, NOTE_PATTERNS } from '../constants.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { Ban, MoreHorizontal, Grid3X3, AlignJustify } from 'lucide-react';
@@ -12,9 +12,25 @@ const PATTERN_ICONS = {
 
 export default function NoteColorPicker({ bgColor, bgPattern, onChange }) {
   const { t } = useLanguage();
-  const isDark = typeof document !== 'undefined' && document.documentElement
-    ? document.documentElement.getAttribute('data-theme') !== 'light'
-    : false;
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== 'undefined' && document.documentElement
+      ? document.documentElement.getAttribute('data-theme') !== 'light'
+      : false
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.documentElement) return undefined;
+    const syncTheme = () => {
+      setIsDark(document.documentElement.getAttribute('data-theme') !== 'light');
+    };
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="nn-color-picker">

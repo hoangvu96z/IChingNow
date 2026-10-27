@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "github-actions": {
+      "command": "node",
+      "args": ["/Users/hoangvu96z/Documents/IChingNow/scripts/github-actions-mcp.mjs", "--mcp"]
+    }
+  }
+}

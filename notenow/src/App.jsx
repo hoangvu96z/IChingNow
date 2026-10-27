@@ -60,12 +60,12 @@ function StarParticles() {
 // ─── Simple client router ──────────────────────────────────────────────────
 
 function getRoute() {
-  const path = window.location.pathname.replace(/\/note\/?/, '') || '/';
+  const path = (window.location.pathname.replace(/\/note\/?/, '') || '/').replace(/\/+$/, '');
   if (path.startsWith('invite/')) {
-    return { page: 'invite', token: path.replace('invite/', '') };
+    return { page: 'invite', token: path.slice('invite/'.length).split(/[/?#]/)[0] };
   }
   if (path.startsWith('s/')) {
-    return { page: 'share', shareToken: path.replace('s/', '') };
+    return { page: 'share', shareToken: path.slice('s/'.length).split(/[/?#]/)[0] };
   }
   return { page: 'board' };
 }

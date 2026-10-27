@@ -42,3 +42,4 @@ tarotnow/Cards-jpg/
 # Local browser and UI review artifacts
 **/.playwright-cli/
 /output/
+.agy-runs/

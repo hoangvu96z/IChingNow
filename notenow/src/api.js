@@ -450,7 +450,7 @@ export const notesApi = {
 
 export const ssoApi = {
   getLoginUrl: (customRedirect) => {
-    const returnUrl = customRedirect || (typeof window !== 'undefined' ? window.location.href : 'https://vunph.click/note/');
+    const returnUrl = customRedirect || (typeof window !== 'undefined' ? window.location.href : 'https://vunph.id.vn/note/');
     return getSsoLoginUrl({ VITE_SSO_URL: import.meta.env.VITE_SSO_URL }, returnUrl);
   },
 

@@ -3,6 +3,11 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "agy": "node scripts/agy-runner.mjs",
+    "agy:parallel": "node scripts/agy-runner.mjs",
+    "ci:status": "node scripts/github-actions-mcp.mjs --status",
+    "ci:wait": "node scripts/github-actions-mcp.mjs --wait",
+    "test:agy-runner": "node --test tests/agy-runner.test.mjs",
     "test:sso": "node --test shared/test/*.test.mjs",
     "dev:iching": "npm run dev --prefix iching",
     "dev:tarot": "npm run dev --prefix tarotnow",
