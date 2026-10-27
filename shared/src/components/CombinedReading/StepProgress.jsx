@@ -110,7 +110,7 @@ export default function StepProgress({
                   ? '#fff'
                   : isPassed || isUnlocked
                     ? '#e5c158'
-                    : 'rgba(255,255,255,0.3)',
+                    : 'rgba(255,255,255,0.6)',
                 fontWeight: 700,
                 flexShrink: 0,
                 boxShadow: isActive ? '0 0 10px rgba(229,193,88,0.5)' : 'none',
@@ -127,8 +127,8 @@ export default function StepProgress({
                     : isPassed
                       ? 'rgba(255,255,255,0.85)'
                       : isUnlocked
-                        ? 'rgba(255,255,255,0.65)'
-                        : 'rgba(255,255,255,0.25)',
+                        ? 'rgba(255,255,255,0.7)'
+                        : 'rgba(255,255,255,0.6)',
                 fontWeight: isActive ? 700 : (isPassed || (isHovered && isClickable)) ? 600 : 400,
                 whiteSpace: 'nowrap',
                 textDecoration: isHovered && isClickable ? 'underline' : 'none',

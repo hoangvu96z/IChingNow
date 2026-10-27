@@ -220,17 +220,17 @@ export default function CombinedReadingModal({
                 {isVi ? 'Kết hợp Tử Vi & Kinh Dịch' : 'Zi Wei + I Ching Combined'}
               </h2>
             </div>
-            <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif" }}>
+            <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.65)', fontFamily: "'Inter', sans-serif" }}>
               {isVi
                 ? 'Lá số Tử Vi định hướng nền tảng · Kinh Dịch phán định thời điểm · AI tổng hợp'
                 : 'Natal chart reveals foundation · I Ching divines the moment · AI synthesizes both'}
             </p>
           </div>
           <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '8px',
-            color: 'rgba(255,255,255,0.5)',
+            color: 'rgba(255,255,255,0.85)',
             width: '32px', height: '32px',
             cursor: 'pointer', fontSize: '16px', flexShrink: 0,
           }}>✕</button>

@@ -23,11 +23,11 @@ const CARD_STYLE = {
 };
 
 const actionStyle = {
-  border: '1px solid rgba(184, 134, 11, 0.55)',
+  border: '1px solid var(--color-gold, #8a6104)',
   borderRadius: 10,
   padding: '9px 14px',
-  color: '#f8f1df',
-  background: 'rgba(184, 134, 11, 0.12)',
+  color: 'var(--color-gold, #8a6104)',
+  background: 'var(--color-paper-dark, rgba(184, 134, 11, 0.14))',
   fontSize: 13,
   fontWeight: 700,
   cursor: 'pointer',

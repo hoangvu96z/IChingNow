@@ -394,7 +394,7 @@ async function setAppTheme(page, targetTheme) {
   await page.evaluate((theme) => {
     document.documentElement.setAttribute('data-theme', theme);
   }, targetTheme);
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(420);
 }
 
 // =============================================================================
