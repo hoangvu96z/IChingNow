@@ -7,6 +7,7 @@
     "agy:parallel": "node scripts/agy-runner.mjs",
     "ci:status": "node scripts/github-actions-mcp.mjs --status",
     "ci:wait": "node scripts/github-actions-mcp.mjs --wait",
+    "test:e2e": "node scripts/playwright-e2e-suite.mjs",
     "test:agy-runner": "node --test tests/agy-runner.test.mjs",
     "test:sso": "node --test shared/test/*.test.mjs",
     "dev:iching": "npm run dev --prefix iching",
