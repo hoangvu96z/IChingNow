@@ -47,7 +47,7 @@ function ToolbarButton({ onClick, title, isActive, children, id }) {
 }
 
 export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = false, userIsLoggedIn, shareToken }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const MAX_CHARS = userIsLoggedIn ? 10000 : 2048;
 
   const [activeNoteId, setActiveNoteId] = useState(note?.id || null);
