@@ -115,7 +115,7 @@ export default function PromptExporter({
             style={{
               margin: 0,
               fontSize: '0.88rem',
-              color: 'rgba(255, 255, 255, 0.75)',
+              color: 'var(--text-muted)',
               lineHeight: 1.5,
               maxWidth: 640,
             }}

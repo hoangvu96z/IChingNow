@@ -12,16 +12,16 @@ export default function TarotSettingsPanel({
   if (!isOpen) return null;
 
   return (
-    <form onSubmit={onSubmit} style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(229,193,88,0.2)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <h4 style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 600, color: '#e5c158' }}>{t('ai.settings_header', 'Cấu hình Server AI (9Router)')}</h4>
+    <form onSubmit={onSubmit} className="ai-settings-form" style={{ borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <h4 className="ai-settings-heading" style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 600 }}>{t('ai.settings_header', 'Cấu hình Server AI (9Router)')}</h4>
 
       <div>
         <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--text-muted)' }}>
           <span>Chọn Model *</span>
         </label>
         <select
-          className="custom-textarea"
-          style={{ minHeight: 'auto', padding: '8px 12px', fontSize: '13px', height: '38px', background: '#1c172e', border: '1px solid rgba(255,255,255,0.08)', color: '#fff' }}
+          className="custom-textarea ai-settings-select"
+          style={{ minHeight: 'auto', padding: '8px 12px', fontSize: '13px', height: '38px' }}
           value={formSettings.model}
           onChange={e => setFormSettings({ ...formSettings, model: e.target.value })}
         >

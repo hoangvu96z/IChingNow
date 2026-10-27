@@ -62,7 +62,7 @@ export default function ManualDeckStage({
       <div className="tarot-red-cloth-mat">
         {/* VIEW MODE 1: STRAIGHT HORIZONTAL 3D DECK RIBBON */}
         {viewStyle === 'fan' && (
-          <div className="manual-3d-fan-stage-wrapper" style={{ overflow: 'hidden', padding: '30px 0 20px' }}>
+          <div className="manual-3d-fan-stage-wrapper" style={{ padding: '30px 0 20px' }}>
             <div className={`manual-3d-fan-arc${isShufflingDeck ? ' shuffling' : ''}`} style={{ height: 180, maxWidth: 1200 }}>
               {filteredShuffledOrder.map((cardIdx, i) => {
                 const card = tarotCards[cardIdx];

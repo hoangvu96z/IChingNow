@@ -2636,7 +2636,8 @@ input:checked + .toggle-slider:before {
 }
 
 .daily-stat-value {
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
+  font-variant-numeric: lining-nums tabular-nums;
   font-size: 1.2rem;
   font-weight: 700;
   color: #f5f4fa;
@@ -2651,6 +2652,12 @@ input:checked + .toggle-slider:before {
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
+  .manual-3d-tray-title {
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+
   .mode-switcher-btn {
     padding: 10px 8px;
     font-size: 13px;
@@ -3245,6 +3252,110 @@ input:checked + .toggle-slider:before {
   line-height: 1.65;
 }
 
+/* ─── Draw & Manual Results Scroll Anchors ─── */
+.draw-results-section,
+.manual-results-section {
+  scroll-margin-top: 68px;
+}
+
+/* ─── Spread Card Labels & Names ─── */
+.spread-card-pos-label {
+  color: var(--text-muted);
+}
+
+.spread-card-name {
+  color: #ffffff;
+}
+
+/* ─── Yes/No Badges ─── */
+.yes-no-badge.yes {
+  background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.1));
+  border: 2px solid rgba(34,197,94,0.5);
+  color: #4ade80;
+  box-shadow: 0 0 30px rgba(34,197,94,0.3);
+}
+
+.yes-no-badge.no {
+  background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.1));
+  border: 2px solid rgba(239,68,68,0.5);
+  color: #f87171;
+  box-shadow: 0 0 30px rgba(239,68,68,0.3);
+}
+
+/* ─── Summary Box & Practical Advice Box ─── */
+.summary-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.summary-box-text {
+  color: #dfdbf0;
+}
+
+.practical-advice-box {
+  background: rgba(229, 193, 88, 0.04);
+  border: 1px solid rgba(229, 193, 88, 0.15);
+}
+
+.practical-advice-text {
+  color: #f3e5ab;
+}
+
+/* ─── Modal Detailed Meaning & Advice Boxes ─── */
+.modal-meaning-box {
+  color: rgba(240, 235, 255, 0.92);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modal-advice-box {
+  background: rgba(229, 193, 88, 0.08);
+  border: 1px solid rgba(229, 193, 88, 0.25);
+  color: #f0e6d2;
+}
+
+/* ─── AI Settings Form ─── */
+.ai-settings-form {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(229, 193, 88, 0.2);
+}
+
+.ai-settings-heading {
+  color: #e5c158;
+}
+
+.ai-settings-select {
+  background: #1c172e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* ─── Follow-up Section ─── */
+.followup-question-bubble {
+  background: rgba(229, 193, 88, 0.12);
+  border: 1px solid rgba(229, 193, 88, 0.25);
+}
+
+.followup-question-text {
+  color: #f5e6a3;
+}
+
+.followup-answer-bubble {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.followup-suggested-btn {
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  color: #dfdbf0;
+  transition: all 0.2s ease;
+}
+
+.followup-suggested-btn:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.18);
+}
+
 /* ─── Theme toggle & Light mode palette for TarotNow (default stays dark) ─── */
 :root,
 [data-theme="dark"] {
@@ -3518,4 +3629,118 @@ input:checked + .toggle-slider:before {
   color: #7c5208 !important;
   background: rgba(164, 120, 18, 0.16) !important;
   border-color: rgba(164, 120, 18, 0.45) !important;
+}
+
+[data-theme="light"] .spread-card-pos-label {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .spread-card-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .yes-no-badge.yes {
+  background: rgba(34, 197, 94, 0.12);
+  border: 2px solid #16a34a;
+  color: #15803d;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.2);
+}
+
+[data-theme="light"] .yes-no-badge.no {
+  background: rgba(239, 68, 68, 0.12);
+  border: 2px solid #dc2626;
+  color: #b91c1c;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.2);
+}
+
+[data-theme="light"] .summary-box {
+  background: rgba(242, 235, 220, 0.6);
+  border-color: rgba(164, 120, 18, 0.25);
+}
+
+[data-theme="light"] .summary-box-text {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .practical-advice-box {
+  background: rgba(164, 120, 18, 0.08);
+  border-color: rgba(164, 120, 18, 0.25);
+}
+
+[data-theme="light"] .practical-advice-text {
+  color: #7c5208;
+}
+
+[data-theme="light"] .card-impact-hint {
+  color: #7c5208 !important;
+}
+
+[data-theme="light"] .modal-meaning-box {
+  background: rgba(164, 120, 18, 0.06);
+  border-color: rgba(164, 120, 18, 0.18);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .modal-advice-box {
+  background: rgba(164, 120, 18, 0.1);
+  border-color: rgba(164, 120, 18, 0.28);
+  color: #5a3c05;
+}
+
+[data-theme="light"] .ai-settings-form {
+  background: rgba(242, 235, 220, 0.6);
+  border-color: rgba(164, 120, 18, 0.3);
+}
+
+[data-theme="light"] .ai-settings-heading {
+  color: #7c5208;
+}
+
+[data-theme="light"] .ai-settings-select {
+  background: #ffffff;
+  border-color: rgba(164, 120, 18, 0.36);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .followup-question-bubble {
+  background: rgba(164, 120, 18, 0.14);
+  border-color: rgba(164, 120, 18, 0.32);
+}
+
+[data-theme="light"] .followup-question-text {
+  color: #634205;
+}
+
+[data-theme="light"] .followup-answer-bubble {
+  background: #ffffff;
+  border-color: rgba(164, 120, 18, 0.22);
+  box-shadow: 0 4px 14px rgba(42, 31, 61, 0.05);
+}
+
+[data-theme="light"] .followup-suggested-btn {
+  background: rgba(164, 120, 18, 0.08);
+  border-color: rgba(164, 120, 18, 0.25);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .followup-suggested-btn:hover:not(:disabled) {
+  background: rgba(164, 120, 18, 0.16);
+}
+
+[data-theme="light"] .draw-trigger-btn,
+[data-theme="light"] .copy-main-btn,
+[data-theme="light"] .tab-btn.active {
+  color: #120a21;
+}
+
+[data-theme="light"] .manual-copy-text,
+[data-theme="light"] .output-text {
+  background: #ffffff;
+  color: var(--text-primary);
+  border-color: rgba(164, 120, 18, 0.3);
+}
+
+[data-theme="light"] .output-preview-box {
+  background: rgba(242, 235, 220, 0.5);
+  border-color: rgba(164, 120, 18, 0.25);
 }

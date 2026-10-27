@@ -748,11 +748,11 @@ ${summaryObj.advice}
               </div>
 
               {/* 1. Điều trải bài đang muốn nói */}
-              <div className="summary-box" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(212,175,55,0.15)', padding: '18px', borderRadius: '8px', marginBottom: '24px' }}>
+              <div className="summary-box" style={{ padding: '18px', borderRadius: '8px', marginBottom: '24px' }}>
                 <h4 style={{ margin: '0 0 8px 0', color: '#e5c158', fontSize: '14px', textTransform: 'uppercase', fontFamily: "var(--font-heading)", letterSpacing: '0.5px' }}>
                   {language === 'en' ? '🔮 What the spread wants to say' : '🔮 Điều trải bài đang muốn nói'}
                 </h4>
-                <p style={{ margin: 0, fontSize: '14px', color: '#dfdbf0', lineHeight: '1.6' }}>
+                <p className="summary-box-text" style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>
                   {summaryObj.intro}
                 </p>
               </div>
@@ -802,11 +802,11 @@ ${summaryObj.advice}
               </div>
 
               {/* 4. Lời khuyên thực tế */}
-              <div style={{ background: 'rgba(229,193,88,0.04)', border: '1px solid rgba(229,193,88,0.15)', padding: '16px', borderRadius: '8px' }}>
+              <div className="practical-advice-box" style={{ padding: '16px', borderRadius: '8px' }}>
                 <h5 style={{ margin: '0 0 6px 0', color: '#e5c158', fontSize: '13px', fontFamily: "var(--font-heading)", textTransform: 'uppercase' }}>
                   ⚡ {language === 'en' ? 'Practical Advice' : 'Lời khuyên Thực tế'}
                 </h5>
-                <p style={{ margin: 0, fontSize: '13px', color: '#f3e5ab', lineHeight: '1.5', fontWeight: '500' }}>
+                <p className="practical-advice-text" style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', fontWeight: '500' }}>
                   {summaryObj.advice}
                 </p>
               </div>

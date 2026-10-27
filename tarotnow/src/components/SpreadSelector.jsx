@@ -32,7 +32,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
   return (
     <div className="spread-selector-wrapper" style={{ position: 'relative' }}>
       <style>{`
-        @media (max-width: 360px) {
+        @media (max-width: 480px) {
           .spread-selector-row-title {
             display: -webkit-box !important;
             -webkit-line-clamp: 2 !important;
@@ -40,41 +40,93 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
             overflow: hidden !important;
           }
         }
+        .spread-selector-trigger {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(229,193,88,0.06);
+          border: 1px solid rgba(229,193,88,0.2);
+          border-radius: 10px;
+          padding: 10px 14px;
+          color: var(--text-primary);
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          transition: all 0.2s;
+          text-align: left;
+        }
+        .spread-selector-trigger.is-open {
+          border-color: rgba(229,193,88,0.6);
+        }
+        [data-theme="light"] .spread-selector-trigger {
+          background: #ffffff;
+          border-color: rgba(164,120,18,0.28);
+          color: var(--text-primary);
+        }
+        .spread-selector-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 0;
+          right: 0;
+          z-index: 99;
+          background: rgba(18, 14, 35, 0.98);
+          border: 1px solid rgba(229,193,88,0.25);
+          border-radius: 14px;
+          box-shadow: 0 16px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(229,193,88,0.08);
+          backdrop-filter: blur(20px);
+          overflow: hidden;
+        }
+        [data-theme="light"] .spread-selector-dropdown {
+          background: #ffffff;
+          border-color: rgba(164,120,18,0.28);
+          box-shadow: 0 16px 45px rgba(42, 31, 61, 0.12), 0 0 0 1px rgba(164,120,18,0.12);
+        }
+        [data-theme="light"] .spread-selector-tab:not(.active) {
+          background: rgba(164, 120, 18, 0.05) !important;
+          color: var(--text-muted) !important;
+        }
+        [data-theme="light"] .spread-selector-row:hover:not(.active) {
+          background: rgba(164, 120, 18, 0.06) !important;
+        }
       `}</style>
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        className={`spread-selector-trigger${isOpen ? ' is-open' : ''}`}
         style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          background: 'rgba(229,193,88,0.06)',
-          border: `1px solid ${isOpen ? 'rgba(229,193,88,0.6)' : 'rgba(229,193,88,0.2)'}`,
-          borderRadius: '10px',
-          padding: '10px 14px',
           cursor: disabled ? 'not-allowed' : 'pointer',
-          color: '#fff',
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '14px',
-          transition: 'all 0.2s',
-          textAlign: 'left',
           opacity: disabled ? 0.6 : 1,
         }}
       >
         <span style={{ fontSize: '20px', lineHeight: 1 }}>{currentSpread.icon || '🃏'}</span>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, color: '#e5c158', fontSize: '13px', lineHeight: 1.35 }}>
+          <div style={{
+            fontWeight: 600,
+            color: 'var(--gold-color)',
+            fontSize: '13px',
+            lineHeight: 1.35,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
             {summaryTitle}
           </div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '2px', lineHeight: 1.35 }}>
+          <div style={{
+            fontSize: '11px',
+            color: 'var(--text-muted)',
+            marginTop: '2px',
+            lineHeight: 1.35,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
             {currentSpread.count} {language === 'en' ? 'card(s)' : 'lá'} · {currentSpread.positions.length > 0 ? currentSpread.positions.slice(0,2).join(' · ') + (currentSpread.positions.length > 2 ? '...' : '') : (language === 'en' ? 'Custom' : 'Tự chọn')}
           </div>
         </div>
         <span style={{
           fontSize: '12px',
-          color: 'rgba(255,255,255,0.4)',
+          color: 'var(--text-muted)',
           transform: isOpen ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.2s',
           flexShrink: 0,
@@ -84,19 +136,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
       {isOpen && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 98 }} onClick={() => setIsOpen(false)} />
-          <div style={{
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
-            left: 0,
-            right: 0,
-            zIndex: 99,
-            background: 'rgba(18, 14, 35, 0.98)',
-            border: '1px solid rgba(229,193,88,0.25)',
-            borderRadius: '14px',
-            boxShadow: '0 16px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(229,193,88,0.08)',
-            backdropFilter: 'blur(20px)',
-            overflow: 'hidden',
-          }}>
+          <div className="spread-selector-dropdown">
             {/* Category tabs */}
             <div style={{
               display: 'flex',
@@ -111,6 +151,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveCategory(cat.id)}
+                  className={`spread-selector-tab${activeCategory === cat.id ? ' active' : ''}`}
                   style={{
                     flexShrink: 0,
                     padding: '5px 12px',
@@ -122,7 +163,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                     fontFamily: "'Inter', sans-serif",
                     transition: 'all 0.15s',
                     background: activeCategory === cat.id ? 'rgba(229,193,88,0.18)' : 'rgba(255,255,255,0.04)',
-                    color: activeCategory === cat.id ? '#e5c158' : 'rgba(255,255,255,0.45)',
+                    color: activeCategory === cat.id ? 'var(--gold-color)' : 'var(--text-muted)',
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -146,6 +187,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                     key={spread.id}
                     type="button"
                     onClick={() => handleSelect(spread.id)}
+                    className={`spread-selector-row${isActive ? ' active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
@@ -188,7 +230,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                             minWidth: 0,
                             fontSize: '13px',
                             fontWeight: 600,
-                            color: isActive ? '#e5c158' : '#fff',
+                            color: isActive ? 'var(--gold-color)' : 'var(--text-primary)',
                             lineHeight: 1.35,
                           }}
                         >
@@ -198,7 +240,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                           flexShrink: 0,
                           fontSize: '10px',
                           background: 'rgba(229,193,88,0.1)',
-                          color: '#e5c158',
+                          color: 'var(--gold-color)',
                           border: '1px solid rgba(229,193,88,0.2)',
                           borderRadius: '10px',
                           padding: '1px 8px',
@@ -210,7 +252,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                       {spread.description && (
                         <div style={{
                           fontSize: '11px',
-                          color: 'rgba(255,255,255,0.38)',
+                          color: 'var(--text-muted)',
                           lineHeight: '1.4',
                           overflow: 'hidden',
                           display: '-webkit-box',
@@ -221,7 +263,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                         </div>
                       )}
                     </div>
-                    {isActive && <span style={{ color: '#e5c158', fontSize: '14px', flexShrink: 0, marginTop: '2px' }}>✓</span>}
+                    {isActive && <span style={{ color: 'var(--gold-color)', fontSize: '14px', flexShrink: 0, marginTop: '2px' }}>✓</span>}
                   </button>
                 );
               })}

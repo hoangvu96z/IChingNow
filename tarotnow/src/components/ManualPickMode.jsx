@@ -288,7 +288,7 @@ export default function ManualPickMode({
 
       {/* ─── RESULTS INTERPRETATION & EXPORT ─── */}
       {phase === 'results' && (
-        <div ref={resultRef}>
+        <div ref={resultRef} className="manual-results-section">
           {/* Question title */}
           <div className="glass-panel" style={{ marginBottom: 24, textAlign: 'center' }}>
             <h2 className="results-title" style={{ margin: '0 0 6px' }}>
@@ -399,7 +399,7 @@ export default function ManualPickMode({
                   style={{
                     margin: 0,
                     fontSize: '0.88rem',
-                    color: 'rgba(255, 255, 255, 0.75)',
+                    color: 'var(--text-muted)',
                     lineHeight: 1.5,
                     maxWidth: 640,
                   }}
@@ -446,7 +446,7 @@ export default function ManualPickMode({
                 <pre className="manual-copy-text">{aiPromptText}</pre>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.5px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
                     {language === 'en' ? 'SHORT CARDS SUMMARY ONLY' : 'CHỈ TÓM TẮT CÁC LÁ BÀI'}
                   </span>
                   <button

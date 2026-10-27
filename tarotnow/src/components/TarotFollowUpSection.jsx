@@ -35,8 +35,8 @@ export default function TarotFollowUpSection({
                   <div key={fu.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {/* Question bubble */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <div style={{ maxWidth: '80%', background: 'rgba(229,193,88,0.12)', border: '1px solid rgba(229,193,88,0.25)', borderRadius: '12px 12px 4px 12px', padding: '8px 12px' }}>
-                        <div style={{ fontSize: '0.82rem', color: '#f5e6a3', fontWeight: 600 }}>{fu.question}</div>
+                      <div className="followup-question-bubble" style={{ maxWidth: '80%', borderRadius: '12px 12px 4px 12px', padding: '8px 12px' }}>
+                        <div className="followup-question-text" style={{ fontSize: '0.82rem', fontWeight: 600 }}>{fu.question}</div>
                         {fu.questionTimestamp && (
                           <div style={{ fontSize: '0.68rem', color: 'rgba(229,193,88,0.5)', marginTop: 3, textAlign: 'right', fontFamily: 'monospace' }}>
                             🕐 {new Date(fu.questionTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -46,7 +46,7 @@ export default function TarotFollowUpSection({
                     </div>
                     {/* Answer bubble */}
                     <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                      <div style={{ maxWidth: '85%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px 12px 12px 12px', padding: '10px 14px' }}>
+                      <div className="followup-answer-bubble" style={{ maxWidth: '85%', borderRadius: '4px 12px 12px 12px', padding: '10px 14px' }}>
                         <TarotMarkdown compact>{fu.answer}</TarotMarkdown>
                         {fu.answerTimestamp && (
                           <div style={{ fontSize: '0.68rem', color: 'rgba(229,193,88,0.4)', marginTop: 4, fontFamily: 'monospace' }}>
@@ -107,23 +107,18 @@ export default function TarotFollowUpSection({
                           type="button"
                           disabled={askingFollowUp}
                           onClick={() => handleSendFollowUp(null, qText)}
+                          className="followup-suggested-btn"
                           style={{
-                            background: 'rgba(167,139,250,0.08)',
-                            border: '1px solid rgba(167,139,250,0.25)',
                             borderRadius: 10,
                             padding: '8px 14px',
                             fontSize: '0.825rem',
-                            color: '#dfdbf0',
                             cursor: askingFollowUp ? 'not-allowed' : 'pointer',
                             textAlign: 'left',
-                            transition: 'all 0.2s ease',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 8,
                             fontFamily: 'inherit',
                           }}
-                          onMouseEnter={e => { if (!askingFollowUp) e.currentTarget.style.background = 'rgba(167,139,250,0.18)'; }}
-                          onMouseLeave={e => { if (!askingFollowUp) e.currentTarget.style.background = 'rgba(167,139,250,0.08)'; }}
                         >
                           <span style={{ fontSize: '0.9rem', color: '#a78bfa' }}>🔮</span>
                           <span style={{ flex: 1 }}>{qText}</span>
@@ -140,12 +135,12 @@ export default function TarotFollowUpSection({
                     onChange={(e) => setUserQuestion(e.target.value)}
                     placeholder="Nhập câu hỏi thêm về trải bài này (tối đa 2048 ký tự)..."
                     disabled={askingFollowUp}
-                    className="custom-textarea"
+                    className="custom-textarea followup-textarea"
                     style={{
                       width: '100%', padding: '8px 12px', borderRadius: 8,
                       border: `1px solid ${charCount > 2048 ? 'rgba(235,94,85,0.6)' : 'rgba(229,193,88,0.2)'}`,
-                      background: 'rgba(0,0,0,0.2)', fontSize: '0.85rem',
-                      resize: 'vertical', outline: 'none', color: '#dfdbf0',
+                      fontSize: '0.85rem',
+                      resize: 'vertical', outline: 'none',
                       boxSizing: 'border-box', minHeight: 'unset',
                     }}
                   />

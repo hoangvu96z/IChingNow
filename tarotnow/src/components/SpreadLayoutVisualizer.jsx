@@ -97,9 +97,9 @@ function CardSlot({ card, position, positionLabel, index, onCardClick, baseUrl, 
       <div
         className="spread-card-pos-label"
         style={{
-          color: card ? 'rgba(229,193,88,0.88)' : 'rgba(255,255,255,0.2)',
           textAlign: 'center',
           fontFamily: "'Inter', sans-serif",
+          opacity: card ? 1 : 0.45,
         }}
       >
         {positionLabel}
@@ -110,7 +110,6 @@ function CardSlot({ card, position, positionLabel, index, onCardClick, baseUrl, 
         <div
           className="spread-card-name"
           style={{
-            color: '#fff',
             textAlign: 'center',
             fontFamily: "'Inter', sans-serif",
           }}
@@ -300,21 +299,18 @@ function YesNoLayout({ cards, positions, onCardClick, baseUrl }) {
         revealDelay={0}
       />
       {card && (
-        <div style={{
-          padding: '10px 28px',
-          borderRadius: '30px',
-          fontSize: '18px',
-          fontWeight: 800,
-          fontFamily: "'Cinzel', serif",
-          letterSpacing: '2px',
-          background: isYes
-            ? 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.1))'
-            : 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.1))',
-          border: `2px solid ${isYes ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'}`,
-          color: isYes ? '#4ade80' : '#f87171',
-          boxShadow: `0 0 30px ${isYes ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
-          animation: 'yesNoReveal 0.6s ease 0.5s both',
-        }}>
+        <div
+          className={`yes-no-badge ${isYes ? 'yes' : 'no'}`}
+          style={{
+            padding: '10px 28px',
+            borderRadius: '30px',
+            fontSize: '18px',
+            fontWeight: 800,
+            fontFamily: "'Cinzel', serif",
+            letterSpacing: '2px',
+            animation: 'yesNoReveal 0.6s ease 0.5s both',
+          }}
+        >
           {isYes ? '✓ YES' : '✗ NO'}
         </div>
       )}

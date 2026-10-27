@@ -71,16 +71,7 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
       className="card-modal-overlay"
       onClick={onClose}
       style={{
-        position: 'fixed',
-        inset: 0,
         zIndex: 1100,
-        background: 'rgba(7, 4, 15, 0.85)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
         animation: 'tarotFadeIn 0.2s ease-out',
       }}
     >
@@ -90,57 +81,35 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
         aria-label={card.name}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(165deg, #17132e 0%, #0d0a1a 100%)',
-          border: '1px solid rgba(229, 193, 88, 0.45)',
           borderRadius: 20,
           maxWidth: 720,
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(229, 193, 88, 0.15)',
           position: 'relative',
           display: 'grid',
           gridTemplateColumns: 'minmax(220px, 260px) 1fr',
           animation: 'tarotZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="tarot-learn-modal-grid"
+        className="card-modal-content tarot-learn-modal-grid"
       >
         {/* Nút đóng */}
         <button
           type="button"
           onClick={onClose}
           aria-label={isEn ? 'Close' : 'Đóng'}
-          style={{
-            position: 'absolute',
-            top: 14,
-            right: 14,
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            color: '#fff',
-            fontSize: '18px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 10,
-            transition: 'all 0.2s',
-          }}
+          className="modal-close-btn"
         >
           ×
         </button>
 
         {/* Cột trái: Hình ảnh lá bài + nút toggle xuôi/ngược */}
-        <div style={{
+        <div className="modal-left-col" style={{
           padding: '24px 20px',
-          background: 'rgba(0, 0, 0, 0.3)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          borderRight: '1px solid rgba(229, 193, 88, 0.15)',
           gap: 14,
         }}>
           <div style={{
@@ -230,11 +199,9 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
               {elementInfo && <span>• {elementInfo.icon} {isEn ? elementInfo.elementEn : elementInfo.elementVi}</span>}
             </div>
 
-            <h2 style={{
+            <h2 className="modal-title" style={{
               margin: 0,
-              fontFamily: "'Playfair Display', serif, Georgia",
               fontSize: '1.65rem',
-              color: '#fff',
               letterSpacing: '0.02em',
             }}>
               {card.name}
@@ -261,20 +228,18 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
 
           {/* Keywords tags */}
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)', marginBottom: 6, textTransform: 'uppercase', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', fontWeight: 600 }}>
               {isEn ? 'Keywords' : 'Từ khóa trọng tâm'}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {keywords.map((kw, i) => (
                 <span
                   key={i}
+                  className="card-kw-badge"
                   style={{
                     padding: '3px 9px',
                     borderRadius: 6,
                     fontSize: '0.8rem',
-                    background: 'rgba(255, 255, 255, 0.07)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#e2dff0',
                   }}
                 >
                   {kw}
@@ -303,7 +268,7 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
                       background: 'none',
                       border: 'none',
                       borderBottom: isActive ? '2px solid var(--gold-color, #e5c158)' : '2px solid transparent',
-                      color: isActive ? 'var(--gold-color, #e5c158)' : 'rgba(255, 255, 255, 0.6)',
+                      color: isActive ? 'var(--gold-color, #e5c158)' : 'var(--text-muted)',
                       padding: '8px 12px',
                       fontSize: '0.85rem',
                       fontWeight: isActive ? 700 : 500,
@@ -319,14 +284,11 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
             </div>
 
             {/* Content of active tab */}
-            <div style={{
+            <div className="modal-meaning-box" style={{
               fontSize: '0.9rem',
               lineHeight: 1.65,
-              color: 'rgba(240, 235, 255, 0.92)',
-              background: 'rgba(0, 0, 0, 0.25)',
               padding: '12px 14px',
               borderRadius: 10,
-              border: '1px solid rgba(255, 255, 255, 0.05)',
               minHeight: 70,
             }}>
               {activeMeaningText}
@@ -334,14 +296,11 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
           </div>
 
           {/* Tarot Advice Box */}
-          <div style={{
+          <div className="modal-advice-box" style={{
             padding: '10px 14px',
             borderRadius: 10,
-            background: 'rgba(229, 193, 88, 0.08)',
-            border: '1px solid rgba(229, 193, 88, 0.25)',
             fontSize: '0.825rem',
             lineHeight: 1.5,
-            color: '#f0e6d2',
           }}>
             💡 <strong style={{ color: 'var(--gold-color, #e5c158)' }}>
               {isEn ? 'Deck Trivia & Archetype:' : 'Đặc tính & Điển mẫu:'}
