@@ -429,7 +429,7 @@ export default function ManualPickMode({
             ) : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#e5c158', letterSpacing: '0.5px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold-color)', letterSpacing: '0.5px' }}>
                     {language === 'en' ? 'FULL AI PROMPT (RECOMMENDED)' : 'PROMPT AI ĐẦY ĐỦ (KHUYÊN DÙNG)'}
                   </span>
                   <button

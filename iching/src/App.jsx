@@ -83,7 +83,7 @@ function CanChiInfoBar({ canChi }) {
       {canChi.khongVong?.length > 0 && (
         <span style={{ fontSize: '0.8125rem', marginLeft: 4 }}>
           <span style={{ color: 'var(--color-ink-muted)', marginRight: 3 }}>{t('canchi.bar_tuan_khong', 'Tuần Không')}:</span>
-          <span style={{ fontWeight: 700, color: '#b8860b', fontFamily: "'Noto Serif', serif" }}>
+          <span style={{ fontWeight: 700, color: 'var(--color-gold)', fontFamily: "'Noto Serif', serif" }}>
             {canChi.khongVong.map(v => t(`branch.${v}`, v)).join(', ')}
           </span>
         </span>

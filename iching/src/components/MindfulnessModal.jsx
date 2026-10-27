@@ -123,7 +123,7 @@ export default function MindfulnessModal({
       <div style={{
         width: '100%',
         maxWidth: 480,
-        background: 'linear-gradient(180deg, #fbf7ec 0%, #f4ebd2 100%)',
+        background: 'var(--color-paper-card, var(--color-paper))',
         borderRadius: 24,
         border: '2px solid rgba(184,134,11,0.35)',
         boxShadow: '0 20px 50px rgba(0,0,0,0.35), 0 0 30px rgba(184,134,11,0.15)',
@@ -287,8 +287,8 @@ export default function MindfulnessModal({
         {question && (
           <div style={{
             width: '100%',
-            background: 'rgba(255,255,255,0.6)',
-            border: '1px dashed rgba(184,134,11,0.3)',
+            background: 'var(--color-paper-dark)',
+            border: '1px dashed rgba(184,134,11,0.35)',
             borderRadius: 12,
             padding: '10px 14px',
             marginBottom: 12,
@@ -359,7 +359,7 @@ export default function MindfulnessModal({
               height: 20,
               borderRadius: 10,
               border: 'none',
-              background: mindfulnessEnabled ? 'var(--color-jade)' : 'rgba(44,24,16,0.2)',
+              background: mindfulnessEnabled ? 'var(--color-jade)' : 'rgba(184,134,11,0.3)',
               position: 'relative',
               cursor: 'pointer',
               transition: 'background 0.2s',

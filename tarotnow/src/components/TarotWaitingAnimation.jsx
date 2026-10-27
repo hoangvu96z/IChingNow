@@ -47,10 +47,10 @@ export default function TarotWaitingAnimation({ isEn, retryInfo, elapsedSeconds 
       flexDirection: 'column',
       alignItems: 'center',
       padding: '30px 16px',
-      background: 'linear-gradient(180deg, rgba(28,23,46,0.85) 0%, rgba(13,10,25,0.95) 100%)',
+      background: 'var(--bg-panel)',
       borderRadius: '16px',
-      border: '1px solid rgba(229,193,88,0.25)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 0 20px rgba(167,139,250,0.06)',
+      border: '1px solid var(--border-gold)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.15), inset 0 0 20px rgba(167,139,250,0.06)',
       position: 'relative',
       overflow: 'hidden'
     }}>
@@ -152,7 +152,7 @@ export default function TarotWaitingAnimation({ isEn, retryInfo, elapsedSeconds 
         <div style={{
           fontSize: '0.95rem',
           fontWeight: 700,
-          color: '#e5c158',
+          color: 'var(--gold-color)',
           fontFamily: 'var(--font-heading, serif)',
           letterSpacing: '0.5px',
           display: 'flex',
@@ -164,7 +164,7 @@ export default function TarotWaitingAnimation({ isEn, retryInfo, elapsedSeconds 
         </div>
         <div style={{
           fontSize: '0.84rem',
-          color: '#dfdbf0',
+          color: 'var(--text-primary)',
           lineHeight: 1.5,
           fontStyle: 'italic',
           padding: '0 12px'

@@ -737,11 +737,11 @@ ${summaryObj.advice}
               </h2>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-                <span className="card-orientation-badge upright" style={{ background: 'rgba(229,193,88,0.12)', color: '#e5c158', border: '1px solid rgba(229,193,88,0.25)', fontSize: '12px' }}>
+                <span className="card-orientation-badge upright" style={{ background: 'rgba(229,193,88,0.12)', color: 'var(--gold-color)', border: '1px solid rgba(229,193,88,0.35)', fontSize: '12px' }}>
                   {t('result.perspective_prefix', 'Góc nhìn')}: {t('context.' + summaryObj.context, CONTEXTS.find(c => c.id === summaryObj.context)?.name)}
                 </span>
                 {analyzeSpreadPatterns(drawnCards, language)?.tone.map((tVal, idx) => (
-                  <span key={idx} className="card-orientation-badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px' }}>
+                  <span key={idx} className="card-orientation-badge" style={{ background: 'var(--bg-panel)', color: 'var(--text-muted)', border: '1px solid var(--border-gold)', fontSize: '12px' }}>
                     {tVal}
                   </span>
                 ))}
@@ -749,7 +749,7 @@ ${summaryObj.advice}
 
               {/* 1. Điều trải bài đang muốn nói */}
               <div className="summary-box" style={{ padding: '18px', borderRadius: '8px', marginBottom: '24px' }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#e5c158', fontSize: '14px', textTransform: 'uppercase', fontFamily: "var(--font-heading)", letterSpacing: '0.5px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: 'var(--gold-color)', fontSize: '14px', textTransform: 'uppercase', fontFamily: "var(--font-heading)", letterSpacing: '0.5px' }}>
                   {language === 'en' ? '🔮 What the spread wants to say' : '🔮 Điều trải bài đang muốn nói'}
                 </h4>
                 <p className="summary-box-text" style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>
@@ -758,7 +758,7 @@ ${summaryObj.advice}
               </div>
 
               {/* 2. Câu chuyện của từng lá theo vị trí */}
-              <h4 style={{ margin: '24px 0 16px 0', color: '#e5c158', fontSize: '14px', textTransform: 'uppercase', fontFamily: "var(--font-heading)", letterSpacing: '0.5px' }}>
+              <h4 style={{ margin: '24px 0 16px 0', color: 'var(--gold-color)', fontSize: '14px', textTransform: 'uppercase', fontFamily: "var(--font-heading)", letterSpacing: '0.5px' }}>
                 {language === 'en' ? '🎴 Story of each card by position' : '🎴 Câu chuyện của từng lá theo vị trí'}
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
@@ -792,8 +792,8 @@ ${summaryObj.advice}
               </div>
 
               {/* 3. Thông điệp chính */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
-                <h5 style={{ margin: '0 0 6px 0', color: '#e5c158', fontSize: '13px', fontFamily: "var(--font-heading)", textTransform: 'uppercase' }}>
+              <div className="summary-box" style={{ padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                <h5 style={{ margin: '0 0 6px 0', color: 'var(--gold-color)', fontSize: '13px', fontFamily: "var(--font-heading)", textTransform: 'uppercase' }}>
                   🌟 {language === 'en' ? 'Core Message' : 'Thông điệp chính'}
                 </h5>
                 <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
@@ -803,7 +803,7 @@ ${summaryObj.advice}
 
               {/* 4. Lời khuyên thực tế */}
               <div className="practical-advice-box" style={{ padding: '16px', borderRadius: '8px' }}>
-                <h5 style={{ margin: '0 0 6px 0', color: '#e5c158', fontSize: '13px', fontFamily: "var(--font-heading)", textTransform: 'uppercase' }}>
+                <h5 style={{ margin: '0 0 6px 0', color: 'var(--gold-color)', fontSize: '13px', fontFamily: "var(--font-heading)", textTransform: 'uppercase' }}>
                   ⚡ {language === 'en' ? 'Practical Advice' : 'Lời khuyên Thực tế'}
                 </h5>
                 <p className="practical-advice-text" style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', fontWeight: '500' }}>
@@ -860,10 +860,10 @@ ${summaryObj.advice}
                   type="button"
                   onClick={() => setIsManageModalOpen(true)}
                   style={{
-                    background: 'rgba(229, 193, 88, 0.1)',
-                    border: '1px solid rgba(229, 193, 88, 0.3)',
+                    background: 'rgba(229, 193, 88, 0.12)',
+                    border: '1px solid rgba(229, 193, 88, 0.35)',
                     borderRadius: 6,
-                    color: '#e5c158',
+                    color: 'var(--gold-color)',
                     padding: '4px 10px',
                     fontSize: '0.75rem',
                     fontWeight: 600,
@@ -881,8 +881,8 @@ ${summaryObj.advice}
             {!isAuthenticated ? (
               <div
                 style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px dashed rgba(229, 193, 88, 0.25)',
+                  background: 'var(--bg-panel)',
+                  border: '1px dashed rgba(229, 193, 88, 0.35)',
                   borderRadius: 10,
                   padding: '20px 16px',
                   textAlign: 'center',
@@ -897,7 +897,7 @@ ${summaryObj.advice}
                   style={{
                     margin: 0,
                     fontSize: '0.85rem',
-                    color: 'rgba(255, 255, 255, 0.65)',
+                    color: 'var(--text-muted)',
                     lineHeight: 1.4,
                   }}
                 >
@@ -969,10 +969,10 @@ ${summaryObj.advice}
                     style={{
                       width: '100%',
                       background: 'transparent',
-                      border: '1px dashed rgba(229, 193, 88, 0.3)',
+                      border: '1px dashed rgba(229, 193, 88, 0.35)',
                       borderRadius: 8,
                       padding: '8px',
-                      color: '#e5c158',
+                      color: 'var(--gold-color)',
                       fontSize: '0.8rem',
                       fontWeight: 600,
                       cursor: 'pointer',

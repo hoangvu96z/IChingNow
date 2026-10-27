@@ -217,7 +217,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
           width: '100%',
           maxWidth: 460,
           margin: '0 auto',
-          background: 'linear-gradient(145deg, rgba(44,24,16,0.06) 0%, rgba(184,134,11,0.08) 100%)',
+          background: 'var(--color-paper-dark)',
           borderRadius: '20px',
           border: '1.5px solid rgba(184,134,11,0.3)',
           boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.04), 0 8px 24px rgba(44,24,16,0.08)',
@@ -250,9 +250,9 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
                   alignItems: 'center',
                   gap: 4,
                   borderRadius: 16,
-                  background: soundOn ? 'rgba(26,107,74,0.1)' : 'rgba(44,24,16,0.06)',
+                  background: soundOn ? 'rgba(26,107,74,0.12)' : 'var(--color-paper)',
                   color: soundOn ? 'var(--color-jade)' : 'var(--color-ink-muted)',
-                  border: `1px solid ${soundOn ? 'rgba(26,107,74,0.3)' : 'rgba(44,24,16,0.15)'}`
+                  border: `1px solid ${soundOn ? 'rgba(26,107,74,0.35)' : 'rgba(184,134,11,0.25)'}`
                 }}
               >
                 <span>{soundOn ? '🔊' : '🔇'}</span>
@@ -270,9 +270,9 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
                   alignItems: 'center',
                   gap: 4,
                   borderRadius: 16,
-                  background: mindfulnessOn ? 'rgba(184,134,11,0.12)' : 'rgba(44,24,16,0.06)',
+                  background: mindfulnessOn ? 'rgba(184,134,11,0.14)' : 'var(--color-paper)',
                   color: mindfulnessOn ? 'var(--color-gold)' : 'var(--color-ink-muted)',
-                  border: `1px solid ${mindfulnessOn ? 'rgba(184,134,11,0.35)' : 'rgba(44,24,16,0.15)'}`,
+                  border: `1px solid ${mindfulnessOn ? 'rgba(184,134,11,0.35)' : 'rgba(184,134,11,0.25)'}`,
                   fontWeight: mindfulnessOn ? 700 : 500
                 }}
                 title={mindfulnessOn ? (isEn ? '10s Mindful countdown enabled' : 'Đang bật tịnh tâm 10s') : (isEn ? 'Mindfulness skipped' : 'Đã tắt tịnh tâm')}
@@ -347,10 +347,10 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
                 fontSize: '0.8rem',
                 color: 'var(--color-ink)',
                 fontWeight: 600,
-                background: 'rgba(255,255,255,0.7)',
+                background: 'var(--color-paper)',
                 padding: '4px 14px',
                 borderRadius: 14,
-                border: '1px solid rgba(184,134,11,0.2)'
+                border: '1px solid rgba(184,134,11,0.28)'
               }}>
                 {isEn ? 'Total Points:' : 'Tổng điểm:'} {manualCoins.reduce((s, c) => s + (c === 'ngua' ? 3 : 2), 0)} (
                 {t('lineType.' + coinsToLine(manualCoins).type, LINE_TYPE_LABELS[coinsToLine(manualCoins).type])})
@@ -363,7 +363,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
             <div className="animate-in" style={{
               marginTop: 10,
               padding: '8px 16px',
-              background: 'rgba(255,255,255,0.85)',
+              background: 'var(--color-paper)',
               borderRadius: 20,
               border: '1px solid rgba(192,57,43,0.3)',
               display: 'flex',

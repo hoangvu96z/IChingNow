@@ -153,7 +153,7 @@ export default function HistoryManagementModal({
           </div>
 
           {item._decryptionError && (
-            <div role="alert" style={{ padding: '10px 20px', color: '#9f2d22', background: 'rgba(192,57,43,0.08)', borderBottom: '1px solid rgba(192,57,43,0.2)', fontSize: '0.82rem' }}>
+            <div role="alert" style={{ padding: '10px 20px', color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', borderBottom: '1px solid rgba(192,57,43,0.25)', fontSize: '0.82rem' }}>
               Không giải mã được dữ liệu mã hóa cũ. Bản ghi chỉ đọc để bảo vệ nội dung gốc; bạn vẫn có thể xóa bản ghi.
             </div>
           )}
@@ -226,7 +226,7 @@ export default function HistoryManagementModal({
                             </div>
                             {fu.answer && (
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, paddingLeft: 22 }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1a6b4a', minWidth: 22 }}>AI</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-jade)', minWidth: 22 }}>AI</span>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
                                     {evidencePlainText(fu.answer).slice(0, 600)}{evidencePlainText(fu.answer).length > 600 ? '...' : ''}
@@ -275,26 +275,26 @@ export default function HistoryManagementModal({
           </div>
 
           {actionError && (
-            <div role="alert" style={{ padding: '10px 20px', color: '#9f2d22', background: 'rgba(192,57,43,0.08)', borderBottom: '1px solid rgba(192,57,43,0.2)', fontSize: '0.82rem' }}>
+            <div role="alert" style={{ padding: '10px 20px', color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', borderBottom: '1px solid rgba(192,57,43,0.25)', fontSize: '0.82rem' }}>
               {actionError}
             </div>
           )}
 
           <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(184, 134, 11, 0.15)', background: 'rgba(184, 134, 11, 0.04)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <input type="text" placeholder={t('history.search_placeholder', '🔍 Tìm kiếm theo tên quẻ hoặc câu hỏi...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(184, 134, 11, 0.3)', background: '#fff', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+            <input type="text" placeholder={t('history.search_placeholder', '🔍 Tìm kiếm theo tên quẻ hoặc câu hỏi...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(184, 134, 11, 0.3)', background: 'var(--color-paper)', color: 'var(--color-ink)', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-ink)', cursor: 'pointer', userSelect: 'none' }}>
                 <input type="checkbox" checked={isAllSelected} onChange={handleToggleSelectAll} disabled={filteredHistory.length === 0} style={{ width: 16, height: 16, cursor: 'pointer' }} />
                 {t('history.select_all', 'Chọn tất cả')} ({filteredHistory.length})
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
                 {selectedIds.size > 0 && (
-                  <button onClick={handleDeleteSelected} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #c0392b', background: 'rgba(192, 57, 43, 0.1)', color: '#c0392b', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={handleDeleteSelected} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--color-vermillion)', background: 'rgba(192, 57, 43, 0.1)', color: 'var(--color-vermillion)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
                     🗑️ {t('history.delete_selected', `Xóa (${selectedIds.size}) mục`)}
                   </button>
                 )}
                 {history.length > 0 && (
-                  <button onClick={handleClearAll} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(192, 57, 43, 0.4)', background: 'transparent', color: '#c0392b', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={handleClearAll} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(192, 57, 43, 0.4)', background: 'transparent', color: 'var(--color-vermillion)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
                     ⚠️ {t('history.clear_all', 'Xóa tất cả')}
                   </button>
                 )}
@@ -304,7 +304,7 @@ export default function HistoryManagementModal({
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filteredHistory.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-ink-muted, #7f8c8d)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-ink-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>
                 {searchTerm ? t('history.no_search_results', 'Không tìm thấy quẻ phù hợp') : t('history.empty', 'Chưa có quẻ nào trong lịch sử')}
               </div>
             ) : (
@@ -314,41 +314,41 @@ export default function HistoryManagementModal({
                 const hasAI = !!(item.data?.aiConversation?.initialInterpretation || (item.data?.aiConversation?.followUps?.length > 0));
                 const followUpCount = item.data?.aiConversation?.followUps?.length || 0;
                 return (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: isChecked ? '1px solid var(--color-gold, #b8860b)' : '1px solid rgba(184, 134, 11, 0.15)', background: isChecked ? 'rgba(184, 134, 11, 0.1)' : '#fff', transition: 'all 0.15s ease' }}>
+                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: isChecked ? '1px solid var(--color-gold, #b8860b)' : '1px solid rgba(184, 134, 11, 0.18)', background: isChecked ? 'rgba(184, 134, 11, 0.12)' : 'var(--color-paper-dark)', transition: 'all 0.15s ease' }}>
                     <input type="checkbox" checked={isChecked} onChange={() => handleToggleSelectOne(item.id)} style={{ width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }} />
 
                     <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => handleSelectItem(item)}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: isLucHao ? '#c0392b' : '#1a6b4a', background: isLucHao ? 'rgba(192, 57, 43, 0.1)' : 'rgba(26, 107, 74, 0.1)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' }}>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: isLucHao ? 'var(--color-vermillion)' : 'var(--color-jade)', background: isLucHao ? 'rgba(192, 57, 43, 0.12)' : 'rgba(26, 107, 74, 0.12)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' }}>
                             {isLucHao ? `🪙 ${t('history.luc_hao_badge', 'Lục Hào')}` : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
                           </span>
                           {hasAI && (
-                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#7c5cfc', background: 'rgba(124,92,252,0.1)', padding: '2px 6px', borderRadius: 4 }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-gold)', background: 'rgba(184,134,11,0.14)', padding: '2px 6px', borderRadius: 4 }}>
                               💬 AI {followUpCount > 0 ? `+${followUpCount}` : ''}
                             </span>
                           )}
                         </div>
-                        <span style={{ fontSize: '0.75rem', color: '#7f8c8d', fontFamily: 'monospace' }}>{formatTime(item.timestamp)}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace' }}>{formatTime(item.timestamp)}</span>
                       </div>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: "'Noto Serif', serif", color: 'var(--color-ink, #2c3e50)', marginBottom: 2 }}>{formatHistoryTitle(item)}</div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: "'Noto Serif', serif", color: 'var(--color-ink)', marginBottom: 2 }}>{formatHistoryTitle(item)}</div>
                         {item._decryptionError && (
-                          <div role="status" style={{ fontSize: '0.72rem', color: 'var(--color-vermillion, #c0392b)', fontWeight: 600, marginBottom: 4 }}>
+                          <div role="status" style={{ fontSize: '0.72rem', color: 'var(--color-vermillion)', fontWeight: 600, marginBottom: 4 }}>
                             ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
                           </div>
                         )}
                       {item.question && (
-                        <div style={{ fontSize: '0.8rem', color: '#7f8c8d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.question === '(Không có câu hỏi)' ? t('history.no_question', '(Không có câu hỏi)') : item.question}
                         </div>
                       )}
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-                      <button onClick={(e) => handlePreviewItem(item, e)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(124,92,252,0.3)', background: 'rgba(124,92,252,0.08)', color: '#7c5cfc', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                      <button onClick={(e) => handlePreviewItem(item, e)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(184,134,11,0.35)', background: 'rgba(184,134,11,0.1)', color: 'var(--color-gold)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
                         👁 Chi tiết
                       </button>
-                      <button onClick={() => handleSelectItem(item)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(184, 134, 11, 0.3)', background: 'rgba(184, 134, 11, 0.08)', color: 'var(--color-ink, #2c3e50)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                      <button onClick={() => handleSelectItem(item)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(184, 134, 11, 0.3)', background: 'rgba(184, 134, 11, 0.08)', color: 'var(--color-ink)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
                         {t('history.view_btn', 'Xem quẻ')} ➔
                       </button>
                     </div>

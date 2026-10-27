@@ -109,18 +109,18 @@ export default function HistoryManagementModal({
     >
       <div
         style={{
-          background: 'linear-gradient(145deg, #130a2a 0%, #090417 100%)',
-          border: '1px solid rgba(229, 193, 88, 0.3)',
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--border-gold)',
           borderRadius: 16,
           width: '100%',
           maxWidth: 680,
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
           overflow: 'hidden',
           fontFamily: "'Inter', sans-serif",
-          color: '#e2e8f0',
+          color: 'var(--text-primary)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -128,7 +128,7 @@ export default function HistoryManagementModal({
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid rgba(229, 193, 88, 0.2)',
+            borderBottom: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -149,7 +149,7 @@ export default function HistoryManagementModal({
               >
                 {t('history.manage_title', 'Quản lý Lịch sử Trải Bài')}
               </h3>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
+              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)' }}>
                 {t('history.total_count', `Tổng số: ${history.length} lần trải bài`)}
               </span>
             </div>
@@ -158,8 +158,8 @@ export default function HistoryManagementModal({
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(229,193,88,0.2)',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(229,193,88,0.25)',
               borderRadius: '50%',
               width: 32,
               height: 32,
@@ -179,8 +179,8 @@ export default function HistoryManagementModal({
         <div
           style={{
             padding: '12px 20px',
-            borderBottom: '1px solid rgba(229, 193, 88, 0.15)',
-            background: 'rgba(229, 193, 88, 0.04)',
+            borderBottom: '1px solid var(--border-gold)',
+            background: 'rgba(229, 193, 88, 0.05)',
             display: 'flex',
             flexDirection: 'column',
             gap: 12,
@@ -199,9 +199,9 @@ export default function HistoryManagementModal({
               width: '100%',
               padding: '9px 12px',
               borderRadius: 8,
-              border: '1px solid rgba(229, 193, 88, 0.25)',
-              background: 'rgba(255, 255, 255, 0.06)',
-              color: '#ffffff',
+              border: '1px solid var(--border-gold)',
+              background: 'var(--bg-color)',
+              color: 'var(--text-primary)',
               fontSize: '0.875rem',
               outline: 'none',
               boxSizing: 'border-box',
@@ -225,7 +225,7 @@ export default function HistoryManagementModal({
                 gap: 6,
                 fontSize: '0.85rem',
                 fontWeight: 600,
-                color: '#e5c158',
+                color: 'var(--gold-color)',
                 cursor: 'pointer',
                 userSelect: 'none',
               }}
@@ -247,9 +247,9 @@ export default function HistoryManagementModal({
                   style={{
                     padding: '6px 12px',
                     borderRadius: 6,
-                    border: '1px solid #ff6b6b',
-                    background: 'rgba(255, 107, 107, 0.15)',
-                    color: '#ff8e8e',
+                    border: '1px solid var(--accent-red)',
+                    background: 'rgba(235, 94, 85, 0.12)',
+                    color: 'var(--accent-red)',
                     fontSize: '0.8rem',
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -266,9 +266,9 @@ export default function HistoryManagementModal({
                   style={{
                     padding: '6px 12px',
                     borderRadius: 6,
-                    border: '1px solid rgba(255, 107, 107, 0.4)',
+                    border: '1px solid rgba(235, 94, 85, 0.4)',
                     background: 'transparent',
-                    color: '#ff8e8e',
+                    color: 'var(--accent-red)',
                     fontSize: '0.8rem',
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -297,7 +297,7 @@ export default function HistoryManagementModal({
               style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: 'rgba(255,255,255,0.5)',
+                color: 'var(--text-muted)',
                 fontStyle: 'italic',
                 fontSize: '0.9rem',
               }}
@@ -321,11 +321,11 @@ export default function HistoryManagementModal({
                     padding: '12px 14px',
                     borderRadius: 10,
                     border: isChecked
-                      ? '1px solid #e5c158'
-                      : '1px solid rgba(255, 255, 255, 0.08)',
+                      ? '1px solid var(--gold-color)'
+                      : '1px solid var(--border-gold)',
                     background: isChecked
                       ? 'rgba(229, 193, 88, 0.12)'
-                      : 'rgba(255, 255, 255, 0.03)',
+                      : 'var(--bg-color)',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -355,7 +355,7 @@ export default function HistoryManagementModal({
                         style={{
                           fontSize: '0.85rem',
                           fontWeight: 700,
-                          color: '#e5c158',
+                          color: 'var(--gold-color)',
                           fontFamily: "'Cinzel', serif",
                         }}
                       >
@@ -364,7 +364,7 @@ export default function HistoryManagementModal({
                       <span
                         style={{
                           fontSize: '0.75rem',
-                          color: 'rgba(255,255,255,0.5)',
+                          color: 'var(--text-muted)',
                         }}
                       >
                         {item.timestamp}
@@ -376,7 +376,7 @@ export default function HistoryManagementModal({
                         style={{
                           margin: '0 0 6px 0',
                           fontSize: '0.8rem',
-                          color: 'rgba(255,255,255,0.75)',
+                          color: 'var(--text-primary)',
                           fontStyle: 'italic',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -388,7 +388,7 @@ export default function HistoryManagementModal({
                     )}
 
                     {item._decryptionError && (
-                      <div role="status" style={{ margin: '0 0 6px', color: '#ff8e8e', fontSize: '0.72rem', fontWeight: 600 }}>
+                      <div role="status" style={{ margin: '0 0 6px', color: 'var(--accent-red)', fontSize: '0.72rem', fontWeight: 600 }}>
                         ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
                       </div>
                     )}
@@ -414,16 +414,16 @@ export default function HistoryManagementModal({
                                 borderRadius: 4,
                                 background:
                                   cHist.orientation === 'reversed'
-                                    ? 'rgba(255, 107, 107, 0.15)'
+                                    ? 'rgba(235, 94, 85, 0.12)'
                                     : 'rgba(229, 193, 88, 0.12)',
                                 border:
                                   cHist.orientation === 'reversed'
-                                    ? '1px solid rgba(255, 107, 107, 0.3)'
-                                    : '1px solid rgba(229, 193, 88, 0.25)',
+                                    ? '1px solid rgba(235, 94, 85, 0.3)'
+                                    : '1px solid var(--border-gold)',
                                 color:
                                   cHist.orientation === 'reversed'
-                                    ? '#ff8e8e'
-                                    : '#e5c158',
+                                    ? 'var(--accent-red)'
+                                    : 'var(--gold-color)',
                               }}
                             >
                               {cardNameTrans}{' '}

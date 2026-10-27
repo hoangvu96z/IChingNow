@@ -6,6 +6,7 @@
   color-scheme: light;
   --color-paper:      #faf3e0;
   --color-paper-dark: #f0e6c8;
+  --color-paper-card: #fdfbf7;
   --color-ink:        #2c1810;
   --color-ink-muted:  #6b4c3b;
   --color-vermillion: #c0392b;
@@ -33,6 +34,7 @@
   color-scheme: dark;
   --color-paper:      #18120e;
   --color-paper-dark: #241b15;
+  --color-paper-card: #241b15;
   --color-ink:        #f5ece0;
   --color-ink-muted:  #c5b19b;
   --color-vermillion: #e36655;

@@ -93,9 +93,9 @@ export default function TuViHistoryModal({
       <div
         className="tv-history-modal"
         style={{
-          background: 'linear-gradient(145deg, #12132b 0%, #1a1535 50%, #0d0f22 100%)',
-          border: '1px solid rgba(155, 89, 182, 0.35)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 25px rgba(155, 89, 182, 0.15)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.45)',
           borderRadius: '16px',
           maxWidth: '720px',
           width: '100%',
@@ -103,7 +103,7 @@ export default function TuViHistoryModal({
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          color: '#e2e8f0',
+          color: 'var(--text-primary)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -111,20 +111,20 @@ export default function TuViHistoryModal({
         <div
           style={{
             padding: '18px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            borderBottom: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'rgba(0, 0, 0, 0.2)',
+            background: 'var(--bg-secondary)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '1.4rem' }}>📜</span>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#ffd700', fontWeight: 600 }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--accent-gold)', fontWeight: 700 }}>
                 Lịch sử lá số Tử Vi
               </h3>
-              <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                 {history.length} lá số đã lưu trữ trong tài khoản của bạn
               </p>
             </div>
@@ -137,13 +137,13 @@ export default function TuViHistoryModal({
                 disabled={isDeletingAll || loading}
                 title="Xóa tất cả lá số đã lưu"
                 style={{
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  background: 'var(--badge-triet-bg)',
+                  border: '1px solid var(--badge-triet-border)',
                   borderRadius: '8px',
-                  color: '#f87171',
+                  color: 'var(--badge-triet-color)',
                   padding: '6px 12px',
                   fontSize: '0.8rem',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   cursor: (isDeletingAll || loading) ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -162,10 +162,10 @@ export default function TuViHistoryModal({
                 disabled={loading || isDeletingAll}
                 title="Làm mới lịch sử"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: '8px',
-                  color: '#94a3b8',
+                  color: 'var(--text-secondary)',
                   padding: '6px 12px',
                   fontSize: '0.8rem',
                   cursor: (loading || isDeletingAll) ? 'not-allowed' : 'pointer',
@@ -180,10 +180,10 @@ export default function TuViHistoryModal({
             <button
               onClick={onClose}
               style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: 'none',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
                 borderRadius: '8px',
-                color: '#94a3b8',
+                color: 'var(--text-secondary)',
                 width: '32px',
                 height: '32px',
                 display: 'flex',
@@ -199,7 +199,7 @@ export default function TuViHistoryModal({
         </div>
 
         {/* Search */}
-        <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
           <input
             type="text"
             placeholder="Tìm kiếm theo tên, Can Chi, Cục..."
@@ -208,11 +208,11 @@ export default function TuViHistoryModal({
             style={{
               width: '100%',
               boxSizing: 'border-box',
-              background: 'rgba(0, 0, 0, 0.3)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: '10px',
               padding: '10px 14px',
-              color: '#fff',
+              color: 'var(--text-primary)',
               fontSize: '0.9rem',
               outline: 'none',
             }}
@@ -231,7 +231,7 @@ export default function TuViHistoryModal({
           }}
         >
           {loading && history.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)' }}>
               <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>✦</div>
               Đang tải lịch sử lá số...
             </div>
@@ -240,14 +240,14 @@ export default function TuViHistoryModal({
               style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-secondary)',
                 borderRadius: '12px',
-                border: '1px dashed rgba(255, 255, 255, 0.1)',
-                color: '#94a3b8',
+                border: '1px dashed var(--border-subtle)',
+                color: 'var(--text-secondary)',
               }}
             >
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🔮</div>
-              <div style={{ fontSize: '1rem', color: '#cbd5e1', fontWeight: 500, marginBottom: '6px' }}>
+              <div style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600, marginBottom: '6px' }}>
                 {searchTerm ? 'Không tìm thấy lá số phù hợp' : 'Chưa có lá số nào được lưu'}
               </div>
               <p style={{ margin: 0, fontSize: '0.82rem', maxWidth: '340px', marginInline: 'auto' }}>
@@ -307,8 +307,8 @@ export default function TuViHistoryModal({
                   key={item.id}
                   onClick={() => onSelect(item)}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: '12px',
                     padding: '14px 18px',
                     display: 'flex',
@@ -324,22 +324,23 @@ export default function TuViHistoryModal({
                     e.currentTarget.style.transform = 'translateY(-1px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.background = 'var(--bg-secondary)';
+                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <strong style={{ fontSize: '1rem', color: '#ffd700' }}>{name}</strong>
+                      <strong style={{ fontSize: '1rem', color: 'var(--accent-gold)' }}>{name}</strong>
                       {gender && (
                         <span
                           style={{
                             fontSize: '0.72rem',
                             padding: '2px 6px',
                             borderRadius: '4px',
-                            background: input?.gender === 'nam' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(244, 114, 182, 0.15)',
-                            color: input?.gender === 'nam' ? '#38bdf8' : '#f472b6',
+                            background: isMale ? 'rgba(56, 189, 248, 0.15)' : 'rgba(244, 114, 182, 0.15)',
+                            color: isMale ? 'var(--element-thuy)' : 'var(--element-hoa)',
+                            fontWeight: 600,
                           }}
                         >
                           {gender}
@@ -352,23 +353,24 @@ export default function TuViHistoryModal({
                             padding: '2px 8px',
                             borderRadius: '12px',
                             background: 'rgba(109, 213, 176, 0.18)',
-                            color: '#6dd5b0',
+                            color: 'var(--element-moc)',
                             border: '1px solid rgba(109, 213, 176, 0.4)',
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '3px',
+                            fontWeight: 600,
                           }}
                         >
                           ✦ Có luận giải AI
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                       {birthText && <span>📅 {birthText}</span>}
                       {res?.canChiNam && <span>✨ {res.canChiNam}</span>}
                       {res?.cucName && <span>🔮 {res.cucName}</span>}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                       Lưu lúc: {formatDate(item.createdAt)}
                     </div>
                   </div>
@@ -398,9 +400,9 @@ export default function TuViHistoryModal({
                       disabled={deletingId === item.id}
                       title="Xóa lá số"
                       style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        color: '#ef4444',
-                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        background: 'var(--badge-triet-bg)',
+                        color: 'var(--badge-triet-color)',
+                        border: '1px solid var(--badge-triet-border)',
                         borderRadius: '8px',
                         padding: '6px 10px',
                         fontSize: '0.8rem',
@@ -420,11 +422,11 @@ export default function TuViHistoryModal({
         <div
           style={{
             padding: '12px 24px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            borderTop: '1px solid var(--border-subtle)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: 'rgba(0, 0, 0, 0.2)',
+            background: 'var(--bg-secondary)',
           }}
         >
           <div>
@@ -435,13 +437,13 @@ export default function TuViHistoryModal({
                 disabled={isDeletingAll || loading}
                 title="Xóa toàn bộ lịch sử lá số"
                 style={{
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  color: '#f87171',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  background: 'var(--badge-triet-bg)',
+                  color: 'var(--badge-triet-color)',
+                  border: '1px solid var(--badge-triet-border)',
                   borderRadius: '8px',
                   padding: '7px 14px',
                   fontSize: '0.85rem',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   cursor: (isDeletingAll || loading) ? 'not-allowed' : 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -460,10 +462,10 @@ export default function TuViHistoryModal({
             type="button"
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: '8px',
-              color: '#e2e8f0',
+              color: 'var(--text-primary)',
               padding: '7px 18px',
               fontSize: '0.85rem',
               cursor: 'pointer',

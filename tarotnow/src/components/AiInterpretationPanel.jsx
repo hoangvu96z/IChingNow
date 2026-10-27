@@ -480,8 +480,8 @@ export default function AiInterpretationPanel({
           {/* Quota badge */}
           <div className="ai-quota-badge" style={{
             fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: '20px',
-            background: 'rgba(255,255,255,0.06)', color: remaining === 0 ? '#ef4444' : '#94a3b8',
-            border: `1px solid ${remaining === 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+            background: 'var(--bg-panel)', color: remaining === 0 ? 'var(--accent-red)' : 'var(--text-muted)',
+            border: `1px solid ${remaining === 0 ? 'rgba(239,68,68,0.35)' : 'var(--border-gold)'}`,
             whiteSpace: 'nowrap',
           }}>
             ⚡ {remaining} lượt còn lại
@@ -492,7 +492,7 @@ export default function AiInterpretationPanel({
             style={{
               background: 'none', color: 'var(--text-muted)',
               cursor: 'pointer', fontSize: '0.85rem', padding: '4px 8px',
-              borderRadius: '4px', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '4px', border: '1px solid var(--border-gold)',
               display: 'flex', alignItems: 'center', gap: '4px',
               whiteSpace: 'nowrap',
             }}
@@ -555,7 +555,7 @@ export default function AiInterpretationPanel({
       {/* Final Interpretation Result (Rendered All At Once) */}
       {!loading && interpretation && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(229,193,88,0.18)', borderRadius: '10px', padding: '22px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+          <div className="summary-box" style={{ borderRadius: '10px', padding: '22px' }}>
             <TarotMarkdown>{displayInterpretation}</TarotMarkdown>
           </div>
 

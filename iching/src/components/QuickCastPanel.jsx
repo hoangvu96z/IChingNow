@@ -184,7 +184,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
       <div style={{
         width: '100%',
         maxWidth: 460,
-        background: 'linear-gradient(145deg, rgba(44,24,16,0.06) 0%, rgba(184,134,11,0.08) 100%)',
+        background: 'var(--color-paper-dark)',
         borderRadius: '20px',
         border: '1.5px solid rgba(184,134,11,0.3)',
         boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.04), 0 8px 24px rgba(44,24,16,0.08)',
@@ -218,9 +218,9 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
                 alignItems: 'center',
                 gap: 4,
                 borderRadius: 20,
-                background: soundOn ? 'rgba(26,107,74,0.1)' : 'rgba(44,24,16,0.06)',
+                background: soundOn ? 'rgba(26,107,74,0.12)' : 'var(--color-paper)',
                 color: soundOn ? 'var(--color-jade)' : 'var(--color-ink-muted)',
-                border: `1px solid ${soundOn ? 'rgba(26,107,74,0.3)' : 'rgba(44,24,16,0.15)'}`
+                border: `1px solid ${soundOn ? 'rgba(26,107,74,0.35)' : 'rgba(184,134,11,0.25)'}`
               }}
               title={soundOn ? (isEn ? 'Sound on' : 'Đang bật âm thanh') : (isEn ? 'Muted' : 'Đã tắt âm thanh')}
             >
@@ -239,9 +239,9 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
                 alignItems: 'center',
                 gap: 5,
                 borderRadius: 20,
-                background: mindfulnessOn ? 'rgba(184,134,11,0.12)' : 'rgba(44,24,16,0.06)',
+                background: mindfulnessOn ? 'rgba(184,134,11,0.14)' : 'var(--color-paper)',
                 color: mindfulnessOn ? 'var(--color-gold)' : 'var(--color-ink-muted)',
-                border: `1px solid ${mindfulnessOn ? 'rgba(184,134,11,0.35)' : 'rgba(44,24,16,0.15)'}`,
+                border: `1px solid ${mindfulnessOn ? 'rgba(184,134,11,0.35)' : 'rgba(184,134,11,0.25)'}`,
                 fontWeight: mindfulnessOn ? 700 : 500
               }}
               title={mindfulnessOn ? (isEn ? '10s Mindful countdown enabled' : 'Đang bật tịnh tâm 10s') : (isEn ? 'Mindfulness skipped' : 'Đã tắt tịnh tâm')}
@@ -254,7 +254,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
           {/* Cast Mode Selector */}
           <div style={{
             display: 'flex',
-            background: 'rgba(44,24,16,0.06)',
+            background: 'var(--color-paper)',
             borderRadius: 20,
             padding: 2,
             border: '1px solid rgba(184,134,11,0.2)'
@@ -356,8 +356,8 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
             marginTop: 10,
             padding: '6px 14px',
             borderRadius: 20,
-            background: 'rgba(255,255,255,0.7)',
-            border: '1px solid rgba(184,134,11,0.25)',
+            background: 'var(--color-paper)',
+            border: '1px solid rgba(184,134,11,0.3)',
             fontSize: '0.78rem',
             color: 'var(--color-ink)',
             display: 'flex',

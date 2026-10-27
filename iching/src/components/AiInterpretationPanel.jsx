@@ -405,7 +405,7 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
             </label>
             <select
               className="form-input"
-              style={{ padding: '6px 10px', fontSize: '0.8125rem', height: 34, background: '#fff', border: '1px solid var(--color-ink-muted)' }}
+              style={{ padding: '6px 10px', fontSize: '0.8125rem', height: 34, border: '1px solid var(--color-ink-muted)' }}
               value={formSettings.model}
               onChange={e => setFormSettings({ ...formSettings, model: e.target.value })}
             >

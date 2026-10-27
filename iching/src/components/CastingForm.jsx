@@ -190,7 +190,7 @@ function ToggleSwitch({ checked, onChange }) {
         height: 22,
         borderRadius: 11,
         border: 'none',
-        background: checked ? 'var(--color-vermillion)' : 'rgba(44,24,16,0.15)',
+        background: checked ? 'var(--color-vermillion)' : 'rgba(184,134,11,0.28)',
         position: 'relative',
         cursor: 'pointer',
         transition: 'background 0.2s',

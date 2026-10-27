@@ -277,7 +277,7 @@ export default function App() {
           <a href="#hop-hon" aria-current={page === 'hop-hon' ? 'page' : undefined}>♡ Hợp hôn</a>
         </nav>
         {historyActionError && (
-          <div role="alert" style={{ margin: '0 0 16px', padding: '10px 14px', borderRadius: 10, color: '#fecaca', background: 'rgba(127,29,29,0.28)', border: '1px solid rgba(248,113,113,0.45)' }}>
+          <div role="alert" style={{ margin: '0 0 16px', padding: '10px 14px', borderRadius: 10, color: 'var(--badge-triet-color)', background: 'var(--badge-triet-bg)', border: '1px solid var(--badge-triet-border)' }}>
             ⚠ {historyActionError}
           </div>
         )}

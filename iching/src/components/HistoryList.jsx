@@ -199,20 +199,20 @@ export default function HistoryList({
                     ? '1px solid var(--color-gold)'
                     : '1px solid rgba(184, 134, 11, 0.15)',
                   background: active
-                    ? 'rgba(184, 134, 11, 0.08)'
-                    : 'rgba(255, 255, 255, 0.4)',
+                    ? 'rgba(184, 134, 11, 0.14)'
+                    : 'var(--color-paper-dark)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
-                    e.currentTarget.style.background = 'rgba(184, 134, 11, 0.04)';
+                    e.currentTarget.style.background = 'rgba(184, 134, 11, 0.08)';
                     e.currentTarget.style.borderColor = 'rgba(184, 134, 11, 0.35)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)';
+                    e.currentTarget.style.background = 'var(--color-paper-dark)';
                     e.currentTarget.style.borderColor = 'rgba(184, 134, 11, 0.15)';
                   }
                 }}

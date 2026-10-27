@@ -21,11 +21,11 @@ export default function TarotFollowUpSection({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(229,193,88,0.15)' }} />
-              <span style={{ fontSize: '0.75rem', color: 'rgba(229,193,88,0.7)', fontWeight: 600, letterSpacing: '0.06em' }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--border-gold)' }} />
+              <span style={{ fontSize: '0.75rem', color: 'var(--gold-color)', fontWeight: 700, letterSpacing: '0.06em' }}>
                 💬 HỎI THÊM AI ({followUps.length}/5)
               </span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(229,193,88,0.15)' }} />
+              <div style={{ flex: 1, height: 1, background: 'var(--border-gold)' }} />
             </div>
 
             {/* Previous Q&A list */}
@@ -38,7 +38,7 @@ export default function TarotFollowUpSection({
                       <div className="followup-question-bubble" style={{ maxWidth: '80%', borderRadius: '12px 12px 4px 12px', padding: '8px 12px' }}>
                         <div className="followup-question-text" style={{ fontSize: '0.82rem', fontWeight: 600 }}>{fu.question}</div>
                         {fu.questionTimestamp && (
-                          <div style={{ fontSize: '0.68rem', color: 'rgba(229,193,88,0.5)', marginTop: 3, textAlign: 'right', fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 3, textAlign: 'right', fontFamily: 'monospace' }}>
                             🕐 {new Date(fu.questionTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                           </div>
                         )}
@@ -49,7 +49,7 @@ export default function TarotFollowUpSection({
                       <div className="followup-answer-bubble" style={{ maxWidth: '85%', borderRadius: '4px 12px 12px 12px', padding: '10px 14px' }}>
                         <TarotMarkdown compact>{fu.answer}</TarotMarkdown>
                         {fu.answerTimestamp && (
-                          <div style={{ fontSize: '0.68rem', color: 'rgba(229,193,88,0.4)', marginTop: 4, fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 4, fontFamily: 'monospace' }}>
                             🕐 {new Date(fu.answerTimestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                           </div>
                         )}
@@ -74,7 +74,7 @@ export default function TarotFollowUpSection({
               }}>
                 <div className="spinner" style={{ width: 16, height: 16, border: '2px solid rgba(229,193,88,0.2)', borderTop: '2px solid var(--gold-color, #e5c158)', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#e5c158' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--gold-color)' }}>
                     {isEn ? 'AI is focusing on your Tarot question...' : 'AI đang thấu cảm và chuẩn bị câu trả lời hoàn chỉnh...'}
                   </span>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #a69fbf)' }}>
@@ -86,7 +86,7 @@ export default function TarotFollowUpSection({
 
             {/* Follow-up error */}
             {followUpError && (
-              <div style={{ padding: '8px 12px', background: 'rgba(235,94,85,0.08)', border: '1px solid rgba(235,94,85,0.2)', borderRadius: '8px', color: '#eb5e55', fontSize: '12px' }}>
+              <div style={{ padding: '8px 12px', background: 'rgba(235,94,85,0.08)', border: '1px solid rgba(235,94,85,0.2)', borderRadius: '8px', color: 'var(--accent-red)', fontSize: '12px' }}>
                 ⚠️ {followUpError}
               </div>
             )}
@@ -97,7 +97,7 @@ export default function TarotFollowUpSection({
                 {/* 3 AI Suggested Questions Pill Buttons */}
                 {!askingFollowUp && uniqueSuggestedQuestions.length > 0 && (
                   <div>
-                    <div style={{ fontSize: '0.78rem', color: '#c4b5fd', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--accent-purple)', fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>💡</span> {isEn ? 'AI Suggested Follow-up Questions (Click to ask immediately):' : 'AI gợi ý 3 câu hỏi tiếp theo (Bấm vào để hỏi ngay):'}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -120,7 +120,7 @@ export default function TarotFollowUpSection({
                             fontFamily: 'inherit',
                           }}
                         >
-                          <span style={{ fontSize: '0.9rem', color: '#a78bfa' }}>🔮</span>
+                          <span style={{ fontSize: '0.9rem', color: 'var(--accent-purple)' }}>🔮</span>
                           <span style={{ flex: 1 }}>{qText}</span>
                         </button>
                       ))}
@@ -138,14 +138,14 @@ export default function TarotFollowUpSection({
                     className="custom-textarea followup-textarea"
                     style={{
                       width: '100%', padding: '8px 12px', borderRadius: 8,
-                      border: `1px solid ${charCount > 2048 ? 'rgba(235,94,85,0.6)' : 'rgba(229,193,88,0.2)'}`,
+                      border: `1px solid ${charCount > 2048 ? 'rgba(235,94,85,0.6)' : 'var(--border-gold)'}`,
                       fontSize: '0.85rem',
                       resize: 'vertical', outline: 'none',
                       boxSizing: 'border-box', minHeight: 'unset',
                     }}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginTop: 3, fontSize: '0.7rem' }}>
-                    <span style={{ color: charCount > 2048 ? '#eb5e55' : 'rgba(229,193,88,0.5)', fontWeight: charCount > 2048 ? 700 : 400 }}>
+                    <span style={{ color: charCount > 2048 ? 'var(--accent-red)' : 'var(--text-muted)', fontWeight: charCount > 2048 ? 700 : 500 }}>
                       {charCount > 2048 ? `⚠️ Đã vượt quá 2048 ký tự (${charCount})` : `${charCount} / 2048 ký tự`}
                     </span>
                   </div>
@@ -167,7 +167,7 @@ export default function TarotFollowUpSection({
                 </div>
               </form>
             ) : (
-              <div style={{ textAlign: 'center', padding: '10px 14px', background: 'rgba(229,193,88,0.06)', borderRadius: 8, fontSize: '0.8rem', color: 'rgba(229,193,88,0.6)', border: '1px solid rgba(229,193,88,0.15)' }}>
+              <div style={{ textAlign: 'center', padding: '10px 14px', background: 'rgba(229,193,88,0.08)', borderRadius: 8, fontSize: '0.8rem', color: 'var(--gold-color)', fontWeight: 600, border: '1px solid var(--border-gold)' }}>
                 ℹ️ Bạn đã sử dụng tối đa 5 câu hỏi thêm cho lượt luận giải này.
               </div>
             )}

@@ -69,7 +69,7 @@ function HexLines({ binary, highlight, moving = [], highlightLabel }) {
               </div>
             )}
             <span style={{ width: 80, fontSize: '0.7rem', fontWeight: 700 }}>
-              {mv && <span title="Hào động" style={{ color: '#d4a017' }}>● động</span>}
+              {mv && <span title="Hào động" style={{ color: 'var(--color-gold)' }}>● động</span>}
               {hl && highlightLabel && <span style={{ display: 'block', color: 'var(--color-jade)', fontWeight: 800 }}>{highlightLabel}</span>}
             </span>
           </div>
@@ -84,7 +84,7 @@ function ModeBadge({ type }) {
   const mode = MODES[type];
   if (!mode) return null;
   const colors = {
-    1: { bg: 'rgba(184,134,11,0.15)', color: '#b8860b', border: 'rgba(184,134,11,0.3)' },
+    1: { bg: 'rgba(184,134,11,0.15)', color: 'var(--color-gold)', border: 'rgba(184,134,11,0.3)' },
     2: { bg: 'rgba(192,57,43,0.1)', color: 'var(--color-vermillion)', border: 'rgba(192,57,43,0.3)' },
   };
   const c = colors[mode.stage] || colors[1];
@@ -421,7 +421,7 @@ export default function GameShell({ onExit }) {
                       <span style={{
                         fontSize: '0.6rem', fontWeight: 800, padding: '1px 6px', borderRadius: 6,
                         background: i === 0 ? 'rgba(26,107,74,0.15)' : i === 1 ? 'rgba(212,160,23,0.15)' : 'rgba(192,57,43,0.15)',
-                        color: i === 0 ? 'var(--color-jade)' : i === 1 ? '#b8860b' : 'var(--color-vermillion)',
+                        color: i === 0 ? 'var(--color-jade)' : i === 1 ? 'var(--color-gold)' : 'var(--color-vermillion)',
                       }}>
                         Bước {i + 1}
                       </span>

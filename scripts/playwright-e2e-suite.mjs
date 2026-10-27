@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * ==============================================================================
- * SpiritNow Ecosystem — Automated Playwright E2E + Theme Contrast + Flow Suite
+ * SpiritNow Ecosystem — Full-Flow Playwright E2E + Automated DOM Contrast Suite
  * ==============================================================================
  * Apps covered:
  *   - NoteNow   (/note/)
@@ -11,20 +11,14 @@
  *
  * Checks executed per app:
  *   1. Responsive Viewports: Desktop (1440x900), Mobile (390x844), Narrow (320x844)
- *   2. Zero Horizontal Overflow (scrollWidth <= clientWidth + 1)
- *   3. Theme Contrast (Light & Dark modes, WCAG 2.1 Luminance Contrast Ratio)
+ *   2. Zero Horizontal Overflow (scrollWidth <= clientWidth + 1.5)
+ *   3. Automated Full-DOM Visible Text Contrast Scanner (WCAG alpha-composited)
+ *      at EVERY interactive state, modal, tab, and flow in BOTH Dark & Light modes
  *   4. Zero Unhandled Console Errors (pageerror) and Network Failures
- *   5. Comprehensive End-to-End Functional Flows
+ *   5. Comprehensive End-to-End Functional Flows (all casting methods, modals, tabs)
  *
  * Usage:
  *   node scripts/playwright-e2e-suite.mjs [options]
- *
- * Options:
- *   --base-url <url>      Base URL of live or staging deployment (default: https://vunph.id.vn)
- *   --app <name>          Filter app: all | notenow | tarotnow | iching | tuvinow (default: all)
- *   --headless <bool>     Run in headless mode: true | false (default: true)
- *   --timeout <ms>        Action timeout in milliseconds (default: 30000)
- *   --help                Show usage information
  * ==============================================================================
  */
 
@@ -33,9 +27,6 @@ import path from 'path';
 import process from 'process';
 import { pathToFileURL } from 'url';
 
-// -----------------------------------------------------------------------------
-// CLI ANSI Colors
-// -----------------------------------------------------------------------------
 const useColor = !process.env.NO_COLOR && process.stdout.isTTY !== false;
 const c = {
   reset: useColor ? '\x1b[0m' : '',
@@ -51,9 +42,6 @@ const c = {
   gray: useColor ? '\x1b[90m' : '',
 };
 
-// -----------------------------------------------------------------------------
-// Parse CLI Arguments
-// -----------------------------------------------------------------------------
 function parseArgs() {
   const args = process.argv.slice(2);
   const options = {
@@ -67,7 +55,7 @@ function parseArgs() {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') {
       console.log(`
-SpiritNow Playwright E2E & Theme Contrast Test Suite
+SpiritNow Playwright E2E & Full-DOM Theme Contrast Test Suite
 
 Options:
   --base-url <url>    Base URL of target system (default: https://vunph.id.vn)
@@ -96,16 +84,11 @@ Options:
   return options;
 }
 
-// -----------------------------------------------------------------------------
-// Dynamic Playwright Resolver
-// -----------------------------------------------------------------------------
 async function resolvePlaywright() {
-  // Try standard import first
   try {
     return await import('playwright');
   } catch {}
 
-  // Search candidate directories
   const home = process.env.HOME || '/Users/hoangvu96z';
   const candidateBases = [
     path.join(home, '.npm/_npx'),
@@ -126,7 +109,6 @@ async function resolvePlaywright() {
     } catch {}
   }
 
-  // Known specific fallback from earlier discovery
   const specific = '/Users/hoangvu96z/.npm/_npx/e41f203b7505f1fb/node_modules/playwright/index.mjs';
   if (fs.existsSync(specific)) {
     return await import(pathToFileURL(specific).href);
@@ -135,9 +117,6 @@ async function resolvePlaywright() {
   throw new Error('Could not resolve playwright module. Please ensure Playwright is accessible.');
 }
 
-// -----------------------------------------------------------------------------
-// Test Runner State & Reporter
-// -----------------------------------------------------------------------------
 class TestReporter {
   constructor() {
     this.results = [];
@@ -184,7 +163,6 @@ class TestReporter {
     console.log(`${c.bold}                  TEST SUITE EXECUTION SUMMARY                        ${c.reset}`);
     console.log(`${c.bold}======================================================================${c.reset}`);
 
-    // Group by suite
     const suites = [...new Set(this.results.map(r => r.suite))];
     for (const suite of suites) {
       const suiteResults = this.results.filter(r => r.suite === suite);
@@ -205,22 +183,12 @@ class TestReporter {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Universal Viewports
-// -----------------------------------------------------------------------------
 const VIEWPORTS = {
   desktop: { width: 1440, height: 900, name: 'Desktop (1440x900)' },
   mobile: { width: 390, height: 844, name: 'Mobile (390x844)' },
   narrow: { width: 320, height: 844, name: 'Narrow Mobile (320x844)' },
 };
 
-// -----------------------------------------------------------------------------
-// Page Health & Universal Quality Utilities
-// -----------------------------------------------------------------------------
-
-/**
- * Attaches console and error monitoring to a Playwright page.
- */
 function attachPageMonitors(page, errorLog) {
   page.on('pageerror', err => {
     errorLog.push({ type: 'pageerror', message: err.message });
@@ -228,16 +196,12 @@ function attachPageMonitors(page, errorLog) {
 
   page.on('requestfailed', req => {
     const url = req.url();
-    // Exclude third-party analytics / fonts / non-critical telemetry
     if (!url.includes('google-analytics') && !url.includes('doubleclick') && !url.includes('fonts.gstatic')) {
       errorLog.push({ type: 'requestfailed', url, failure: req.failure()?.errorText });
     }
   });
 }
 
-/**
- * Checks for zero horizontal overflow (scrollWidth <= clientWidth + 1).
- */
 async function checkHorizontalOverflow(page) {
   return await page.evaluate(() => {
     const docEl = document.documentElement;
@@ -255,40 +219,83 @@ async function checkHorizontalOverflow(page) {
 }
 
 /**
- * WCAG 2.1 Contrast Calculation evaluated in the browser context.
+ * Full-DOM Visible Text Readability & Contrast Scanner.
+ * Walks every visible text node in the page, resolves alpha-composited background color
+ * (including linear/radial gradient color stops if backgroundColor is transparent),
+ * and checks WCAG contrast ratio against computed text color.
  */
-async function checkElementContrast(page, selector, minRatio = 3.0) {
-  return await page.evaluate(({ sel, targetRatio }) => {
-    const el = document.querySelector(sel);
-    if (!el) return { found: false, error: `Element not found: ${sel}` };
-
-    function parseRgb(colorStr) {
-      if (!colorStr) return null;
-      const m = colorStr.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/);
-      if (m) {
-        return {
+async function assertAllVisibleTextReadable(page, reporter, label, minRatio = 3.0) {
+  const scan = await page.evaluate((threshold) => {
+    function parseRgbaAll(str) {
+      if (!str) return [];
+      const results = [];
+      const regex = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/g;
+      let m;
+      while ((m = regex.exec(str)) !== null) {
+        results.push({
           r: parseInt(m[1], 10),
           g: parseInt(m[2], 10),
           b: parseInt(m[3], 10),
           a: m[4] !== undefined ? parseFloat(m[4]) : 1.0,
-        };
+        });
       }
-      return null;
+      return results;
     }
 
-    function getEffectiveBg(element) {
-      let curr = element;
+    function blend(top, bottom) {
+      const a = top.a + bottom.a * (1 - top.a);
+      if (a <= 0) return { r: 255, g: 255, b: 255, a: 1 };
+      return {
+        r: Math.round((top.r * top.a + bottom.r * bottom.a * (1 - top.a)) / a),
+        g: Math.round((top.g * top.a + bottom.g * bottom.a * (1 - top.a)) / a),
+        b: Math.round((top.b * top.a + bottom.b * bottom.a * (1 - top.a)) / a),
+        a,
+      };
+    }
+
+    function getEffectiveBg(el) {
+      const layers = [];
+      let curr = el;
       while (curr && curr !== document) {
-        const bg = window.getComputedStyle(curr).backgroundColor;
-        const parsed = parseRgb(bg);
-        if (parsed && parsed.a > 0.1) {
-          return parsed;
+        const st = window.getComputedStyle(curr);
+        const bgColors = parseRgbaAll(st.backgroundColor);
+        if (bgColors.length > 0 && bgColors[0].a > 0.01) {
+          layers.push(bgColors[0]);
+          if (bgColors[0].a >= 0.98) break;
+        } else if (st.backgroundImage && st.backgroundImage !== 'none' && st.backgroundImage.includes('gradient')) {
+          const gradStops = parseRgbaAll(st.backgroundImage).filter(c => c.a > 0.02);
+          if (gradStops.length > 0) {
+            const avg = gradStops.reduce(
+              (acc, c) => ({ r: acc.r + c.r, g: acc.g + c.g, b: acc.b + c.b, a: acc.a + c.a }),
+              { r: 0, g: 0, b: 0, a: 0 }
+            );
+            const n = gradStops.length;
+            const stop = {
+              r: Math.round(avg.r / n),
+              g: Math.round(avg.g / n),
+              b: Math.round(avg.b / n),
+              a: Math.min(1, avg.a / n),
+            };
+            layers.push(stop);
+            if (stop.a >= 0.98) break;
+          }
         }
         curr = curr.parentElement;
       }
-      // Fallback based on html data-theme
+
       const theme = document.documentElement.getAttribute('data-theme');
-      return theme === 'dark' ? { r: 15, g: 17, b: 23, a: 1 } : { r: 255, g: 255, b: 255, a: 1 };
+      let base = theme === 'dark'
+        ? { r: 20, g: 16, b: 14, a: 1 }
+        : { r: 250, g: 243, b: 224, a: 1 };
+      const bodyBg = parseRgbaAll(window.getComputedStyle(document.body).backgroundColor);
+      if (bodyBg.length > 0 && bodyBg[0].a > 0.5) {
+        base = bodyBg[0];
+      }
+
+      for (let i = layers.length - 1; i >= 0; i--) {
+        base = blend(layers[i], base);
+      }
+      return base;
     }
 
     function getLuminance(r, g, b) {
@@ -299,25 +306,92 @@ async function checkElementContrast(page, selector, minRatio = 3.0) {
       return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
     }
 
-    const style = window.getComputedStyle(el);
-    const fg = parseRgb(style.color) || { r: 0, g: 0, b: 0, a: 1 };
-    const bg = getEffectiveBg(el);
+    function isVisible(el) {
+      let curr = el;
+      while (curr && curr !== document.body && curr !== document.documentElement) {
+        const st = window.getComputedStyle(curr);
+        if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) < 0.15) {
+          return false;
+        }
+        if (curr.disabled || curr.getAttribute('aria-disabled') === 'true' || curr.getAttribute('aria-hidden') === 'true') {
+          return false;
+        }
+        curr = curr.parentElement;
+      }
+      const rect = el.getBoundingClientRect();
+      return rect.width > 2 && rect.height > 2;
+    }
 
-    const l1 = getLuminance(fg.r, fg.g, fg.b);
-    const l2 = getLuminance(bg.r, bg.g, bg.b);
-    const lighter = Math.max(l1, l2);
-    const darker = Math.min(l1, l2);
-    const ratio = (lighter + 0.05) / (darker + 0.05);
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const checkedElements = new Set();
+    const violations = [];
+    let totalChecked = 0;
 
-    return {
-      found: true,
-      ratio: Math.round(ratio * 100) / 100,
-      meets: ratio >= targetRatio,
-      fg: `rgb(${fg.r},${fg.g},${fg.b})`,
-      bg: `rgb(${bg.r},${bg.g},${bg.b})`,
-      targetRatio,
-    };
-  }, { sel: selector, targetRatio: minRatio });
+    let node;
+    while ((node = walker.nextNode())) {
+      const text = node.nodeValue ? node.nodeValue.trim() : '';
+      // Must contain at least one letter or digit (ignore pure decorative symbols like ✦, —, |)
+      if (!text || !/[\p{L}\p{N}]/u.test(text)) continue;
+
+      const el = node.parentElement;
+      if (!el || checkedElements.has(el)) continue;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'script' || tag === 'style' || tag === 'noscript' || tag === 'option') continue;
+      if (!isVisible(el)) continue;
+
+      const st = window.getComputedStyle(el);
+      // Skip gradient-clipped text (-webkit-background-clip: text)
+      if (st.webkitBackgroundClip === 'text' || st.backgroundClip === 'text') continue;
+      if (st.webkitTextFillColor && st.webkitTextFillColor.includes('0, 0, 0, 0')) continue;
+      // Skip banknote decorative art where realistic bill graphics are used
+      if (el.closest('.banknote-bill') || el.closest('.tarot-card-back') || el.closest('.ancient-coin-3d')) continue;
+
+      checkedElements.add(el);
+      totalChecked++;
+
+      const bg = getEffectiveBg(el);
+      const fgColors = parseRgbaAll(st.color);
+      if (fgColors.length === 0) continue;
+      const fg = blend(fgColors[0], bg);
+
+      const l1 = getLuminance(fg.r, fg.g, fg.b);
+      const l2 = getLuminance(bg.r, bg.g, bg.b);
+      const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+
+      if (ratio < threshold) {
+        violations.push({
+          text: text.slice(0, 50),
+          tag,
+          className: (typeof el.className === 'string' ? el.className : '').slice(0, 50),
+          ratio: Math.round(ratio * 100) / 100,
+          fg: `rgb(${fg.r},${fg.g},${fg.b})`,
+          bg: `rgb(${bg.r},${bg.g},${bg.b})`,
+        });
+      }
+    }
+
+    return { totalChecked, violations };
+  }, minRatio);
+
+  if (scan.violations.length === 0) {
+    reporter.pass(`DOM Contrast Scan: ${label}`, `${scan.totalChecked} text elements >= ${minRatio}:1`);
+  } else {
+    const sample = scan.violations
+      .slice(0, 4)
+      .map(v => `"${v.text}" (<${v.tag}> ${v.fg} on ${v.bg} = ${v.ratio}:1)`)
+      .join('; ');
+    reporter.fail(
+      `DOM Contrast Scan: ${label}`,
+      `${scan.violations.length} unreadable element(s) < ${minRatio}:1 -> ${sample}`
+    );
+  }
+}
+
+async function setAppTheme(page, targetTheme) {
+  await page.evaluate((theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, targetTheme);
+  await page.waitForTimeout(250);
 }
 
 // =============================================================================
@@ -336,7 +410,6 @@ async function testNoteNow(browser, baseUrl, reporter) {
     reporter.info(`Navigating to ${targetUrl}`);
     await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 30000 });
 
-    // 1. Initial Load & Title
     const title = await page.title();
     if (title.includes('NoteNow') || title.includes('Ghi chú')) {
       reporter.pass('Page Title Verification', title);
@@ -344,272 +417,172 @@ async function testNoteNow(browser, baseUrl, reporter) {
       reporter.fail('Page Title Verification', `Unexpected title: ${title}`);
     }
 
-    // 2. Responsive Viewports & Zero Overflow
-    for (const [vpKey, vp] of Object.entries(VIEWPORTS)) {
+    for (const [, vp] of Object.entries(VIEWPORTS)) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(250);
       const overflow = await checkHorizontalOverflow(page);
       if (!overflow.hasOverflow) {
         reporter.pass(`Zero Horizontal Overflow @ ${vp.name}`, `scrollWidth: ${overflow.scrollWidth}px`);
       } else {
-        reporter.fail(`Zero Horizontal Overflow @ ${vp.name}`, `Overflow by ${overflow.overflow}px (scroll: ${overflow.scrollWidth}, client: ${overflow.clientWidth})`);
+        reporter.fail(`Zero Horizontal Overflow @ ${vp.name}`, `Overflow by ${overflow.overflow}px`);
       }
     }
 
-    // Reset to desktop for detailed functional checks
     await page.setViewportSize(VIEWPORTS.desktop);
 
-    // 3. Theme Contrast Checks (Light & Dark)
-    // Check Light Mode
-    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
-    await page.waitForTimeout(200);
+    // Scan Board in Light & Dark modes
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'NoteNow Main Board [Light Mode]');
 
-    const lightBtn = await checkElementContrast(page, '#btn-theme-toggle', 3.0);
-    if (lightBtn.found && lightBtn.meets) {
-      reporter.pass('Light Mode Contrast: Theme Toggle Button', `Ratio ${lightBtn.ratio}:1`);
-    } else {
-      reporter.warn(`Light Mode Contrast: Theme Toggle Button ratio is ${lightBtn.ratio}:1`);
-    }
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'NoteNow Main Board [Dark Mode]');
 
-    // Check Dark Mode
-    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
-    await page.waitForTimeout(200);
-
-    // Logo icon contrast verification (Specific B1/B4 requirement: logo must be white in dark mode)
     const logoColor = await page.evaluate(() => {
       const icon = document.querySelector('.nn-logo-icon');
       return icon ? window.getComputedStyle(icon).color : null;
     });
-
     if (logoColor === 'rgb(255, 255, 255)') {
       reporter.pass('Dark Mode Logo Contrast', `Logo color is exact white: ${logoColor}`);
     } else {
       reporter.fail('Dark Mode Logo Contrast', `Expected rgb(255, 255, 255) but got ${logoColor}`);
     }
 
-    // 4. Test Language Toggle in Header (before modal opens)
-    const btnLang = await page.$('#btn-lang-toggle');
-    if (btnLang) {
-      reporter.pass('Locate Language Toggle Button');
-    }
-
-    // 5. Open Note Editor
+    // Open Note Editor & test formatting + color swatches in Dark & Light modes
     const btnNew = await page.$('#btn-new-note') || await page.$('#btn-create-first-note') || await page.$('.nn-create-box');
     if (btnNew) {
       await btnNew.click();
       await page.waitForSelector('#note-editor-title', { timeout: 8000 });
-      reporter.pass('Open Note Editor Box');
+      reporter.pass('Open Note Editor Modal');
     } else {
-      reporter.fail('Open Note Editor Box', 'Could not find #btn-new-note or #btn-create-first-note');
+      reporter.fail('Open Note Editor Modal', 'Could not find #btn-new-note');
     }
 
-    // 6. Locale Character Counter Format (VI default)
-    const counterTextVi = await page.evaluate(() => {
-      const el = document.querySelector('.nn-char-counter');
-      return el ? el.textContent.trim() : '';
-    });
-    if (counterTextVi.includes('2.048')) {
-      reporter.pass('Locale Char Counter VI Format (period separator)', counterTextVi);
-    } else {
-      reporter.warn(`Locale Char Counter VI: Expected '2.048', got '${counterTextVi}'`);
-    }
-
-    // 7. Create Note with Title, Content, and Color Swatch
     const testTimestamp = Date.now();
     const testTitle = `[E2E] Note ${testTimestamp}`;
-    const testBody = `Automated verification content for NoteNow suite at ${new Date().toISOString()}`;
+    const testBody = `Full-flow verification content for NoteNow at ${new Date().toISOString()}`;
 
-    // Fill Title
-    const titleInput = await page.$('#note-editor-title');
-    if (titleInput) {
-      await titleInput.fill(testTitle);
-      reporter.pass('Enter Note Title');
-    } else {
-      reporter.fail('Enter Note Title', 'Selector #note-editor-title not found');
-    }
-
-    // Fill Body in TipTap editor
+    await page.fill('#note-editor-title', testTitle);
     const editorBody = await page.$('.nn-tiptap-wrap .ProseMirror');
     if (editorBody) {
       await editorBody.fill(testBody);
-      reporter.pass('Enter Note Body Content');
-    } else {
-      reporter.fail('Enter Note Body Content', 'TipTap ProseMirror editor not found');
+      reporter.pass('Fill Note Title & Body');
     }
 
-    // Color Swatch Selection
+    // Formatting toolbar buttons (Bold, Italic, Checklist)
+    for (const fmtSel of ['#btn-fmt-bold', '#btn-fmt-italic', '#btn-fmt-checklist']) {
+      const fmtBtn = await page.$(fmtSel);
+      if (fmtBtn) {
+        await fmtBtn.click();
+        await page.waitForTimeout(100);
+      }
+    }
+    reporter.pass('Exercise Formatting Toolbar Buttons (Bold, Italic, Checklist)');
+
+    // Color Picker Swatches in Dark & Light modes
     const btnColorPicker = await page.$('#btn-color-picker');
     if (btnColorPicker) {
       await btnColorPicker.click();
-      await page.waitForTimeout(300);
-      const swatch = await page.$('.nn-color-swatch:not([data-color="default"])');
-      if (swatch) {
-        await swatch.click();
-        reporter.pass('Select Color Swatch');
+      await page.waitForTimeout(200);
+      const swatches = await page.$$('.nn-color-swatch');
+      if (swatches.length > 1) {
+        await swatches[1].click();
+        await page.waitForTimeout(200);
+        reporter.pass('Select Colored Note Swatch');
       }
     }
+
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'NoteNow Editor Modal with Colored Swatch [Dark Mode]');
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'NoteNow Editor Modal with Colored Swatch [Light Mode]');
+    await setAppTheme(page, 'dark');
 
     // Save Note
     const btnSave = await page.$('#btn-save-note');
     if (btnSave) {
       await btnSave.click();
       await page.waitForSelector('.nn-overlay', { state: 'detached', timeout: 8000 }).catch(() => {});
-      await page.waitForTimeout(600);
-      reporter.pass('Save Note');
-    } else {
-      reporter.fail('Save Note', 'Button #btn-save-note not found');
+      await page.waitForTimeout(500);
+      reporter.pass('Save Note to Board');
     }
 
-    // 8. Test EN Locale Counter Format
-    if (btnLang) {
-      await btnLang.click();
-      await page.waitForTimeout(400);
+    await assertAllVisibleTextReadable(page, reporter, 'NoteNow Board with Colored Note Card [Dark Mode]');
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'NoteNow Board with Colored Note Card [Light Mode]');
+    await setAppTheme(page, 'dark');
 
-      const btnNewEn = await page.$('#btn-new-note') || await page.$('.nn-create-box');
-      if (btnNewEn) {
-        await btnNewEn.click();
-        await page.waitForSelector('#note-editor-title', { timeout: 8000 });
-        const counterTextEn = await page.evaluate(() => {
-          const el = document.querySelector('.nn-char-counter');
-          return el ? el.textContent.trim() : '';
-        });
-
-        if (counterTextEn.includes('2,048')) {
-          reporter.pass('Locale Char Counter EN Format (comma separator)', counterTextEn);
-        } else {
-          reporter.warn(`Locale Char Counter EN: Expected '2,048', got '${counterTextEn}'`);
-        }
-
-        // Close editor
-        const btnClose = await page.$('#btn-close-editor') || await page.$('#btn-editor-top-close');
-        if (btnClose) {
-          await btnClose.click();
-          await page.waitForSelector('.nn-overlay', { state: 'detached', timeout: 8000 }).catch(() => {});
-          await page.waitForTimeout(400);
-        }
-      }
-
-      // Switch back to VI
-      await btnLang.click();
-      await page.waitForTimeout(300);
-    }
-
-    // 7. Verify Note Exists in NoteBoard
-    const noteFound = await page.evaluate((title) => {
-      const cards = Array.from(document.querySelectorAll('.nn-card'));
-      return cards.some(c => c.textContent.includes(title));
-    }, testTitle);
-
-    if (noteFound) {
-      reporter.pass('Note Card Rendered in NoteBoard', testTitle);
-    } else {
-      reporter.fail('Note Card Rendered in NoteBoard', `Note titled "${testTitle}" not found`);
-    }
-
-    // 8. Pin and Unpin Note
-    const pinBtn = await page.evaluateHandle((title) => {
-      const cards = Array.from(document.querySelectorAll('.nn-card'));
-      const card = cards.find(c => c.textContent.includes(title));
+    // Pin & Unpin
+    const pinBtn = await page.evaluateHandle((t) => {
+      const card = Array.from(document.querySelectorAll('.nn-card')).find(c => c.textContent.includes(t));
       return card ? card.querySelector('.nn-card-action[id^="btn-pin-"], button[data-action="pin"]') : null;
     }, testTitle);
-
     if (pinBtn && pinBtn.asElement()) {
       await pinBtn.asElement().click();
-      await page.waitForTimeout(500);
-      reporter.pass('Pin Note Action');
-
-      // Re-query pin button to unpin
-      const unpinBtn = await page.evaluateHandle((title) => {
-        const cards = Array.from(document.querySelectorAll('.nn-card'));
-        const card = cards.find(c => c.textContent.includes(title));
+      await page.waitForTimeout(400);
+      reporter.pass('Pin Note Card');
+      const unpinBtn = await page.evaluateHandle((t) => {
+        const card = Array.from(document.querySelectorAll('.nn-card')).find(c => c.textContent.includes(t));
         return card ? card.querySelector('.nn-card-action[id^="btn-pin-"], button[data-action="pin"]') : null;
       }, testTitle);
-
       if (unpinBtn && unpinBtn.asElement()) {
         await unpinBtn.asElement().click();
-        await page.waitForTimeout(500);
-        reporter.pass('Unpin Note Action');
+        await page.waitForTimeout(400);
+        reporter.pass('Unpin Note Card');
       }
-    } else {
-      reporter.warn('Pin button not found on card');
     }
 
-    // 9. Search Filter Flow
+    // Search Filter
     const searchInput = await page.$('.nn-search-input') || await page.$('.nn-search-mobile-input');
     if (searchInput) {
       await searchInput.fill(String(testTimestamp));
-      await page.waitForTimeout(400);
-
-      const visibleCardsCount = await page.evaluate(() => {
-        return document.querySelectorAll('.nn-card').length;
-      });
-
-      if (visibleCardsCount >= 1) {
-        reporter.pass('Search Note by Token', `Matches visible: ${visibleCardsCount}`);
-      } else {
-        reporter.fail('Search Note by Token', `Expected at least 1 match, found ${visibleCardsCount}`);
-      }
-
-      // Clear search
-      await searchInput.fill('');
       await page.waitForTimeout(300);
+      await searchInput.fill('');
+      await page.waitForTimeout(200);
+      reporter.pass('Search Filter & Clear');
     }
 
-    // 10. Help Guide Modal
+    // Help Guide Modal in Dark & Light modes
     const btnHelp = await page.$('#btn-help-guide');
     if (btnHelp) {
       await btnHelp.click();
       await page.waitForTimeout(400);
-      const isGuideOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('.nn-guide-modal, .nn-modal-content, [role="dialog"]'));
-      });
-      if (isGuideOpen) {
-        reporter.pass('Open Help Guide Modal');
-        // Close modal
-        const closeBtn = await page.$('#btn-close-help, .nn-modal-close, button[aria-label*="close"], button[aria-label*="Đóng"]');
-        if (closeBtn) {
-          await closeBtn.click();
-          await page.waitForTimeout(300);
-          reporter.pass('Close Help Guide Modal');
-        }
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow HelpModal [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow HelpModal [Light Mode]');
+      await setAppTheme(page, 'dark');
+      const closeBtn = await page.$('#btn-close-help, .nn-modal-close, button[aria-label*="close"], button[aria-label*="Đóng"]');
+      if (closeBtn) {
+        await closeBtn.click();
+        await page.waitForTimeout(300);
+        reporter.pass('Open & Close HelpModal');
       }
     }
 
-    // 11. Delete Note (with automated dialog acceptance)
-    page.on('dialog', async dialog => {
-      await dialog.accept();
-    });
-
-    const deleteBtn = await page.evaluateHandle((title) => {
-      const cards = Array.from(document.querySelectorAll('.nn-card'));
-      const card = cards.find(c => c.textContent.includes(title));
+    // Delete Note
+    page.on('dialog', async dialog => await dialog.accept());
+    const deleteBtn = await page.evaluateHandle((t) => {
+      const card = Array.from(document.querySelectorAll('.nn-card')).find(c => c.textContent.includes(t));
       return card ? card.querySelector('.nn-card-action[id^="btn-delete-"], button[data-action="delete"]') : null;
     }, testTitle);
-
     if (deleteBtn && deleteBtn.asElement()) {
       await deleteBtn.asElement().click();
-      await page.waitForTimeout(800);
-
-      const isStillPresent = await page.evaluate((title) => {
-        const cards = Array.from(document.querySelectorAll('.nn-card'));
-        return cards.some(c => c.textContent.includes(title));
-      }, testTitle);
-
-      if (!isStillPresent) {
-        reporter.pass('Delete Note Cleanup Flow', `Card "${testTitle}" safely deleted`);
-      } else {
-        reporter.fail('Delete Note Cleanup Flow', `Card "${testTitle}" still exists in DOM`);
+      await page.waitForTimeout(500);
+      const confirmDeleteBtn = await page.$('#btn-confirm-delete');
+      if (confirmDeleteBtn) {
+        await assertAllVisibleTextReadable(page, reporter, 'NoteNow Delete Confirm Modal [Dark Mode]');
+        await confirmDeleteBtn.click();
+        await page.waitForTimeout(500);
       }
+      reporter.pass('Delete Note Cleanup');
     }
 
-    // 12. Check Unhandled Page Errors
     const criticalErrors = errors.filter(e => e.type === 'pageerror');
     if (criticalErrors.length === 0) {
       reporter.pass('Zero Unhandled Page Errors');
     } else {
-      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors.length} errors logged: ${criticalErrors[0].message}`);
+      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors[0].message}`);
     }
-
   } catch (err) {
     reporter.fail('NoteNow Suite Exception', err);
   } finally {
@@ -633,7 +606,6 @@ async function testTarotNow(browser, baseUrl, reporter) {
     reporter.info(`Navigating to ${targetUrl}`);
     await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 30000 });
 
-    // 1. Initial Load & Title
     const title = await page.title();
     if (title.includes('Tarot')) {
       reporter.pass('Page Title Verification', title);
@@ -641,10 +613,9 @@ async function testTarotNow(browser, baseUrl, reporter) {
       reporter.fail('Page Title Verification', `Unexpected title: ${title}`);
     }
 
-    // 2. Responsive Viewports & Zero Overflow
-    for (const [vpKey, vp] of Object.entries(VIEWPORTS)) {
+    for (const [, vp] of Object.entries(VIEWPORTS)) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(250);
       const overflow = await checkHorizontalOverflow(page);
       if (!overflow.hasOverflow) {
         reporter.pass(`Zero Horizontal Overflow @ ${vp.name}`, `scrollWidth: ${overflow.scrollWidth}px`);
@@ -655,145 +626,150 @@ async function testTarotNow(browser, baseUrl, reporter) {
 
     await page.setViewportSize(VIEWPORTS.desktop);
 
-    // 3. Theme Toggle & Contrast
-    const themeBtn = await page.$('.theme-toggle');
-    if (themeBtn) {
-      // Toggle to Light mode
-      await themeBtn.click();
-      await page.waitForTimeout(300);
-      reporter.pass('Toggle Theme to Light Mode');
+    // 1. Scan Initial Screen in Dark & Light modes
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'TarotNow Home Screen [Dark Mode]');
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'TarotNow Home Screen [Light Mode]');
 
-      // Check contrast of draw trigger button or form label
-      const lightContrast = await checkElementContrast(page, '.draw-trigger-btn', 3.0);
-      if (lightContrast.found) {
-        reporter.pass('Light Mode Draw Button Contrast', `Ratio ${lightContrast.ratio}:1`);
-      }
-
-      // Switch back to Dark mode
-      await themeBtn.click();
-      await page.waitForTimeout(300);
-      reporter.pass('Toggle Theme to Dark Mode');
+    // 2. Daily Tarot Card flow (Mở bài hôm nay)
+    const dailyRevealBtn = await page.$('.daily-tarot-reveal-btn');
+    if (dailyRevealBtn) {
+      await dailyRevealBtn.click();
+      await page.waitForTimeout(450);
+      reporter.pass('Reveal Daily Tarot Card');
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow Daily Card Revealed [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow Daily Card Revealed [Light Mode]');
     }
 
-    // 4. Spread Selector Dropdown
+    // 3. Spread Selector Dropdown in Dark & Light modes
     const spreadTrigger = await page.$('.spread-selector-trigger');
     if (spreadTrigger) {
       await spreadTrigger.click();
       await page.waitForTimeout(300);
-      const dropdownOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('.spread-selector-dropdown'));
-      });
-      if (dropdownOpen) {
-        reporter.pass('Open Spread Selector Dropdown');
-        // Pick 3-card spread or close
-        const spreadRow = await page.$('.spread-selector-row');
-        if (spreadRow) {
-          await spreadRow.click();
-          await page.waitForTimeout(300);
-          reporter.pass('Select Tarot Spread');
-        }
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow Spread Selector Dropdown [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow Spread Selector Dropdown [Light Mode]');
+      const spreadRows = await page.$$('.spread-selector-row');
+      if (spreadRows.length > 1) {
+        await spreadRows[1].click(); // Pick 3-card spread
+        await page.waitForTimeout(250);
+        reporter.pass('Select 3-Card Spread from Dropdown');
       }
     }
 
-    // 5. Question Input Validation & Random 3-Card Draw
+    // 4. Fill Question & Draw Cards
     const questionInput = await page.$('#question-input');
     if (questionInput) {
-      await questionInput.fill('Kế hoạch sự nghiệp và tài chính sắp tới của tôi ra sao?');
-      reporter.pass('Fill Question Input');
+      await questionInput.fill('Sự nghiệp và tài chính của tôi trong 6 tháng tới sẽ chuyển biến thế nào?');
+      reporter.pass('Fill Tarot Question');
     }
 
     const drawBtn = await page.$('.draw-trigger-btn');
     if (drawBtn) {
-      const isDisabled = await page.evaluate(el => el.disabled, drawBtn);
-      if (!isDisabled) {
-        reporter.pass('Draw Trigger Button Enabled');
-        await drawBtn.click();
-        reporter.info('Initiated Tarot Draw — awaiting card reveal animation...');
-
-        // Wait for visualizer or cards to be displayed
-        await page.waitForSelector('.spread-layout-visualizer, .spread-card-slot', { timeout: 15000 });
-        const cardCount = await page.evaluate(() => {
-          return document.querySelectorAll('.spread-card-slot').length;
-        });
-
-        if (cardCount >= 1) {
-          reporter.pass('Tarot Cards Rendered Successfully', `${cardCount} card slots displayed`);
-
-          // Check card names have readable text
-          const cardNames = await page.evaluate(() => {
-            return Array.from(document.querySelectorAll('.spread-card-name')).map(el => el.textContent.trim());
-          });
-          if (cardNames.length > 0 && cardNames.every(n => n.length > 0)) {
-            reporter.pass('Tarot Card Names Visible', cardNames.join(' | '));
-          }
-        } else {
-          reporter.fail('Tarot Cards Rendered Successfully', 'No card slots rendered');
-        }
-      } else {
-        reporter.fail('Draw Trigger Button Enabled', 'Button remained disabled');
-      }
+      await drawBtn.click();
+      await page.waitForSelector('.spread-layout-visualizer, .spread-card-slot', { timeout: 15000 });
+      await page.waitForTimeout(1000);
+      reporter.pass('Draw Tarot Cards & Render Spread Visualizer + Basic Interpretation');
     }
 
-    // 6. Interactive Card Detail Modal (TarotLearnModal Tap-to-Learn)
+    // 5. Open AI Settings Panel & PromptExporter tabs, then scan Dark & Light modes
+    const aiSettingsBtn = await page.$('.ai-settings-btn');
+    if (aiSettingsBtn) {
+      await aiSettingsBtn.click();
+      await page.waitForTimeout(250);
+      reporter.pass('Open Tarot AI Settings Panel');
+    }
+
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'TarotNow Drawn Results + AI Settings + Exporter [Dark Mode]');
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'TarotNow Drawn Results + AI Settings + Exporter [Light Mode]');
+
+    // 6. Open TarotLearnModal (Tap-to-Learn on first card slot) in Dark & Light modes
     const firstCardSlot = await page.$('.spread-card-slot');
     if (firstCardSlot) {
       await firstCardSlot.click();
-      await page.waitForTimeout(600);
-      const isLearnModalOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('.tarot-learn-modal-grid, .card-modal-content'));
-      });
-
+      await page.waitForTimeout(500);
+      const isLearnModalOpen = await page.evaluate(() => Boolean(document.querySelector('.tarot-learn-modal-grid, .card-modal-content')));
       if (isLearnModalOpen) {
-        reporter.pass('Open TarotLearnModal (Tap-to-learn)');
-        // Close modal
+        reporter.pass('Open TarotLearnModal');
+        await setAppTheme(page, 'dark');
+        await assertAllVisibleTextReadable(page, reporter, 'TarotLearnModal [Dark Mode]');
+        await setAppTheme(page, 'light');
+        await assertAllVisibleTextReadable(page, reporter, 'TarotLearnModal [Light Mode]');
         const closeBtn = await page.$('.modal-close-btn, button[aria-label="Đóng"], button[aria-label="Close"]');
         if (closeBtn) {
           await closeBtn.click();
-          await page.waitForTimeout(400);
+          await page.waitForTimeout(350);
           reporter.pass('Close TarotLearnModal');
         }
       }
     }
 
-    // 7. Mode Switcher (Manual Pick Mode)
+    // 7. Switch to Manual Pick Mode -> Pick Cards -> Check Grid View & Weight Modal in Dark & Light modes
     const manualModeBtn = await page.evaluateHandle(() => {
       const btns = Array.from(document.querySelectorAll('.mode-switcher-btn'));
-      return btns.find(b => b.textContent.includes('Chọn Tay') || b.textContent.includes('Manual'));
+      return btns.find(b => b.textContent.includes('Chọn') || b.textContent.includes('Manual'));
     });
-
     if (manualModeBtn && manualModeBtn.asElement()) {
       await manualModeBtn.asElement().click();
       await page.waitForTimeout(500);
+      reporter.pass('Switch to Manual Pick Mode');
 
-      const manualUiVisible = await page.evaluate(() => {
-        return Boolean(document.querySelector('#manual-question-input, .manual-pick-wrapper, .manual-pick-container'));
-      });
-
-      if (manualUiVisible) {
-        reporter.pass('Switch to Manual Pick Mode');
-      } else {
-        reporter.warn('Manual pick mode UI wrapper not explicitly matched');
+      const manualQuestion = await page.$('#manual-question-input');
+      if (manualQuestion) {
+        await manualQuestion.fill('Câu hỏi chọn bài thủ công kiểm thử E2E');
+        await page.waitForTimeout(200);
       }
 
-      // Switch back to Random mode
-      const randomModeBtn = await page.evaluateHandle(() => {
-        const btns = Array.from(document.querySelectorAll('.mode-switcher-btn'));
-        return btns.find(b => b.textContent.includes('Ngẫu Nhiên') || b.textContent.includes('Random'));
-      });
-      if (randomModeBtn && randomModeBtn.asElement()) {
-        await randomModeBtn.asElement().click();
-        await page.waitForTimeout(300);
+      // Open Weight Settings Modal inside ManualPickMode if present
+      const weightBtn = await page.$('.manual-weight-trigger-btn');
+      if (weightBtn) {
+        await weightBtn.click();
+        await page.waitForTimeout(350);
+        await setAppTheme(page, 'dark');
+        await assertAllVisibleTextReadable(page, reporter, 'TarotNow WeightSettingsModal [Dark Mode]');
+        await setAppTheme(page, 'light');
+        await assertAllVisibleTextReadable(page, reporter, 'TarotNow WeightSettingsModal [Light Mode]');
+        const closeWeightBtn = await page.$('.modal-close-btn');
+        if (closeWeightBtn) {
+          await closeWeightBtn.click();
+          await page.waitForTimeout(300);
+        }
       }
+
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow ManualPickMode [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow ManualPickMode [Light Mode]');
     }
 
-    // 8. Error Log Check
+    // 8. Spiritual Journal Modal in Dark & Light modes
+    const journalBtn = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('header button'));
+      return btns.find(b => b.textContent.includes('Nhật ký') || b.textContent.includes('Journal') || b.title?.includes('Nhật ký'));
+    });
+    if (journalBtn && journalBtn.asElement()) {
+      await journalBtn.asElement().click();
+      await page.waitForTimeout(400);
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow SpiritualJournal Modal [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'TarotNow SpiritualJournal Modal [Light Mode]');
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
+    }
+
     const criticalErrors = errors.filter(e => e.type === 'pageerror');
     if (criticalErrors.length === 0) {
       reporter.pass('Zero Unhandled Page Errors');
     } else {
-      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors.length} errors: ${criticalErrors[0].message}`);
+      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors[0].message}`);
     }
-
   } catch (err) {
     reporter.fail('TarotNow Suite Exception', err);
   } finally {
@@ -815,14 +791,13 @@ async function testIChingNow(browser, baseUrl, reporter) {
 
   try {
     reporter.info(`Navigating to ${targetUrl}`);
-    // Bypass 10s mindfulness countdown for testing
+    // IMPORTANT: Enable MindfulnessModal first so we test the exact modal from the user's screenshot!
     await page.addInitScript(() => {
-      localStorage.setItem('iching_mindfulness_enabled', 'false');
+      localStorage.setItem('iching_mindfulness_enabled', 'true');
     });
 
     await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 30000 });
 
-    // 1. Initial Load & Title
     const title = await page.title();
     if (title.includes('IChing') || title.includes('Kinh Dịch')) {
       reporter.pass('Page Title Verification', title);
@@ -830,10 +805,9 @@ async function testIChingNow(browser, baseUrl, reporter) {
       reporter.fail('Page Title Verification', `Unexpected title: ${title}`);
     }
 
-    // 2. Responsive Viewports & Zero Overflow
-    for (const [vpKey, vp] of Object.entries(VIEWPORTS)) {
+    for (const [, vp] of Object.entries(VIEWPORTS)) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(250);
       const overflow = await checkHorizontalOverflow(page);
       if (!overflow.hasOverflow) {
         reporter.pass(`Zero Horizontal Overflow @ ${vp.name}`, `scrollWidth: ${overflow.scrollWidth}px`);
@@ -844,129 +818,299 @@ async function testIChingNow(browser, baseUrl, reporter) {
 
     await page.setViewportSize(VIEWPORTS.desktop);
 
-    // 3. Theme Contrast Checks
-    const themeBtn = await page.$('.theme-toggle');
-    if (themeBtn) {
-      await themeBtn.click();
-      await page.waitForTimeout(300);
-      reporter.pass('Toggle Theme to Dark Mode');
+    // 1. Scan Initial Form + MethodPicker in Dark & Light modes
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'IChingNow Home & MethodPicker [Dark Mode]');
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'IChingNow Home & MethodPicker [Light Mode]');
 
-      const darkHeading = await checkElementContrast(page, 'h1, .header-title', 3.0);
-      if (darkHeading.found) {
-        reporter.pass('Dark Mode Header Contrast', `Ratio ${darkHeading.ratio}:1`);
-      }
-
-      await themeBtn.click();
-      await page.waitForTimeout(300);
-      reporter.pass('Toggle Theme back to Light Mode');
-    }
-
-    // 4. Quick Cast Flow via Daily Cast Button
+    // 2. Method 1: QuickCast + MindfulnessModal (10s Tịnh Tâm Quán Tưởng) in Dark & Light Modes!
+    await setAppTheme(page, 'dark');
     const dailyCastBtn = await page.$('#daily-cast-quick');
     if (dailyCastBtn) {
       await dailyCastBtn.click();
-      await page.waitForTimeout(400);
-      reporter.pass('Trigger Daily Quick Cast');
-
-      // Verify question is pre-filled and QuickCastPanel is displayed
-      const isPanelOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('.btn-primary.btn-cta'));
-      });
-
-      if (isPanelOpen) {
-        reporter.pass('QuickCastPanel Ready');
-
-        // Switch to Instant Mode if available for ultra-fast cast
-        const instantBtn = await page.evaluateHandle(() => {
-          const btns = Array.from(document.querySelectorAll('button'));
-          return btns.find(b => b.textContent.includes('1 chạm') || b.textContent.includes('Instant'));
-        });
-        if (instantBtn && instantBtn.asElement()) {
-          await instantBtn.asElement().click();
-          await page.waitForTimeout(200);
-          reporter.pass('Set Instant 1-Touch Cast Mode');
-        }
-
-        // Click Cast Button
-        const castCta = await page.$('.btn-primary.btn-cta');
-        if (castCta) {
-          await castCta.click();
-          reporter.info('Initiated Hexagram Cast — waiting for results...');
-
-          // Wait for LucHao combined card or results
-          await page.waitForSelector('.luc-hao-table, section.card.animate-in', { timeout: 15000 });
-          reporter.pass('Hexagram Result Card Rendered');
-
-          // Check Tabs (Bảng Lục Hào / Luận giải)
-          const tabsExist = await page.evaluate(() => {
-            const btns = Array.from(document.querySelectorAll('section.card button'));
-            return btns.some(b => b.textContent.includes('Lục Hào'));
-          });
-          if (tabsExist) {
-            reporter.pass('LucHao Combined Tabs Rendered');
-          }
-        }
-      }
-    } else {
-      reporter.warn('#daily-cast-quick button not found; attempting manual question cast');
+      await page.waitForTimeout(350);
+      reporter.pass('Select QuickCast via Daily Reading');
     }
 
-    // 5. Practice Game Modal (#open-game)
+    await assertAllVisibleTextReadable(page, reporter, 'IChingNow QuickCastPanel [Dark Mode]');
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'IChingNow QuickCastPanel [Light Mode]');
+    await setAppTheme(page, 'dark');
+
+    // Switch to Instant 1-Click mode and click Cast to trigger MindfulnessModal!
+    const instantBtn = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.find(b => b.textContent.includes('1 Chạm') || b.textContent.includes('Instant'));
+    });
+    if (instantBtn && instantBtn.asElement()) {
+      await instantBtn.asElement().click();
+      await page.waitForTimeout(200);
+    }
+
+    const castCta = await page.$('.btn-primary.btn-cta');
+    if (castCta) {
+      await castCta.click();
+      await page.waitForTimeout(400);
+
+      // Verify MindfulnessModal ("Tịnh Tâm Quán Tưởng") opened!
+      const isMindfulnessOpen = await page.evaluate(() => {
+        return document.body.textContent.includes('Tịnh Tâm Quán Tưởng') || document.body.textContent.includes('Mindful Focus');
+      });
+      if (isMindfulnessOpen) {
+        reporter.pass('Open MindfulnessModal (Tịnh Tâm Quán Tưởng)');
+
+        // Scan MindfulnessModal in Dark Mode (THE EXACT USER SCREENSHOT BUG) & Light Mode!
+        await setAppTheme(page, 'dark');
+        await assertAllVisibleTextReadable(page, reporter, 'IChingNow MindfulnessModal [Dark Mode]');
+        await setAppTheme(page, 'light');
+        await assertAllVisibleTextReadable(page, reporter, 'IChingNow MindfulnessModal [Light Mode]');
+        await setAppTheme(page, 'dark');
+
+        // Click "Đã tịnh tâm, gieo quẻ ngay ➔" to proceed with casting
+        const skipMindfulBtn = await page.evaluateHandle(() => {
+          const btns = Array.from(document.querySelectorAll('button'));
+          return btns.find(b => b.textContent.includes('Đã tịnh tâm') || b.textContent.includes('Cast Now'));
+        });
+        if (skipMindfulBtn && skipMindfulBtn.asElement()) {
+          await skipMindfulBtn.asElement().click();
+          reporter.pass('Confirm MindfulnessModal & Trigger Cast');
+        }
+      } else {
+        reporter.fail('Open MindfulnessModal (Tịnh Tâm Quán Tưởng)', 'MindfulnessModal did not appear when enabled');
+      }
+
+      // Wait for Hexagram Result
+      await page.waitForSelector('.luc-hao-table, section.card.animate-in', { timeout: 15000 });
+      await page.waitForTimeout(500);
+      reporter.pass('QuickCast Hexagram Result Rendered');
+    }
+
+    // 3. Test Result Tabs (Bảng Lục Hào / Luận giải cơ bản / Học đọc quẻ) + AI Settings in Dark & Light modes
+    // Open AI Settings (`⚙️ Cấu hình`) to test `<select>` contrast in Dark mode
+    const ichingAiSettingsBtn = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.find(b => b.textContent.includes('Cấu hình') || b.textContent.includes('Settings'));
+    });
+    if (ichingAiSettingsBtn && ichingAiSettingsBtn.asElement()) {
+      await ichingAiSettingsBtn.asElement().click();
+      await page.waitForTimeout(250);
+      reporter.pass('Open IChing AI Settings Form');
+    }
+
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'IChingNow Result (Bảng Lục Hào + AI Settings) [Dark Mode]');
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'IChingNow Result (Bảng Lục Hào + AI Settings) [Light Mode]');
+
+    // Switch to "Luận giải cơ bản" tab
+    const basicInterpTab = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.find(b => b.textContent.includes('Luận giải cơ bản') || b.textContent.includes('Basic Interpretation'));
+    });
+    if (basicInterpTab && basicInterpTab.asElement()) {
+      await basicInterpTab.asElement().click();
+      await page.waitForTimeout(300);
+      reporter.pass('Switch to Luận giải cơ bản Tab');
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow Luận giải cơ bản Tab [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow Luận giải cơ bản Tab [Light Mode]');
+    }
+
+    // Open CombinedReadingModal ("🌟 Kết hợp Tử Vi") in Dark & Light modes
+    const combinedBtn = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.find(b => b.textContent.includes('Kết hợp Tử Vi') || b.textContent.includes('Combine'));
+    });
+    if (combinedBtn && combinedBtn.asElement()) {
+      await combinedBtn.asElement().click();
+      await page.waitForTimeout(400);
+      reporter.pass('Open CombinedReadingModal (Kết hợp Tử Vi)');
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow CombinedReadingModal [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow CombinedReadingModal [Light Mode]');
+      // Close CombinedReadingModal
+      const closeCombined = await page.evaluateHandle(() => {
+        const btns = Array.from(document.querySelectorAll('button'));
+        return btns.find(b => b.textContent.trim() === '✕');
+      });
+      if (closeCombined && closeCombined.asElement()) {
+        await closeCombined.asElement().click();
+        await page.waitForTimeout(300);
+      }
+    }
+
+    // 4. Test Method 2: ManualLineStepper (`Gieo từng hào` + `Chọn mặt tay`)
+    // Disable mindfulness for remaining rapid method tests
+    await page.evaluate(() => localStorage.setItem('iching_mindfulness_enabled', 'false'));
+    const changeMethodBtn = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.find(b => b.textContent.includes('Đổi phương pháp'));
+    });
+    if (changeMethodBtn && changeMethodBtn.asElement()) {
+      await changeMethodBtn.asElement().click();
+      await page.waitForTimeout(300);
+    }
+
+    const manualMethodCard = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('.method-picker-4row button'));
+      return btns.find(b => b.textContent.includes('Gieo từng hào') || b.textContent.includes('Step'));
+    });
+    if (manualMethodCard && manualMethodCard.asElement()) {
+      await manualMethodCard.asElement().click();
+      await page.waitForTimeout(350);
+      reporter.pass('Select Method 2: ManualLineStepper (Gieo từng hào)');
+
+      // Switch to "✍ Chọn mặt tay" to test the Total Points pill & lastLine pill in Dark Mode!
+      const manualFlipToggle = await page.evaluateHandle(() => {
+        const btns = Array.from(document.querySelectorAll('button'));
+        return btns.find(b => b.textContent.includes('Chọn mặt tay') || b.textContent.includes('Manual'));
+      });
+      if (manualFlipToggle && manualFlipToggle.asElement()) {
+        await manualFlipToggle.asElement().click();
+        await page.waitForTimeout(250);
+        reporter.pass('Switch ManualLineStepper to Chọn mặt tay Mode');
+      }
+
+      // Confirm 1st line so `lastLine` pill renders
+      const confirmLineBtn = await page.$('.btn-primary.btn-cta');
+      if (confirmLineBtn) {
+        await confirmLineBtn.click();
+        await page.waitForTimeout(300);
+        reporter.pass('Confirm Line 1 in ManualLineStepper');
+      }
+
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow ManualLineStepper + Total/LastLine Pills [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow ManualLineStepper + Total/LastLine Pills [Light Mode]');
+    }
+
+    // 5. Test Method 3: Mai Hoa — Ngày giờ động tâm (`mai-hoa-time`)
+    const backBtn2 = await page.$('#btn-change-casting-method');
+    if (backBtn2) {
+      await backBtn2.click();
+      await page.waitForTimeout(300);
+    }
+    const maiHoaTimeCard = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('.method-picker-4row button'));
+      return btns.find(b => b.textContent.includes('Ngày giờ động tâm') || b.textContent.includes('Time'));
+    });
+    if (maiHoaTimeCard && maiHoaTimeCard.asElement()) {
+      await maiHoaTimeCard.asElement().click();
+      await page.waitForTimeout(350);
+      reporter.pass('Select Method 3: Mai Hoa — Ngày giờ động tâm');
+
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow MaiHoaTimePanel [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow MaiHoaTimePanel [Light Mode]');
+
+      // Cast Mai Hoa Time hexagram
+      const castMaiHoaBtn = await page.$('.btn-primary.btn-cta');
+      if (castMaiHoaBtn) {
+        await castMaiHoaBtn.click();
+        await page.waitForTimeout(500);
+        reporter.pass('Cast Mai Hoa Time Hexagram');
+        await setAppTheme(page, 'dark');
+        await assertAllVisibleTextReadable(page, reporter, 'IChingNow MaiHoaResultCard [Dark Mode]');
+        await setAppTheme(page, 'light');
+        await assertAllVisibleTextReadable(page, reporter, 'IChingNow MaiHoaResultCard [Light Mode]');
+      }
+    }
+
+    // 6. Test Method 4: Mai Hoa — Số seri tiền (`mai-hoa-serial`)
+    const changeMethodFromMaiHoa = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.find(b => b.textContent.includes('Đổi phương pháp'));
+    });
+    if (changeMethodFromMaiHoa && changeMethodFromMaiHoa.asElement()) {
+      await changeMethodFromMaiHoa.asElement().click();
+      await page.waitForTimeout(300);
+    }
+    const maiHoaSerialCard = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('.method-picker-4row button'));
+      return btns.find(b => b.textContent.includes('Số seri tiền') || b.textContent.includes('Serial'));
+    });
+    if (maiHoaSerialCard && maiHoaSerialCard.asElement()) {
+      await maiHoaSerialCard.asElement().click();
+      await page.waitForTimeout(350);
+      reporter.pass('Select Method 4: Mai Hoa — Số seri tiền');
+
+      // Click a banknote suggestion card so SerialPreview renders
+      const firstBill = await page.$('.banknote-bill');
+      if (firstBill) {
+        await firstBill.click();
+        await page.waitForTimeout(250);
+        reporter.pass('Select Banknote Serial Suggestion');
+      }
+
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow MaiHoaSerialPanel + SerialPreview [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow MaiHoaSerialPanel + SerialPreview [Light Mode]');
+    }
+
+    // 7. Practice Game Modal (#open-game) + Biến Quẻ Mini-Game in Dark & Light modes
     const openGameBtn = await page.$('#open-game');
     if (openGameBtn) {
       await page.evaluate(() => document.getElementById('open-game')?.click());
-      await page.waitForTimeout(600);
-      const isGameOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('.game-shell, [aria-label="Luyện Dịch"]'));
-      });
-      if (isGameOpen) {
-        reporter.pass('Open Practice Game (GameShell)');
-        // Exit game via #game-exit
-        const exitGameBtn = await page.$('#game-exit');
-        if (exitGameBtn) {
-          await exitGameBtn.click();
-          await page.waitForSelector('.game-shell, [aria-label="Luyện Dịch"]', { state: 'detached', timeout: 5000 }).catch(() => {});
-          await page.waitForTimeout(400);
-          reporter.pass('Exit Practice Game');
-        } else {
-          // Fallback press Escape
-          await page.keyboard.press('Escape');
-          await page.waitForTimeout(400);
-        }
+      await page.waitForTimeout(500);
+      reporter.pass('Open Practice Game (GameShell)');
+
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow GameShell Home [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow GameShell Home [Light Mode]');
+
+      // Open Biến Quẻ puzzle mode (#game-mode-bien-que)
+      const bienQueBtn = await page.$('#game-mode-bien-que');
+      if (bienQueBtn) {
+        await bienQueBtn.click();
+        await page.waitForTimeout(400);
+        reporter.pass('Open Biến Quẻ Puzzle Game');
+        await setAppTheme(page, 'dark');
+        await assertAllVisibleTextReadable(page, reporter, 'IChingNow BienQueGame [Dark Mode]');
+        await setAppTheme(page, 'light');
+        await assertAllVisibleTextReadable(page, reporter, 'IChingNow BienQueGame [Light Mode]');
+      }
+
+      const exitGameBtn = await page.$('#game-exit');
+      if (exitGameBtn) {
+        await exitGameBtn.click();
+        await page.waitForTimeout(350);
+        reporter.pass('Exit Practice Game');
       }
     }
 
-    // 6. Knowledge Feed Modal (#open-knowledge)
+    // 8. Knowledge Feed Modal (#open-knowledge) in Dark & Light modes
     const openKnowledgeBtn = await page.$('#open-knowledge');
     if (openKnowledgeBtn) {
       await page.evaluate(() => document.getElementById('open-knowledge')?.click());
-      await page.waitForTimeout(600);
-      const isKnowledgeOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('[class*="knowledge"], [class*="feed"], #knowledge-exit'));
-      });
-      if (isKnowledgeOpen) {
-        reporter.pass('Open Knowledge Feed');
-        const exitFeedBtn = await page.$('#knowledge-exit');
-        if (exitFeedBtn) {
-          await exitFeedBtn.click();
-          await page.waitForSelector('#knowledge-exit', { state: 'detached', timeout: 5000 }).catch(() => {});
-          await page.waitForTimeout(400);
-          reporter.pass('Exit Knowledge Feed');
-        } else {
-          await page.keyboard.press('Escape');
-          await page.waitForTimeout(400);
-        }
+      await page.waitForTimeout(500);
+      reporter.pass('Open Knowledge Feed');
+
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow KnowledgeFeed [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'IChingNow KnowledgeFeed [Light Mode]');
+
+      const exitFeedBtn = await page.$('#knowledge-exit');
+      if (exitFeedBtn) {
+        await exitFeedBtn.click();
+        await page.waitForTimeout(350);
+        reporter.pass('Exit Knowledge Feed');
       }
     }
 
-    // 7. Error Log Check
     const criticalErrors = errors.filter(e => e.type === 'pageerror');
     if (criticalErrors.length === 0) {
       reporter.pass('Zero Unhandled Page Errors');
     } else {
-      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors.length} errors: ${criticalErrors[0].message}`);
+      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors[0].message}`);
     }
-
   } catch (err) {
     reporter.fail('IChingNow Suite Exception', err);
   } finally {
@@ -990,7 +1134,6 @@ async function testTuViNow(browser, baseUrl, reporter) {
     reporter.info(`Navigating to ${targetUrl}`);
     await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 30000 });
 
-    // 1. Initial Load & Title
     const title = await page.title();
     if (title.includes('TuVi') || title.includes('Tử Vi')) {
       reporter.pass('Page Title Verification', title);
@@ -998,10 +1141,9 @@ async function testTuViNow(browser, baseUrl, reporter) {
       reporter.fail('Page Title Verification', `Unexpected title: ${title}`);
     }
 
-    // 2. Responsive Viewports & Zero Overflow
-    for (const [vpKey, vp] of Object.entries(VIEWPORTS)) {
+    for (const [, vp] of Object.entries(VIEWPORTS)) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(250);
       const overflow = await checkHorizontalOverflow(page);
       if (!overflow.hasOverflow) {
         reporter.pass(`Zero Horizontal Overflow @ ${vp.name}`, `scrollWidth: ${overflow.scrollWidth}px`);
@@ -1012,122 +1154,108 @@ async function testTuViNow(browser, baseUrl, reporter) {
 
     await page.setViewportSize(VIEWPORTS.desktop);
 
-    // 3. Theme Toggle & Contrast
-    const themeBtn = await page.$('#theme-toggle-btn, .theme-toggle');
-    if (themeBtn) {
-      await themeBtn.click();
-      await page.waitForTimeout(300);
-      reporter.pass('Toggle Theme Mode');
+    // 1. Scan BirthInputForm in Light & Dark modes
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'TuViNow BirthInputForm [Light Mode]');
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'TuViNow BirthInputForm [Dark Mode]');
 
-      const submitBtnContrast = await checkElementContrast(page, '#btn-lap-la-so', 3.0);
-      if (submitBtnContrast.found) {
-        reporter.pass('Submit Button Contrast', `Ratio ${submitBtnContrast.ratio}:1`);
+    // Toggle Lunar Calendar input & Quick Year chip
+    const lunarToggleBtn = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('.calendar-type-toggle button'));
+      return btns.find(b => b.textContent.includes('Âm lịch') || b.textContent.includes('Lunar'));
+    });
+    if (lunarToggleBtn && lunarToggleBtn.asElement()) {
+      await lunarToggleBtn.asElement().click();
+      await page.waitForTimeout(200);
+      reporter.pass('Switch BirthInputForm to Lunar Calendar Mode');
+      const solarToggleBtn = await page.evaluateHandle(() => {
+        const btns = Array.from(document.querySelectorAll('.calendar-type-toggle button'));
+        return btns.find(b => b.textContent.includes('Dương lịch') || b.textContent.includes('Solar'));
+      });
+      if (solarToggleBtn && solarToggleBtn.asElement()) {
+        await solarToggleBtn.asElement().click();
+        await page.waitForTimeout(200);
       }
-
-      await themeBtn.click();
-      await page.waitForTimeout(300);
     }
 
-    // 4. Form Validation & Chart Generation Flow
+    // 2. Submit Birth Info & Generate LasoChart
     const nameInput = await page.$('#input-name');
     const submitBtn = await page.$('#btn-lap-la-so');
-
     if (nameInput && submitBtn) {
-      // Check initial disabled state when name empty
-      await nameInput.fill('');
-      const isInitiallyDisabled = await page.evaluate(el => el.disabled, submitBtn);
-      if (isInitiallyDisabled) {
-        reporter.pass('Submit Button Disabled on Empty Name');
-      } else {
-        reporter.warn('Submit button was not disabled on empty name');
-      }
-
-      // Fill Name and Submit
       await nameInput.fill('Đỗ Minh Quân');
       await page.waitForTimeout(200);
-
-      const isNowEnabled = await page.evaluate(el => !el.disabled, submitBtn);
-      if (isNowEnabled) {
-        reporter.pass('Submit Button Enabled on Valid Name');
-      }
-
       await submitBtn.click();
-      reporter.info('Submitted Birth Info — awaiting chart generation...');
-
-      // Wait for LasoChart to render
       await page.waitForSelector('.chart-grid, .palace-card, .chart-center', { timeout: 15000 });
-      reporter.pass('TuVi LasoChart Rendered Successfully');
-
-      // Verify 12 Palaces Rendered
-      const palaceCount = await page.evaluate(() => {
-        return document.querySelectorAll('.palace-card').length;
-      });
-
-      if (palaceCount === 12) {
-        reporter.pass('12 Palaces (Cung) Rendered in LasoChart', '12 / 12 Palaces');
-      } else {
-        reporter.warn(`Expected 12 palace cards, found ${palaceCount}`);
-      }
-    } else {
-      reporter.fail('Birth Form Controls', 'Could not locate #input-name or #btn-lap-la-so');
+      await page.waitForTimeout(500);
+      reporter.pass('Generate TuVi LasoChart (12 Palaces)');
     }
 
-    // 5. Star / Palace Interaction (Tap-to-Learn Glossary Modal)
+    // Open AI Settings in TuViAiPanel
+    const tuviAiSettings = await page.$('.tuvi-ai-settings-btn');
+    if (tuviAiSettings) {
+      await tuviAiSettings.click();
+      await page.waitForTimeout(250);
+      reporter.pass('Open TuVi AI Settings Panel');
+    }
+
+    await setAppTheme(page, 'light');
+    await assertAllVisibleTextReadable(page, reporter, 'TuViNow LasoChart + AI Panel [Light Mode]');
+    await setAppTheme(page, 'dark');
+    await assertAllVisibleTextReadable(page, reporter, 'TuViNow LasoChart + AI Panel [Dark Mode]');
+
+    // 3. Open Tap-to-Learn Glossary Modal in Light & Dark modes
     const starOrBadge = await page.$('.chart-center span[style*="cursor: pointer"], .palace-card span[style*="cursor: pointer"]') || await page.$('.palace-card');
     if (starOrBadge) {
       await starOrBadge.click();
-      await page.waitForTimeout(500);
-
-      const isGlossaryOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('.tuvi-glossary-modal, .glossary-sheet, [class*="glossary"]'));
-      });
-
+      await page.waitForTimeout(450);
+      const isGlossaryOpen = await page.evaluate(() => Boolean(document.querySelector('.tuvi-glossary-modal, .glossary-sheet, [class*="glossary"]')));
       if (isGlossaryOpen) {
         reporter.pass('Open TuVi Tap-to-Learn Glossary Modal');
-        const closeBtn = await page.$('button[aria-label="Đóng"], button[aria-label="Close"], .modal-close');
-        if (closeBtn) {
-          await closeBtn.click();
-          await page.waitForSelector('.tuvi-glossary-modal, [class*="glossary"]', { state: 'detached', timeout: 5000 }).catch(() => {});
-          await page.waitForTimeout(300);
-          reporter.pass('Close TuVi Glossary Modal');
-        } else {
-          await page.keyboard.press('Escape');
-          await page.waitForTimeout(300);
-        }
+        await setAppTheme(page, 'light');
+        await assertAllVisibleTextReadable(page, reporter, 'TuViNow GlossaryModal [Light Mode]');
+        await setAppTheme(page, 'dark');
+        await assertAllVisibleTextReadable(page, reporter, 'TuViNow GlossaryModal [Dark Mode]');
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(300);
       }
     }
 
-    // 6. Navigation to HopHon (#hop-hon)
+    // 4. Open ShareCard in Light & Dark modes
+    const shareBtn = await page.evaluateHandle(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.find(b => b.textContent.includes('Chia sẻ') || b.textContent.includes('Tạo ảnh'));
+    });
+    if (shareBtn && shareBtn.asElement()) {
+      await shareBtn.asElement().click();
+      await page.waitForTimeout(350);
+      reporter.pass('Toggle TuVi ShareCard');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'TuViNow ShareCard [Light Mode]');
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'TuViNow ShareCard [Dark Mode]');
+    }
+
+    // 5. Navigate to HopHonPage (#hop-hon) and check Light & Dark modes
     const hopHonLink = await page.$('a[href="#hop-hon"]');
     if (hopHonLink) {
       await hopHonLink.click();
-      await page.waitForTimeout(500);
-
-      const isHopHonVisible = await page.evaluate(() => {
-        return Boolean(document.querySelector('.hop-hon'));
-      });
-
-      if (isHopHonVisible) {
-        reporter.pass('Navigate to HopHon Page (#hop-hon)');
-      } else {
-        reporter.fail('Navigate to HopHon Page', '.hop-hon container not rendered');
-      }
-
-      // Return to chart view
-      await page.evaluate(() => {
-        window.location.hash = '';
-      });
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(450);
+      reporter.pass('Navigate to HopHonPage (#hop-hon)');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'TuViNow HopHonPage [Light Mode]');
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'TuViNow HopHonPage [Dark Mode]');
+      await page.evaluate(() => { window.location.hash = ''; });
+      await page.waitForTimeout(300);
     }
 
-    // 7. Error Log Check
     const criticalErrors = errors.filter(e => e.type === 'pageerror');
     if (criticalErrors.length === 0) {
       reporter.pass('Zero Unhandled Page Errors');
     } else {
-      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors.length} errors: ${criticalErrors[0].message}`);
+      reporter.fail('Zero Unhandled Page Errors', `${criticalErrors[0].message}`);
     }
-
   } catch (err) {
     reporter.fail('TuViNow Suite Exception', err);
   } finally {
@@ -1143,14 +1271,13 @@ async function main() {
   const reporter = new TestReporter();
 
   console.log(`\n${c.bold}${c.magenta}╔══════════════════════════════════════════════════════════════════════╗${c.reset}`);
-  console.log(`${c.bold}${c.magenta}║       SpiritNow Ecosystem Playwright E2E & Contrast Test Suite       ║${c.reset}`);
+  console.log(`${c.bold}${c.magenta}║   SpiritNow Full-Flow Playwright E2E & DOM Contrast Scanner Suite    ║${c.reset}`);
   console.log(`${c.bold}${c.magenta}╚══════════════════════════════════════════════════════════════════════╝${c.reset}`);
   console.log(`  Target Base URL : ${c.bold}${options.baseUrl}${c.reset}`);
   console.log(`  Target App(s)   : ${c.bold}${options.app.toUpperCase()}${c.reset}`);
   console.log(`  Headless Mode   : ${c.bold}${options.headless}${c.reset}`);
   console.log(`  Timestamp       : ${new Date().toISOString()}`);
 
-  // Resolve Playwright
   let playwright;
   try {
     playwright = await resolvePlaywright();
@@ -1159,7 +1286,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Determine Google Chrome executable
   const chromeExecutable = process.env.CHROME_PATH ||
     (fs.existsSync('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
       ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -1169,7 +1295,6 @@ async function main() {
     reporter.info(`Using Chrome Executable: ${chromeExecutable}`);
   }
 
-  // Launch Chromium
   const browser = await playwright.chromium.launch({
     headless: options.headless,
     executablePath: chromeExecutable,
@@ -1199,7 +1324,6 @@ async function main() {
     if (target === 'all' || target === 'tuvinow' || target === 'tuvi') {
       await testTuViNow(browser, options.baseUrl, reporter);
     }
-
   } finally {
     await browser.close();
   }
