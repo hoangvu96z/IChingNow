@@ -281,7 +281,7 @@ function AuthenticatedPage({ userId }) {
         <PersonForm label="Bên B · Vợ" side="B" value={payload.vo} onChange={vo => setPayload(p => ({ ...p, vo }))} />
       </div>
       <div className="hh-divider"><span aria-hidden="true">♡</span></div>
-      <button className="hh-primary" disabled={busy}>{busy ? '✨ Đang đối chiếu…' : '💕 Xem hợp hôn'}</button>
+      <button type="submit" className="hh-primary" disabled={busy}>{busy ? '✨ Đang đối chiếu…' : '💕 Xem hợp hôn'}</button>
     </form>
       : <><button className="hh-back" onClick={() => setSession(null)}>← Đổi thông tin hai người</button><PairSession key={session.key} initial={session} onStored={loadHistory} /></>}
     {error && <p role="alert">{error}</p>}

@@ -58,12 +58,12 @@ export default function TuViGlossaryModal({ term, onClose }) {
         style={{
           width: '100%',
           maxWidth: 580,
-          background: 'var(--color-bg-card, #1c182b)',
-          color: 'var(--color-text, #f0e6d2)',
+          background: 'var(--bg-card, #ffffff)',
+          color: 'var(--text-primary, #111827)',
           borderRadius: '24px 24px 0 0',
           padding: '24px 24px 32px',
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(229, 193, 88, 0.2)',
-          borderTop: '3px solid var(--color-gold, #e5c158)',
+          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border-subtle, rgba(0, 0, 0, 0.1))',
+          borderTop: '3px solid var(--accent-gold, #b45309)',
           maxHeight: '85vh',
           overflowY: 'auto',
           animation: 'tuviSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -74,7 +74,7 @@ export default function TuViGlossaryModal({ term, onClose }) {
           width: 44,
           height: 4,
           borderRadius: 2,
-          background: 'rgba(255, 255, 255, 0.25)',
+          background: 'var(--border-subtle, rgba(128, 128, 128, 0.35))',
           margin: '-10px auto 16px',
         }} />
 
@@ -87,7 +87,7 @@ export default function TuViGlossaryModal({ term, onClose }) {
                 fontFamily: "'Noto Serif', serif",
                 fontSize: '1.45rem',
                 fontWeight: 700,
-                color: 'var(--color-gold, #e5c158)',
+                color: 'var(--accent-gold, #b45309)',
                 letterSpacing: '0.02em',
               }}>
                 {info.title}
@@ -104,9 +104,9 @@ export default function TuViGlossaryModal({ term, onClose }) {
                   borderRadius: 6,
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  background: 'rgba(229, 193, 88, 0.15)',
-                  border: '1px solid rgba(229, 193, 88, 0.35)',
-                  color: '#f3d98b',
+                  background: 'var(--accent-gold-dim, rgba(180, 83, 9, 0.12))',
+                  border: '1px solid var(--border-gold, rgba(180, 83, 9, 0.35))',
+                  color: 'var(--accent-gold-bright, #854d0e)',
                 }}>
                   {info.type}
                 </span>
@@ -118,7 +118,7 @@ export default function TuViGlossaryModal({ term, onClose }) {
                   borderRadius: 6,
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  background: `${elemColor}22`,
+                  background: `${elemColor}1f`,
                   border: `1px solid ${elemColor}66`,
                   color: elemColor,
                 }}>
@@ -128,7 +128,7 @@ export default function TuViGlossaryModal({ term, onClose }) {
             </div>
 
             {info.constellation && (
-              <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: 4 }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', marginTop: 4 }}>
                 {info.constellation}
               </div>
             )}
@@ -139,8 +139,8 @@ export default function TuViGlossaryModal({ term, onClose }) {
             onClick={onClose}
             aria-label="Đóng"
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: 'none',
+              background: 'var(--bg-secondary, rgba(128, 128, 128, 0.12))',
+              border: '1px solid var(--border-subtle, rgba(128, 128, 128, 0.2))',
               borderRadius: '50%',
               width: 32,
               height: 32,
@@ -149,7 +149,7 @@ export default function TuViGlossaryModal({ term, onClose }) {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: 'var(--color-text-muted, #a0988d)',
+              color: 'var(--text-primary, #111827)',
               transition: 'all 0.2s',
             }}
           >
@@ -164,9 +164,9 @@ export default function TuViGlossaryModal({ term, onClose }) {
             padding: '8px 12px',
             borderRadius: 8,
             fontSize: '0.85rem',
-            background: info.statusCode === 'H' ? 'rgba(217, 72, 59, 0.15)' : 'rgba(46, 139, 87, 0.15)',
-            border: `1px solid ${info.statusCode === 'H' ? 'rgba(217, 72, 59, 0.4)' : 'rgba(46, 139, 87, 0.4)'}`,
-            color: info.statusCode === 'H' ? '#ff9e94' : '#a3e8b8',
+            background: info.statusCode === 'H' ? 'var(--badge-triet-bg, rgba(217, 72, 59, 0.15))' : 'rgba(21, 128, 61, 0.12)',
+            border: `1px solid ${info.statusCode === 'H' ? 'var(--badge-triet-border, rgba(217, 72, 59, 0.4))' : 'rgba(21, 128, 61, 0.35)'}`,
+            color: info.statusCode === 'H' ? 'var(--badge-triet-color, #dc2626)' : 'var(--star-dac, #15803d)',
             fontWeight: 600,
           }}>
             ⭐ {info.statusLabel}
@@ -179,8 +179,8 @@ export default function TuViGlossaryModal({ term, onClose }) {
           fontSize: '0.975rem',
           fontWeight: 600,
           lineHeight: 1.5,
-          color: 'var(--color-text, #f0e6d2)',
-          borderLeft: '3px solid var(--color-gold, #e5c158)',
+          color: 'var(--text-primary, #111827)',
+          borderLeft: '3px solid var(--accent-gold, #b45309)',
           paddingLeft: 12,
         }}>
           {info.short}
@@ -191,7 +191,7 @@ export default function TuViGlossaryModal({ term, onClose }) {
           margin: '0 0 16px',
           fontSize: '0.9rem',
           lineHeight: 1.65,
-          color: 'rgba(240, 230, 210, 0.88)',
+          color: 'var(--text-secondary, #374151)',
         }}>
           {info.detail}
         </div>
@@ -205,21 +205,21 @@ export default function TuViGlossaryModal({ term, onClose }) {
             margin: '0 0 16px',
             padding: '12px 14px',
             borderRadius: 10,
-            background: 'rgba(0, 0, 0, 0.25)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--bg-secondary, rgba(0, 0, 0, 0.04))',
+            border: '1px solid var(--border-subtle, rgba(0, 0, 0, 0.08))',
             fontSize: '0.85rem',
             lineHeight: 1.55,
           }}>
             {info.mieuVuong && (
               <div>
-                <strong style={{ color: '#68d391' }}>✨ Đắc/Miếu/Vượng:</strong>{' '}
-                <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{info.mieuVuong}</span>
+                <strong style={{ color: 'var(--star-dac, #15803d)' }}>✨ Đắc/Miếu/Vượng:</strong>{' '}
+                <span style={{ color: 'var(--text-primary, #111827)' }}>{info.mieuVuong}</span>
               </div>
             )}
             {info.hamDia && (
               <div>
-                <strong style={{ color: '#fc8181' }}>⚠️ Hãm địa:</strong>{' '}
-                <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{info.hamDia}</span>
+                <strong style={{ color: 'var(--star-ham, #b91c1c)' }}>⚠️ Hãm địa:</strong>{' '}
+                <span style={{ color: 'var(--text-primary, #111827)' }}>{info.hamDia}</span>
               </div>
             )}
           </div>
@@ -232,11 +232,11 @@ export default function TuViGlossaryModal({ term, onClose }) {
             borderRadius: 10,
             fontSize: '0.85rem',
             lineHeight: 1.55,
-            background: 'rgba(229, 193, 88, 0.1)',
-            border: '1px solid rgba(229, 193, 88, 0.25)',
-            color: '#f0e6d2',
+            background: 'var(--accent-gold-dim, rgba(180, 83, 9, 0.08))',
+            border: '1px solid var(--border-gold, rgba(180, 83, 9, 0.25))',
+            color: 'var(--text-primary, #111827)',
           }}>
-            💡 <strong style={{ color: 'var(--color-gold, #e5c158)' }}>Mẹo luận giải:</strong> {info.tip}
+            💡 <strong style={{ color: 'var(--accent-gold, #b45309)' }}>Mẹo luận giải:</strong> {info.tip}
           </div>
         )}
       </div>

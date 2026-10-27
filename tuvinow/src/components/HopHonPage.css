@@ -735,6 +735,21 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-gold);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hh-back:hover {
+  background: var(--accent-gold-dim);
+  border-color: var(--accent-gold);
 }
 
 /* ── Page nav ── */

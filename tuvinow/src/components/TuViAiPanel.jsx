@@ -259,6 +259,11 @@ export default function TuViAiPanel({
       );
   }
 
+  function handleAutoResize(e) {
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 220)}px`;
+  }
+
   return (
     <div className="tuvi-ai">
       <section
@@ -392,6 +397,7 @@ export default function TuViAiPanel({
               maxLength={2048}
               rows={2}
               onChange={(e) => setQuestion(e.target.value)}
+              onInput={handleAutoResize}
               disabled={busy}
               placeholder="Điều gì trong lá số khiến bạn muốn hiểu sâu hơn?"
             />
@@ -530,6 +536,7 @@ export default function TuViAiPanel({
                     rows={2}
                     disabled={busy}
                     onChange={(e) => setFollowUp(e.target.value)}
+                    onInput={handleAutoResize}
                     placeholder="Hỏi thêm để hiểu rõ hơn về lá số của bạn…"
                   />
                   <div>
