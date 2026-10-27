@@ -263,21 +263,24 @@ async function assertAllVisibleTextReadable(page, reporter, label, minRatio = 3.
           layers.push(bgColors[0]);
           if (bgColors[0].a >= 0.98) break;
         } else if (st.backgroundImage && st.backgroundImage !== 'none' && st.backgroundImage.includes('gradient')) {
-          const gradStops = parseRgbaAll(st.backgroundImage).filter(c => c.a > 0.02);
-          if (gradStops.length > 0) {
-            const avg = gradStops.reduce(
-              (acc, c) => ({ r: acc.r + c.r, g: acc.g + c.g, b: acc.b + c.b, a: acc.a + c.a }),
-              { r: 0, g: 0, b: 0, a: 0 }
-            );
-            const n = gradStops.length;
-            const stop = {
-              r: Math.round(avg.r / n),
-              g: Math.round(avg.g / n),
-              b: Math.round(avg.b / n),
-              a: Math.min(1, avg.a / n),
-            };
-            layers.push(stop);
-            if (stop.a >= 0.98) break;
+          // Only treat backgroundImage gradients as an element surface if it is not the full-screen decorative .app-bg
+          if (!curr.classList || !curr.classList.contains('app-bg')) {
+            const gradStops = parseRgbaAll(st.backgroundImage).filter(c => c.a > 0.02);
+            if (gradStops.length > 0) {
+              const avg = gradStops.reduce(
+                (acc, c) => ({ r: acc.r + c.r, g: acc.g + c.g, b: acc.b + c.b, a: acc.a + c.a }),
+                { r: 0, g: 0, b: 0, a: 0 }
+              );
+              const n = gradStops.length;
+              const stop = {
+                r: Math.round(avg.r / n),
+                g: Math.round(avg.g / n),
+                b: Math.round(avg.b / n),
+                a: Math.min(1, avg.a / n),
+              };
+              layers.push(stop);
+              if (stop.a >= 0.98) break;
+            }
           }
         }
         curr = curr.parentElement;

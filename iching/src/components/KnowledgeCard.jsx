@@ -2,10 +2,10 @@ import React, { useRef, useState, useCallback } from 'react';
 import { toPng } from 'html-to-image';
 
 const TYPE_CONFIG = {
-  concept: { emoji: '📚', label: 'Kiến thức', accent: '#c9963a', bg: 'linear-gradient(165deg, #1a1206 0%, #2d1f08 30%, #1a1206 100%)' },
-  tip:     { emoji: '💡', label: 'Mẹo xem quẻ', accent: '#5ca067', bg: 'linear-gradient(165deg, #0a1a0d 0%, #13260f 30%, #0a1a0d 100%)' },
-  quiz:    { emoji: '🎯', label: 'Mini Quiz', accent: '#6a7ec9', bg: 'linear-gradient(165deg, #0d0f1f 0%, #141a3a 30%, #0d0f1f 100%)' },
-  hexOfDay:{ emoji: '☯',  label: 'Quẻ của ngày', accent: '#c25050', bg: 'linear-gradient(165deg, #1a0a0a 0%, #2d1010 30%, #1a0a0a 100%)' },
+  concept: { emoji: '📚', label: 'Kiến thức', accent: '#c9963a', textAccent: '#7a5204', bg: 'linear-gradient(165deg, #1a1206 0%, #2d1f08 30%, #1a1206 100%)' },
+  tip:     { emoji: '💡', label: 'Mẹo xem quẻ', accent: '#5ca067', textAccent: '#1b6327', bg: 'linear-gradient(165deg, #0a1a0d 0%, #13260f 30%, #0a1a0d 100%)' },
+  quiz:    { emoji: '🎯', label: 'Mini Quiz', accent: '#7c8fe0', textAccent: '#2f4299', bg: 'linear-gradient(165deg, #0d0f1f 0%, #141a3a 30%, #0d0f1f 100%)' },
+  hexOfDay:{ emoji: '☯',  label: 'Quẻ của ngày', accent: '#d96868', textAccent: '#992626', bg: 'linear-gradient(165deg, #1a0a0a 0%, #2d1010 30%, #0d0f1f 100%)' },
 };
 
 /**
@@ -116,7 +116,7 @@ export default function KnowledgeCard({ post, compact = false, onQuizAnswer }) {
           >
             {cfg.emoji} {cfg.label}
           </span>
-          <span style={{ fontSize: '0.7rem', color: '#8a7f6a' }}>
+          <span style={{ fontSize: '0.7rem', color: '#b5aa96' }}>
             {post.tag}
           </span>
         </div>
@@ -223,10 +223,10 @@ export default function KnowledgeCard({ post, compact = false, onQuizAnswer }) {
             borderTop: '1px solid rgba(255, 255, 255, 0.12)',
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted, #a89f91)', fontWeight: 700, letterSpacing: '0.12em' }}>
+          <span style={{ fontSize: '0.7rem', color: '#b5aa96', fontWeight: 700, letterSpacing: '0.12em' }}>
             ICHINGNOW.COM
           </span>
-          <span style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted, #a89f91)' }}>
+          <span style={{ fontSize: '0.65rem', color: '#b5aa96' }}>
             Dịch Học mỗi ngày
           </span>
         </div>
@@ -243,9 +243,9 @@ export default function KnowledgeCard({ post, compact = false, onQuizAnswer }) {
             flex: 1,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             padding: '10px 14px', borderRadius: 12,
-            background: saving ? '#3a3525' : `${cfg.accent}18`,
-            border: `1px solid ${cfg.accent}40`,
-            color: cfg.accent,
+            background: saving ? '#3a3525' : 'var(--color-paper-dark, rgba(184,134,11,0.12))',
+            border: '1px solid var(--color-gold, #8a6104)',
+            color: 'var(--color-gold, #8a6104)',
             fontSize: '0.85rem', fontWeight: 700,
             cursor: saving ? 'wait' : 'pointer',
             transition: 'all 0.2s ease',

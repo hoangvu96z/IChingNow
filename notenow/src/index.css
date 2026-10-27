@@ -26,12 +26,12 @@
   --text-muted: #64748b;
   --text-on-accent: #ffffff;
 
-  /* Accents — Emerald */
-  --accent: #059669;
-  --accent-hover: #047857;
-  --accent-dim: rgba(5, 150, 105, 0.12);
-  --accent-glow: rgba(5, 150, 105, 0.25);
-  --accent-border: #059669;
+  /* Accents — Emerald (WCAG AA compliant on white & soft emerald) */
+  --accent: #047857;
+  --accent-hover: #065f46;
+  --accent-dim: rgba(4, 120, 87, 0.12);
+  --accent-glow: rgba(4, 120, 87, 0.25);
+  --accent-border: #047857;
 
   /* Borders - crisp, clear and visible */
   --border: #cbd5e1;
@@ -451,14 +451,15 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #059669, #34d399);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(52, 211, 153, 0.3);
+  background: linear-gradient(135deg, #047857, #059669);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #047857, #6ee7b7);
-  box-shadow: 0 6px 16px rgba(52, 211, 153, 0.4);
+  background: linear-gradient(135deg, #065f46, #047857);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
   transform: translateY(-1px);
 }
 

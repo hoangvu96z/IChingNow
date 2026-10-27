@@ -41,9 +41,9 @@ export default function LucHaoCombinedTabCard({ result }) {
           type="button"
           onClick={() => setActiveTab('table')}
           style={{
-            background: activeTab === 'table' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.07)',
-            color: activeTab === 'table' ? '#ffffff' : 'var(--color-ink, #2c2621)',
-            border: '1px solid ' + (activeTab === 'table' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.3)'),
+            background: activeTab === 'table' ? 'var(--color-gold, #8a6104)' : 'rgba(184, 134, 11, 0.09)',
+            color: activeTab === 'table' ? 'var(--color-on-gold, #ffffff)' : 'var(--color-ink, #2c2621)',
+            border: '1px solid ' + (activeTab === 'table' ? 'var(--color-gold, #8a6104)' : 'rgba(184, 134, 11, 0.3)'),
             padding: '8px 18px',
             borderRadius: 8,
             fontSize: '0.875rem',
@@ -63,9 +63,9 @@ export default function LucHaoCombinedTabCard({ result }) {
           type="button"
           onClick={() => setActiveTab('basic')}
           style={{
-            background: activeTab === 'basic' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.07)',
-            color: activeTab === 'basic' ? '#ffffff' : 'var(--color-ink, #2c2621)',
-            border: '1px solid ' + (activeTab === 'basic' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.3)'),
+            background: activeTab === 'basic' ? 'var(--color-gold, #8a6104)' : 'rgba(184, 134, 11, 0.09)',
+            color: activeTab === 'basic' ? 'var(--color-on-gold, #ffffff)' : 'var(--color-ink, #2c2621)',
+            border: '1px solid ' + (activeTab === 'basic' ? 'var(--color-gold, #8a6104)' : 'rgba(184, 134, 11, 0.3)'),
             padding: '8px 18px',
             borderRadius: 8,
             fontSize: '0.875rem',
@@ -86,9 +86,9 @@ export default function LucHaoCombinedTabCard({ result }) {
           id="tab-learn"
           onClick={() => setActiveTab('learn')}
           style={{
-            background: activeTab === 'learn' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.07)',
-            color: activeTab === 'learn' ? '#ffffff' : 'var(--color-ink, #2c2621)',
-            border: '1px solid ' + (activeTab === 'learn' ? 'var(--color-gold, #b8860b)' : 'rgba(184, 134, 11, 0.3)'),
+            background: activeTab === 'learn' ? 'var(--color-gold, #8a6104)' : 'rgba(184, 134, 11, 0.09)',
+            color: activeTab === 'learn' ? 'var(--color-on-gold, #ffffff)' : 'var(--color-ink, #2c2621)',
+            border: '1px solid ' + (activeTab === 'learn' ? 'var(--color-gold, #8a6104)' : 'rgba(184, 134, 11, 0.3)'),
             padding: '8px 18px',
             borderRadius: 8,
             fontSize: '0.875rem',

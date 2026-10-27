@@ -265,7 +265,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
               disabled={isCasting}
               style={{
                 background: castMode === 'sequential' ? 'var(--color-gold)' : 'transparent',
-                color: castMode === 'sequential' ? '#fff' : 'var(--color-ink-muted)',
+                color: castMode === 'sequential' ? 'var(--color-on-gold, #fff)' : 'var(--color-ink-muted)',
                 border: 'none',
                 borderRadius: 16,
                 padding: '3px 10px',
@@ -283,7 +283,7 @@ export default function QuickCastPanel({ onResult, disabled, algorithm = 'three-
               disabled={isCasting}
               style={{
                 background: castMode === 'instant' ? 'var(--color-gold)' : 'transparent',
-                color: castMode === 'instant' ? '#fff' : 'var(--color-ink-muted)',
+                color: castMode === 'instant' ? 'var(--color-on-gold, #fff)' : 'var(--color-ink-muted)',
                 border: 'none',
                 borderRadius: 16,
                 padding: '3px 10px',

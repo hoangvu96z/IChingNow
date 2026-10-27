@@ -12,8 +12,8 @@ import { dailyPuzzle, loadStore as loadBQ, glyph } from './bienQue/bienQueLogic.
 const gold = 'var(--color-gold, #b8860b)';
 
 const btn = (active, extra = {}) => ({
-  background: active ? gold : 'rgba(184,134,11,0.07)',
-  color: active ? '#fff' : 'var(--color-ink, #2c2621)',
+  background: active ? gold : 'rgba(184,134,11,0.09)',
+  color: active ? 'var(--color-on-gold, #fff)' : 'var(--color-ink, #2c2621)',
   border: '1px solid ' + (active ? gold : 'rgba(184,134,11,0.3)'),
   padding: '10px 16px', borderRadius: 10, fontSize: '0.95rem', fontWeight: 700,
   cursor: 'pointer', transition: 'all 0.2s ease', ...extra,
@@ -293,7 +293,7 @@ export default function GameShell({ onExit }) {
   return (
     <div
       role="dialog" aria-modal="true" aria-label="Luyện Dịch"
-      style={{ position: 'fixed', inset: 0, zIndex: 900, overflowY: 'auto', background: 'rgba(20,14,6,0.6)', backdropFilter: 'blur(4px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 900, overflowY: 'auto', background: 'rgba(15, 10, 5, 0.86)', backdropFilter: 'blur(4px)' }}
     >
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 14px 40px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#f5d78e' }}>

@@ -134,10 +134,10 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
           <div style={{
             display: 'flex',
             gap: 6,
-            background: 'rgba(0, 0, 0, 0.4)',
+            background: 'var(--bg-secondary, rgba(0, 0, 0, 0.4))',
             padding: 4,
             borderRadius: 10,
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--border-gold, rgba(255, 255, 255, 0.15))',
             width: '100%',
           }}>
             <button
@@ -148,8 +148,8 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
                 padding: '6px 8px',
                 borderRadius: 7,
                 border: 'none',
-                background: !isReversed ? 'rgba(229, 193, 88, 0.85)' : 'transparent',
-                color: !isReversed ? '#120d24' : 'rgba(255, 255, 255, 0.7)',
+                background: !isReversed ? '#e5c158' : 'transparent',
+                color: !isReversed ? '#120d24' : 'var(--text-primary, #ffffff)',
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -166,8 +166,8 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
                 padding: '6px 8px',
                 borderRadius: 7,
                 border: 'none',
-                background: isReversed ? 'rgba(240, 98, 146, 0.85)' : 'transparent',
-                color: isReversed ? '#fff' : 'rgba(255, 255, 255, 0.7)',
+                background: isReversed ? '#d81b60' : 'transparent',
+                color: isReversed ? '#ffffff' : 'var(--text-primary, #ffffff)',
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -188,8 +188,8 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
               alignItems: 'center',
               gap: 8,
               fontSize: '0.8rem',
-              color: 'rgba(229, 193, 88, 0.9)',
-              fontWeight: 600,
+              color: 'var(--gold-color, #e5c158)',
+              fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               marginBottom: 4,
@@ -210,18 +210,18 @@ export default function TarotLearnModal({ card, onClose, language = 'vi' }) {
 
           {/* Badge trạng thái */}
           <div>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              borderRadius: 6,
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              background: isReversed ? 'rgba(240, 98, 146, 0.15)' : 'rgba(229, 193, 88, 0.15)',
-              border: `1px solid ${isReversed ? 'rgba(240, 98, 146, 0.4)' : 'rgba(229, 193, 88, 0.4)'}`,
-              color: isReversed ? '#f48fb1' : '#e5c158',
-            }}>
+            <span
+              className={`card-orientation-badge ${isReversed ? 'reversed' : 'upright'}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 6,
+                fontSize: '0.8rem',
+                fontWeight: 700,
+              }}
+            >
               {isReversed ? '↕ ' + (isEn ? 'Reversed Position' : 'Chiều Ngược') : '↑ ' + (isEn ? 'Upright Position' : 'Chiều Xuôi')}
             </span>
           </div>

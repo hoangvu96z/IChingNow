@@ -13,8 +13,8 @@ const FILTERS = [
 const gold = 'var(--color-gold, #b8860b)';
 
 const btnStyle = (active) => ({
-  background: active ? gold : 'rgba(184,134,11,0.07)',
-  color: active ? '#fff' : 'var(--color-ink, #2c2621)',
+  background: active ? gold : 'rgba(184,134,11,0.1)',
+  color: active ? 'var(--color-on-gold, #fff)' : 'var(--color-ink, #2c2621)',
   border: '1px solid ' + (active ? gold : 'rgba(184,134,11,0.3)'),
   padding: '6px 14px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 700,
   cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap',
@@ -45,7 +45,7 @@ export default function KnowledgeFeed({ onExit }) {
       role="dialog" aria-modal="true" aria-label="Dịch Học mỗi ngày"
       style={{
         position: 'fixed', inset: 0, zIndex: 900,
-        overflowY: 'auto', background: 'rgba(20,14,6,0.6)',
+        overflowY: 'auto', background: 'rgba(15, 10, 5, 0.86)',
         backdropFilter: 'blur(4px)',
       }}
     >

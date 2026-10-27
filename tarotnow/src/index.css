@@ -3625,10 +3625,38 @@ input:checked + .toggle-slider:before {
   background: rgba(164, 120, 18, 0.05);
 }
 
+[data-theme="light"] .ai-template-selector {
+  background: rgba(164, 120, 18, 0.08);
+  border: 1px solid rgba(164, 120, 18, 0.22);
+}
+
+[data-theme="light"] .ai-template-label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+[data-theme="light"] .ai-template-tab-btn {
+  background: #ffffff;
+  border-color: rgba(164, 120, 18, 0.3);
+  color: var(--text-muted);
+}
+
 [data-theme="light"] .ai-template-tab-btn.active {
   color: #7c5208 !important;
   background: rgba(164, 120, 18, 0.16) !important;
   border-color: rgba(164, 120, 18, 0.45) !important;
+}
+
+[data-theme="light"] .card-orientation-badge.upright {
+  background: rgba(21, 128, 61, 0.14);
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.4);
+}
+
+[data-theme="light"] .card-orientation-badge.reversed {
+  background: rgba(185, 28, 28, 0.14);
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.4);
 }
 
 [data-theme="light"] .spread-card-pos-label {

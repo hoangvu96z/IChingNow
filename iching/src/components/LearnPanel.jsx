@@ -7,9 +7,9 @@ const VERDICT_LABEL = { cat: 'Cát', binh: 'Bình', hung: 'Hung' };
 const VERDICT_COLOR = { cat: 'var(--color-jade)', binh: 'var(--color-gold, #b8860b)', hung: 'var(--color-vermillion)' };
 
 const btn = (active) => ({
-  background: active ? 'var(--color-gold, #b8860b)' : 'rgba(184,134,11,0.07)',
-  color: active ? '#fff' : 'var(--color-ink, #2c2621)',
-  border: '1px solid ' + (active ? 'var(--color-gold, #b8860b)' : 'rgba(184,134,11,0.3)'),
+  background: active ? 'var(--color-gold, #8a6104)' : 'rgba(184,134,11,0.09)',
+  color: active ? 'var(--color-on-gold, #fff)' : 'var(--color-ink, #2c2621)',
+  border: '1px solid ' + (active ? 'var(--color-gold, #8a6104)' : 'rgba(184,134,11,0.3)'),
   padding: '7px 14px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
 });
 

@@ -544,12 +544,15 @@ export default function AppHeader({
       <div
         ref={drawerRef}
         className="app-header-drawer"
+        aria-hidden={!drawerOpen}
         style={{
           position: 'fixed', top: 56, left: 0, right: 0, zIndex: 199,
           background: colors.drawerBg,
           borderBottom: `1px solid ${colors.border}`,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           transform: drawerOpen ? 'translateY(0)' : 'translateY(-110%)',
+          visibility: drawerOpen ? 'visible' : 'hidden',
+          pointerEvents: drawerOpen ? 'auto' : 'none',
           transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
           padding: '16px 20px 24px',
           display: 'flex',

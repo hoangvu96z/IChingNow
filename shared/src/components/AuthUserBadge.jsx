@@ -37,11 +37,13 @@ export default function AuthUserBadge({ useAuthHook, accentColor }) {
   }
 
   if (!isAuthenticated) {
-    const isMint = accentColor === '#6dd5b0';
+    const isLightAccent = ['#6dd5b0', '#e5c158', '#d4a017', '#f5d78e', '#b8860b', '#f0ca67'].includes(
+      String(accentColor || '').toLowerCase()
+    );
     const loginBg = accentColor
       ? `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`
       : 'linear-gradient(135deg, #7c5cfc, #a78bfa)';
-    const loginColor = isMint ? '#0a2e23' : 'white';
+    const loginColor = isLightAccent ? '#120a06' : 'white';
     return (
       <button
         id="sso-login-btn"
@@ -53,7 +55,7 @@ export default function AuthUserBadge({ useAuthHook, accentColor }) {
           borderRadius: 8,
           color: loginColor,
           fontSize: '0.8rem',
-          fontWeight: isMint ? 750 : 600,
+          fontWeight: isLightAccent ? 750 : 600,
           cursor: 'pointer',
           fontFamily: 'inherit',
           transition: 'opacity 0.2s',

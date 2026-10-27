@@ -10,8 +10,9 @@
   --color-ink:        #2c1810;
   --color-ink-muted:  #6b4c3b;
   --color-vermillion: #c0392b;
-  --color-gold:       #b8860b;
-  --color-gold-light: #d4a017;
+  --color-gold:       #8a6104;
+  --color-gold-light: #a67608;
+  --color-on-gold:    #ffffff;
   --color-jade:       #1a6b4a;
   --color-shadow:     rgba(44, 24, 16, 0.15);
 
@@ -40,6 +41,7 @@
   --color-vermillion: #e36655;
   --color-gold:       #e2b544;
   --color-gold-light: #f0ca67;
+  --color-on-gold:    #18120e;
   --color-jade:       #4bc092;
   --color-shadow:     rgba(0, 0, 0, 0.48);
 
@@ -149,7 +151,7 @@ body {
 }
 .btn-secondary:hover:not(:disabled) {
   background: var(--color-gold);
-  color: white;
+  color: var(--color-on-gold, #ffffff);
 }
 .btn-secondary:disabled {
   opacity: 0.4;

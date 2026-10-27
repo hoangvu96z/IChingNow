@@ -939,8 +939,8 @@ export default function App() {
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
-                  background: 'var(--color-gold, #b8860b)', border: '1px solid var(--color-gold, #b8860b)',
-                  fontSize: '0.8rem', fontWeight: 700, color: '#fff',
+                  background: 'var(--color-gold, #8a6104)', border: '1px solid var(--color-gold, #8a6104)',
+                  fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-on-gold, #fff)',
                   whiteSpace: 'nowrap', transition: 'all 0.2s',
                   boxShadow: '0 2px 8px rgba(184,134,11,0.3)',
                 }}

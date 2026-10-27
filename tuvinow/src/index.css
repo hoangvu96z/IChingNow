@@ -1937,7 +1937,12 @@ body {
 }
 .share-card-toggle-btn:hover {
   background: var(--accent-gold);
-  color: #fff;
+  color: #ffffff;
+  border-style: solid;
+}
+[data-theme="dark"] .share-card-toggle-btn:hover {
+  background: var(--accent-gold);
+  color: #1a0a06;
   border-style: solid;
 }
 
