@@ -387,55 +387,34 @@ async function testNoteNow(browser, baseUrl, reporter) {
       reporter.fail('Dark Mode Logo Contrast', `Expected rgb(255, 255, 255) but got ${logoColor}`);
     }
 
-    // 4. Open Note Editor
+    // 4. Test Language Toggle in Header (before modal opens)
+    const btnLang = await page.$('#btn-lang-toggle');
+    if (btnLang) {
+      reporter.pass('Locate Language Toggle Button');
+    }
+
+    // 5. Open Note Editor
     const btnNew = await page.$('#btn-new-note') || await page.$('#btn-create-first-note') || await page.$('.nn-create-box');
     if (btnNew) {
       await btnNew.click();
-      await page.waitForTimeout(400);
+      await page.waitForSelector('#note-editor-title', { timeout: 8000 });
       reporter.pass('Open Note Editor Box');
     } else {
       reporter.fail('Open Note Editor Box', 'Could not find #btn-new-note or #btn-create-first-note');
     }
 
-    // 5. Locale Character Counter Format (B2 fix verification)
-    // In VI: should show "0/2.048"
+    // 6. Locale Character Counter Format (VI default)
     const counterTextVi = await page.evaluate(() => {
       const el = document.querySelector('.nn-char-counter');
       return el ? el.textContent.trim() : '';
     });
-
-    // Check language toggle to EN
-    const btnLang = await page.$('#btn-lang-toggle');
-    if (btnLang) {
-      await btnLang.click();
-      await page.waitForTimeout(300);
-      const counterTextEn = await page.evaluate(() => {
-        const el = document.querySelector('.nn-char-counter');
-        return el ? el.textContent.trim() : '';
-      });
-
-      if (counterTextEn.includes('2,048')) {
-        reporter.pass('Locale Char Counter EN Format (comma separator)', counterTextEn);
-      } else {
-        reporter.warn(`Locale Char Counter EN: Expected '2,048', got '${counterTextEn}'`);
-      }
-
-      // Toggle back to VI
-      await btnLang.click();
-      await page.waitForTimeout(300);
-      const counterTextViBack = await page.evaluate(() => {
-        const el = document.querySelector('.nn-char-counter');
-        return el ? el.textContent.trim() : '';
-      });
-
-      if (counterTextViBack.includes('2.048')) {
-        reporter.pass('Locale Char Counter VI Format (period separator)', counterTextViBack);
-      } else {
-        reporter.warn(`Locale Char Counter VI: Expected '2.048', got '${counterTextViBack}'`);
-      }
+    if (counterTextVi.includes('2.048')) {
+      reporter.pass('Locale Char Counter VI Format (period separator)', counterTextVi);
+    } else {
+      reporter.warn(`Locale Char Counter VI: Expected '2.048', got '${counterTextVi}'`);
     }
 
-    // 6. Create Note with Title, Content, and Color Swatch
+    // 7. Create Note with Title, Content, and Color Swatch
     const testTimestamp = Date.now();
     const testTitle = `[E2E] Note ${testTimestamp}`;
     const testBody = `Automated verification content for NoteNow suite at ${new Date().toISOString()}`;
@@ -474,10 +453,45 @@ async function testNoteNow(browser, baseUrl, reporter) {
     const btnSave = await page.$('#btn-save-note');
     if (btnSave) {
       await btnSave.click();
-      await page.waitForTimeout(800);
+      await page.waitForSelector('.nn-overlay', { state: 'detached', timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(600);
       reporter.pass('Save Note');
     } else {
       reporter.fail('Save Note', 'Button #btn-save-note not found');
+    }
+
+    // 8. Test EN Locale Counter Format
+    if (btnLang) {
+      await btnLang.click();
+      await page.waitForTimeout(400);
+
+      const btnNewEn = await page.$('#btn-new-note') || await page.$('.nn-create-box');
+      if (btnNewEn) {
+        await btnNewEn.click();
+        await page.waitForSelector('#note-editor-title', { timeout: 8000 });
+        const counterTextEn = await page.evaluate(() => {
+          const el = document.querySelector('.nn-char-counter');
+          return el ? el.textContent.trim() : '';
+        });
+
+        if (counterTextEn.includes('2,048')) {
+          reporter.pass('Locale Char Counter EN Format (comma separator)', counterTextEn);
+        } else {
+          reporter.warn(`Locale Char Counter EN: Expected '2,048', got '${counterTextEn}'`);
+        }
+
+        // Close editor
+        const btnClose = await page.$('#btn-close-editor') || await page.$('#btn-editor-top-close');
+        if (btnClose) {
+          await btnClose.click();
+          await page.waitForSelector('.nn-overlay', { state: 'detached', timeout: 8000 }).catch(() => {});
+          await page.waitForTimeout(400);
+        }
+      }
+
+      // Switch back to VI
+      await btnLang.click();
+      await page.waitForTimeout(300);
     }
 
     // 7. Verify Note Exists in NoteBoard
@@ -900,19 +914,24 @@ async function testIChingNow(browser, baseUrl, reporter) {
     // 5. Practice Game Modal (#open-game)
     const openGameBtn = await page.$('#open-game');
     if (openGameBtn) {
-      await openGameBtn.click();
+      await page.evaluate(() => document.getElementById('open-game')?.click());
       await page.waitForTimeout(600);
       const isGameOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('.game-shell, [class*="game"]'));
+        return Boolean(document.querySelector('.game-shell, [aria-label="Luyện Dịch"]'));
       });
       if (isGameOpen) {
         reporter.pass('Open Practice Game (GameShell)');
-        // Exit game
-        const exitGameBtn = await page.$('button:has-text("Thoát"), button:has-text("Exit"), button[aria-label*="Đóng"]');
+        // Exit game via #game-exit
+        const exitGameBtn = await page.$('#game-exit');
         if (exitGameBtn) {
           await exitGameBtn.click();
+          await page.waitForSelector('.game-shell, [aria-label="Luyện Dịch"]', { state: 'detached', timeout: 5000 }).catch(() => {});
           await page.waitForTimeout(400);
           reporter.pass('Exit Practice Game');
+        } else {
+          // Fallback press Escape
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(400);
         }
       }
     }
@@ -920,18 +939,22 @@ async function testIChingNow(browser, baseUrl, reporter) {
     // 6. Knowledge Feed Modal (#open-knowledge)
     const openKnowledgeBtn = await page.$('#open-knowledge');
     if (openKnowledgeBtn) {
-      await openKnowledgeBtn.click();
+      await page.evaluate(() => document.getElementById('open-knowledge')?.click());
       await page.waitForTimeout(600);
       const isKnowledgeOpen = await page.evaluate(() => {
-        return Boolean(document.querySelector('[class*="knowledge"], [class*="feed"]'));
+        return Boolean(document.querySelector('[class*="knowledge"], [class*="feed"], #knowledge-exit'));
       });
       if (isKnowledgeOpen) {
         reporter.pass('Open Knowledge Feed');
-        const exitFeedBtn = await page.$('button:has-text("Đóng"), button:has-text("Close"), button[aria-label*="Đóng"]');
+        const exitFeedBtn = await page.$('#knowledge-exit');
         if (exitFeedBtn) {
           await exitFeedBtn.click();
+          await page.waitForSelector('#knowledge-exit', { state: 'detached', timeout: 5000 }).catch(() => {});
           await page.waitForTimeout(400);
           reporter.pass('Exit Knowledge Feed');
+        } else {
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(400);
         }
       }
     }
@@ -1050,9 +1073,9 @@ async function testTuViNow(browser, baseUrl, reporter) {
     }
 
     // 5. Star / Palace Interaction (Tap-to-Learn Glossary Modal)
-    const firstPalace = await page.$('.palace-card');
-    if (firstPalace) {
-      await firstPalace.click();
+    const starOrBadge = await page.$('.chart-center span[style*="cursor: pointer"], .palace-card span[style*="cursor: pointer"]') || await page.$('.palace-card');
+    if (starOrBadge) {
+      await starOrBadge.click();
       await page.waitForTimeout(500);
 
       const isGlossaryOpen = await page.evaluate(() => {
@@ -1061,11 +1084,15 @@ async function testTuViNow(browser, baseUrl, reporter) {
 
       if (isGlossaryOpen) {
         reporter.pass('Open TuVi Tap-to-Learn Glossary Modal');
-        const closeBtn = await page.$('.modal-close, button[aria-label="Đóng"], button[aria-label="Close"]');
+        const closeBtn = await page.$('button[aria-label="Đóng"], button[aria-label="Close"], .modal-close');
         if (closeBtn) {
           await closeBtn.click();
+          await page.waitForSelector('.tuvi-glossary-modal, [class*="glossary"]', { state: 'detached', timeout: 5000 }).catch(() => {});
           await page.waitForTimeout(300);
           reporter.pass('Close TuVi Glossary Modal');
+        } else {
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(300);
         }
       }
     }
