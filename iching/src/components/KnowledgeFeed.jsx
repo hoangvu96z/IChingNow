@@ -13,9 +13,9 @@ const FILTERS = [
 const gold = 'var(--color-gold, #b8860b)';
 
 const btnStyle = (active) => ({
-  background: active ? gold : 'rgba(184,134,11,0.1)',
+  background: active ? gold : 'var(--color-paper, #faf3e0)',
   color: active ? 'var(--color-on-gold, #fff)' : 'var(--color-ink, #2c2621)',
-  border: '1px solid ' + (active ? gold : 'rgba(184,134,11,0.3)'),
+  border: '1px solid ' + (active ? gold : 'rgba(184,134,11,0.45)'),
   padding: '6px 14px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 700,
   cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap',
 });

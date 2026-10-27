@@ -388,7 +388,8 @@ export default function GameShell({ onExit }) {
             <div style={{
               ...panel,
               borderColor: 'rgba(192,57,43,0.35)',
-              background: 'linear-gradient(180deg, rgba(192,57,43,0.06), var(--color-paper, #fffaf0))',
+              backgroundColor: 'var(--color-paper, #fffaf0)',
+              backgroundImage: 'linear-gradient(180deg, rgba(192,57,43,0.06), transparent)',
               position: 'relative', overflow: 'hidden',
             }}>
               <span aria-hidden="true" style={{

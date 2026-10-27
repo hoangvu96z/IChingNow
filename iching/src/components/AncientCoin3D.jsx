@@ -182,15 +182,15 @@ export default function AncientCoin3D({
           gap: 4,
           fontSize: '0.72rem',
           fontWeight: 700,
-          color: isHeads ? '#b8860b' : 'var(--color-ink-muted)',
-          background: isHeads ? 'rgba(184,134,11,0.12)' : 'rgba(44,24,16,0.06)',
+          color: isHeads ? 'var(--color-gold)' : 'var(--color-ink-muted)',
+          background: isHeads ? 'rgba(184,134,11,0.12)' : 'var(--color-paper-dark)',
           padding: '2px 8px',
           borderRadius: 10,
-          border: `1px solid ${isHeads ? 'rgba(184,134,11,0.3)' : 'rgba(44,24,16,0.15)'}`,
+          border: `1px solid ${isHeads ? 'rgba(184,134,11,0.3)' : 'rgba(184,134,11,0.2)'}`,
           transition: 'all 0.2s ease'
         }}>
           <span>{isHeads ? 'Ngửa' : 'Sấp'}</span>
-          <span style={{ opacity: 0.75 }}>({isHeads ? '+3' : '+2'})</span>
+          <span>({isHeads ? '+3' : '+2'})</span>
         </div>
       )}
 
