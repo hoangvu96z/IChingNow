@@ -3,6 +3,7 @@ import { castOneLine, coinsToLine, LINE_TYPE_LABELS } from '../logic/castLines.j
 import { createLineCommitGate } from '../logic/lineCommitGate.js';
 import HexagramDisplay from './HexagramDisplay.jsx';
 import AncientCoin3D from './AncientCoin3D.jsx';
+import MouseEntropyCaster from './MouseEntropyCaster.jsx';
 import MindfulnessModal from './MindfulnessModal.jsx';
 import { useLanguage } from '../context/useLanguage.js';
 import { soundEngine } from '../utils/soundEffects.js';
@@ -13,7 +14,7 @@ const YAO_NAMES_EN = ['1st Line (Initial)', '2nd Line', '3rd Line', '4th Line', 
 /**
  * Stepper gieo từng hào 6 bước với 3D Coins, Âm thanh đồng tiền, và Chế độ Tịnh Tâm 10s
  */
-export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled, algorithm = 'three-coin', question = '' }) {
+export default function ManualLineStepper({ completedLines, onLineAdded, onReset, disabled, algorithm = 'three-coin', question = '', castingMode = 'coin' }) {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
   const currentStep = completedLines.length; // 0..5
@@ -26,6 +27,12 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
   const [currentCoins, setCurrentCoins] = useState(['ngua', 'ngua', 'ngua']);
   const [manualCoins, setManualCoins]   = useState(['ngua', 'sap', 'ngua']);
   const [manualMode, setManualMode]     = useState(false);
+  const [castMode, setCastMode]         = useState(() => castingMode === 'mouse-entropy' ? 'mouse' : 'button');
+
+  // Synchronize when castingMode prop changes
+  useEffect(() => {
+    setCastMode(castingMode === 'mouse-entropy' ? 'mouse' : 'button');
+  }, [castingMode]);
   const [lastLine, setLastLine]         = useState(null);
   const [soundOn, setSoundOn]           = useState(soundEngine.isSoundEnabled());
 
@@ -159,6 +166,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
   }
 
   const yaoNames = isEn ? YAO_NAMES_EN : YAO_NAMES_VI;
+  const isMouseMode = !manualMode && castMode === 'mouse';
 
   return (
     <>
@@ -210,6 +218,78 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
           );
         })}
       </div>
+
+      {/* ─── Thanh chuyển đổi: Cách cũ (Nút bấm) vs Cách mới (Di chuột Entropy) vs Nhập tay ─── */}
+      {!isDone && !disabled && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 6,
+          background: 'rgba(184, 134, 11, 0.08)',
+          padding: 4,
+          borderRadius: 16,
+          border: '1px solid rgba(184, 134, 11, 0.22)',
+          width: 'fit-content',
+          margin: '0 auto',
+          maxWidth: '100%',
+          flexWrap: 'wrap',
+        }}>
+          <button
+            type="button"
+            onClick={() => { setCastMode('button'); setManualMode(false); }}
+            style={{
+              padding: '5px 14px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              borderRadius: 12,
+              border: 'none',
+              cursor: 'pointer',
+              background: castMode === 'button' && !manualMode ? 'var(--color-vermillion)' : 'transparent',
+              color: castMode === 'button' && !manualMode ? '#ffffff' : 'var(--color-ink-muted)',
+              boxShadow: castMode === 'button' && !manualMode ? '0 2px 6px rgba(192, 57, 43, 0.25)' : 'none',
+              transition: 'all 0.2s',
+            }}
+          >
+            🪙 {isEn ? 'Button Toss (Classic)' : 'Bấm nút (Cách cũ)'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setCastMode('mouse'); setManualMode(false); }}
+            style={{
+              padding: '5px 14px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              borderRadius: 12,
+              border: 'none',
+              cursor: 'pointer',
+              background: castMode === 'mouse' && !manualMode ? 'var(--color-jade)' : 'transparent',
+              color: castMode === 'mouse' && !manualMode ? '#ffffff' : 'var(--color-ink-muted)',
+              boxShadow: castMode === 'mouse' && !manualMode ? '0 2px 6px rgba(26, 107, 74, 0.25)' : 'none',
+              transition: 'all 0.2s',
+            }}
+          >
+            🖱️ {isEn ? 'Mouse Entropy (Real Random)' : 'Di chuột (Random thật)'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setManualMode(true); }}
+            style={{
+              padding: '5px 14px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              borderRadius: 12,
+              border: 'none',
+              cursor: 'pointer',
+              background: manualMode ? 'var(--color-gold)' : 'transparent',
+              color: manualMode ? '#ffffff' : 'var(--color-ink-muted)',
+              boxShadow: manualMode ? '0 2px 6px rgba(184, 134, 11, 0.25)' : 'none',
+              transition: 'all 0.2s',
+            }}
+          >
+            ✍ {isEn ? 'Manual Flip' : 'Chọn mặt tay'}
+          </button>
+        </div>
+      )}
 
       {/* ─── Đĩa Gieo 3 Đồng Xu 3D Tương Tác ─── */}
       {!isDone && (
@@ -291,12 +371,22 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
               borderRadius: 12,
               border: '1px solid rgba(192,57,43,0.2)'
             }}>
-              🪙 {yaoNames[currentStep] || `Hào ${currentStep + 1}`}
+              {isMouseMode ? '🖱️' : manualMode ? '✍' : '🪙'} {yaoNames[currentStep] || `Hào ${currentStep + 1}`}
             </div>
           </div>
 
-          {/* 3 Đồng Xu 3D */}
-          {!manualMode ? (
+          {/* 3 Đồng Xu 3D — Chuột hoặc Nút bấm */}
+          {isMouseMode ? (
+            <MouseEntropyCaster
+              onLineReady={(line) => {
+                lineCommitGate.cancel();
+                onLineAdded(line);
+              }}
+              currentStep={currentStep}
+              disabled={disabled}
+              isDone={isDone}
+            />
+          ) : !manualMode ? (
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -358,7 +448,7 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
             </div>
           )}
 
-          {/* Hào vừa gieo xong */}
+          {/* Hào vừa gieo xong (chỉ show cho chế độ bấm nút) */}
           {lastLine && !isTossing && (
             <div className="animate-in" style={{
               marginTop: 10,
@@ -431,8 +521,8 @@ export default function ManualLineStepper({ completedLines, onLineAdded, onReset
         </div>
       )}
 
-      {/* Nút hành động */}
-      {!isDone && !disabled && (
+      {/* Nút hành động (ẩn trong chế độ chuột) */}
+      {!isDone && !disabled && !isMouseMode && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
           {!manualMode ? (
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>

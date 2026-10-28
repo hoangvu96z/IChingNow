@@ -8,6 +8,9 @@ import path from 'path'
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   base: '/kinhdich/',
+  build: {
+    chunkSizeWarningLimit: 2000,
+  },
   resolve: {
     alias: {
       '@shared': path.resolve(import.meta.dirname, '../shared/src'),

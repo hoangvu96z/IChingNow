@@ -37,6 +37,21 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
       hoverBorder: 'var(--color-gold)',
     },
     {
+      mode: 'mouse-entropy',
+      badge: t('picker.luc_hao', 'LỤC HÀO'),
+      badgeColor: '#1a6b4a',
+      badgeBg: 'rgba(26,107,74,0.12)',
+      icon: '🖱️',
+      title: t('method.mouse.title', 'Chuột ngẫu nhiên'),
+      desc: t('method.mouse.desc', 'Di chuột tạo entropy — random thật từ tay bạn'),
+      meta: t('method.mouse.meta', '6 hào · entropy thật'),
+      gradient: 'linear-gradient(135deg, rgba(26,107,74,0.08), rgba(26,107,74,0.02))',
+      border: 'rgba(26,107,74,0.25)',
+      hoverBg: 'linear-gradient(135deg, rgba(26,107,74,0.20), rgba(26,107,74,0.04))',
+      hoverBorder: 'var(--color-jade)',
+      isNew: true,
+    },
+    {
       mode: 'mai-hoa-time',
       badge: t('picker.mai_hoa', 'MAI HOA'),
       badgeColor: 'var(--color-jade)',
@@ -87,7 +102,7 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
               )
             : t(
                 'picker.desc_ready',
-                'Chọn 1 trong 4 phương pháp gieo quẻ dưới đây để bắt đầu.'
+                'Chọn 1 trong 5 phương pháp gieo quẻ dưới đây để bắt đầu.'
               )}
         </div>
       </div>
@@ -96,10 +111,10 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
           gap: 12,
         }}
-        className="method-picker-4row"
+        className="method-picker-5row"
       >
         {methods.map((m) => (
           <MethodCard
@@ -132,13 +147,18 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
       </div>
 
       <style>{`
-        @media (max-width: 900px) {
-          .method-picker-4row {
+        @media (max-width: 1100px) {
+          .method-picker-5row {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+        }
+        @media (max-width: 700px) {
+          .method-picker-5row {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
         }
-        @media (max-width: 540px) {
-          .method-picker-4row {
+        @media (max-width: 480px) {
+          .method-picker-5row {
             grid-template-columns: 1fr !important;
           }
         }
@@ -182,28 +202,45 @@ function MethodCard({ method, disabled, onClick }) {
         minHeight: 130,
       }}
     >
-      {/* Top badges: Type badge + Icon */}
+      {/* Top badges: Type badge + NEW indicator + Icon */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           width: '100%',
+          gap: 4,
         }}
       >
-        <span
-          style={{
-            fontSize: '0.625rem',
-            fontWeight: 700,
-            padding: '2px 6px',
-            borderRadius: 4,
-            background: method.badgeBg,
-            color: method.badgeColor,
-            letterSpacing: '0.05em',
-          }}
-        >
-          {method.badge}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span
+            style={{
+              fontSize: '0.625rem',
+              fontWeight: 700,
+              padding: '2px 6px',
+              borderRadius: 4,
+              background: method.badgeBg,
+              color: method.badgeColor,
+              letterSpacing: '0.05em',
+            }}
+          >
+            {method.badge}
+          </span>
+          {method.isNew && (
+            <span style={{
+              fontSize: '0.55rem',
+              fontWeight: 800,
+              padding: '1px 5px',
+              borderRadius: 3,
+              background: 'rgba(26,107,74,0.15)',
+              color: '#1a6b4a',
+              letterSpacing: '0.08em',
+              border: '1px solid rgba(26,107,74,0.3)',
+            }}>
+              NEW
+            </span>
+          )}
+        </div>
         <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>{method.icon}</span>
       </div>
 

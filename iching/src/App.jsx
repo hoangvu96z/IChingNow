@@ -751,7 +751,7 @@ export default function App() {
     if (lines.length === 0) setActiveReadingId(null);
     const next = [...lines, line];
     setLines(next);
-    computeResult(next, 'manual-step');
+    computeResult(next, mode);
   }
 
   // Reset (chỉ xoá lines + result, giữ mode để user gieo lại)
@@ -996,6 +996,7 @@ export default function App() {
                 >
                   {mode === 'quick'          && `⚡ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.quick.title', 'Gieo nhanh')}`}
                   {mode === 'manual-step'    && `🪙 ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.manual.title', 'Gieo từng hào')}`}
+                  {mode === 'mouse-entropy'  && `🖱️ ${t('picker.luc_hao', 'LỤC HÀO')}: ${t('method.mouse.title', 'Chuột ngẫu nhiên')}`}
                   {mode === 'mai-hoa-time'   && t('maihoa.time_title', '🕐 Mai Hoa — Ngày giờ động tâm')}
                   {mode === 'mai-hoa-serial' && t('maihoa.serial_title', '💵 Mai Hoa — Số seri tiền')}
                 </div>
@@ -1029,7 +1030,7 @@ export default function App() {
                   algorithm={formData.lucHaoAlgorithm}
                   question={formData.question}
                 />
-              ) : mode === 'manual-step' ? (
+              ) : mode === 'manual-step' || mode === 'mouse-entropy' ? (
                 <ManualLineStepper
                   completedLines={lines}
                   onLineAdded={handleLineAdded}
@@ -1037,6 +1038,7 @@ export default function App() {
                   disabled={!canCast}
                   algorithm={formData.lucHaoAlgorithm}
                   question={formData.question}
+                  castingMode={mode}
                 />
               ) : (
                 /* mode === 'mai-hoa-time' | 'mai-hoa-serial' */

@@ -37,7 +37,7 @@ export default function ResultMetadata({ result }) {
     { label: t('meta.moving_date', 'Ngày động tâm'),  value: result.movingMindDate || '—' },
     { label: t('meta.moving_time', 'Giờ động tâm'),   value: getMovingMindTimeText() },
     { label: t('meta.solar_term', 'Tiết khí'),       value: getSolarTermText() },
-    { label: t('meta.method', 'Phương pháp'),    value: result.mode === 'quick' ? t('meta.method_quick', 'Gieo nhanh 1 lần') : t('meta.method_manual', 'Gieo từng hào (6 bước)') },
+    { label: t('meta.method', 'Phương pháp'),    value: result.mode === 'quick' ? t('meta.method_quick', 'Gieo nhanh 1 lần') : result.mode === 'mouse-entropy' ? t('meta.method_mouse', 'Chuột ngẫu nhiên (Entropy thật)') : t('meta.method_manual', 'Gieo từng hào (6 bước)') },
     { label: t('meta.moving_lines', 'Hào động'),       value: getMovingLinesText() },
   ].filter(r => !r.hide);
 
