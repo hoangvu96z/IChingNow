@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import NoteCard from './NoteCard.jsx';
 import NoteEditor from './NoteEditor.jsx';
 import NoteShareModal from './NoteShareModal.jsx';
+import NotePasswordModal from './NotePasswordModal.jsx';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { notesApi, stripHtml } from '../api.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
@@ -33,7 +34,17 @@ function Toast({ toasts }) {
 
 // ─── Draggable Notes Grid ────────────────────────────────────────────────────
 
-function DraggableNoteGrid({ notes, onEdit, onDelete, onShare, onPin, onPermanent, onReorder, isShared }) {
+function DraggableNoteGrid({
+  notes,
+  onEdit,
+  onDelete,
+  onShare,
+  onPin,
+  onPassword,
+  unlockedNoteIds,
+  onReorder,
+  isShared,
+}) {
   const [draggedId, setDraggedId] = useState(null);
   const [overIdx, setOverIdx] = useState(null);
   const [localNotes, setLocalNotes] = useState(notes);
@@ -106,7 +117,8 @@ function DraggableNoteGrid({ notes, onEdit, onDelete, onShare, onPin, onPermanen
             onDelete={onDelete}
             onShare={onShare}
             onPin={onPin}
-            onPermanent={onPermanent}
+            onPassword={onPassword}
+            isUnlocked={Boolean(unlockedNoteIds?.[note.id])}
             isShared={isShared}
           />
         </div>
@@ -124,6 +136,10 @@ export default function NoteBoard({ user }) {
   const [loading, setLoading] = useState(true);
   const [editingNote, setEditingNote] = useState(null);
   const [sharingNote, setSharingNote] = useState(null);
+  // Password modal state: { note, mode: 'unlock' | 'manage', onSuccess?: fn }
+  const [passwordModalState, setPasswordModalState] = useState(null);
+  // Session-unlocked note IDs so the user doesn't have to re-type password while editing
+  const [unlockedNoteIds, setUnlockedNoteIds] = useState({});
   const [search, setSearch] = useState('');
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
@@ -175,10 +191,14 @@ export default function NoteBoard({ user }) {
     return () => window.removeEventListener('nn-search', handler);
   }, []);
 
-  // Search filter
+  // Search filter (do not leak body content of locked notes when searching)
   const filteredNotes = search
     ? notes.filter((n) => {
         const q = search.toLowerCase();
+        const isLocked = Boolean(n.hasPassword) && !unlockedNoteIds[n.id];
+        if (isLocked) {
+          return n.title?.toLowerCase().includes(q);
+        }
         return (
           n.title?.toLowerCase().includes(q) ||
           stripHtml(n.content || '').toLowerCase().includes(q)
@@ -195,7 +215,12 @@ export default function NoteBoard({ user }) {
   const handleCreateNote = async (dto, silent = false) => {
     try {
       const note = await notesApi.create(dto);
-      setNotes((prev) => [note, ...prev]);
+      setNotes((prev) => {
+        if (prev.some((n) => n.id === note.id)) {
+          return prev.map((n) => (n.id === note.id ? note : n));
+        }
+        return [note, ...prev];
+      });
       if (!silent) {
         addToast(t('toast.save_success', 'Đã lưu ghi chú thành công!'));
       }
@@ -209,7 +234,7 @@ export default function NoteBoard({ user }) {
   const handleUpdateNote = async (id, dto, silent = false) => {
     try {
       const updated = await notesApi.update(id, dto);
-      setNotes((prev) => prev.map((n) => n.id === id ? updated : n));
+      setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...updated } : n)));
       if (!silent) {
         addToast(t('toast.save_success', 'Đã lưu ghi chú thành công!'));
       }
@@ -220,7 +245,7 @@ export default function NoteBoard({ user }) {
     }
   };
 
-  const handleDeleteNote = async (id) => {
+  const executeDeleteNote = async (id) => {
     try {
       await notesApi.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
@@ -230,21 +255,81 @@ export default function NoteBoard({ user }) {
     }
   };
 
-  const handlePinNote = async (id, pin) => {
-    try {
-      await notesApi.update(id, { isPinned: pin });
-      setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPinned: pin } : n));
-      addToast(pin ? t('toast.pin_added', 'Đã ghim ghi chú') : t('toast.pin_removed', 'Đã bỏ ghim ghi chú'));
-    } catch (e) {
-      addToast(e.message, 'error');
+  const handleRequestEditNote = (note) => {
+    if (note.hasPassword && !unlockedNoteIds[note.id]) {
+      setPasswordModalState({
+        note,
+        mode: 'unlock',
+        onSuccess: () => setEditingNote(note),
+      });
+      return;
+    }
+    setEditingNote(note);
+  };
+
+  const handleRequestDeleteNote = async (noteOrId) => {
+    const targetNote =
+      typeof noteOrId === 'object' ? noteOrId : notes.find((n) => n.id === noteOrId);
+    const id = typeof noteOrId === 'object' ? noteOrId.id : noteOrId;
+
+    if (targetNote?.hasPassword && !unlockedNoteIds[id]) {
+      setPasswordModalState({
+        note: targetNote,
+        mode: 'unlock',
+        onSuccess: async () => {
+          if (window.confirm(t('card.delete_confirm', 'Xoá ghi chú này?'))) {
+            await executeDeleteNote(id);
+          }
+        },
+      });
+      return;
+    }
+    await executeDeleteNote(id);
+  };
+
+  const handleRequestShareNote = (note) => {
+    if (note.hasPassword && !unlockedNoteIds[note.id]) {
+      setPasswordModalState({
+        note,
+        mode: 'unlock',
+        onSuccess: () => setSharingNote(note),
+      });
+      return;
+    }
+    setSharingNote(note);
+  };
+
+  const handleRequestPasswordModal = (note) => {
+    setPasswordModalState({
+      note,
+      mode: 'manage',
+    });
+  };
+
+  const handlePasswordChanged = (noteId, { hasPassword, unlockedPassword, updated }) => {
+    setNotes((prev) =>
+      prev.map((n) =>
+        n.id === noteId ? { ...n, ...updated, hasPassword } : n,
+      ),
+    );
+    if (hasPassword && unlockedPassword) {
+      setUnlockedNoteIds((prev) => ({ ...prev, [noteId]: true }));
+      addToast(t('note_pw.toast_set', 'Đã đặt mật khẩu bảo vệ ghi chú'));
+    } else if (!hasPassword) {
+      setUnlockedNoteIds((prev) => {
+        const next = { ...prev };
+        delete next[noteId];
+        return next;
+      });
+      addToast(t('note_pw.toast_removed', 'Đã gỡ mật khẩu ghi chú'));
     }
   };
 
-  const handlePermanentNote = async (id, permanent) => {
+  const handlePinNote = async (id, pin) => {
     try {
-      await notesApi.update(id, { isPermanent: permanent });
-      setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPermanent: permanent } : n));
-      addToast(permanent ? t('toast.perm_added', 'Đã đặt lưu vĩnh viễn') : t('toast.perm_removed', 'Đã bỏ lưu vĩnh viễn'));
+      await notesApi.update(id, { isPinned: pin });
+      setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, isPinned: pin } : n)));
+      addToast(pin ? t('toast.pin_added', 'Đã ghim ghi chú') : t('toast.pin_removed', 'Đã bỏ ghim ghi chú'));
     } catch (e) {
       addToast(e.message, 'error');
     }
@@ -270,7 +355,7 @@ export default function NoteBoard({ user }) {
   };
 
   const handleShareUpdate = (noteId, updates) => {
-    setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, ...updates } : n));
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, ...updates } : n)));
   };
 
   // ─── Quick-create bar handler ──────────────────────────────────────────────
@@ -381,11 +466,12 @@ export default function NoteBoard({ user }) {
                 </p>
                 <DraggableNoteGrid
                   notes={pinnedNotes}
-                  onEdit={(n) => setEditingNote(n)}
-                  onDelete={handleDeleteNote}
-                  onShare={(n) => setSharingNote(n)}
+                  onEdit={handleRequestEditNote}
+                  onDelete={handleRequestDeleteNote}
+                  onShare={handleRequestShareNote}
                   onPin={handlePinNote}
-                  onPermanent={handlePermanentNote}
+                  onPassword={handleRequestPasswordModal}
+                  unlockedNoteIds={unlockedNoteIds}
                   onReorder={handleReorder}
                   isShared={false}
                 />
@@ -398,11 +484,12 @@ export default function NoteBoard({ user }) {
                 {pinnedNotes.length > 0 && <p className="nn-section-label">{t('board.section_others', 'Ghi chú khác')}</p>}
                 <DraggableNoteGrid
                   notes={unpinnedNotes}
-                  onEdit={(n) => setEditingNote(n)}
-                  onDelete={handleDeleteNote}
-                  onShare={(n) => setSharingNote(n)}
+                  onEdit={handleRequestEditNote}
+                  onDelete={handleRequestDeleteNote}
+                  onShare={handleRequestShareNote}
                   onPin={handlePinNote}
-                  onPermanent={handlePermanentNote}
+                  onPassword={handleRequestPasswordModal}
+                  unlockedNoteIds={unlockedNoteIds}
                   onReorder={handleReorder}
                   isShared={false}
                 />
@@ -422,7 +509,8 @@ export default function NoteBoard({ user }) {
                   onDelete={() => {}}
                   onShare={() => {}}
                   onPin={() => {}}
-                  onPermanent={() => {}}
+                  onPassword={() => {}}
+                  unlockedNoteIds={unlockedNoteIds}
                   onReorder={() => {}}
                   isShared={true}
                 />
@@ -440,9 +528,33 @@ export default function NoteBoard({ user }) {
             isNew={!!editingNote._isNew}
             userIsLoggedIn={isLoggedIn}
             onSave={handleEditorSave}
+            onPasswordChanged={handlePasswordChanged}
             onClose={() => setEditingNote(null)}
           />
         </ErrorBoundary>
+      )}
+
+      {/* Direct Note Password Modal */}
+      {passwordModalState && (
+        <NotePasswordModal
+          note={passwordModalState.note}
+          mode={passwordModalState.mode}
+          onClose={() => setPasswordModalState(null)}
+          onUnlocked={() => {
+            const target = passwordModalState.note;
+            const callback = passwordModalState.onSuccess;
+            setUnlockedNoteIds((prev) => ({ ...prev, [target.id]: true }));
+            setPasswordModalState(null);
+            callback?.();
+          }}
+          onPasswordChanged={({ hasPassword, unlockedPassword, updated }) => {
+            handlePasswordChanged(passwordModalState.note.id, {
+              hasPassword,
+              unlockedPassword,
+              updated,
+            });
+          }}
+        />
       )}
 
       {/* Share Modal */}
@@ -455,7 +567,7 @@ export default function NoteBoard({ user }) {
         />
       )}
 
-      {/* Mobile Floating Action Button (FAB) - only shown when there are notes to avoid duplicating the empty-state CTA and overlapping footer content */}
+      {/* Mobile Floating Action Button (FAB) */}
       {!loading && !isEmpty && (
         <button
           className="nn-fab"

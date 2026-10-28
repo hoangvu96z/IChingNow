@@ -22,10 +22,10 @@ export function NoteNowFeatureCards() {
           <Clock size={20} strokeWidth={2} />
         </div>
         <div className="nn-feature-content">
-          <h4>{t('onboarding.f2_title', 'Chính sách lưu trữ thông minh')}</h4>
+          <h4>{t('onboarding.f2_title', 'Lưu trữ không giới hạn thời gian & Lịch sử hoàn tác')}</h4>
           <ul>
-            <li><strong>{t('onboarding.f2_guest_label', 'Khách chưa đăng nhập:')}</strong> {t('onboarding.f2_guest_text', 'Tối đa 2.048 ký tự, ghi chú tự xóa sau 60 ngày.')}</li>
-            <li><strong>{t('onboarding.f2_user_label', 'Đăng nhập SSO:')}</strong> {t('onboarding.f2_user_text', 'Mở rộng 10.000 ký tự. 30 note đầu lưu vĩnh viễn, từ note 31 lưu 180 ngày.')}</li>
+            <li><strong>{t('onboarding.f2_guest_label', 'Khách chưa đăng nhập:')}</strong> {t('onboarding.f2_guest_text', 'Tối đa 20.480 ký tự/note, tự động lưu khi gõ, lịch sử chỉnh sửa lưu trên trình duyệt của bạn.')}</li>
+            <li><strong>{t('onboarding.f2_user_label', 'Đăng nhập SSO:')}</strong> {t('onboarding.f2_user_text', 'Mở rộng 100.000 ký tự/note, đồng bộ đám mây và hỗ trợ hoàn tác 5 phiên bản gần nhất trên server.')}</li>
           </ul>
         </div>
       </div>

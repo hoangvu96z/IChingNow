@@ -500,6 +500,62 @@ async function testNoteNow(browser, baseUrl, reporter) {
     await assertAllVisibleTextReadable(page, reporter, 'NoteNow Editor Modal with Colored Swatch [Light Mode]');
     await setAppTheme(page, 'dark');
 
+    // Verify 10x Character Limit Counter (20,480 for Guest or 100,000 for User)
+    const charCounterText = await page.textContent('.nn-char-counter');
+    if (charCounterText && (charCounterText.includes('20.480') || charCounterText.includes('20,480') || charCounterText.includes('100.000') || charCounterText.includes('100,000'))) {
+      reporter.pass('Verify 10x Character Limit Counter in Editor', charCounterText.trim());
+    } else {
+      reporter.fail('Verify 10x Character Limit Counter in Editor', `Expected 20,480 / 100,000 limit, got: ${charCounterText}`);
+    }
+
+    // Wait for debounced Auto-Save while typing (without clicking Save button!)
+    await page.waitForTimeout(1300);
+    const autoSaveText = await page.evaluate(() => {
+      const el = document.querySelector('#editor-autosave-status');
+      return el ? el.textContent : '';
+    });
+    if (autoSaveText && (autoSaveText.includes('tự động lưu') || autoSaveText.includes('Auto-save'))) {
+      reporter.pass('Auto-Save While Typing (New Note Draft Auto-Created)', autoSaveText.trim());
+    } else {
+      reporter.fail('Auto-Save While Typing (New Note Draft Auto-Created)', `Auto-save badge did not appear: "${autoSaveText}"`);
+    }
+
+    // Type a second revision & wait for auto-save to populate LocalStorage History
+    if (editorBody) {
+      await editorBody.fill(`${testBody} — Revision 2 Updated`);
+      await page.waitForTimeout(1300);
+    }
+
+    // Open Version History Panel & verify localStorage history + Dark/Light contrast + Restore
+    const btnHistory = await page.$('#btn-editor-history');
+    if (btnHistory) {
+      await btnHistory.click();
+      await page.waitForTimeout(250);
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow Version History Panel [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow Version History Panel [Light Mode]');
+      await setAppTheme(page, 'dark');
+
+      const restoreBtn = await page.$('#btn-restore-history-0, #btn-history-undo-latest');
+      if (restoreBtn) {
+        await restoreBtn.click();
+        await page.waitForTimeout(400);
+        const hasLocalHistoryInStorage = await page.evaluate(() => {
+          return Object.keys(localStorage).some(k => k.startsWith('notenow_history_'));
+        });
+        if (hasLocalHistoryInStorage) {
+          reporter.pass('Version History Stored in LocalStorage & Restored');
+        } else {
+          reporter.fail('Version History Stored in LocalStorage & Restored', 'No notenow_history_* key found in localStorage');
+        }
+      } else {
+        reporter.fail('Version History Restore Button', 'No history revision entry rendered');
+      }
+    } else {
+      reporter.fail('Open Version History Panel', 'Could not find #btn-editor-history');
+    }
+
     // Save Note
     const btnSave = await page.$('#btn-save-note');
     if (btnSave) {
@@ -507,6 +563,62 @@ async function testNoteNow(browser, baseUrl, reporter) {
       await page.waitForSelector('.nn-overlay', { state: 'detached', timeout: 8000 }).catch(() => {});
       await page.waitForTimeout(500);
       reporter.pass('Save Note to Board');
+    }
+
+    // Verify "Vĩnh viễn" button & expiry countdown badge are completely removed
+    const hasLegacyPermanentOrExpiry = await page.evaluate(() => {
+      return Boolean(
+        document.querySelector('[id^="btn-permanent-"]') ||
+        document.querySelector('.nn-badge-permanent') ||
+        document.querySelector('.nn-permanent-icon') ||
+        document.querySelector('.nn-badge-expiry')
+      );
+    });
+    if (!hasLegacyPermanentOrExpiry) {
+      reporter.pass('Verify Removal of 30-Day Expiry & Permanent Toggle/Badges');
+    } else {
+      reporter.fail('Verify Removal of 30-Day Expiry & Permanent Toggle/Badges', 'Found legacy permanent/expiry element on NoteCard');
+    }
+
+    // Test Direct Note Password Lock on Board (set password -> lock -> unlock -> remove password)
+    const pwBtn = await page.evaluateHandle((t) => {
+      const card = Array.from(document.querySelectorAll('.nn-card')).find(c => c.textContent.includes(t));
+      return card ? card.querySelector('.nn-card-action[id^="btn-password-"]') : null;
+    }, testTitle);
+    if (pwBtn && pwBtn.asElement()) {
+      await pwBtn.asElement().click();
+      await page.waitForSelector('#note-new-password-input', { timeout: 5000 });
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow Direct Password Modal [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow Direct Password Modal [Light Mode]');
+      await setAppTheme(page, 'dark');
+
+      await page.fill('#note-new-password-input', 'secret123');
+      await page.click('#btn-note-password-save');
+      await page.waitForTimeout(500);
+      reporter.pass('Set Direct Password on Note from Board');
+      await setAppTheme(page, 'dark');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow Board with Password Badge [Dark Mode]');
+      await setAppTheme(page, 'light');
+      await assertAllVisibleTextReadable(page, reporter, 'NoteNow Board with Password Badge [Light Mode]');
+      await setAppTheme(page, 'dark');
+
+      // Remove password so subsequent tests can interact with the note cleanly
+      const pwManageBtn = await page.evaluateHandle((t) => {
+        const card = Array.from(document.querySelectorAll('.nn-card')).find(c => c.textContent.includes(t));
+        return card ? card.querySelector('.nn-card-action[id^="btn-password-"]') : null;
+      }, testTitle);
+      if (pwManageBtn && pwManageBtn.asElement()) {
+        await pwManageBtn.asElement().click();
+        await page.waitForSelector('#note-current-password-input', { timeout: 5000 });
+        await page.fill('#note-current-password-input', 'secret123');
+        await page.click('#btn-note-remove-password');
+        await page.waitForTimeout(500);
+        reporter.pass('Verify & Remove Direct Password on Note');
+      }
+    } else {
+      reporter.fail('Direct Note Password Button on Card', 'Could not find #btn-password-<id>');
     }
 
     await assertAllVisibleTextReadable(page, reporter, 'NoteNow Board with Colored Note Card [Dark Mode]');

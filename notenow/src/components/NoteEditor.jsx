@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { notesApi, charCount, compressImageTo720p } from '../api.js';
+import {
+  notesApi,
+  charCount,
+  compressImageTo720p,
+  getLocalNoteHistory,
+  pushLocalNoteHistory,
+  stripHtml,
+} from '../api.js';
 import NoteColorPicker from './NoteColorPicker.jsx';
 import ImageViewer from './ImageViewer.jsx';
+import NotePasswordModal from './NotePasswordModal.jsx';
 import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
 import { getInlineImageOrphanIndices } from '../noteImages.mjs';
 import {
@@ -19,6 +27,7 @@ import {
   AlignLeft, AlignCenter, AlignRight,
   Image as ImageIcon, Palette, X, Check,
   Loader2, AlertCircle, Eye, Pencil, Plus,
+  History, RotateCcw, Lock, Unlock,
 } from 'lucide-react';
 
 // TipTap
@@ -46,25 +55,83 @@ function ToolbarButton({ onClick, title, isActive, children, id }) {
   );
 }
 
-export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = false, userIsLoggedIn, shareToken }) {
+export default function NoteEditor({
+  note,
+  isNew,
+  onSave,
+  onClose,
+  onPasswordChanged,
+  isReadOnly = false,
+  userIsLoggedIn,
+  shareToken,
+}) {
   const { t, language } = useLanguage();
-  const MAX_CHARS = userIsLoggedIn ? 10000 : 2048;
+  // 10x character limit: 100,000 for logged-in users, 20,480 for guests
+  const MAX_CHARS = userIsLoggedIn ? 100000 : 20480;
 
   const [activeNoteId, setActiveNoteId] = useState(note?.id || null);
+  const activeNoteIdRef = useRef(note?.id || null);
+  const saveInFlightRef = useRef(false);
+  const pendingAutoSaveRef = useRef(false);
+
   const [title, setTitle] = useState(note?.title || '');
+  const titleRef = useRef(note?.title || '');
   const [bgColor, setBgColor] = useState(note?.bgColor || 'default');
+  const bgColorRef = useRef(note?.bgColor || 'default');
   const [bgPattern, setBgPattern] = useState(note?.bgPattern || 'none');
+  const bgPatternRef = useRef(note?.bgPattern || 'none');
   const [images, setImages] = useState(note?.images || []);
+  const [hasPassword, setHasPassword] = useState(Boolean(note?.hasPassword));
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
   const [, setContentRevision] = useState(0);
   const sanitizedContent = useMemo(() => sanitizeNoteContent(note?.content), [note?.content]);
   const inlineImageContent = useMemo(() => contentWithInlineImagePlaceholders(sanitizedContent), [sanitizedContent]);
   const inlineImages = inlineImageContent.images;
   const editorContent = inlineImageContent.content;
+
+  // Track the last saved snapshot so we can push history revisions before overwriting
+  const lastSavedSnapshotRef = useRef({
+    title: note?.title || null,
+    content: note?.content || '',
+    bgColor: note?.bgColor || 'default',
+    bgPattern: note?.bgPattern || 'none',
+    savedAt: note?.updatedAt || new Date().toISOString(),
+  });
+
+  // Version History state:
+  // - Guest notes: stored ONLY in localStorage (never sent to server)
+  // - Logged-in user notes: server supports up to 5 back revisions (max 5), synced with local fallback
+  const [serverHistory, setServerHistory] = useState(() =>
+    userIsLoggedIn && Array.isArray(note?.history) ? note.history.slice(0, 5) : [],
+  );
+  const [localHistory, setLocalHistory] = useState(() =>
+    note?.id ? getLocalNoteHistory(note.id) : [],
+  );
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [autoSaveState, setAutoSaveState] = useState('idle'); // 'idle' | 'saving' | 'saved'
+
+  useEffect(() => {
+    if (activeNoteId) {
+      setLocalHistory(getLocalNoteHistory(activeNoteId));
+    }
+  }, [activeNoteId]);
+
+  const effectiveHistory = useMemo(() => {
+    if (userIsLoggedIn) {
+      // Server supports up to 5 back versions; fall back to localStorage capped at 5 if offline
+      return (serverHistory.length > 0 ? serverHistory : localHistory).slice(0, 5);
+    }
+    // Guests: history is stored strictly in localStorage
+    return localHistory;
+  }, [userIsLoggedIn, serverHistory, localHistory]);
+
   const unsupportedImageIndices = useMemo(() => {
     const noteId = activeNoteId || note?.id;
     if (String(noteId || '').startsWith('local-')) return [];
     return getInlineImageOrphanIndices(inlineImages, images);
   }, [activeNoteId, note?.id, images, inlineImages]);
+
   const imageRefs = useMemo(() => [...images, ...inlineImages], [images, inlineImages]);
   const { sources: imageSources, loading: imageSourcesLoading, failedCount: imageLoadFailedCount } = useNoteImageSources(
     imageRefs,
@@ -72,21 +139,22 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
     shareToken,
     Boolean(note?.isGuest || !userIsLoggedIn),
   );
+
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [viewerIndex, setViewerIndex] = useState(null); // null = closed
+  const [viewerIndex, setViewerIndex] = useState(null);
   const fileInputRef = useRef(null);
   const autoSaveTimer = useRef(null);
 
-  // Auto-save debounce for existing notes
+  // Auto-save debounce while typing (works for both new notes and existing notes!)
   const triggerAutoSave = () => {
-    if (isReadOnly || (!activeNoteId && isNew && !shareToken)) return;
+    if (isReadOnly) return;
     clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      handleSave(true);
-    }, 1200);
+      handleSave(true, false);
+    }, 900);
   };
 
   const editor = useEditor({
@@ -101,7 +169,6 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
     content: editorContent,
     editable: !isReadOnly,
     immediatelyRender: false,
-    // Toolbar state reads editor.isActive() during render; preserve v2 transaction updates in v3.
     shouldRerenderOnTransaction: true,
     onUpdate: () => {
       setContentRevision((revision) => revision + 1);
@@ -124,35 +191,151 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
   const handleSave = async (silent = false, closeAfter = false, overrides = {}) => {
     if (overLimit) return;
     clearTimeout(autoSaveTimer.current);
-    const contentToSave = editor?.getHTML() || currentContent;
+
+    const contentToSave = overrides.content !== undefined
+      ? overrides.content
+      : (editor?.getHTML() || currentContent);
+    const currentTitle = overrides.title !== undefined ? overrides.title : titleRef.current;
+    const finalBgColor = overrides.bgColor !== undefined ? overrides.bgColor : bgColorRef.current;
+    const finalBgPattern = overrides.bgPattern !== undefined ? overrides.bgPattern : bgPatternRef.current;
+
+    const currentTargetId = activeNoteIdRef.current;
+
+    // For a brand-new note during silent auto-save, skip if both title and content are still empty
+    const plainText = stripHtml(contentToSave);
+    if (silent && !currentTargetId && !shareToken && !currentTitle.trim() && !plainText) {
+      return;
+    }
+
     if (hasUnsupportedImagePlaceholder(contentToSave)) {
       setError('Không thể lưu: ảnh nội tuyến này không có trong danh sách ảnh của ghi chú nên máy chủ sẽ gỡ ảnh. Hãy xóa vị trí giữ ảnh trong nội dung rồi lưu lại.');
       return;
     }
-    if (!silent) setSaving(true);
+
+    // Prevent concurrent duplicate POST /notes when user types fast in a new note
+    if (saveInFlightRef.current) {
+      if (silent) {
+        pendingAutoSaveRef.current = true;
+        return;
+      }
+    }
+
+    saveInFlightRef.current = true;
+    if (!silent) {
+      setSaving(true);
+    } else {
+      setAutoSaveState('saving');
+    }
     setError(null);
+
     try {
-      const finalBgColor = overrides.bgColor !== undefined ? overrides.bgColor : bgColor;
-      const finalBgPattern = overrides.bgPattern !== undefined ? overrides.bgPattern : bgPattern;
+      const preservedContent = contentWithPreservedInlineImages(contentToSave, inlineImages);
       const dto = {
-        title: title.trim() || null,
-        content: contentWithPreservedInlineImages(contentToSave, inlineImages),
+        title: currentTitle.trim() || null,
+        content: preservedContent,
         bgColor: finalBgColor,
         bgPattern: finalBgPattern,
       };
-      const result = await onSave(dto, activeNoteId, { silent });
-      if (result?.id) {
-        setActiveNoteId(result.id);
+
+      const prevSnap = lastSavedSnapshotRef.current;
+      const contentChanged =
+        (dto.title || '') !== (prevSnap.title || '') ||
+        (dto.content || '') !== (prevSnap.content || '');
+      const prevHadData =
+        Boolean((prevSnap.title || '').trim()) ||
+        Boolean(stripHtml(prevSnap.content || ''));
+
+      const result = await onSave(dto, currentTargetId, { silent });
+      const resolvedId = result?.id || currentTargetId;
+
+      if (resolvedId) {
+        activeNoteIdRef.current = resolvedId;
+        setActiveNoteId(resolvedId);
+
+        // Push previous snapshot into localStorage history when content/title changed
+        if (contentChanged && prevHadData && !overrides.skipHistoryPush) {
+          const updatedLocal = pushLocalNoteHistory(resolvedId, {
+            ...prevSnap,
+            savedAt: new Date().toISOString(),
+          });
+          setLocalHistory(updatedLocal);
+        }
       }
+
+      if (userIsLoggedIn && Array.isArray(result?.history)) {
+        setServerHistory(result.history.slice(0, 5));
+      }
+
+      lastSavedSnapshotRef.current = {
+        title: dto.title,
+        content: dto.content,
+        bgColor: dto.bgColor,
+        bgPattern: dto.bgPattern,
+        savedAt: result?.updatedAt || new Date().toISOString(),
+      };
+
+      if (silent) {
+        setAutoSaveState('saved');
+      }
+
       if (closeAfter) {
         onClose();
       }
       return result;
     } catch (e) {
       if (!silent) setError(e.message);
+      setAutoSaveState('idle');
     } finally {
+      saveInFlightRef.current = false;
       if (!silent) setSaving(false);
+      if (pendingAutoSaveRef.current) {
+        pendingAutoSaveRef.current = false;
+        triggerAutoSave();
+      }
     }
+  };
+
+  // Restore a version from history (Undo / Back)
+  const handleRestoreRevision = async (revision, index) => {
+    if (!revision || isReadOnly) return;
+    const nextTitle = revision.title || '';
+    const nextContent = revision.content || '';
+    const nextBgColor = revision.bgColor || bgColorRef.current;
+    const nextBgPattern = revision.bgPattern || bgPatternRef.current;
+
+    setTitle(nextTitle);
+    titleRef.current = nextTitle;
+    setBgColor(nextBgColor);
+    bgColorRef.current = nextBgColor;
+    setBgPattern(nextBgPattern);
+    bgPatternRef.current = nextBgPattern;
+
+    if (editor) {
+      const placeholderProcessed = contentWithInlineImagePlaceholders(sanitizeNoteContent(nextContent));
+      editor.commands.setContent(placeholderProcessed.content || '');
+    }
+
+    // If guest, remove the restored item from the top of localStorage history so repeated "Back" steps walk backward
+    if (!userIsLoggedIn && activeNoteIdRef.current) {
+      const remaining = localHistory.filter((_, idx) => idx !== index);
+      try {
+        localStorage.setItem(`notenow_history_${activeNoteIdRef.current}`, JSON.stringify(remaining));
+      } catch {}
+      setLocalHistory(remaining);
+    }
+
+    await handleSave(true, false, {
+      title: nextTitle,
+      content: nextContent,
+      bgColor: nextBgColor,
+      bgPattern: nextBgPattern,
+      skipHistoryPush: !userIsLoggedIn,
+    });
+  };
+
+  const handleQuickUndoStep = async () => {
+    if (!effectiveHistory.length) return;
+    await handleRestoreRevision(effectiveHistory[0], 0);
   };
 
   const handleImageUpload = async (e) => {
@@ -172,18 +355,19 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
         setError('Không thể tải ảnh lên khi ảnh nội tuyến chưa có trong danh sách ảnh của ghi chú. Hãy xóa vị trí giữ ảnh trong nội dung trước.');
         return;
       }
-      let targetId = activeNoteId;
+      let targetId = activeNoteIdRef.current;
       // If new note without ID yet, create draft first
       if (!targetId && !shareToken) {
         const dto = {
-          title: title.trim() || null,
+          title: titleRef.current.trim() || null,
           content: contentWithPreservedInlineImages(contentToSave, inlineImages),
-          bgColor,
-          bgPattern,
+          bgColor: bgColorRef.current,
+          bgPattern: bgPatternRef.current,
         };
-        const saved = await onSave(dto);
+        const saved = await onSave(dto, null, { silent: true });
         if (saved?.id) {
           targetId = saved.id;
+          activeNoteIdRef.current = saved.id;
           setActiveNoteId(saved.id);
         }
       }
@@ -207,8 +391,8 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
     try {
       if (shareToken) {
         await notesApi.deleteImageByShareToken(shareToken, idx);
-      } else if (activeNoteId) {
-        await notesApi.deleteImage(activeNoteId, idx);
+      } else if (activeNoteIdRef.current) {
+        await notesApi.deleteImage(activeNoteIdRef.current, idx);
       }
       setImages((prev) => prev.filter((_, i) => i !== idx));
     } catch (e) {
@@ -217,26 +401,42 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
   };
 
   const handleColorChange = (updates) => {
-    if (updates.bgColor !== undefined) setBgColor(updates.bgColor);
-    if (updates.bgPattern !== undefined) setBgPattern(updates.bgPattern);
-    if (activeNoteId || !isNew || shareToken) {
-      clearTimeout(autoSaveTimer.current);
-      autoSaveTimer.current = setTimeout(() => {
-        handleSave(true, false, updates);
-      }, 400);
+    if (updates.bgColor !== undefined) {
+      setBgColor(updates.bgColor);
+      bgColorRef.current = updates.bgColor;
     }
+    if (updates.bgPattern !== undefined) {
+      setBgPattern(updates.bgPattern);
+      bgPatternRef.current = updates.bgPattern;
+    }
+    clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      handleSave(true, false, updates);
+    }, 400);
+  };
+
+  const handleOpenPasswordSettings = async () => {
+    // Ensure the note has been saved/created before setting a password on it
+    if (!activeNoteIdRef.current && !shareToken) {
+      const created = await handleSave(true, false);
+      if (!created?.id) {
+        setError(t('note_pw.save_first_hint', 'Hãy nhập nội dung ghi chú trước khi đặt mật khẩu'));
+        return;
+      }
+    }
+    setShowPasswordModal(true);
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !showPasswordModal) {
         clearTimeout(autoSaveTimer.current);
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, showPasswordModal]);
 
   const iconSize = 15;
 
@@ -250,24 +450,51 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
       >
         <div className="nn-sheet-handle" aria-hidden="true" />
         <div className="nn-editor-header">
-          <div className="nn-editor-badge">
-            <span>
-              {isNew
-                ? <><Plus size={14} strokeWidth={2.5} /> {t('editor.badge_new', 'Ghi chú mới')}</>
-                : isReadOnly
-                ? <><Eye size={14} strokeWidth={2} /> {t('editor.badge_viewing', 'Đang xem ghi chú')}</>
-                : <><Pencil size={14} strokeWidth={2} /> {t('editor.badge_editing', 'Chỉnh sửa ghi chú')}</>
-              }
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div className="nn-editor-badge">
+              <span>
+                {isNew && !activeNoteId
+                  ? <><Plus size={14} strokeWidth={2.5} /> {t('editor.badge_new', 'Ghi chú mới')}</>
+                  : isReadOnly
+                  ? <><Eye size={14} strokeWidth={2} /> {t('editor.badge_viewing', 'Đang xem ghi chú')}</>
+                  : <><Pencil size={14} strokeWidth={2} /> {t('editor.badge_editing', 'Chỉnh sửa ghi chú')}</>
+                }
+              </span>
+            </div>
+
+            {!isReadOnly && autoSaveState !== 'idle' && (
+              <span
+                id="editor-autosave-status"
+                style={{
+                  fontSize: '0.73rem',
+                  color: autoSaveState === 'saved' ? 'var(--accent)' : 'var(--text-muted)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontWeight: 500,
+                }}
+              >
+                {autoSaveState === 'saving' ? (
+                  <>
+                    <Loader2 size={12} className="nn-spin" />
+                    {t('editor.autosave_saving', 'Đang tự động lưu…')}
+                  </>
+                ) : (
+                  <>
+                    <Check size={12} strokeWidth={2.5} />
+                    {t('editor.autosave_saved', 'Đã tự động lưu')}
+                  </>
+                )}
+              </span>
+            )}
           </div>
+
           {!isReadOnly && (
             <button
               className="nn-modal-close"
               onClick={async () => {
                 clearTimeout(autoSaveTimer.current);
-                if (activeNoteId || !isNew || shareToken) {
-                  await handleSave(true, false);
-                }
+                await handleSave(true, false);
                 onClose();
               }}
               aria-label={t('editor.btn_close', 'Đóng')}
@@ -290,6 +517,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
             readOnly={isReadOnly}
             onChange={(e) => {
               setTitle(e.target.value);
+              titleRef.current = e.target.value;
               e.target.style.height = 'auto';
               e.target.style.height = e.target.scrollHeight + 'px';
               triggerAutoSave();
@@ -492,6 +720,96 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
             />
           )}
 
+          {/* Version History Drawer / Panel */}
+          {!isReadOnly && showHistoryPanel && (
+            <div
+              id="note-history-panel"
+              style={{
+                margin: '0 20px 12px',
+                padding: '12px 14px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <History size={14} strokeWidth={2.2} style={{ color: 'var(--accent)' }} />
+                  {userIsLoggedIn
+                    ? t('editor.history_title_user', 'Lịch sử chỉnh sửa (Server lưu tối đa 5 lần hoàn tác)')
+                    : t('editor.history_title_guest', 'Lịch sử chỉnh sửa (Lưu trên trình duyệt thiết bị)')}
+                </span>
+                {effectiveHistory.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={handleQuickUndoStep}
+                    id="btn-history-undo-latest"
+                    style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <RotateCcw size={12} strokeWidth={2.2} />
+                    {t('editor.history_back_once', 'Lùi 1 bước')}
+                  </button>
+                )}
+              </div>
+
+              {effectiveHistory.length === 0 ? (
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                  {t('editor.history_empty', 'Chưa có bản lưu trước đó. Khi bạn gõ, các phiên bản trước sẽ tự động được lưu tại đây.')}
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 165, overflowY: 'auto' }}>
+                  {effectiveHistory.map((rev, idx) => {
+                    const previewText = stripHtml(rev.content || '') || rev.title || t('card.untitled', 'Không có tiêu đề');
+                    const timeStr = rev.savedAt
+                      ? new Date(rev.savedAt).toLocaleTimeString(language === 'en' ? 'en-US' : 'vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })
+                      : '';
+                    return (
+                      <div
+                        key={`${rev.savedAt || idx}-${idx}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 10,
+                          padding: '6px 10px',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border-subtle)',
+                        }}
+                      >
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            #{idx + 1} · {rev.title ? `${rev.title} — ` : ''}{previewText.slice(0, 80)}
+                          </div>
+                          {timeStr && (
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                              {timeStr}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => handleRestoreRevision(rev, idx)}
+                          id={`btn-restore-history-${idx}`}
+                          style={{ padding: '4px 10px', fontSize: '0.74rem', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        >
+                          <RotateCcw size={12} strokeWidth={2} />
+                          {t('editor.history_restore', 'Khôi phục')}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Error */}
           {(error || imageLoadFailedCount > 0) && (
             <div role="alert" style={{ padding: '0 20px 8px', fontSize: '0.8rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -547,6 +865,64 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                   >
                     <Palette size={16} strokeWidth={2} />
                   </button>
+
+                  {/* Direct Note Password Lock button (only on user's board, not share link view) */}
+                  {!shareToken && (
+                    <button
+                      className={`btn btn-ghost btn-icon${hasPassword ? ' text-accent' : ''}`}
+                      title={
+                        hasPassword
+                          ? t('card.action_password_manage', 'Đổi / Gỡ mật khẩu ghi chú')
+                          : t('card.action_password_set', 'Đặt mật khẩu ghi chú')
+                      }
+                      aria-label={
+                        hasPassword
+                          ? t('card.action_password_manage', 'Đổi / Gỡ mật khẩu ghi chú')
+                          : t('card.action_password_set', 'Đặt mật khẩu ghi chú')
+                      }
+                      type="button"
+                      onClick={handleOpenPasswordSettings}
+                      id="btn-editor-password"
+                    >
+                      {hasPassword ? <Lock size={16} strokeWidth={2.2} /> : <Unlock size={16} strokeWidth={2} />}
+                    </button>
+                  )}
+
+                  {/* Version History / Back toggle */}
+                  <button
+                    className={`btn btn-ghost btn-icon${showHistoryPanel ? ' text-accent' : ''}`}
+                    title={t('editor.history_btn', `Lịch sử chỉnh sửa / Hoàn tác (${effectiveHistory.length})`)}
+                    aria-label={t('editor.history_btn', 'Lịch sử chỉnh sửa / Hoàn tác')}
+                    aria-expanded={showHistoryPanel}
+                    type="button"
+                    onClick={() => setShowHistoryPanel((v) => !v)}
+                    id="btn-editor-history"
+                    style={{ position: 'relative' }}
+                  >
+                    <History size={16} strokeWidth={2} />
+                    {effectiveHistory.length > 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: 2,
+                          right: 2,
+                          minWidth: 14,
+                          height: 14,
+                          borderRadius: 999,
+                          background: '#047857',
+                          color: '#ffffff',
+                          fontSize: '0.62rem',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0 3px',
+                        }}
+                      >
+                        {effectiveHistory.length}
+                      </span>
+                    )}
+                  </button>
                 </>
               )}
             </div>
@@ -574,7 +950,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                 >
                   {saving
                     ? <><Loader2 size={14} strokeWidth={2} className="nn-spin" /> {t('editor.btn_saving', 'Đang lưu…')}</>
-                    : <><Check size={14} strokeWidth={2.5} /> {isNew ? t('editor.btn_create', 'Tạo note') : t('editor.btn_save', 'Lưu')}</>
+                    : <><Check size={14} strokeWidth={2.5} /> {isNew && !activeNoteId ? t('editor.btn_create', 'Tạo note') : t('editor.btn_save', 'Lưu')}</>
                   }
                 </button>
               )}
@@ -584,9 +960,7 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
                   className="btn btn-ghost"
                   onClick={async () => {
                     clearTimeout(autoSaveTimer.current);
-                    if (activeNoteId || !isNew || shareToken) {
-                      await handleSave(true, false);
-                    }
+                    await handleSave(true, false);
                     onClose();
                   }}
                   id="btn-close-editor"
@@ -599,6 +973,22 @@ export default function NoteEditor({ note, isNew, onSave, onClose, isReadOnly = 
           </div>
         </div>
       </div>
+
+      {showPasswordModal && activeNoteIdRef.current && (
+        <NotePasswordModal
+          note={{ id: activeNoteIdRef.current, hasPassword }}
+          mode="manage"
+          onClose={() => setShowPasswordModal(false)}
+          onPasswordChanged={({ hasPassword: nextHasPw, unlockedPassword, updated }) => {
+            setHasPassword(nextHasPw);
+            onPasswordChanged?.(activeNoteIdRef.current, {
+              hasPassword: nextHasPw,
+              unlockedPassword,
+              updated,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

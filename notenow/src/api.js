@@ -86,6 +86,91 @@ async function apiFetch(path, options = {}) {
 
 // ─── Local Fallback Storage (Seamless preview & offline sync) ─
 const LOCAL_STORAGE_KEY = 'notenow_local_notes';
+const LOCAL_HISTORY_PREFIX = 'notenow_history_';
+const LOCAL_PASSWORDS_KEY = 'notenow_local_passwords';
+const MAX_LOCAL_HISTORY = 20;
+
+export function getLocalNoteHistory(noteId) {
+  if (!noteId) return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_HISTORY_PREFIX}${noteId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function pushLocalNoteHistory(noteId, snapshot) {
+  if (!noteId || !snapshot) return [];
+  try {
+    const plain = stripHtml(snapshot.content || '');
+    const title = (snapshot.title || '').trim();
+    if (!title && !plain) return getLocalNoteHistory(noteId);
+
+    const existing = getLocalNoteHistory(noteId);
+    const latest = existing[0];
+    if (
+      latest &&
+      (latest.title || '') === title &&
+      (latest.content || '') === (snapshot.content || '')
+    ) {
+      return existing;
+    }
+
+    const entry = {
+      title: snapshot.title || null,
+      content: snapshot.content || '',
+      bgColor: snapshot.bgColor || 'default',
+      bgPattern: snapshot.bgPattern || 'none',
+      savedAt: snapshot.savedAt || new Date().toISOString(),
+    };
+    const next = [entry, ...existing].slice(0, MAX_LOCAL_HISTORY);
+    localStorage.setItem(`${LOCAL_HISTORY_PREFIX}${noteId}`, JSON.stringify(next));
+    return next;
+  } catch {
+    return [];
+  }
+}
+
+export function clearLocalNoteHistory(noteId) {
+  if (!noteId) return;
+  try {
+    localStorage.removeItem(`${LOCAL_HISTORY_PREFIX}${noteId}`);
+  } catch {}
+}
+
+function getLocalPasswordsMap() {
+  try {
+    const raw = localStorage.getItem(LOCAL_PASSWORDS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setLocalPasswordEntry(noteId, password) {
+  try {
+    const map = getLocalPasswordsMap();
+    if (password) {
+      map[noteId] = password;
+    } else {
+      delete map[noteId];
+    }
+    localStorage.setItem(LOCAL_PASSWORDS_KEY, JSON.stringify(map));
+  } catch {}
+}
+
+function applyLocalLockMetadata(note) {
+  if (!note) return note;
+  const localMap = getLocalPasswordsMap();
+  const hasLocalPw = Boolean(localMap[note.id] || note.notePassword);
+  return {
+    ...note,
+    hasPassword: Boolean(note.hasPassword || hasLocalPw),
+  };
+}
 
 function getLocalNotes() {
   try {
@@ -115,18 +200,23 @@ export const notesApi = {
   list: async () => {
     try {
       const data = await apiFetch('/notes');
-      return data;
+      return {
+        ...data,
+        notes: (data.notes || []).map(applyLocalLockMetadata),
+        sharedNotes: (data.sharedNotes || []).map(applyLocalLockMetadata),
+      };
     } catch {
-      return { notes: getLocalNotes(), sharedNotes: [] };
+      return { notes: getLocalNotes().map(applyLocalLockMetadata), sharedNotes: [] };
     }
   },
 
   getById: async (id) => {
     try {
-      return await apiFetch(`/notes/${id}`);
+      const note = await apiFetch(`/notes/${id}`);
+      return applyLocalLockMetadata(note);
     } catch {
       const found = getLocalNotes().find((n) => n.id === id);
-      if (found) return found;
+      if (found) return applyLocalLockMetadata(found);
       throw new Error('Không tìm thấy ghi chú');
     }
   },
@@ -231,6 +321,8 @@ export const notesApi = {
   },
 
   delete: async (id) => {
+    clearLocalNoteHistory(id);
+    setLocalPasswordEntry(id, null);
     if (String(id).startsWith('local-')) {
       const notes = getLocalNotes().filter((n) => n.id !== id);
       saveLocalNotes(notes);
@@ -242,6 +334,66 @@ export const notesApi = {
       const notes = getLocalNotes().filter((n) => n.id !== id);
       saveLocalNotes(notes);
       return { success: true };
+    }
+  },
+
+  setNotePassword: async (id, password, currentPassword = null) => {
+    const cleanPw = password ? String(password).trim() : null;
+    if (String(id).startsWith('local-')) {
+      const map = getLocalPasswordsMap();
+      const existingPw = map[id];
+      if (existingPw && existingPw !== (currentPassword || '')) {
+        throw new Error('Mật khẩu hiện tại không đúng');
+      }
+      setLocalPasswordEntry(id, cleanPw);
+      const notes = getLocalNotes();
+      const idx = notes.findIndex((n) => n.id === id);
+      if (idx !== -1) {
+        notes[idx] = { ...notes[idx], hasPassword: Boolean(cleanPw) };
+        saveLocalNotes(notes);
+        return notes[idx];
+      }
+      return { id, hasPassword: Boolean(cleanPw) };
+    }
+
+    try {
+      const res = await apiFetch(`/notes/${id}/password`, {
+        method: 'POST',
+        body: JSON.stringify({ password: cleanPw, currentPassword }),
+      });
+      setLocalPasswordEntry(id, null);
+      return res;
+    } catch (e) {
+      if (e.message && (e.message.includes('không đúng') || e.message.includes('403'))) {
+        throw e;
+      }
+      // Fallback to local password map if backend endpoint is unreachable
+      const map = getLocalPasswordsMap();
+      const existingPw = map[id];
+      if (existingPw && existingPw !== (currentPassword || '')) {
+        throw new Error('Mật khẩu hiện tại không đúng');
+      }
+      setLocalPasswordEntry(id, cleanPw);
+      return { id, hasPassword: Boolean(cleanPw) };
+    }
+  },
+
+  verifyNotePassword: async (id, password) => {
+    const cleanPw = String(password || '').trim();
+    const map = getLocalPasswordsMap();
+    if (map[id]) {
+      if (map[id] === cleanPw) {
+        return { verified: true };
+      }
+      throw new Error('Mật khẩu không đúng');
+    }
+    try {
+      return await apiFetch(`/notes/${id}/verify-password`, {
+        method: 'POST',
+        body: JSON.stringify({ password: cleanPw }),
+      });
+    } catch (e) {
+      throw new Error(e.message || 'Mật khẩu không đúng');
     }
   },
 

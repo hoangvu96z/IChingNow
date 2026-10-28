@@ -1,28 +1,41 @@
 import React, { useMemo, useState } from 'react';
-import { getDaysRemaining, stripHtml } from '../api.js';
+import { stripHtml } from '../api.js';
 import ImageViewer from './ImageViewer.jsx';
 import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
 import { contentWithProtectedImageSources, getInlineNoteImages, sanitizeNoteContent } from '../safeNoteContent.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import {
-  GripVertical, Pin, Infinity as InfinityIcon,
-  Users, User, Clock, Link2, Lock,
+  GripVertical, Pin,
+  Users, User, Link2, Lock, Unlock,
   Pencil, Trash2,
 } from 'lucide-react';
 
 const EMPTY_IMAGES = [];
 
-export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPermanent, isShared }) {
+export default function NoteCard({
+  note,
+  onEdit,
+  onDelete,
+  onShare,
+  onPin,
+  onPassword,
+  isUnlocked = false,
+  isShared,
+}) {
   const { t } = useLanguage();
   const [deleting, setDeleting] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
-  const attachmentImages = Array.isArray(note.images) ? note.images : EMPTY_IMAGES;
-  const sanitizedContent = useMemo(() => sanitizeNoteContent(note.content), [note.content]);
+  const isPasswordLocked = Boolean(note.hasPassword) && !isUnlocked;
+
+  const attachmentImages = Array.isArray(note.images) && !isPasswordLocked ? note.images : EMPTY_IMAGES;
+  const sanitizedContent = useMemo(
+    () => (isPasswordLocked ? '' : sanitizeNoteContent(note.content)),
+    [note.content, isPasswordLocked],
+  );
   const inlineImages = useMemo(() => getInlineNoteImages(sanitizedContent), [sanitizedContent]);
   const imageRefs = useMemo(() => [...attachmentImages, ...inlineImages], [attachmentImages, inlineImages]);
   const { sources: imageSources, loading: imagesLoading } = useNoteImageSources(imageRefs, note.id, null, Boolean(note.isGuest));
-  const daysLeft = getDaysRemaining(note.expiresAt);
-  const contentPreview = stripHtml(note.content || '');
+  const contentPreview = isPasswordLocked ? '' : stripHtml(note.content || '');
   const contentPreviewHtml = useMemo(
     () => contentWithProtectedImageSources(sanitizedContent, imageSources, attachmentImages.length, imagesLoading),
     [sanitizedContent, imageSources, attachmentImages.length, imagesLoading],
@@ -30,10 +43,14 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
 
   const handleDelete = async (e) => {
     e.stopPropagation();
+    if (isPasswordLocked) {
+      onDelete(note);
+      return;
+    }
     if (!window.confirm(t('card.delete_confirm', 'Xoá ghi chú này?'))) return;
     setDeleting(true);
     try {
-      await onDelete(note.id);
+      await onDelete(note);
     } catch {
       setDeleting(false);
     }
@@ -41,7 +58,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
 
   return (
     <div
-      className={`nn-card${note.isPinned ? ' pinned' : ''}${note.isPermanent ? ' permanent' : ''}`}
+      className={`nn-card${note.isPinned ? ' pinned' : ''}${note.hasPassword ? ' locked' : ''}`}
       data-bg={note.bgColor || 'default'}
       data-pattern={note.bgPattern || 'none'}
       onClick={() => onEdit(note)}
@@ -70,13 +87,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
         </span>
       )}
 
-      {note.isPermanent && (
-        <span className="nn-permanent-icon" aria-label={t('card.badge_permanent', 'Lưu vĩnh viễn')} title={t('card.tooltip_permanent', 'Lưu vĩnh viễn — không tự xoá')}>
-          <InfinityIcon size={14} strokeWidth={2.2} />
-        </span>
-      )}
-
-      {/* Images */}
+      {/* Images (hidden when password-locked) */}
       {attachmentImages.length > 0 && (
         <div
           className={`nn-card-images${attachmentImages.length === 1 ? ' single' : ''}`}
@@ -121,12 +132,33 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
         <h3 className="nn-card-title">{note.title}</h3>
       )}
 
-      {/* Content preview */}
-      {(contentPreview || inlineImages.length > 0) && (
+      {/* Content preview or Password Lock Mask */}
+      {isPasswordLocked ? (
         <div
-          className="nn-card-content"
-          dangerouslySetInnerHTML={{ __html: contentPreviewHtml }}
-        />
+          className="nn-card-locked-mask"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--bg-elevated)',
+            border: '1px dashed var(--border)',
+            color: 'var(--text-secondary)',
+            fontSize: '0.8rem',
+            marginTop: note.title ? 6 : 0,
+          }}
+        >
+          <Lock size={14} strokeWidth={2.2} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <span>{t('card.locked_preview', 'Đã khoá bằng mật khẩu — Bấm để mở khoá')}</span>
+        </div>
+      ) : (
+        (contentPreview || inlineImages.length > 0) && (
+          <div
+            className="nn-card-content"
+            dangerouslySetInnerHTML={{ __html: contentPreviewHtml }}
+          />
+        )
       )}
 
       {/* Footer */}
@@ -142,27 +174,27 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               <User size={11} strokeWidth={2} /> {t('card.badge_guest', 'Khách')}
             </span>
           )}
-          {note.isPermanent && (
-            <span className="nn-badge nn-badge-permanent" title={t('card.tooltip_permanent', 'Lưu vĩnh viễn — không tự xoá')}>
-              <InfinityIcon size={11} strokeWidth={2.2} /> {t('card.badge_permanent', 'Vĩnh viễn')}
-            </span>
-          )}
-          {daysLeft !== null && daysLeft <= 30 && !note.isPermanent && (
+          {note.hasPassword && (
             <span
-              className="nn-badge nn-badge-expiry"
-              title={t('card.tooltip_expiry', `Ghi chú sẽ xoá sau ${daysLeft} ngày`, { days: daysLeft })}
+              className="nn-badge nn-badge-locked"
+              title={
+                isUnlocked
+                  ? t('card.badge_unlocked_tip', 'Đã mở khoá trong phiên này')
+                  : t('card.badge_locked_tip', 'Ghi chú được bảo vệ bằng mật khẩu')
+              }
+              style={{
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--accent-border)',
+              }}
             >
-              <Clock size={11} strokeWidth={2} /> {daysLeft}d
+              {isUnlocked ? <Unlock size={11} strokeWidth={2.2} /> : <Lock size={11} strokeWidth={2.2} />}
+              {isUnlocked ? t('card.badge_unlocked', 'Đã mở') : t('card.badge_locked', 'Đã khoá')}
             </span>
           )}
           {note.shareMode !== 'none' && (
             <span className="nn-badge nn-badge-shared" title={t('share.link_section', 'Đang chia sẻ liên kết')}>
               <Link2 size={11} strokeWidth={2} />
-            </span>
-          )}
-          {note.sharePassword && (
-            <span className="nn-badge nn-badge-locked" title={t('share.password_title', 'Được bảo vệ bằng mật khẩu')}>
-              <Lock size={11} strokeWidth={2} />
             </span>
           )}
         </div>
@@ -181,16 +213,24 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onPin, onPer
               <Pin size={14} fill={note.isPinned ? 'currentColor' : 'none'} strokeWidth={2} />
             </button>
 
-            {/* Permanent toggle */}
+            {/* Direct Note Password Lock */}
             <button
-              className={`nn-card-action${note.isPermanent ? ' active' : ''}`}
-              title={note.isPermanent ? t('card.action_unpermanent', 'Bỏ lưu vĩnh viễn') : t('card.action_permanent', 'Lưu vĩnh viễn')}
-              aria-label={note.isPermanent ? t('card.action_unpermanent', 'Bỏ lưu vĩnh viễn') : t('card.action_permanent', 'Lưu vĩnh viễn')}
-              onClick={(e) => { e.stopPropagation(); onPermanent(note.id, !note.isPermanent); }}
+              className={`nn-card-action${note.hasPassword ? ' active' : ''}`}
+              title={
+                note.hasPassword
+                  ? t('card.action_password_manage', 'Đổi / Gỡ mật khẩu ghi chú')
+                  : t('card.action_password_set', 'Đặt mật khẩu ghi chú')
+              }
+              aria-label={
+                note.hasPassword
+                  ? t('card.action_password_manage', 'Đổi / Gỡ mật khẩu ghi chú')
+                  : t('card.action_password_set', 'Đặt mật khẩu ghi chú')
+              }
+              onClick={(e) => { e.stopPropagation(); onPassword?.(note); }}
               type="button"
-              id={`btn-permanent-${note.id}`}
+              id={`btn-password-${note.id}`}
             >
-              <InfinityIcon size={14} strokeWidth={2} />
+              <Lock size={14} strokeWidth={2} />
             </button>
 
             {/* Share */}
