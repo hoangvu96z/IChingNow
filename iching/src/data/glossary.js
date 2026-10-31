@@ -205,6 +205,48 @@ export const GLOSSARY = {
     detail: 'Quy Hồn báo hiệu mọi sự xáo trộn sẽ kết thúc, người đi sẽ trở về, công việc quy về ổn định.',
     tip: 'Hỏi đi xa thì khó đi, hỏi việc hòa giải hay kết thúc thì rất tốt.',
   },
+  'lucXung': {
+    title: 'Quẻ Lục Xung',
+    short: 'Cả 3 cặp hào đối ứng (1-4, 2-5, 3-6) đều xung nhau.',
+    detail: 'Gồm 8 quẻ Bát Thuần cùng Thiên Lôi Vô Vọng và Lôi Thiên Đại Tráng. Chủ về biến động mạnh, phân tán, nhanh chóng kết thúc hoặc khó bền.',
+    tip: 'Việc tốt gặp Lục Xung dễ tan; việc xấu, kiện tụng, bệnh mới mắc gặp Lục Xung lại mau tan.',
+  },
+  'lucHop': {
+    title: 'Quẻ Lục Hợp',
+    short: 'Cả 3 cặp hào đối ứng (1-4, 2-5, 3-6) đều lục hợp.',
+    detail: 'Gồm 8 quẻ: Thái, Bĩ, Tiết, Khốn, Bí, Lữ, Phục, Dự. Chủ về sự gắn kết, bền chặt, hòa hợp nhưng nếu hỏi việc xấu thì dây dưa khó dứt.',
+    tip: 'Hỏi hôn nhân, hợp tác, cầu tài gặp Lục Hợp thường thuận lợi và lâu bền.',
+  },
+  'quaiThan': {
+    title: 'Quái Thân (Thân Quẻ)',
+    short: 'Tâm điểm của quẻ: "Dương Thế khởi Tý, Âm Thế khởi Ngọ".',
+    detail: 'Đếm thuận từ Hào 1 đến Hào Thế để tìm Địa Chi Quái Thân. Hào nào mang chi đó là Quái Thân (QT), đại diện cho chủ thể sự việc hoặc căn cơ sự việc.',
+    tip: 'Nếu trong 6 hào không có Địa Chi Quái Thân gọi là Quái Thân phục (việc chưa lộ rõ hình hài).',
+  },
+  'truongSinh': {
+    title: 'Vòng Trường Sinh (TS.Ngày / TS.Tháng)',
+    short: '12 trạng thái sinh trưởng của Ngũ Hành hào theo Ngày và Tháng.',
+    detail: 'Theo Lục Hào chính tông (Thủy-Thổ đồng cục sinh tại Thân, Mộc sinh tại Hợi, Hỏa sinh tại Dần, Kim sinh tại Tỵ), gồm: Trường Sinh, Mộc Dục, Quan Đới, Lâm Quan, Đế Vượng, Suy, Bệnh, Tử, Mộ, Tuyệt, Thai, Dưỡng.',
+    tip: 'Dụng Thần gặp Trường Sinh, Đế Vượng là có khí lực mạnh; gặp Mộ, Tuyệt, Tử, Bệnh là suy yếu.',
+  },
+  'locThan': {
+    title: 'Lộc Thần (Lộc)',
+    short: 'Sao bổng lộc tính theo Thiên Can của Ngày gieo quẻ.',
+    detail: 'Giáp lộc Dần, Ất lộc Mão, Bính/Mậu lộc Tỵ, Đinh/Kỷ lộc Ngọ, Canh lộc Thân, Tân lộc Dậu, Nhâm lộc Hợi, Quý lộc Tý.',
+    tip: 'Thê Tài hoặc Dụng Thần lâm Lộc là có tài lộc, lợi ích thực tế.',
+  },
+  'dichMa': {
+    title: 'Dịch Mã (Mã)',
+    short: 'Sao di chuyển, biến động tính theo Địa Chi của Ngày.',
+    detail: 'Dần-Ngọ-Tuất mã tại Thân; Thân-Tý-Thìn mã tại Dần; Tỵ-Dậu-Sửu mã tại Hợi; Hợi-Mão-Mùi mã tại Tỵ.',
+    tip: 'Hỏi xuất hành, chuyển việc, tin tức mà Dụng Thần/Thế lâm Dịch Mã thì việc đến rất nhanh.',
+  },
+  'daoHoa': {
+    title: 'Đào Hoa (Đào)',
+    short: 'Sao nhân duyên, giao tế tính theo Địa Chi của Ngày.',
+    detail: 'Dần-Ngọ-Tuất đào tại Mão; Thân-Tý-Thìn đào tại Dậu; Tỵ-Dậu-Sửu đào tại Ngọ; Hợi-Mão-Mùi đào tại Tý.',
+    tip: 'Hỏi tình cảm, nghệ thuật, ngoại giao gặp Đào Hoa là có sức hút và nhân duyên.',
+  },
 };
 
 export function getGlossary(key) {

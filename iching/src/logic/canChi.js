@@ -12,7 +12,9 @@ import {
   STEM_BY_NAME,
   BRANCH_BY_NAME,
   getKhongVong,
+  getDayShenSha,
 } from '../data/lucYao.js';
+import { SOLAR_TERM_BY_ZH } from '../data/solarTerms.js';
 
 // lunar-javascript trả về Hán tự → cần map sang tên tiếng Việt
 const ZH_STEM_TO_VI = {
@@ -39,24 +41,29 @@ export function getCanChiFromDate(dateStr, timeStr = '00:00') {
 
   try {
     const [year, month, day]   = dateStr.split('-').map(Number);
-    const [hour = 0] = (timeStr || '00:00').split(':').map(Number);
+    const [hour = 0, minute = 0] = (timeStr || '00:00').split(':').map(Number);
 
     // Chuyển giờ sang địa chi giờ (Tý = 0, Sửu = 1, ...)
     // Giờ Tý: 23:00-00:59, Sửu: 01:00-02:59, ...
     const hourBranchId = getHourBranchId(hour);
 
-    // Dùng lunar-javascript để lấy Can Chi
-    const solar  = Solar.fromYmd(year, month, day);
-    const lunar  = solar.getLunar();
-    const eightChar = lunar.getEightChar();  // Bát Tự
+    // Dùng lunar-javascript với cả giờ/phút để tính chính xác thời điểm giao Tiết Khí
+    // Lưu ý: dùng Solar.fromYmd cho ngày âm/Can Chi Ngày để giữ quy ước ngày dương lịch 00:00-23:59,
+    // và Solar.fromYmdHms cho Tiết Khí / Tháng / Năm
+    const solarDay = Solar.fromYmd(year, month, day);
+    const solarHms = Solar.fromYmdHms(year, month, day, hour, minute, 0);
+    const lunarDay = solarDay.getLunar();
+    const lunarHms = solarHms.getLunar();
+    const eightCharDay = lunarDay.getEightChar();
+    const eightCharHms = lunarHms.getEightChar();
 
-    // Can Chi Năm, Tháng, Ngày từ Bát Tự (lunar-javascript trả Hán tự → convert sang tiếng Việt)
-    const namCan   = toViStem(eightChar.getYearGan());
-    const namChi   = toViBranch(eightChar.getYearZhi());
-    const thangCan = toViStem(eightChar.getMonthGan());
-    const thangChi = toViBranch(eightChar.getMonthZhi());
-    const ngayCan  = toViStem(eightChar.getDayGan());
-    const ngayChi  = toViBranch(eightChar.getDayZhi());
+    // Can Chi Năm, Tháng theo tiết khí chính xác tới phút; Can Chi Ngày theo ngày dương lịch
+    const namCan   = toViStem(eightCharHms.getYearGan());
+    const namChi   = toViBranch(eightCharHms.getYearZhi());
+    const thangCan = toViStem(eightCharHms.getMonthGan());
+    const thangChi = toViBranch(eightCharHms.getMonthZhi());
+    const ngayCan  = toViStem(eightCharDay.getDayGan());
+    const ngayChi  = toViBranch(eightCharDay.getDayZhi());
 
     // Can Chi Giờ — tính theo Can Ngày và Địa Chi Giờ
     const ngayCanId = STEM_BY_NAME[ngayCan]?.id ?? 0;
@@ -64,13 +71,22 @@ export function getCanChiFromDate(dateStr, timeStr = '00:00') {
     const gioCan    = HEAVENLY_STEMS[gioCanId]?.name ?? '?';
     const gioChi    = EARTHLY_BRANCHES[hourBranchId]?.name ?? '?';
 
-    // Không Vong dựa vào Can Chi Ngày
+    // Không Vong & Thần Sát (Lộc, Mã, Đào Hoa) dựa vào Can Chi Ngày
     const khongVong = getKhongVong(ngayCan, ngayChi);
+    const shenSha   = getDayShenSha(ngayCan, ngayChi);
+
+    // Tiết khí hiện tại
+    const prevJieQi = lunarHms.getPrevJieQi(true);
+    const jieQiZh   = prevJieQi?.getName?.() || '';
+    const solarTermObj = SOLAR_TERM_BY_ZH[jieQiZh] || null;
 
     // Âm lịch
-    const lunarYear  = lunar.getYear();
-    const lunarMonth = lunar.getMonth();
-    const lunarDay   = lunar.getDay();
+    const lunarYear  = lunarDay.getYear();
+    const lunarMonth = lunarDay.getMonth();
+    const lunarDayNum = lunarDay.getDay();
+
+    const ngayChiObj  = BRANCH_BY_NAME[ngayChi]  || null;
+    const thangChiObj = BRANCH_BY_NAME[thangChi] || null;
 
     return {
       // Năm
@@ -79,20 +95,30 @@ export function getCanChiFromDate(dateStr, timeStr = '00:00') {
       namChiObj:  BRANCH_BY_NAME[namChi] || null,
       // Tháng
       thangCan, thangChi,
-      thangCanObj:  STEM_BY_NAME[thangCan]   || null,
-      thangChiObj:  BRANCH_BY_NAME[thangChi] || null,
+      thangCanObj:  STEM_BY_NAME[thangCan] || null,
+      thangChiObj,
       // Ngày
       ngayCan, ngayChi,
-      ngayCanObj:  STEM_BY_NAME[ngayCan]   || null,
-      ngayChiObj:  BRANCH_BY_NAME[ngayChi] || null,
+      ngayCanObj:  STEM_BY_NAME[ngayCan] || null,
+      ngayChiObj,
       // Giờ
       gioCan, gioChi,
       gioCanObj:  STEM_BY_NAME[gioCan]   || null,
       gioChiObj:  BRANCH_BY_NAME[gioChi] || null,
-      // Không Vong
+      // Nhật thần & Nguyệt lệnh
+      nhatThan:   ngayChiObj  ? `${ngayChi}-${ngayChiObj.element}`   : ngayChi,
+      nguyetLenh: thangChiObj ? `${thangChi}-${thangChiObj.element}` : thangChi,
+      // Tiết khí
+      tietKhi:    solarTermObj?.nameVi || jieQiZh || '',
+      tietKhiEn:  solarTermObj?.nameEn || '',
+      solarTermObj,
+      // Không Vong & Thần Sát (Lộc, Mã, Đào Hoa)
       khongVong,
+      locChi:     shenSha.locChi,
+      maChi:      shenSha.maChi,
+      daoHoaChi:  shenSha.daoHoaChi,
       // Âm lịch
-      lunarDate: `${lunarYear}/${lunarMonth < 0 ? '(N)' + Math.abs(lunarMonth) : lunarMonth}/${lunarDay}`,
+      lunarDate: `${lunarYear}/${lunarMonth < 0 ? '(N)' + Math.abs(lunarMonth) : lunarMonth}/${lunarDayNum}`,
       // Hiển thị đầy đủ
       label: `${ngayCan} ${ngayChi}, ${thangCan} ${thangChi}, ${namCan} ${namChi}`,
     };
@@ -129,11 +155,11 @@ export function getHourStemId(dayStemId, hourBranchId) {
  * Fallback: tính Can Chi bằng công thức thuần toán (khi lunar-javascript lỗi)
  */
 function getFallbackCanChi(dateStr, timeStr) {
-  // Ngày gốc: 1900-01-31 = Giáp Tý (0,0) theo lịch Can Chi
+  // Ngày gốc chuẩn: 1900-02-20 = Giáp Tý (0,0) theo lịch Can Chi
   const [y, m, d]   = dateStr.split('-').map(Number);
   const [hour = 0]  = (timeStr || '00:00').split(':').map(Number);
   const targetDate  = new Date(y, m - 1, d);
-  const baseDate    = new Date(1900, 0, 31); // Giáp Tý
+  const baseDate    = new Date(1900, 1, 20); // 1900-02-20 = Giáp Tý
   const diffDays    = Math.round((targetDate - baseDate) / 86400000);
 
   const ngayCanId   = ((diffDays % 10) + 10) % 10;
@@ -145,18 +171,28 @@ function getFallbackCanChi(dateStr, timeStr) {
   const gioCanId     = getHourStemId(ngayCanId, hourBranchId);
 
   const khongVong = getKhongVong(ngayCan, ngayChi);
+  const shenSha   = getDayShenSha(ngayCan, ngayChi);
+  const ngayChiObj = EARTHLY_BRANCHES[ngayChiId];
 
   return {
     namCan: '?', namChi: '?',
     thangCan: '?', thangChi: '?',
     ngayCan,   ngayChi,
     ngayCanObj:  HEAVENLY_STEMS[ngayCanId],
-    ngayChiObj:  EARTHLY_BRANCHES[ngayChiId],
+    ngayChiObj,
     gioCan:  HEAVENLY_STEMS[gioCanId].name,
     gioChi:  EARTHLY_BRANCHES[hourBranchId].name,
     gioCanObj:  HEAVENLY_STEMS[gioCanId],
     gioChiObj:  EARTHLY_BRANCHES[hourBranchId],
+    nhatThan:   `${ngayChi}-${ngayChiObj.element}`,
+    nguyetLenh: '?',
+    tietKhi:    '',
+    tietKhiEn:  '',
+    solarTermObj: null,
     khongVong,
+    locChi:    shenSha.locChi,
+    maChi:     shenSha.maChi,
+    daoHoaChi: shenSha.daoHoaChi,
     lunarDate: '(tính gần đúng)',
     label: `${ngayCan} ${ngayChi} (gần đúng)`,
     isFallback: true,

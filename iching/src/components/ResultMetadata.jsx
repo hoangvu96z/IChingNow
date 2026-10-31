@@ -20,8 +20,14 @@ export default function ResultMetadata({ result }) {
   };
 
   const getSolarTermText = () => {
-    if (!result.useSolarTerm || !result.solarTerm) return '—';
-    return language === 'en' ? result.solarTerm.nameEn || result.solarTerm.nameVi : result.solarTerm.nameVi;
+    const term = result.solarTerm || result.canChi?.solarTermObj;
+    if (term) {
+      return language === 'en' ? (term.nameEn || term.nameVi) : term.nameVi;
+    }
+    if (result.canChi?.tietKhi) {
+      return language === 'en' ? (result.canChi.tietKhiEn || result.canChi.tietKhi) : result.canChi.tietKhi;
+    }
+    return '—';
   };
 
   const getMovingMindTimeText = () => {

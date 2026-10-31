@@ -373,3 +373,159 @@ function buildKhongVongMap() {
 export function getKhongVong(stemName, branchName) {
   return KHONG_VONG_MAP[`${stemName}-${branchName}`] || [];
 }
+
+// ── Lục Xung & Lục Hợp Địa Chi ───────────────────────────────────────────
+export const LUC_XUNG_BRANCHES = {
+  Tý: 'Ngọ', Ngọ: 'Tý',
+  Sửu: 'Mùi', Mùi: 'Sửu',
+  Dần: 'Thân', Thân: 'Dần',
+  Mão: 'Dậu', Dậu: 'Mão',
+  Thìn: 'Tuất', Tuất: 'Thìn',
+  Tỵ: 'Hợi', Hợi: 'Tỵ',
+};
+
+export const LUC_HOP_BRANCHES = {
+  Tý: 'Sửu', Sửu: 'Tý',
+  Dần: 'Hợi', Hợi: 'Dần',
+  Mão: 'Tuất', Tuất: 'Mão',
+  Thìn: 'Dậu', Dậu: 'Thìn',
+  Tỵ: 'Thân', Thân: 'Tỵ',
+  Ngọ: 'Mùi', Mùi: 'Ngọ',
+};
+
+/**
+ * Kiểm tra 6 Địa Chi (từ Hào 1 đến Hào 6) có tạo thành quẻ Lục Xung hay Lục Hợp
+ * @param {string[]} chis - mảng 6 Địa Chi [H1..H6]
+ * @param {string} [queType] - loại quẻ trong Bát Cung ('bat-thuan', 'du-hon', 'quy-hon', ...)
+ * @returns {{ code: string|null, labelVi: string, labelEn: string }}
+ */
+export function getHexagramTrait(chis, queType) {
+  if (Array.isArray(chis) && chis.length === 6) {
+    const isXung =
+      LUC_XUNG_BRANCHES[chis[0]] === chis[3] &&
+      LUC_XUNG_BRANCHES[chis[1]] === chis[4] &&
+      LUC_XUNG_BRANCHES[chis[2]] === chis[5];
+    if (isXung) {
+      return { code: 'luc-xung', labelVi: 'Lục Xung', labelEn: 'Six Clashes' };
+    }
+
+    const isHop =
+      LUC_HOP_BRANCHES[chis[0]] === chis[3] &&
+      LUC_HOP_BRANCHES[chis[1]] === chis[4] &&
+      LUC_HOP_BRANCHES[chis[2]] === chis[5];
+    if (isHop) {
+      return { code: 'luc-hop', labelVi: 'Lục Hợp', labelEn: 'Six Harmonies' };
+    }
+  }
+
+  if (queType === 'du-hon') {
+    return { code: 'du-hon', labelVi: 'Du Hồn', labelEn: 'Wandering Soul' };
+  }
+  if (queType === 'quy-hon') {
+    return { code: 'quy-hon', labelVi: 'Quy Hồn', labelEn: 'Returning Soul' };
+  }
+
+  return { code: null, labelVi: '', labelEn: '' };
+}
+
+// ── Quái Thân (Hexagram Body / 卦身) ───────────────────────────────────────
+/**
+ * Tính Địa Chi của Quái Thân theo khẩu quyết Bốc Phệ Chính Tông:
+ * "Dương Thế khởi Tý, Âm Thế khởi Ngọ" — đếm thuận từ Hào 1 lên đến Hào Thế.
+ *
+ * @param {number} theHao - vị trí Hào Thế (1..6)
+ * @param {'yang'|'yin'} theYinYang - tính chất Âm/Dương của Hào Thế
+ * @returns {string|null} tên Địa Chi của Quái Thân
+ */
+export function getQuaiThanChi(theHao, theYinYang) {
+  if (!theHao || theHao < 1 || theHao > 6) return null;
+  const startBranchId = theYinYang === 'yin' ? 6 : 0; // Âm khởi Ngọ (6), Dương khởi Tý (0)
+  const branchId = (startBranchId + (theHao - 1)) % 12;
+  return EARTHLY_BRANCHES[branchId]?.name || null;
+}
+
+// ── Vòng Trường Sinh 12 Trạng Thái (Thủy Thổ đồng cục) ────────────────────
+export const TRUONG_SINH_STAGES = [
+  { id: 0,  name: 'Trường Sinh', shortVi: 'T.Sinh',  shortEn: 'Birth'      },
+  { id: 1,  name: 'Mộc Dục',     shortVi: 'M.Dục',   shortEn: 'Bath'       },
+  { id: 2,  name: 'Quan Đới',    shortVi: 'Q.Đới',   shortEn: 'Crown'      },
+  { id: 3,  name: 'Lâm Quan',    shortVi: 'L.Quan',  shortEn: 'Official'   },
+  { id: 4,  name: 'Đế Vượng',    shortVi: 'Đ.Vượng', shortEn: 'Peak'       },
+  { id: 5,  name: 'Suy',         shortVi: 'Suy',     shortEn: 'Decline'    },
+  { id: 6,  name: 'Bệnh',        shortVi: 'Bệnh',    shortEn: 'Sickness'   },
+  { id: 7,  name: 'Tử',          shortVi: 'Tử',      shortEn: 'Death'      },
+  { id: 8,  name: 'Mộ',          shortVi: 'Mộ',      shortEn: 'Tomb'       },
+  { id: 9,  name: 'Tuyệt',       shortVi: 'Tuyệt',   shortEn: 'Extinction' },
+  { id: 10, name: 'Thai',        shortVi: 'Thai',    shortEn: 'Conception' },
+  { id: 11, name: 'Dưỡng',       shortVi: 'Dưỡng',   shortEn: 'Nurture'    },
+];
+
+// Địa Chi khởi Trường Sinh của từng Ngũ Hành (Lục Hào chính tông: Thủy - Thổ đồng cục tại Thân)
+export const TRUONG_SINH_START_BRANCH = {
+  Mộc:  'Hợi',
+  Hỏa:  'Dần',
+  Kim:  'Tỵ',
+  Thủy: 'Thân',
+  Thổ:  'Thân',
+};
+
+/**
+ * Tra trạng thái Vòng Trường Sinh của Ngũ Hành hào tại một Địa Chi (Ngày hoặc Tháng)
+ *
+ * @param {string} haoElement - Ngũ Hành của hào ('Mộc'|'Hỏa'|'Thổ'|'Kim'|'Thủy')
+ * @param {string} targetBranchName - Địa Chi của Ngày hoặc Tháng ('Tý'..'Hợi')
+ * @returns {{ id: number, name: string, shortVi: string, shortEn: string } | null}
+ */
+export function getTruongSinhStage(haoElement, targetBranchName) {
+  const startName = TRUONG_SINH_START_BRANCH[haoElement];
+  const startObj  = BRANCH_BY_NAME[startName];
+  const targetObj = BRANCH_BY_NAME[targetBranchName];
+  if (!startObj || !targetObj) return null;
+
+  const idx = (targetObj.id - startObj.id + 12) % 12;
+  return TRUONG_SINH_STAGES[idx] || null;
+}
+
+// ── Thần Sát theo Can / Chi Ngày: Lộc - Mã - Đào Hoa ──────────────────────
+export const LOC_BY_DAY_STEM = {
+  Giáp: 'Dần',
+  Ất:   'Mão',
+  Bính: 'Tỵ',
+  Đinh: 'Ngọ',
+  Mậu:  'Tỵ',
+  Kỷ:   'Ngọ',
+  Canh: 'Thân',
+  Tân:  'Dậu',
+  Nhâm: 'Hợi',
+  Quý:  'Tý',
+};
+
+export const DICH_MA_BY_DAY_BRANCH = {
+  Dần: 'Thân', Ngọ: 'Thân', Tuất: 'Thân',
+  Thân: 'Dần', Tý: 'Dần',   Thìn: 'Dần',
+  Tỵ: 'Hợi',   Dậu: 'Hợi',  Sửu: 'Hợi',
+  Hợi: 'Tỵ',   Mão: 'Tỵ',   Mùi: 'Tỵ',
+};
+
+export const DAO_HOA_BY_DAY_BRANCH = {
+  Dần: 'Mão', Ngọ: 'Mão', Tuất: 'Mão',
+  Thân: 'Dậu', Tý: 'Dậu', Thìn: 'Dậu',
+  Tỵ: 'Ngọ',  Dậu: 'Ngọ', Sửu: 'Ngọ',
+  Hợi: 'Tý',  Mão: 'Tý',  Mùi: 'Tý',
+};
+
+/**
+ * Tính 3 Thần Sát cốt lõi (Lộc, Dịch Mã, Đào Hoa) từ Can Chi Ngày
+ *
+ * @param {string} ngayCan - Thiên Can ngày
+ * @param {string} ngayChi - Địa Chi ngày
+ * @returns {{ locChi: string|null, maChi: string|null, daoHoaChi: string|null }}
+ */
+export function getDayShenSha(ngayCan, ngayChi) {
+  return {
+    locChi:    LOC_BY_DAY_STEM[ngayCan]       || null,
+    maChi:     DICH_MA_BY_DAY_BRANCH[ngayChi] || null,
+    daoHoaChi: DAO_HOA_BY_DAY_BRANCH[ngayChi] || null,
+  };
+}
+

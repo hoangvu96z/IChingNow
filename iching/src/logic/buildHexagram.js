@@ -14,6 +14,10 @@ import {
   DEFINITIVE_PALACE_TABLE,
   PALACES,
   getUngHao,
+  getHexagramTrait,
+  getQuaiThanChi,
+  getTruongSinhStage,
+  getDayShenSha,
 } from '../data/lucYao.js';
 import { getCanChiFromDate } from './canChi.js';
 import { computeNapGiap }    from './napGiap.js';
@@ -101,22 +105,55 @@ function getChangedBinary(lines) {
   return linesToBinary(changed);
 }
 
+/**
+ * Xây dựng Quẻ Hỗ (Nuclear Hexagram) từ 6 hào của Quẻ Chủ
+ * Hạ quái Quẻ Hỗ = Hào 2, 3, 4 của Quẻ Chủ
+ * Thượng quái Quẻ Hỗ = Hào 3, 4, 5 của Quẻ Chủ
+ */
+export function buildQueHoFromLines(lines) {
+  if (!lines || lines.length < 6) return null;
+  const sorted = [...lines].sort((a, b) => a.index - b.index);
+  const hoBits = [
+    sorted[1].yinYang, sorted[2].yinYang, sorted[3].yinYang,
+    sorted[2].yinYang, sorted[3].yinYang, sorted[4].yinYang,
+  ];
+  const hoLines = hoBits.map((yinYang, i) => ({
+    index: i + 1,
+    yinYang,
+    moving: false,
+  }));
+  const hoBinary = linesToBinary(hoLines);
+  const hoHexResult = findHexagram(hoLines);
+  const hoHexagram = hoHexResult
+    ? { ...hoHexResult, description: getDescriptionForHex(hoHexResult) }
+    : null;
+  const hoPalaceInfo = findPalaceInfo(hoLines);
+  const hoNapGiap = computeNapGiap(hoBinary);
+  const hoTrait = getHexagramTrait(
+    hoNapGiap.map(l => l.chi),
+    hoPalaceInfo?.queType
+  );
+
+  return {
+    binary:        hoBinary,
+    lines:         hoLines,
+    hexagram:      hoHexagram,
+    palaceName:    hoPalaceInfo?.palaceName    || 'Càn',
+    palaceElement: hoPalaceInfo?.palaceElement || 'Kim',
+    queType:       hoPalaceInfo?.queType       || 'unknown',
+    theHao:        hoPalaceInfo?.theHao        || 6,
+    ungHao:        hoPalaceInfo?.ungHao        || 3,
+    trait:         hoTrait,
+  };
+}
+
 // ──────────────────────────────────────────────────────────────────────────
 // Annotate một quẻ (primary hoặc changed) với đầy đủ thông tin
 // ──────────────────────────────────────────────────────────────────────────
 
 /**
- * Annotate 6 hào với: Nạp Giáp, Lục Thân, Lục Thú, Thế/Ứng, Không Vong
- *
- * @param {string} binary - 6-bit chuỗi của quẻ
- * @param {string} palaceName - Cung
- * @param {string} palaceElement - Ngũ Hành cung
- * @param {number} theHao - hào Thế (1-6)
- * @param {number} ungHao - hào Ứng (1-6)
- * @param {string} ngayCan - Thiên Can Ngày
- * @param {string[]} khongVong - [chi1, chi2]
- * @param {Array} originalLines - mảng hào gốc (có field moving)
- * @returns {Array} 6 phần tử annotated line objects
+ * Annotate 6 hào với: Nạp Giáp, Lục Thân, Lục Thú, Thế/Ứng, Không Vong,
+ * Quái Thân, Vòng Trường Sinh (TS.Ngày, TS.Tháng), Thần Sát (Lộc, Mã, Đào Hoa)
  */
 function annotateLines({
   binary,
@@ -125,7 +162,12 @@ function annotateLines({
   theHao,
   ungHao,
   ngayCan,
+  ngayChi,
+  thangChi,
   khongVong,
+  locChi,
+  maChi,
+  daoHoaChi,
   originalLines,
 }) {
   // Nạp Giáp
@@ -137,12 +179,27 @@ function annotateLines({
   // Lục Thú
   const withLucThu = attachLucThu(withLucThan, ngayCan);
 
-  // Thế/Ứng, Không Vong, Moving
+  // Tính Quái Thân cho quẻ này dựa trên vị trí & âm dương của Hào Thế
+  const theOrigLine = originalLines?.find(l => l.index === theHao);
+  const theYinYang = theOrigLine
+    ? theOrigLine.yinYang
+    : (binary[theHao - 1] === '1' ? 'yang' : 'yin');
+  const quaiThanChi = getQuaiThanChi(theHao, theYinYang);
+
+  // Thế/Ứng, Không Vong, Moving, Quái Thân, Trường Sinh, Lộc/Mã/Đào
   return withLucThu.map(line => {
     const isThe = line.index === theHao;
     const isUng = line.index === ungHao;
     const isKV  = khongVong.includes(line.chi);
     const origLine = originalLines?.find(l => l.index === line.index);
+
+    const isQuaiThan = Boolean(quaiThanChi && line.chi === quaiThanChi);
+    const tsNgayObj  = ngayChi  ? getTruongSinhStage(line.nguHanhHao, ngayChi)  : null;
+    const tsThangObj = thangChi ? getTruongSinhStage(line.nguHanhHao, thangChi) : null;
+
+    const isLoc    = Boolean(locChi    && line.chi === locChi);
+    const isMa     = Boolean(maChi     && line.chi === maChi);
+    const isDaoHoa = Boolean(daoHoaChi && line.chi === daoHoaChi);
 
     return {
       ...line,
@@ -156,6 +213,22 @@ function annotateLines({
         : (binary[line.index - 1] === '1' ? 'yang' : 'yin'),
       coins:  origLine?.coins,
       lineType: origLine?.type,
+      // Bảng phụ (Quái Thân, Trường Sinh Ngày/Tháng, Lộc/Mã/Đào)
+      quaiThanChi,
+      isQuaiThan,
+      quaiThanLabel: isQuaiThan ? 'QT' : '-',
+      tsNgay:      tsNgayObj?.shortVi  || '-',
+      tsNgayEn:    tsNgayObj?.shortEn  || '-',
+      tsNgayFull:  tsNgayObj?.name     || '-',
+      tsThang:     tsThangObj?.shortVi || '-',
+      tsThangEn:   tsThangObj?.shortEn || '-',
+      tsThangFull: tsThangObj?.name    || '-',
+      isLoc,
+      locLabel:    isLoc    ? 'L' : '-',
+      isMa,
+      maLabel:     isMa     ? 'M' : '-',
+      isDaoHoa,
+      daoHoaLabel: isDaoHoa ? 'Đ' : '-',
     };
   });
 }
@@ -173,11 +246,16 @@ function annotateLines({
 export function buildLucHaoResult({ formData, lines, mode }) {
   if (!lines || lines.length < 6) return null;
 
-  // ── Bước 1: Can Chi ────────────────────────────────────────────────────
-  const canChi = getCanChiFromDate(formData.castDate, formData.castTime);
-  const ngayCan   = canChi?.ngayCan  || 'Giáp';
-  const ngayChi   = canChi?.ngayChi  || 'Tý';
+  // ── Bước 1: Can Chi & Thần Sát ─────────────────────────────────────────
+  const canChi    = getCanChiFromDate(formData.castDate, formData.castTime);
+  const ngayCan   = canChi?.ngayCan   || 'Giáp';
+  const ngayChi   = canChi?.ngayChi   || 'Tý';
+  const thangChi  = canChi?.thangChi  || '';
   const khongVong = canChi?.khongVong || [];
+  const shenSha   = getDayShenSha(ngayCan, ngayChi);
+  const locChi    = canChi?.locChi    || shenSha.locChi;
+  const maChi     = canChi?.maChi     || shenSha.maChi;
+  const daoHoaChi = canChi?.daoHoaChi || shenSha.daoHoaChi;
 
   // ── Bước 2+3: Tầm Cung ─────────────────────────────────────────────────
   const primaryBinary  = linesToBinary(lines);
@@ -187,7 +265,7 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     queType: 'unknown', theHao: 6, ungHao: 3,
   };
 
-  // ── Bước 4: Xác định quẻ biến ──────────────────────────────────────────
+  // ── Bước 4: Xác định quẻ biến & quẻ hỗ ─────────────────────────────────
   const movingLines    = lines.filter(l => l.moving).map(l => l.index);
   const changedBinary  = getChangedBinary(lines);
   const changedLines   = lines.map(l => ({
@@ -195,10 +273,16 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     yinYang: l.moving ? (l.yinYang === 'yang' ? 'yin' : 'yang') : l.yinYang,
   }));
 
-  // Cung của quẻ biến (dùng để annotate quẻ biến với đúng Thế/Ứng)
-  const changedPalaceInfo = findPalaceInfo(changedLines);
-  const changedTheHao = changedPalaceInfo?.theHao || 6;
-  const changedUngHao = changedPalaceInfo?.ungHao || 3;
+  // Quẻ Hỗ (Nuclear Hexagram)
+  const queHo = buildQueHoFromLines(lines);
+
+  // Cung của quẻ biến (dùng để annotate quẻ biến với đúng Thế/Ứng & Họ quẻ biến)
+  const changedPalaceInfo    = findPalaceInfo(changedLines);
+  const changedPalaceName    = changedPalaceInfo?.palaceName    || palaceName;
+  const changedPalaceElement = changedPalaceInfo?.palaceElement || palaceElement;
+  const changedQueType       = changedPalaceInfo?.queType       || 'unknown';
+  const changedTheHao        = changedPalaceInfo?.theHao        || 6;
+  const changedUngHao        = changedPalaceInfo?.ungHao        || 3;
 
   // ── Bước 5-8: Annotate quẻ chủ ─────────────────────────────────────────
   const primaryAnnotated = annotateLines({
@@ -208,7 +292,12 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     theHao,
     ungHao,
     ngayCan,
+    ngayChi,
+    thangChi,
     khongVong,
+    locChi,
+    maChi,
+    daoHoaChi,
     originalLines: lines,
   });
 
@@ -221,19 +310,37 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     phucThan: phucThanMap[line.index] || null,
   }));
 
+  const primaryTrait = getHexagramTrait(
+    primaryFinal.map(l => l.chi),
+    queType
+  );
+  const quaiThanChi = primaryFinal[0]?.quaiThanChi || null;
+
   // ── Annotate quẻ biến ───────────────────────────────────────────────────
   let changedAnnotated = null;
+  let changedTrait = null;
+  let changedQuaiThanChi = null;
   if (movingLines.length > 0) {
     changedAnnotated = annotateLines({
       binary:        changedBinary,
-      palaceName:    changedPalaceInfo?.palaceName    || palaceName,
+      palaceName:    changedPalaceName,
       palaceElement: palaceElement, // Lục Thân quẻ biến bắt buộc tính theo Cung quẻ chủ
       theHao:        changedTheHao,
       ungHao:        changedUngHao,
       ngayCan,
+      ngayChi,
+      thangChi,
       khongVong,
+      locChi,
+      maChi,
+      daoHoaChi,
       originalLines: changedLines,
     });
+    changedTrait = getHexagramTrait(
+      changedAnnotated.map(l => l.chi),
+      changedQueType
+    );
+    changedQuaiThanChi = changedAnnotated[0]?.quaiThanChi || null;
   }
 
   // ── Lookup tên quẻ ─────────────────────────────────────────────────────
@@ -259,22 +366,37 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     createdAt,
     mode,
     useSolarTerm:   formData.useSolarTerm  || false,
-    solarTerm:      formData.solarTerm     || null,
+    solarTerm:      formData.solarTerm || canChi?.solarTermObj || null,
     movingMindDate: formData.movingMindDate || '',
     movingMindTime: formData.movingMindTime || { enabled: false, hourBranch: '' },
 
-    // Can Chi
+    // Can Chi & Thần Sát
     canChi,
     ngayCan,
     ngayChi,
+    thangChi,
     khongVong,
+    locChi,
+    maChi,
+    daoHoaChi,
 
-    // Cung & Thế/Ứng
+    // Cung & Thế/Ứng (Quẻ Chủ)
     palaceName,
     palaceElement,
     queType,
     theHao,
     ungHao,
+    primaryTrait,
+    quaiThanChi,
+
+    // Cung & Thế/Ứng (Quẻ Biến)
+    changedPalaceName:    movingLines.length > 0 ? changedPalaceName    : null,
+    changedPalaceElement: movingLines.length > 0 ? changedPalaceElement : null,
+    changedQueType:       movingLines.length > 0 ? changedQueType       : null,
+    changedTheHao:        movingLines.length > 0 ? changedTheHao        : null,
+    changedUngHao:        movingLines.length > 0 ? changedUngHao        : null,
+    changedTrait,
+    changedQuaiThanChi,
 
     // Quẻ
     primaryBinary,
@@ -282,6 +404,7 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     movingLines,
     primaryHexagram,
     changedHexagram,
+    queHo,
 
     // Annotated lines
     lines: primaryFinal,

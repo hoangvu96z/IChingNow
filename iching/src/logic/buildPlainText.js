@@ -45,9 +45,16 @@ export function buildPlainTextResult(result, language = 'vi') {
     const localizedHour = `${t('common.hour_prefix', 'Giờ')} ${t(`branch.${branchName}`, branchName)}`;
     lines.push(`${t('meta.moving_time', 'Giờ động tâm')} : ${localizedHour}`);
   }
-  if (result.useSolarTerm && result.solarTerm) {
-    const stName = language === 'en' ? result.solarTerm.nameEn || result.solarTerm.nameVi : result.solarTerm.nameVi;
+  const stObj = result.solarTerm || result.canChi?.solarTermObj;
+  if (stObj) {
+    const stName = language === 'en' ? stObj.nameEn || stObj.nameVi : stObj.nameVi;
     lines.push(`${t('meta.solar_term', 'Tiết khí')}     : ${stName}`);
+  } else if (result.canChi?.tietKhi) {
+    const stName = language === 'en' ? result.canChi.tietKhiEn || result.canChi.tietKhi : result.canChi.tietKhi;
+    lines.push(`${t('meta.solar_term', 'Tiết khí')}     : ${stName}`);
+  }
+  if (result.canChi?.nhatThan && result.canChi?.nguyetLenh && result.canChi.nhatThan !== '?') {
+    lines.push(`${t('info.nhat_than', 'Nhật thần')}    : ${result.canChi.nhatThan}   |   ${t('info.nguyet_lenh', 'Nguyệt lệnh')}: ${result.canChi.nguyetLenh}`);
   }
   if (result.khongVong?.length > 0) {
     const kvTrans = result.khongVong.map(v => t(`branch.${v}`, v)).join(', ');
@@ -66,18 +73,36 @@ export function buildPlainTextResult(result, language = 'vi') {
 
   // === Tên quẻ ===
   const primary = result.primaryHexagram;
+  const nuclear = result.queHo?.hexagram;
   const changed = result.changedHexagram;
   
   const primaryName = primary ? (language === 'en' ? t(`hex.name.${primary.id}`, primary.nameVi) : primary.nameVi) : '';
+  const nuclearName = nuclear ? (language === 'en' ? t(`hex.name.${nuclear.id}`, nuclear.nameVi) : nuclear.nameVi) : '';
   const changedName = changed ? (language === 'en' ? t(`hex.name.${changed.id}`, changed.nameVi) : changed.nameVi) : '';
 
   const palaceNameTrans = result.palaceName ? t(`trigram.${result.palaceName}`, result.palaceName) : '';
   const queTypeTrans = result.queType ? t(`queType.${result.queType}`, result.queType) : '';
-  const palaceLabel = result.palaceName ? `[${t('info.palace', 'Cung')} ${palaceNameTrans} - ${queTypeTrans}]` : '';
+  const primaryTraitStr = result.primaryTrait?.code
+    ? ` (${language === 'en' ? result.primaryTrait.labelEn : result.primaryTrait.labelVi})`
+    : '';
+  const palaceLabel = result.palaceName ? `[${t('info.palace', 'Cung')} ${palaceNameTrans} - ${queTypeTrans}${primaryTraitStr}]` : '';
 
   lines.push(`${t('result.primary_hex', 'QUẺ CHỦ')}  : ${primaryName ? primaryName.toUpperCase() : t('common.unknown', '(chưa xác định)')}  ${palaceLabel}`);
+  if (nuclearName) {
+    const hoPalaceTrans = result.queHo?.palaceName ? t(`trigram.${result.queHo.palaceName}`, result.queHo.palaceName) : '';
+    const hoTraitStr = result.queHo?.trait?.code
+      ? ` (${language === 'en' ? result.queHo.trait.labelEn : result.queHo.trait.labelVi})`
+      : '';
+    const hoLabel = hoPalaceTrans ? `[${t('info.palace', 'Cung')} ${hoPalaceTrans}${hoTraitStr}]` : '';
+    lines.push(`${t('result.nuclear_hex', 'QUẺ HỖ')}   : ${nuclearName.toUpperCase()}  ${hoLabel}`);
+  }
   if (changed && result.movingLines?.length > 0) {
-    lines.push(`${t('result.changed_hex', 'QUẺ BIẾN')} : ${changedName.toUpperCase()}`);
+    const chPalaceTrans = result.changedPalaceName ? t(`trigram.${result.changedPalaceName}`, result.changedPalaceName) : '';
+    const chTraitStr = result.changedTrait?.code
+      ? ` (${language === 'en' ? result.changedTrait.labelEn : result.changedTrait.labelVi})`
+      : '';
+    const chLabel = chPalaceTrans ? `[${t('info.palace', 'Cung')} ${chPalaceTrans}${chTraitStr}]` : '';
+    lines.push(`${t('result.changed_hex', 'QUẺ BIẾN')} : ${changedName.toUpperCase()}  ${chLabel}`);
   } else {
     lines.push(`${t('result.changed_hex', 'QUẺ BIẾN')} : ${t('result.no_moving_lines', '(không có hào động)')}`);
   }
