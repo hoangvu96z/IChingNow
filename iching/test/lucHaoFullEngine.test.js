@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildLucHaoResult, findPalaceInfo } from '../src/logic/buildHexagram.js';
+import { buildPlainTextResult } from '../src/logic/buildPlainText.js';
+import { buildEvidenceCatalog } from '../src/logic/interpretationEvidence.js';
 import { HEXAGRAMS } from '../src/data/hexagrams.js';
 import { computeNapGiap } from '../src/logic/napGiap.js';
 import { getHexagramTrait } from '../src/data/lucYao.js';
@@ -110,6 +112,26 @@ test('buildLucHaoResult matches Minh Viet reference chart (2026-10-31 20:02, Thu
       { idx: 1, theUng: 'Thế', lucThan: 'Thê Tài',  canChi: 'Mậu Dần',  nh: 'Mộc',  kv: false, lucThu: 'Câu Trận',   qt: '-',  tsNgay: 'L.Quan', tsThang: 'Dưỡng', loc: '-', ma: '-', dao: '-' },
     ]
   );
+
+  // 7. Plaintext & AI Evidence Catalog chứa đầy đủ các thông số mới
+  const plainVi = buildPlainTextResult(res, 'vi');
+  assert.ok(plainVi.includes('Giờ Nhâm Tuất, ngày Mậu Dần, tháng Mậu Tuất, năm Bính Ngọ'));
+  assert.ok(plainVi.includes('Sương Giáng'));
+  assert.ok(plainVi.includes('Dần-Mộc'));
+  assert.ok(plainVi.includes('Tuất-Thổ'));
+  assert.ok(plainVi.includes('Lục Xung'));
+  assert.ok(plainVi.includes('Lục Hợp'));
+  assert.ok(plainVi.includes('H6 Nhâm Tuất'));
+  assert.ok(plainVi.includes('H3 Mậu Ngọ    QT'));
+
+  const catalog = buildEvidenceCatalog(res);
+  assert.ok(catalog.some(item => item.id === 'hex.mutual'));
+  const h3Changed = catalog.find(item => item.id === 'line.changed.3');
+  assert.ok(h3Changed.facts.some(([k, v]) => k === 'Quái Thân' && v === 'QT'));
+  assert.ok(h3Changed.facts.some(([k, v]) => k === 'TS.Ngày' && v === 'T.Sinh'));
+  assert.ok(h3Changed.facts.some(([k, v]) => k === 'TS.Tháng' && v === 'Mộ'));
+  const h5Primary = catalog.find(item => item.id === 'line.primary.5');
+  assert.ok(h5Primary.facts.some(([k, v]) => k === 'Thần sát' && v.includes('Dịch Mã')));
 });
 
 test('64 hexagrams classify exact 10 Lục Xung and 8 Lục Hợp hexagrams', () => {

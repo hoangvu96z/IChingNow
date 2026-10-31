@@ -14,20 +14,35 @@ export function buildEvidenceCatalog(result) {
         target,
       });
   };
-  const hex = (id, label, value) => {
-    if (value)
-      add(id, label, [
-        ['Tên quẻ', value.nameVi || value.name],
-        ['Số quẻ', value.id],
-      ]);
-  };
   const maiHoa = result.method === 'mai-hoa';
   const lucHao = maiHoa ? result.lucHaoResult : result;
-  hex('hex.primary', 'Quẻ chủ', result.primaryHexagram);
-  if (maiHoa || result.movingLines?.length)
-    hex('hex.changed', 'Quẻ biến', result.changedHexagram);
+  if (result.primaryHexagram) {
+    add('hex.primary', 'Quẻ chủ', [
+      ['Tên quẻ', result.primaryHexagram.nameVi || result.primaryHexagram.name],
+      ['Số quẻ', result.primaryHexagram.id],
+      ['Cung', lucHao?.palaceName ? `Họ ${lucHao.palaceName} (${lucHao.palaceElement})` : undefined],
+      ['Đặc tính', lucHao?.primaryTrait?.labelVi],
+      ['Quái Thân', lucHao?.quaiThanChi],
+    ]);
+  }
+  if (result.queHo?.hexagram) {
+    add('hex.mutual', 'Quẻ hỗ', [
+      ['Tên quẻ', result.queHo.hexagram.nameVi || result.queHo.hexagram.name],
+      ['Số quẻ', result.queHo.hexagram.id],
+      ['Cung', result.queHo.palaceName ? `Họ ${result.queHo.palaceName}` : undefined],
+      ['Đặc tính', result.queHo.trait?.labelVi],
+    ]);
+  }
+  if ((maiHoa || result.movingLines?.length) && result.changedHexagram) {
+    add('hex.changed', 'Quẻ biến', [
+      ['Tên quẻ', result.changedHexagram.nameVi || result.changedHexagram.name],
+      ['Số quẻ', result.changedHexagram.id],
+      ['Cung', lucHao?.changedPalaceName ? `Họ ${lucHao.changedPalaceName}` : undefined],
+      ['Đặc tính', lucHao?.changedTrait?.labelVi],
+      ['Quái Thân', lucHao?.changedQuaiThanChi],
+    ]);
+  }
   if (maiHoa) {
-    hex('hex.mutual', 'Quẻ hỗ', result.queHo?.hexagram);
     const trigram = (position) =>
       position === 'upper' ? result.upperTrigram : result.lowerTrigram;
     if (result.theDung?.the && result.theDung?.dung) {
@@ -94,6 +109,26 @@ export function buildEvidenceCatalog(result) {
               ? 'Có'
               : 'Không'
             : undefined,
+        ],
+        [
+          'Quái Thân',
+          typeof line.isQuaiThan === 'boolean'
+            ? line.isQuaiThan
+              ? 'QT'
+              : undefined
+            : undefined,
+        ],
+        ['TS.Ngày', line.tsNgay && line.tsNgay !== '-' ? line.tsNgay : undefined],
+        ['TS.Tháng', line.tsThang && line.tsThang !== '-' ? line.tsThang : undefined],
+        [
+          'Thần sát',
+          [
+            line.isLoc ? 'Lộc' : '',
+            line.isMa ? 'Dịch Mã' : '',
+            line.isDaoHoa ? 'Đào Hoa' : '',
+          ]
+            .filter(Boolean)
+            .join(', ') || undefined,
         ],
       ];
       add(

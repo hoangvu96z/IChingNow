@@ -199,17 +199,30 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
       const caster = result.caster || '';
       const castDate = result.castDate || '';
       const castTime = result.castTime || '';
+      const lh = result.method === 'mai-hoa' ? result.lucHaoResult : result;
 
       const lucHaoDetails = [];
-      if (result.theHao) lucHaoDetails.push(isEn ? `Subject Line (Hào Thế): Line ${result.theHao}` : `Hào Thế: Hào ${result.theHao}`);
-      if (result.ungHao) lucHaoDetails.push(isEn ? `Object Line (Hào Ứng): Line ${result.ungHao}` : `Hào Ứng: Hào ${result.ungHao}`);
-      if (result.khongVong?.length > 0) lucHaoDetails.push(isEn ? `Void/Empty Branches (Tuần Không): ${result.khongVong.join(', ')}` : `Tuần Không: ${result.khongVong.join(', ')}`);
+      if (lh?.canChi?.tietKhi) lucHaoDetails.push(isEn ? `Solar Term (Tiết khí): ${lh.canChi.tietKhiEn || lh.canChi.tietKhi}` : `Tiết khí: ${lh.canChi.tietKhi}`);
+      if (lh?.canChi?.nhatThan && lh.canChi.nhatThan !== '?') lucHaoDetails.push(isEn ? `Day Branch (Nhật thần): ${lh.canChi.nhatThan} | Month Branch (Nguyệt lệnh): ${lh.canChi.nguyetLenh}` : `Nhật thần: ${lh.canChi.nhatThan} | Nguyệt lệnh: ${lh.canChi.nguyetLenh}`);
+      if (lh?.theHao) lucHaoDetails.push(isEn ? `Subject Line (Hào Thế): Line ${lh.theHao}` : `Hào Thế: Hào ${lh.theHao}`);
+      if (lh?.ungHao) lucHaoDetails.push(isEn ? `Object Line (Hào Ứng): Line ${lh.ungHao}` : `Hào Ứng: Hào ${lh.ungHao}`);
+      if (lh?.khongVong?.length > 0) lucHaoDetails.push(isEn ? `Void/Empty Branches (Tuần Không): ${lh.khongVong.join(', ')}` : `Tuần Không: ${lh.khongVong.join(', ')}`);
+      if (lh?.primaryTrait?.code) lucHaoDetails.push(isEn ? `Primary Hexagram Trait: ${lh.primaryTrait.labelEn}` : `Đặc tính Quẻ Chủ: ${lh.primaryTrait.labelVi}`);
+      if (lh?.changedTrait?.code) lucHaoDetails.push(isEn ? `Changed Hexagram Trait: ${lh.changedTrait.labelEn}` : `Đặc tính Quẻ Biến: ${lh.changedTrait.labelVi}`);
+      if (lh?.quaiThanChi) lucHaoDetails.push(isEn ? `Hexagram Body (Quái Thân): ${lh.quaiThanChi}${lh.changedQuaiThanChi ? ` (Changed: ${lh.changedQuaiThanChi})` : ''}` : `Quái Thân: ${lh.quaiThanChi}${lh.changedQuaiThanChi ? ` (Quẻ biến: ${lh.changedQuaiThanChi})` : ''}`);
+      if (lh?.locChi || lh?.maChi || lh?.daoHoaChi) {
+        lucHaoDetails.push(
+          isEn
+            ? `Day Symbolic Stars: Lộc=${lh.locChi || '-'}, Dịch Mã=${lh.maChi || '-'}, Đào Hoa=${lh.daoHoaChi || '-'}`
+            : `Thần sát theo ngày: Lộc tại ${lh.locChi || '-'}, Dịch Mã tại ${lh.maChi || '-'}, Đào Hoa tại ${lh.daoHoaChi || '-'}`
+        );
+      }
       if (result.dungThan) lucHaoDetails.push(isEn ? `Useful God (Dụng Thần): ${result.dungThan}` : `Dụng Thần: ${result.dungThan}`);
       const extraContext = lucHaoDetails.length > 0 ? `\n- ${lucHaoDetails.join('\n- ')}` : '';
 
       const userPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInclude the following topics in your interpretation sections:\n1. **Hexagram Overview**: Primary hexagram, changed hexagram, and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation, Subject-Object (Thế/Ứng) dynamics, Useful God (Dụng Thần), and Void branches (Tuần Không) if relevant.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải các nội dung sau trong các mục luận giải:\n1. **Tổng quan quẻ dịch**: Ý nghĩa quẻ chủ, quẻ biến và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại, tương quan Hào Thế/Ứng, Dụng Thần và Tuần Không (nếu có).\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
+        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInclude the following topics in your interpretation sections:\n1. **Hexagram Overview**: Primary hexagram, nuclear hexagram (Quẻ Hỗ), changed hexagram, special traits (Lục Xung, Lục Hợp, Du Hồn, Quy Hồn if any), and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation, Subject-Object (Thế/Ứng) dynamics, Useful God (Dụng Thần) strength under Day/Month branches (Nhật thần, Nguyệt lệnh) & 12 Life Stages (Trường Sinh), Hexagram Body (Quái Thân), Void branches (Tuần Không), Hidden Spirit (Phục Thần), and Symbolic Stars (Lộc, Mã, Đào Hoa) if relevant.\n3. **Moving Lines Analysis (if any)**: Analyze specific meaning, transformation (Hóa tiến/thoái, hồi đầu sinh/khắc), and advice of each moving line.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
+        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải các nội dung sau trong các mục luận giải:\n1. **Tổng quan quẻ dịch**: Ý nghĩa Quẻ Chủ, Quẻ Hỗ, Quẻ Biến, đặc tính quẻ (Lục Xung, Lục Hợp, Du Hồn, Quy Hồn nếu có) và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại, tương quan Hào Thế/Ứng, sức mạnh của Dụng Thần dưới tác động của Nhật thần / Nguyệt lệnh và Vòng Trường Sinh (TS.Ngày, TS.Tháng), Quái Thân, Tuần Không, Phục Thần và các Thần sát (Lộc, Dịch Mã, Đào Hoa) nếu có.\n3. **Ý nghĩa các hào động (nếu có)**: Phân tích ý nghĩa của hào động, sự biến hóa sang hào biến (hồi đầu sinh/khắc, hóa tiến/thoái...) và lời khuyên tại vị trí hào đó.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
 
       const messages = [
         { role: 'system', content: sysPrompt },
@@ -279,11 +292,24 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
       const caster = result?.caster || '';
       const castDate = result?.castDate || '';
       const castTime = result?.castTime || '';
+      const lh = result?.method === 'mai-hoa' ? result?.lucHaoResult : result;
 
       const lucHaoDetails = [];
-      if (result?.theHao) lucHaoDetails.push(isEn ? `Subject Line (Hào Thế): Line ${result.theHao}` : `Hào Thế: Hào ${result.theHao}`);
-      if (result?.ungHao) lucHaoDetails.push(isEn ? `Object Line (Hào Ứng): Line ${result.ungHao}` : `Hào Ứng: Hào ${result.ungHao}`);
-      if (result?.khongVong?.length > 0) lucHaoDetails.push(isEn ? `Void/Empty Branches (Tuần Không): ${result.khongVong.join(', ')}` : `Tuần Không: ${result.khongVong.join(', ')}`);
+      if (lh?.canChi?.tietKhi) lucHaoDetails.push(isEn ? `Solar Term (Tiết khí): ${lh.canChi.tietKhiEn || lh.canChi.tietKhi}` : `Tiết khí: ${lh.canChi.tietKhi}`);
+      if (lh?.canChi?.nhatThan && lh.canChi.nhatThan !== '?') lucHaoDetails.push(isEn ? `Day Branch (Nhật thần): ${lh.canChi.nhatThan} | Month Branch (Nguyệt lệnh): ${lh.canChi.nguyetLenh}` : `Nhật thần: ${lh.canChi.nhatThan} | Nguyệt lệnh: ${lh.canChi.nguyetLenh}`);
+      if (lh?.theHao) lucHaoDetails.push(isEn ? `Subject Line (Hào Thế): Line ${lh.theHao}` : `Hào Thế: Hào ${lh.theHao}`);
+      if (lh?.ungHao) lucHaoDetails.push(isEn ? `Object Line (Hào Ứng): Line ${lh.ungHao}` : `Hào Ứng: Hào ${lh.ungHao}`);
+      if (lh?.khongVong?.length > 0) lucHaoDetails.push(isEn ? `Void/Empty Branches (Tuần Không): ${lh.khongVong.join(', ')}` : `Tuần Không: ${lh.khongVong.join(', ')}`);
+      if (lh?.primaryTrait?.code) lucHaoDetails.push(isEn ? `Primary Hexagram Trait: ${lh.primaryTrait.labelEn}` : `Đặc tính Quẻ Chủ: ${lh.primaryTrait.labelVi}`);
+      if (lh?.changedTrait?.code) lucHaoDetails.push(isEn ? `Changed Hexagram Trait: ${lh.changedTrait.labelEn}` : `Đặc tính Quẻ Biến: ${lh.changedTrait.labelVi}`);
+      if (lh?.quaiThanChi) lucHaoDetails.push(isEn ? `Hexagram Body (Quái Thân): ${lh.quaiThanChi}${lh.changedQuaiThanChi ? ` (Changed: ${lh.changedQuaiThanChi})` : ''}` : `Quái Thân: ${lh.quaiThanChi}${lh.changedQuaiThanChi ? ` (Quẻ biến: ${lh.changedQuaiThanChi})` : ''}`);
+      if (lh?.locChi || lh?.maChi || lh?.daoHoaChi) {
+        lucHaoDetails.push(
+          isEn
+            ? `Day Symbolic Stars: Lộc=${lh.locChi || '-'}, Dịch Mã=${lh.maChi || '-'}, Đào Hoa=${lh.daoHoaChi || '-'}`
+            : `Thần sát theo ngày: Lộc tại ${lh.locChi || '-'}, Dịch Mã tại ${lh.maChi || '-'}, Đào Hoa tại ${lh.daoHoaChi || '-'}`
+        );
+      }
       if (result?.dungThan) lucHaoDetails.push(isEn ? `Useful God (Dụng Thần): ${result.dungThan}` : `Dụng Thần: ${result.dungThan}`);
       const extraContext = lucHaoDetails.length > 0 ? `\n- ${lucHaoDetails.join('\n- ')}` : '';
 

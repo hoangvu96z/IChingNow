@@ -363,6 +363,8 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     // Metadata
     question:       formData.question || '',
     caster:         formData.caster   || '',
+    castDate:       formData.castDate || '',
+    castTime:       formData.castTime || '',
     createdAt,
     mode,
     useSolarTerm:   formData.useSolarTerm  || false,

@@ -26,14 +26,22 @@ export function buildPlainTextResult(result, language = 'vi') {
 
   if (result.canChi && !result.canChi.isFallback) {
     const cc = result.canChi;
+    const gioCC = cc.gioCan && cc.gioChi ? translateCanChiVal(cc.gioCan, cc.gioChi) : '';
     const ngayCC = translateCanChiVal(cc.ngayCan, cc.ngayChi);
     const thangCC = translateCanChiVal(cc.thangCan, cc.thangChi);
     const namCC = translateCanChiVal(cc.namCan, cc.namChi);
     
     if (language === 'en') {
-      lines.push(`Day Stem/Branch: ${ngayCC}, Month: ${thangCC}, Year: ${namCC}`);
+      lines.push(`Stem/Branch  : ${gioCC ? `Hour ${gioCC}, ` : ''}Day ${ngayCC}, Month ${thangCC}, Year ${namCC}`);
+      if (cc.lunarDay && cc.lunarMonth && cc.lunarYear) {
+        lines.push(`Lunar Date   : ${cc.lunarDay}/${cc.lunarMonth}/${cc.lunarYear}`);
+      }
     } else {
-      lines.push(`Can Chi ngày : ${ngayCC}, tháng ${thangCC}, năm ${namCC}`);
+      lines.push(`Can Chi      : ${gioCC ? `Giờ ${gioCC}, ` : ''}ngày ${ngayCC}, tháng ${thangCC}, năm ${namCC}`);
+      if (cc.lunarDay && cc.lunarMonth && cc.lunarYear) {
+        const gioChiTrans = cc.gioChi ? `giờ ${t(`branch.${cc.gioChi}`, cc.gioChi)}, ` : '';
+        lines.push(`Âm lịch      : ${gioChiTrans}ngày ${cc.lunarDay}/${cc.lunarMonth}/${cc.lunarYear}`);
+      }
     }
   }
 
@@ -164,7 +172,7 @@ export function buildPlainTextResult(result, language = 'vi') {
     if (result.changedLines && result.movingLines?.length > 0) {
       lines.push('');
       lines.push(language === 'en' ? 'COMPARE PRIMARY HEXAGRAM → CHANGED HEXAGRAM:' : 'SO SÁNH QUẺ CHỦ → QUẺ BIẾN:');
-      lines.push('─'.repeat(70));
+      lines.push('─'.repeat(78));
 
       sortedLines.forEach(line => {
         const changedLine = result.changedLines.find(l => l.index === line.index);
@@ -175,6 +183,8 @@ export function buildPlainTextResult(result, language = 'vi') {
         const cChiTrans   = changedLine ? t(`branch.${changedLine.chi}`, changedLine.chi) : '';
         const cElementTrans = changedLine ? t(`element.${changedLine.nguHanhHao}`, changedLine.nguHanhHao) : '';
         const cCanChi     = changedLine ? `${cChiTrans}-${cElementTrans}` : '';
+        const cTheUng     = changedLine?.theUng === 'Thế' ? t('theUng.the', 'Thế') : changedLine?.theUng === 'Ứng' ? t('theUng.ung', 'Ứng') : '';
+        const cKV         = changedLine?.isKhongVong ? (language === 'en' ? 'V' : 'K') : '';
         const cYao        = changedLine ? getYaoSymbol(changedLine) : '';
         const lineLucThan = line.lucThan ? t(`lucThan.${line.lucThan}`, line.lucThan) : '';
         const lineChiTrans = t(`branch.${line.chi}`, line.chi);
@@ -189,7 +199,76 @@ export function buildPlainTextResult(result, language = 'vi') {
           `${movingMark}  ${padRight(lineLucThuTrans, 12)}${arrow}  ` +
           padRight(cLucThan, 10) +
           padRight(cCanChi, 10) +
+          padRight(cKV, 4) +
+          padRight(cTheUng, 6) +
           cYao
+        );
+      });
+    }
+
+    // Bảng phụ: Can Chi đầy đủ, Quái Thân, Trường Sinh (Ngày/Tháng), Lộc/Mã/Đào
+    lines.push('');
+    lines.push(
+      language === 'en'
+        ? 'SUB-TABLE (Full Stem/Branch, Hexagram Body, 12 Life Stages, Symbolic Stars):'
+        : 'BẢNG PHỤ (Can Chi đầy đủ, Quái Thân, Trường Sinh Ngày/Tháng, Lộc/Mã/Đào):'
+    );
+    lines.push('─'.repeat(78));
+    const colSubHao = t('result.col_yao', 'Hào');
+    const colSubQT  = t('result.col_quai_than', 'Q.Thần');
+    const colSubTSN = t('result.col_ts_ngay', 'TS.Ngày');
+    const colSubTST = t('result.col_ts_thang', 'TS.Tháng');
+    const colSubLoc = t('result.col_loc', 'Lộc');
+    const colSubMa  = t('result.col_ma', 'Mã');
+    const colSubDao = t('result.col_dao', 'Đào');
+    lines.push(
+      padRight(colSubHao, 14) +
+      padRight(colSubQT, 8) +
+      padRight(colSubTSN, 10) +
+      padRight(colSubTST, 10) +
+      padRight(colSubLoc, 6) +
+      padRight(colSubMa, 6) +
+      colSubDao
+    );
+    lines.push('─'.repeat(62));
+
+    sortedLines.forEach(line => {
+      const fullCC = translateCanChiVal(line.can, line.chi);
+      const tsN = language === 'en' ? (line.tsNgayEn || line.tsNgay || '-') : (line.tsNgay || '-');
+      const tsT = language === 'en' ? (line.tsThangEn || line.tsThang || '-') : (line.tsThang || '-');
+      lines.push(
+        padRight(`H${line.index} ${fullCC}`, 14) +
+        padRight(line.quaiThanLabel || '-', 8) +
+        padRight(tsN, 10) +
+        padRight(tsT, 10) +
+        padRight(line.locLabel || '-', 6) +
+        padRight(line.maLabel || '-', 6) +
+        (line.daoHoaLabel || '-')
+      );
+    });
+
+    if (result.changedLines && result.movingLines?.length > 0) {
+      lines.push('');
+      lines.push(
+        language === 'en'
+          ? 'CHANGED HEXAGRAM SUB-TABLE:'
+          : 'BẢNG PHỤ QUẺ BIẾN:'
+      );
+      lines.push('─'.repeat(62));
+      sortedLines.forEach(line => {
+        const cLine = result.changedLines.find(l => l.index === line.index);
+        if (!cLine) return;
+        const fullCC = translateCanChiVal(cLine.can, cLine.chi);
+        const tsN = language === 'en' ? (cLine.tsNgayEn || cLine.tsNgay || '-') : (cLine.tsNgay || '-');
+        const tsT = language === 'en' ? (cLine.tsThangEn || cLine.tsThang || '-') : (cLine.tsThang || '-');
+        lines.push(
+          padRight(`H${cLine.index} ${fullCC}`, 14) +
+          padRight(cLine.quaiThanLabel || '-', 8) +
+          padRight(tsN, 10) +
+          padRight(tsT, 10) +
+          padRight(cLine.locLabel || '-', 6) +
+          padRight(cLine.maLabel || '-', 6) +
+          (cLine.daoHoaLabel || '-')
         );
       });
     }
@@ -439,6 +518,41 @@ export function buildMaiHoaPlainText(result, language = 'vi') {
         padRight(kv, 6) +
         padRight(lucThu, 14) +
         yaoSymbol
+      );
+    });
+    lines.push('');
+
+    const colSubHao = t('result.col_yao', 'Hào');
+    const colSubQT  = t('result.col_quai_than', 'Q.Thần');
+    const colSubTSN = t('result.col_ts_ngay', 'TS.Ngày');
+    const colSubTST = t('result.col_ts_thang', 'TS.Tháng');
+    const colSubLoc = t('result.col_loc', 'Lộc');
+    const colSubMa  = t('result.col_ma', 'Mã');
+    const colSubDao = t('result.col_dao', 'Đào');
+    lines.push(
+      padRight(colSubHao, 14) +
+      padRight(colSubQT, 8) +
+      padRight(colSubTSN, 10) +
+      padRight(colSubTST, 10) +
+      padRight(colSubLoc, 6) +
+      padRight(colSubMa, 6) +
+      colSubDao
+    );
+    lines.push('─'.repeat(62));
+    sortedLH.forEach(line => {
+      const stemTrans = t(`stem.${line.can}`, line.can);
+      const branchTrans = t(`branch.${line.chi}`, line.chi);
+      const fullCC = line.can && line.chi ? `${stemTrans} ${branchTrans}` : '?';
+      const tsN = language === 'en' ? (line.tsNgayEn || line.tsNgay || '-') : (line.tsNgay || '-');
+      const tsT = language === 'en' ? (line.tsThangEn || line.tsThang || '-') : (line.tsThang || '-');
+      lines.push(
+        padRight(`H${line.index} ${fullCC}`, 14) +
+        padRight(line.quaiThanLabel || '-', 8) +
+        padRight(tsN, 10) +
+        padRight(tsT, 10) +
+        padRight(line.locLabel || '-', 6) +
+        padRight(line.maLabel || '-', 6) +
+        (line.daoHoaLabel || '-')
       );
     });
     lines.push('');
