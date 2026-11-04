@@ -120,28 +120,21 @@ export default function PalateCard({
     >
       {/* Header */}
       <div className="palace-header">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span
-              className={`palace-name ${isMenhCung ? 'menh-label' : ''}`}
-              onClick={(e) => handleLearn(e, funcLabel)}
-              title="Chạm để xem ý nghĩa cung này"
-              style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
-            >
-              {funcLabel}
-            </span>
-            {rotatedPalaceName && (
-              <span className="rotated-palace-badge" title="Chức năng cung theo vận hạn">
-                {rotatedPalaceName}
-              </span>
-            )}
-          </div>
+        <div className="palace-header-left">
+          <span
+            className={`palace-name ${isMenhCung ? 'menh-label' : ''}`}
+            onClick={(e) => handleLearn(e, funcLabel)}
+            title="Chạm để xem ý nghĩa cung này"
+            style={{ cursor: onSelectTerm ? 'pointer' : 'default' }}
+          >
+            {funcLabel}
+          </span>
           <div className="palace-canchi">
             {canName} {chiName}
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+        <div className="palace-header-right">
           <div className="palace-daihan">
             {daiHan > 0 ? `${daiHan}–${daiHan + 9}` : ''}
           </div>
@@ -153,12 +146,17 @@ export default function PalateCard({
         </div>
       </div>
 
-      {/* Year Context */}
-      {(palace.isTieuHan || palace.isLuuDaiHan || palace.luuNienChucNang) && (
+      {/* Year / Yunxian Context */}
+      {(palace.isTieuHan || palace.isLuuDaiHan || rotatedPalaceName || palace.luuNienChucNang) && (
         <div className="palace-year-context">
+          {rotatedPalaceName && (
+            <span className="rotated-palace-badge" title="Chức năng cung theo vận hạn đang xem">
+              {rotatedPalaceName}
+            </span>
+          )}
           {palace.isTieuHan && <span className="palace-tieuhan">Tiểu hạn</span>}
           {palace.isLuuDaiHan && <span className="palace-luudaihan" title="Cung Lưu Đại Hạn của năm xem">Lưu ĐH</span>}
-          {palace.luuNienChucNang && (
+          {palace.luuNienChucNang && (!rotatedPalaceName || !rotatedPalaceName.startsWith('LN.')) && (
             <span title="Cung chức năng Lưu Niên">{palace.luuNienChucNang}</span>
           )}
         </div>

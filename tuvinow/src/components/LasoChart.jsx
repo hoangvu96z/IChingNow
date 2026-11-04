@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import PalateCard from './PalateCard';
 import { GIO_SINH_OPTIONS } from '../utils/lunarConverter';
 import TuViGlossaryModal from './TuViGlossaryModal';
+import { useTuViEvidence } from '../context/tuViEvidenceState';
 import {
   computeZiweiMeta,
   getTamPhuongTuChinh,
@@ -108,6 +109,14 @@ export default function LasoChart({
 
   // 🎯 Interactive Tam Phương Tứ Chính (Palace Selection)
   const [selectedPalaceChi, setSelectedPalaceChi] = useState(null);
+  const evidence = useTuViEvidence();
+
+  // Reset mọi trạng thái chọn cung / tra cứu / căn cứ trước khi xuất PNG hoặc PDF
+  const resetChartSelectionForExport = useCallback(() => {
+    setSelectedPalaceChi(null);
+    setSelectedLearnTerm(null);
+    evidence?.clear?.();
+  }, [evidence]);
 
   const {
     palates = [],
@@ -145,22 +154,16 @@ export default function LasoChart({
     });
   }, [result, yunxianMode, selectedDaXianChiIndex, activeViewYear, selectedLunarMonth, inputData]);
 
-  // 📐 Tam Phương Tứ Chính for selected palace (hoặc mặc định Cung Mệnh để vẽ đường SVG Tam Hợp)
+  // 📐 Tam Phương Tứ Chính cho cung đang chọn (tự động tắt hoàn toàn khi xuất PNG/PDF)
   const sanFangInfo = useMemo(() => {
-    if (selectedPalaceChi === null || selectedPalaceChi === undefined) return null;
+    if (isExporting || selectedPalaceChi === null || selectedPalaceChi === undefined) return null;
     return getTamPhuongTuChinh(selectedPalaceChi);
-  }, [selectedPalaceChi]);
-
-  const menhChiIndex = useMemo(() => {
-    const menhPalace = palates.find((p) => p.chiName === menhCung || (p.chucNang || '').includes('Mệnh'));
-    return menhPalace ? menhPalace.chiIndex : 0;
-  }, [palates, menhCung]);
+  }, [isExporting, selectedPalaceChi]);
 
   const svgSanFang = useMemo(() => {
-    if (sanFangInfo) return { ...sanFangInfo, isExplicit: true };
-    const fallback = getTamPhuongTuChinh(menhChiIndex);
-    return fallback ? { ...fallback, isExplicit: false } : null;
-  }, [sanFangInfo, menhChiIndex]);
+    if (isExporting || !sanFangInfo) return null;
+    return { ...sanFangInfo, isExplicit: true };
+  }, [isExporting, sanFangInfo]);
 
   const isCompactViewport = !isExporting && viewportWidth > 0 && viewportWidth < MOBILE_STAGE_WIDTH;
   const mobileScale = useMemo(() => {
@@ -257,15 +260,15 @@ export default function LasoChart({
 
   // Phi tinh của cung đang chọn
   const selectedPalaceFlying = useMemo(() => {
-    if (selectedPalaceChi === null || selectedPalaceChi === undefined) return null;
+    if (isExporting || selectedPalaceChi === null || selectedPalaceChi === undefined) return null;
     return ziweiMeta?.flyingSihua?.palaces?.[selectedPalaceChi] || null;
-  }, [selectedPalaceChi, ziweiMeta]);
+  }, [isExporting, selectedPalaceChi, ziweiMeta]);
 
   // Selected Palace object
   const selectedPalaceObj = useMemo(() => {
-    if (selectedPalaceChi === null || selectedPalaceChi === undefined) return null;
+    if (isExporting || selectedPalaceChi === null || selectedPalaceChi === undefined) return null;
     return palates.find((p) => p.chiIndex === selectedPalaceChi) || null;
-  }, [selectedPalaceChi, palates]);
+  }, [isExporting, selectedPalaceChi, palates]);
 
   const handlePalaceSelect = (chiIndex) => {
     setSelectedPalaceChi((prev) => (prev === chiIndex ? null : chiIndex));
@@ -300,11 +303,12 @@ export default function LasoChart({
   const handleExportPNG = useCallback(async () => {
     if (!chartRef.current || isExporting) return;
     try {
+      resetChartSelectionForExport();
       setIsExporting(true);
       setExportType('png');
       setExportMessage('Đang kết xuất ảnh chất lượng cao...');
 
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 150));
 
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       const bgColor = isDark ? '#0a0a14' : '#f7f5f0';
@@ -330,16 +334,17 @@ export default function LasoChart({
       setIsExporting(false);
       setExportType(null);
     }
-  }, [inputData, isExporting]);
+  }, [inputData, isExporting, resetChartSelectionForExport]);
 
   const handleExportPDF = useCallback(async () => {
     if (!chartRef.current || isExporting) return;
     try {
+      resetChartSelectionForExport();
       setIsExporting(true);
       setExportType('pdf');
       setExportMessage('Đang chuẩn bị trang in PDF...');
 
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 150));
 
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       const bgColor = isDark ? '#0a0a14' : '#f7f5f0';
@@ -394,7 +399,7 @@ export default function LasoChart({
       setIsExporting(false);
       setExportType(null);
     }
-  }, [inputData, isExporting]);
+  }, [inputData, isExporting, resetChartSelectionForExport]);
 
   if (!result || !result.palates) return null;
 
@@ -739,21 +744,15 @@ export default function LasoChart({
 
           {/* Center Info Panel */}
           <div className="chart-center">
-            {/* Interactive SVG Tam Phương Tứ Chính Overlay */}
-            {svgSanFang && PALACE_ANCHOR_POINTS[svgSanFang.target] && (
+            {/* Interactive SVG Tam Phương Tứ Chính Overlay (ẩn hoàn toàn khi xuất ảnh/PDF) */}
+            {!isExporting && svgSanFang && PALACE_ANCHOR_POINTS[svgSanFang.target] && (
               <svg
                 className={`chart-sanfang-svg ${svgSanFang.isExplicit ? 'is-explicit' : 'is-default'}`}
                 viewBox="100 100 200 200"
                 preserveAspectRatio="none"
                 aria-hidden="true"
               >
-                <defs>
-                  <linearGradient id="sanfangGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#d97706" stopOpacity="0.55" />
-                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.45" />
-                  </linearGradient>
-                </defs>
-                {/* Tam Hợp Triangle */}
+                {/* Tam Hợp Triangle — dùng inline fill="none" để tránh lỗi đen khối khi tuần tự hóa SVG */}
                 {svgSanFang.tamHop?.length === 2 &&
                   PALACE_ANCHOR_POINTS[svgSanFang.tamHop[0]] &&
                   PALACE_ANCHOR_POINTS[svgSanFang.tamHop[1]] && (
@@ -763,6 +762,10 @@ export default function LasoChart({
                         `${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[0]].x},${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[0]].y}`,
                         `${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[1]].x},${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[1]].y}`,
                       ].join(' ')}
+                      fill="none"
+                      stroke="#d97706"
+                      strokeWidth="1.3"
+                      strokeDasharray="4 3"
                       className="sanfang-svg-triangle"
                     />
                   )}
@@ -773,6 +776,9 @@ export default function LasoChart({
                     y1={PALACE_ANCHOR_POINTS[svgSanFang.target].y}
                     x2={PALACE_ANCHOR_POINTS[svgSanFang.xungChieu].x}
                     y2={PALACE_ANCHOR_POINTS[svgSanFang.xungChieu].y}
+                    stroke="#dc2626"
+                    strokeWidth="1.4"
+                    strokeDasharray="5 3"
                     className="sanfang-svg-xung"
                   />
                 )}
@@ -781,11 +787,14 @@ export default function LasoChart({
                   cx={PALACE_ANCHOR_POINTS[svgSanFang.target].x}
                   cy={PALACE_ANCHOR_POINTS[svgSanFang.target].y}
                   r="4.5"
+                  fill="#d97706"
+                  stroke="#ffffff"
+                  strokeWidth="1.5"
                   className="sanfang-svg-dot target"
                 />
               </svg>
             )}
-            {selectedPalaceChi !== null && selectedPalaceObj ? (
+            {!isExporting && selectedPalaceChi !== null && selectedPalaceObj ? (
               /* Selected Palace Deep Inspection View */
               <div className="center-selected-panel">
                 <div className="selected-palace-header">

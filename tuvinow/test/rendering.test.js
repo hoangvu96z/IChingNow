@@ -123,13 +123,16 @@ test('answer and actual palace components render evidence and legacy text', asyn
     assert.ok(chartHtml.includes('chart-export-wrapper'));
     assert.ok(chartHtml.includes('chart-scale-viewport'));
     assert.ok(chartHtml.includes('chart-mobile-viewbar'));
-    assert.ok(chartHtml.includes('chart-sanfang-svg'));
+    assert.ok(!chartHtml.includes('chart-sanfang-svg'));
+    assert.ok(!chartHtml.includes('Soi Chiếu Cung'));
+    assert.ok(!chartHtml.includes('san-fang-tag'));
     assert.equal((chartHtml.match(/class="palace-card /g) || []).length, 12);
     assert.ok(chartHtml.includes('class="chart-center"'));
 
     // Mobile responsive CSS preserves the 4x4 12-palace grid on mobile (never collapsing to 1 column) and aligns .tuvi-overview-hub to 1200px frame
     const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
     assert.match(css, /\.chart-export-wrapper\.is-exporting\s*\{[\s\S]*?min-width:\s*1024px/);
+    assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.chart-sanfang-svg[\s\S]*?display:\s*none\s*!important/);
     assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.center-name\s*\{[\s\S]*?white-space:\s*nowrap/);
     assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.center-info-row\s*\{[\s\S]*?flex-wrap:\s*nowrap/);
     assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-grid\s*\{[\s\S]*?display:\s*grid[\s\S]*?grid-template-columns:\s*repeat\(4,/);

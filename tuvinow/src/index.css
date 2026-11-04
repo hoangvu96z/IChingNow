@@ -994,6 +994,24 @@ body {
   overflow: visible;
 }
 
+.chart-export-wrapper.is-exporting .chart-sanfang-svg,
+.chart-export-wrapper.is-exporting .center-selected-panel,
+.chart-export-wrapper.is-exporting .san-fang-tag {
+  display: none !important;
+}
+
+.chart-export-wrapper.is-exporting .palace-card[data-evidence-selected] {
+  outline: none !important;
+}
+
+.chart-export-wrapper.is-exporting .palace-card.is-ban-cung:not(.is-menh):not(.is-than),
+.chart-export-wrapper.is-exporting .palace-card.is-xung-chieu:not(.is-menh):not(.is-than),
+.chart-export-wrapper.is-exporting .palace-card.is-tam-hop:not(.is-menh):not(.is-than),
+.chart-export-wrapper.is-exporting .palace-card.is-giap-cung:not(.is-menh):not(.is-than) {
+  box-shadow: none !important;
+  background: var(--bg-card) !important;
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
@@ -1056,8 +1074,7 @@ body {
 }
 
 .sanfang-svg-triangle {
-  fill: url(#sanfangGrad);
-  fill-opacity: 0.08;
+  fill: none;
   stroke: var(--accent-gold);
   stroke-width: 1.4;
   stroke-dasharray: 4 3;
@@ -1250,9 +1267,28 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 6px;
   margin-bottom: 2px;
-  padding-bottom: 2px;
+  padding-bottom: 3px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.palace-header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.palace-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  line-height: 1.25;
 }
 
 .palace-name {
