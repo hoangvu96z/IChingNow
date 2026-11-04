@@ -23,10 +23,8 @@ export default function ShareCard({ result, inputData, yunxianState }) {
   const [shareMessage, setShareMessage] = useState('');
   const [showCard, setShowCard] = useState(false);
 
-  if (!result || !result.palates) return null;
-
   const { amDuongNamNu, canChiNam, banMenhNapAm, cucName,
-    chuMenh, chuThan, menhCung, thanCung, palates } = result;
+    chuMenh, chuThan, menhCung, thanCung, palates = [] } = result || {};
 
   const menhPalace = palates.find(p => p.isMenh);
   const menhStars = menhPalace?.chinhTinh?.join(', ') || 'Không có chính tinh';
@@ -47,22 +45,22 @@ export default function ShareCard({ result, inputData, yunxianState }) {
     });
   }, [result, yunxianState, inputData]);
 
-  const activeMode = yunxianState?.mode || (result.viewYear ? 'liunian' : 'mingpan');
+  const activeMode = yunxianState?.mode || (result?.viewYear ? 'liunian' : 'mingpan');
   const activeViewYear = yunxianState?.viewYear !== undefined && yunxianState?.viewYear !== null
     ? Number(yunxianState.viewYear)
-    : (result.viewYear ? Number(result.viewYear) : null);
+    : (result?.viewYear ? Number(result.viewYear) : null);
 
   const activeYearCanChi = useMemo(() => {
-    if (!activeViewYear) return result.viewYearCanChi || '';
+    if (!activeViewYear) return result?.viewYearCanChi || '';
     const stem = THIEN_CAN[((activeViewYear - 4) % 10 + 10) % 10];
     const branch = DIA_CHI[((activeViewYear - 4) % 12 + 12) % 12];
     return `${stem} ${branch}`;
-  }, [activeViewYear, result.viewYearCanChi]);
+  }, [activeViewYear, result?.viewYearCanChi]);
 
   const activeTuoiAm = useMemo(() => {
-    if (!inputData?.lunarYear || !activeViewYear) return result.tuoiAm || null;
+    if (!inputData?.lunarYear || !activeViewYear) return result?.tuoiAm || null;
     return activeViewYear - inputData.lunarYear + 1;
-  }, [activeViewYear, inputData?.lunarYear, result.tuoiAm]);
+  }, [activeViewYear, inputData?.lunarYear, result?.tuoiAm]);
 
   const activeDaXianObj = dynamicOverlay?.activeDaXian || null;
   const activeSihuaTransforms = useMemo(() => {
@@ -180,6 +178,8 @@ export default function ShareCard({ result, inputData, yunxianState }) {
     }
     setTimeout(() => setShareMessage(''), 3000);
   }, [generateShareImage, handleDownload]);
+
+  if (!result || !result.palates) return null;
 
   return (
     <div className="share-card-wrapper">

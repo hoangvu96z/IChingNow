@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TuViEvidenceAnswer from './TuViEvidenceAnswer';
 import { useTuViEvidence } from '../context/tuViEvidenceState';
 import { parseTuViAnswer, tuViAnswerText, tuViEvidencePrompt } from '../utils/tuViEvidence';

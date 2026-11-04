@@ -1,11 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import { anLaSoTuVi } from '../src/utils/tuViEngine.js';
+
+const TUVI_ROOT = path.resolve(import.meta.dirname, '..');
+const SHARED_SHIM_PLUGIN = {
+  name: 'shared-auth-shim-for-ssr',
+  enforce: 'pre',
+  load(id) {
+    if (id.endsWith('/src/context/AuthContext.jsx')) {
+      return `export function useAuth() { return { isAuthenticated: false, user: null, login: () => {}, logout: () => {} }; }
+export function AuthProvider({ children }) { return children; }`;
+    }
+    if (id.endsWith('/src/hooks/usePlan.js')) {
+      return `export function usePlan() { return { remaining: 3, planLabel: 'Miễn phí', canBonus: false, fetchQuota: async () => {}, requestBonus: async () => {}, applyCoupon: async () => {} }; }`;
+    }
+    return null;
+  },
+};
+const VITE_RESOLVE = {
+  alias: {
+    '@shared': path.resolve(TUVI_ROOT, '../shared/src'),
+    '@iching': path.resolve(TUVI_ROOT, '../iching/src'),
+  },
+};
 
 test('answer and actual palace components render evidence and legacy text', async () => {
   const server = await createServer({ configFile: false, plugins: [react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
@@ -114,7 +137,8 @@ test('answer and actual palace components render evidence and legacy text', asyn
 test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, BirthInputForm, and TuViGlossaryModal', async () => {
   const server = await createServer({
     configFile: false,
-    plugins: [react()],
+    plugins: [SHARED_SHIM_PLUGIN, react()],
+    resolve: VITE_RESOLVE,
     optimizeDeps: { noDiscovery: true, include: [] },
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: 'custom',
@@ -359,6 +383,32 @@ test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, Birth
     );
     assert.ok(shareCardHtml.includes('share-card-wrapper'));
     assert.ok(shareCardHtml.includes('Chia sẻ lá số lên mạng xã hội'));
+
+    // 8. Full Chart View including TuViAiPanel (regression test for chart page render)
+    const { default: TuViAiPanel } = await server.ssrLoadModule('/src/components/TuViAiPanel.jsx');
+    const { default: TuViEvidenceProvider } = await server.ssrLoadModule('/src/components/TuViEvidenceProvider.jsx');
+    const { default: SummaryPanel } = await server.ssrLoadModule('/src/components/SummaryPanel.jsx');
+    const { default: TuViLocalReport } = await server.ssrLoadModule('/src/components/TuViLocalReport.jsx');
+
+    for (const mode of ['mingpan', 'daxian', 'liunian', 'liuyue']) {
+      const yunxianState = { mode, daXianChiIndex: 2, viewYear: 2026, lunarMonth: 4 };
+      const fullViewHtml = renderToStaticMarkup(
+        React.createElement(
+          TuViEvidenceProvider,
+          { result: sampleChart },
+          React.createElement(TuViSelfGuidePanel, { result: sampleChart, inputData: sampleInput, yunxianState }),
+          React.createElement(LasoChart, { result: sampleChart, inputData: sampleInput, yunxianState }),
+          React.createElement(ShareCard, { result: sampleChart, inputData: sampleInput, yunxianState }),
+          React.createElement(SummaryPanel, { result: sampleChart, inputData: sampleInput }),
+          React.createElement(TuViPatternsPanel, { result: sampleChart, inputData: sampleInput }),
+          React.createElement(TuViLocalReport, { result: sampleChart }),
+          React.createElement(TuViAiPanel, { result: sampleChart, inputData: sampleInput, yunxianState })
+        )
+      );
+      assert.ok(fullViewHtml.includes('tuvi-ai'), `TuViAiPanel must render in mode ${mode}`);
+      assert.ok(fullViewHtml.includes('Bạn muốn tìm hiểu điều gì?'), `TuViAiPanel topic prompt must render in mode ${mode}`);
+      assert.ok(fullViewHtml.includes('Đang gửi kèm ngữ cảnh:'), `TuViAiPanel yunxian badge must render in mode ${mode}`);
+    }
   } finally {
     await server.close();
   }

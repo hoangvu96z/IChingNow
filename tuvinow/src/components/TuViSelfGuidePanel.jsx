@@ -135,10 +135,8 @@ export default function TuViSelfGuidePanel({ result, inputData, yunxianState }) 
   const [isOpen, setIsOpen] = useState(true);
   const [activeStep, setActiveStep] = useState(1);
 
-  if (!result || !result.palates || result.palates.length !== 12) return null;
-
   const {
-    palates,
+    palates = [],
     amDuongNamNu,
     canChiNam,
     banMenhNapAm,
@@ -148,29 +146,13 @@ export default function TuViSelfGuidePanel({ result, inputData, yunxianState }) 
     tuanCung = [],
     trietCung = [],
     isThuan,
-  } = result;
+  } = result || {};
 
   // Ziwei metadata
   const ziweiMeta = useMemo(() => {
+    if (!result || !result.palates || result.palates.length !== 12) return null;
     return computeZiweiMeta(result, inputData, inputData?.schoolConfig);
   }, [result, inputData]);
-
-  // Bước 1: Mệnh Cục
-  const menhElement = getElementFromNapAm(banMenhNapAm);
-  const cucElement = getElementFromCuc(cucName);
-  const menhCucRel = getMenhCucRelation(menhElement, cucElement);
-
-  // Bước 2: Mệnh & Thân
-  const menhPalace = palates.find((p) => p.isMenh || p.chiName === menhCung) || palates[0];
-  const menhStars = menhPalace?.chinhTinh || [];
-  const isVoChinhDieu = menhStars.length === 0;
-  const menhOppositeChi = (menhPalace.chiIndex + 6) % 12;
-  const menhOppositePalace = palates.find((p) => p.chiIndex === menhOppositeChi);
-  const thanInfo = getThanCungInterpretation(thanCung);
-
-  // Bước 3: Tam phương tứ chính & Lai Nhân
-  const sanFangMenh = getTamPhuongTuChinh(menhPalace.chiIndex);
-  const laiNhan = ziweiMeta?.laiNhanCung || null;
 
   // Bước 4: Tứ Hóa năm sinh
   const natalSihuaList = useMemo(() => {
@@ -188,6 +170,25 @@ export default function TuViSelfGuidePanel({ result, inputData, yunxianState }) 
     }
     return list;
   }, [palates]);
+
+  if (!result || !result.palates || result.palates.length !== 12) return null;
+
+  // Bước 1: Mệnh Cục
+  const menhElement = getElementFromNapAm(banMenhNapAm);
+  const cucElement = getElementFromCuc(cucName);
+  const menhCucRel = getMenhCucRelation(menhElement, cucElement);
+
+  // Bước 2: Mệnh & Thân
+  const menhPalace = palates.find((p) => p.isMenh || p.chiName === menhCung) || palates[0];
+  const menhStars = menhPalace?.chinhTinh || [];
+  const isVoChinhDieu = menhStars.length === 0;
+  const menhOppositeChi = (menhPalace.chiIndex + 6) % 12;
+  const menhOppositePalace = palates.find((p) => p.chiIndex === menhOppositeChi);
+  const thanInfo = getThanCungInterpretation(thanCung);
+
+  // Bước 3: Tam phương tứ chính & Lai Nhân
+  const sanFangMenh = getTamPhuongTuChinh(menhPalace.chiIndex);
+  const laiNhan = ziweiMeta?.laiNhanCung || null;
 
   const stepsList = [
     { num: 1, label: 'Nền Tảng Bản Mệnh & Cục', icon: '🌿' },

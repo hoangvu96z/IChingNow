@@ -14,10 +14,9 @@ export default function TuViPatternsPanel({ result, inputData, initialTab = 'pat
   const [classicsQuery, setClassicsQuery] = useState('');
   const [selectedBookId, setSelectedBookId] = useState(CLASSICS_LIBRARY[0]?.id || 'toan-thu');
 
-  if (!result || !result.palates) return null;
-
   // 1. Nhận diện cách cục
   const patterns = useMemo(() => {
+    if (!result || !result.palates) return [];
     try {
       return detectPatterns(result);
     } catch {
@@ -32,6 +31,7 @@ export default function TuViPatternsPanel({ result, inputData, initialTab = 'pat
 
   // 2. Phi tinh Tứ Hóa & Lai Nhân Cung
   const flyingSihua = useMemo(() => {
+    if (!result || !result.palates) return null;
     if (result.ziweiMeta?.flyingSihua) return result.ziweiMeta.flyingSihua;
     try {
       return buildChartFlyingSihua(result, inputData?.schoolConfig);
@@ -42,6 +42,7 @@ export default function TuViPatternsPanel({ result, inputData, initialTab = 'pat
 
   // 3. Thơ Cân Xương Đoán Số
   const canLuongPoem = useMemo(() => {
+    if (!result) return null;
     if (result.ziweiMeta?.canLuongPoem) return result.ziweiMeta.canLuongPoem;
     if (result.canLuongStr) return getCanLuongPoem(result.canLuongStr);
     return null;
@@ -57,6 +58,8 @@ export default function TuViPatternsPanel({ result, inputData, initialTab = 'pat
   const currentBook = useMemo(() => {
     return CLASSICS_LIBRARY.find((b) => b.id === selectedBookId) || CLASSICS_LIBRARY[0];
   }, [selectedBookId]);
+
+  if (!result || !result.palates) return null;
 
   return (
     <section className="tuvi-patterns-panel" aria-labelledby="patterns-panel-heading">

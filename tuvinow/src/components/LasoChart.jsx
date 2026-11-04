@@ -59,10 +59,8 @@ export default function LasoChart({
   // 🎯 Interactive Tam Phương Tứ Chính (Palace Selection)
   const [selectedPalaceChi, setSelectedPalaceChi] = useState(null);
 
-  if (!result || !result.palates) return null;
-
   const {
-    palates,
+    palates = [],
     amDuongNamNu,
     canChiNam,
     banMenhNapAm,
@@ -74,17 +72,19 @@ export default function LasoChart({
     tuanCung,
     trietCung,
     isThuan,
-  } = result;
+  } = result || {};
 
   const hourLabel = GIO_SINH_OPTIONS[inputData?.lunarHourIndex]?.label || '';
 
   // 🔮 Compute Complete ZiWei Meta
   const ziweiMeta = useMemo(() => {
+    if (!result || !result.palates) return null;
     return computeZiweiMeta(result, inputData, inputData?.schoolConfig);
   }, [result, inputData]);
 
   // 🪐 Dynamic Overlay for selected mode, year, month
   const dynamicOverlay = useMemo(() => {
+    if (!result || !result.palates) return null;
     return buildYunxianOverlay(result, {
       mode: yunxianMode,
       daXianChiIndex: selectedDaXianChiIndex,
@@ -325,6 +325,8 @@ export default function LasoChart({
       setExportType(null);
     }
   }, [inputData, isExporting]);
+
+  if (!result || !result.palates) return null;
 
   return (
     <div className="chart-container fade-in">
