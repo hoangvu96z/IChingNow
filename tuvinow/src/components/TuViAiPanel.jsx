@@ -46,6 +46,7 @@ export default function TuViAiPanel({
   initialConversation,
   onSave,
   readingContext,
+  yunxianState,
 }) {
   const { isAuthenticated, login } = useAuth();
   const {
@@ -80,13 +81,28 @@ export default function TuViAiPanel({
   const savingRef = useRef(false);
   const evidence = useTuViEvidence();
   const catalog = evidence?.catalog || [];
-  const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured));
+
+  const yunxianBadge = useMemo(() => {
+    if (!yunxianState) return null;
+    if (yunxianState.mode === 'daxian') {
+      return 'Đại Hạn (10 Năm)';
+    }
+    if (yunxianState.mode === 'liunian') {
+      return `Lưu Niên Năm ${yunxianState.viewYear || result?.viewYear || ''}`;
+    }
+    if (yunxianState.mode === 'liuyue') {
+      return `Lưu Nguyệt Tháng ${yunxianState.lunarMonth || 1} (Năm ${yunxianState.viewYear || result?.viewYear || ''})`;
+    }
+    return 'Bản Mệnh';
+  }, [yunxianState, result?.viewYear]);
+
+  const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured, yunxianState));
   const prompt = makePrompt(topic, question, false);
   const parsed = parseTuViAnswer(conversation?.initialInterpretation || '', catalog);
   const answerText = tuViAnswerText(conversation?.initialInterpretation || '');
   const followUps = conversation?.followUps || [];
   const exportText =
-    exportTab === 'prompt' ? prompt : readingContext?.exportText || buildTuViText(result, inputData);
+    exportTab === 'prompt' ? prompt : readingContext?.exportText || buildTuViText(result, inputData, yunxianState);
   const exportCopied = copiedText === exportText;
 
   const checkConfig = useCallback(async (signal) => {
@@ -362,13 +378,18 @@ export default function TuViAiPanel({
         <div className="tv-reading-body">
           <div className="tv-context">
             <span className="tv-context-star">✦</span>
-            <strong>{readingContext?.label || inputData.name || 'Lá số của bạn'}</strong>
+            <strong>{readingContext?.label || inputData?.name || 'Lá số của bạn'}</strong>
             {!readingContext && <>
             <span className="tv-context-dot">·</span>
             <span>{result.canChiNam}</span>
             <span className="tv-context-dot">·</span>
             <span>{result.cucName}</span>
             </>}
+            {yunxianBadge && (
+              <span className="tv-yunxian-context-badge" title="Ngữ cảnh vận hạn gửi kèm AI">
+                🌐 Đang gửi kèm ngữ cảnh: {yunxianBadge}
+              </span>
+            )}
           </div>
           <div className="tv-topic-label">Bạn muốn tìm hiểu điều gì?</div>
           <div className="tv-topics" role="group" aria-label="Chủ đề luận giải">

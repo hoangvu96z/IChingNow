@@ -65,3 +65,70 @@ test('older charts retain absent annual fields and incomplete birth input is exp
   assert.ok(text.includes('Cân lượng: Chưa có dữ liệu'));
   assert.ok(!text.includes('undefined'));
 });
+
+test('buildTuViPrompt incorporates dynamic yunxianState (Đại Hạn, Lưu Niên 2027, Lưu Nguyệt Tháng 5, Tứ Hóa, Phi Tinh matrix)', () => {
+  const dynamicState = {
+    mode: 'liunian',
+    viewYear: 2027,
+    lunarMonth: 5,
+  };
+  const prompt = buildTuViPrompt(result, input, 'overview', '', false, dynamicState);
+
+  // Dynamic Vận Hạn sections
+  assert.ok(prompt.includes('NGỮ CẢNH VẬN HẠN ĐỘNG THEO LỰA CHỌN HIỆN TẠI (TIMENAV)'));
+  assert.ok(prompt.includes('ĐẠI HẠN ĐANG XEM'));
+  assert.ok(prompt.includes('LƯU NIÊN ĐANG XEM: Năm 2027'));
+  assert.ok(prompt.includes('LƯU NGUYỆT ĐANG XEM: Tháng 5 Âm Lịch'));
+
+  // Multi-layer Tứ Hóa (ĐH, LN, LNg)
+  assert.ok(prompt.includes('ĐH.Hóa Lộc'));
+  assert.ok(prompt.includes('ĐH.Hóa Quyền'));
+  assert.ok(prompt.includes('ĐH.Hóa Khoa'));
+  assert.ok(prompt.includes('ĐH.Hóa Kỵ'));
+
+  assert.ok(prompt.includes('LN.Hóa Lộc'));
+  assert.ok(prompt.includes('LN.Hóa Quyền'));
+  assert.ok(prompt.includes('LN.Hóa Khoa'));
+  assert.ok(prompt.includes('LN.Hóa Kỵ'));
+
+  assert.ok(prompt.includes('LNg.Hóa Lộc'));
+  assert.ok(prompt.includes('LNg.Hóa Quyền'));
+  assert.ok(prompt.includes('LNg.Hóa Khoa'));
+  assert.ok(prompt.includes('LNg.Hóa Kỵ'));
+
+  // 12-palace Phi Tinh matrix, Lai Nhân Cung & 3 Vòng Thập Nhị Thần
+  assert.ok(prompt.includes('MA TRẬN PHI TINH TỨ HÓA 12 CUNG'));
+  assert.ok(prompt.includes('LAI NHÂN CUNG'));
+  assert.ok(prompt.includes('BA VÒNG THẬP NHỊ THẦN (BÁC SỸ, THÁI TUẾ, TƯỚNG TIỀN)'));
+  assert.ok(prompt.includes('Vòng Bác Sỹ:'));
+  assert.ok(prompt.includes('Vòng Thái Tuế:'));
+  assert.ok(prompt.includes('Vòng Tướng Tiền:'));
+  assert.ok(!prompt.includes('undefined'));
+});
+
+test('buildTuViPrompt with True Solar Time, Birthplace, and SchoolConfig outputs exact solar pillars and config', () => {
+  const solarInput = {
+    ...input,
+    locationName: 'TP. Hồ Chí Minh',
+    longitude: 106.66,
+    clockHour: 6,
+    clockMinute: 30,
+    solarInput: { day: 29, month: 5, year: 1996 },
+    schoolConfig: {
+      lateZishiRule: 'ziwei_standard',
+      brightnessSchool: 'xd1',
+      gengStemSchool: 'XD',
+      leapPolicy: 'mid',
+    },
+  };
+  const text = buildTuViPrompt(result, solarInput, 'career', 'Đầu tư được không?');
+
+  assert.ok(text.includes('CHÂN THÁI DƯƠNG THỜI (GIỜ MẶT TRỜI THẬT) VÀ ĐỊA ĐIỂM SINH'));
+  assert.ok(text.includes('Nơi sinh: TP. Hồ Chí Minh'));
+  assert.ok(text.includes('106.66°E'));
+  assert.ok(text.includes('Giờ đồng hồ dân dụng: 6:30'));
+  assert.ok(text.includes('Bát Tự Tứ Trụ (theo Tiết Khí Lập Xuân)'));
+  assert.ok(text.includes('Cấu hình trường phái: Giờ Tý: ziwei_standard'));
+  assert.ok(!text.includes('Không cung cấp nơi sinh, múi giờ sinh, phút sinh hoặc hiệu chỉnh giờ mặt trời.'));
+});
+

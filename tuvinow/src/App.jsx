@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext.jsx';
 import { anLaSoTuVi } from './utils/tuViEngine';
 import BirthInputForm from './components/BirthInputForm.jsx';
 import LasoChart from './components/LasoChart.jsx';
+import TuViSelfGuidePanel from './components/TuViSelfGuidePanel.jsx';
 import SummaryPanel from './components/SummaryPanel.jsx';
 import TuViPatternsPanel from './components/TuViPatternsPanel.jsx';
 import TuViLocalReport from './components/TuViLocalReport.jsx';
@@ -72,7 +73,7 @@ function ThemeToggleButton({ theme, onToggle }) {
   );
 }
 
-function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved }) {
+function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved, yunxianState }) {
   const active = useRef(false);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const savedId = useRef(reading?.id || null);
@@ -82,7 +83,7 @@ function ReadingSession({ result, inputData, reading, persistReading, ensureChar
     savedId.current = id;
     if (active.current) onSaved(id);
   };
-  return <TuViAiPanel result={result} inputData={inputData} initialConversation={reading?.data?.aiConversation} onSave={save} />;
+  return <TuViAiPanel result={result} inputData={inputData} initialConversation={reading?.data?.aiConversation} onSave={save} yunxianState={yunxianState} />;
 }
 
 export default function App() {
@@ -122,6 +123,20 @@ export default function App() {
   const [historyActionError, setHistoryActionError] = useState('');
   const [chartResult, setChartResult] = useState(null);
   const [inputData, setInputData] = useState(null);
+  const [yunxianState, setYunxianState] = useState({
+    mode: 'mingpan',
+    daXianChiIndex: null,
+    viewYear: null,
+    lunarMonth: 1,
+  });
+
+  const handleYunxianChange = useCallback((nextState) => {
+    setYunxianState((prev) => ({
+      ...prev,
+      ...nextState,
+    }));
+  }, []);
+
   const [showForm, setShowForm] = useState(true);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCombinedModal, setShowCombinedModal] = useState(false);
@@ -144,6 +159,12 @@ export default function App() {
     setSessionId(value => value + 1);
     setChartResult(result);
     setInputData(data);
+    setYunxianState({
+      mode: result?.viewYear ? 'liunian' : 'mingpan',
+      daXianChiIndex: null,
+      viewYear: result?.viewYear ? Number(result.viewYear) : new Date().getFullYear(),
+      lunarMonth: 1,
+    });
     setShowForm(false);
     chartSaveRef.current = null;
     setSaveStatus('');
@@ -157,6 +178,12 @@ export default function App() {
     setSessionId(value => value + 1);
     setChartResult(null);
     setInputData(null);
+    setYunxianState({
+      mode: 'mingpan',
+      daXianChiIndex: null,
+      viewYear: null,
+      lunarMonth: 1,
+    });
     setShowForm(true);
     chartSaveRef.current = null;
     setSaveStatus('');
@@ -212,6 +239,12 @@ export default function App() {
     chartSaveRef.current = null;
     setInputData(item.data.inputData);
     setChartResult(result);
+    setYunxianState({
+      mode: result?.viewYear ? 'liunian' : 'mingpan',
+      daXianChiIndex: null,
+      viewYear: result?.viewYear ? Number(result.viewYear) : new Date().getFullYear(),
+      lunarMonth: 1,
+    });
     setShowForm(false);
     setShowHistoryModal(false);
     setSessionId(value => value + 1);
@@ -330,12 +363,27 @@ export default function App() {
             </div>
 
             <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
-            <LasoChart result={chartResult} inputData={inputData} />
-            <ShareCard result={chartResult} inputData={inputData} />
+            <TuViSelfGuidePanel result={chartResult} inputData={inputData} yunxianState={yunxianState} />
+            <LasoChart
+              result={chartResult}
+              inputData={inputData}
+              yunxianState={yunxianState}
+              onYunxianChange={handleYunxianChange}
+            />
+            <ShareCard result={chartResult} inputData={inputData} yunxianState={yunxianState} />
             <SummaryPanel result={chartResult} inputData={inputData} />
             <TuViPatternsPanel result={chartResult} inputData={inputData} />
             <TuViLocalReport result={chartResult} />
-            <ReadingSession key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult} inputData={inputData} reading={reading} persistReading={persistReading} ensureChartSaved={ensureChartSaved} onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }} />
+            <ReadingSession
+              key={`${user?.id || 'guest'}-${sessionId}`}
+              result={chartResult}
+              inputData={inputData}
+              reading={reading}
+              persistReading={persistReading}
+              ensureChartSaved={ensureChartSaved}
+              onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }}
+              yunxianState={yunxianState}
+            />
             </TuViEvidenceProvider>
           </>
         )}

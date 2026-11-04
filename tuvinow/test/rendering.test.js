@@ -293,6 +293,72 @@ test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, Birth
     assert.ok(glossaryModalHtml.includes(starDetail.career));
     assert.ok(glossaryModalHtml.includes('Sức khỏe &amp; Đông Y Nhân Kỷ') || glossaryModalHtml.includes('Sức khỏe & Đông Y Nhân Kỷ'));
     assert.ok(glossaryModalHtml.includes(starDetail.health));
+
+    // 5. TuViSelfGuidePanel SSR Rendering (all 6 beginner steps)
+    const { default: TuViSelfGuidePanel } = await server.ssrLoadModule('/src/components/TuViSelfGuidePanel.jsx');
+    const { default: ShareCard } = await server.ssrLoadModule('/src/components/ShareCard.jsx');
+
+    const guideHtml = renderToStaticMarkup(
+      React.createElement(TuViSelfGuidePanel, { result: sampleChart, inputData: sampleInput })
+    );
+    assert.ok(guideHtml.includes('Hướng Dẫn Tự Đọc Lá Số Của Bạn (6 Bước Dễ Hiểu)'));
+    assert.ok(guideHtml.includes('Dành cho người mới'));
+    assert.ok(guideHtml.includes('Nền Tảng Bản Mệnh &amp; Cục') || guideHtml.includes('Nền Tảng Bản Mệnh & Cục'));
+    assert.ok(guideHtml.includes('Cung Mệnh &amp; Cung Thân') || guideHtml.includes('Cung Mệnh & Cung Thân'));
+    assert.ok(guideHtml.includes('Tam Phương Tứ Chính'));
+    assert.ok(guideHtml.includes('Tứ Hóa &amp; Phi Tinh') || guideHtml.includes('Tứ Hóa & Phi Tinh'));
+    assert.ok(guideHtml.includes('Cách Xem Vận Hạn'));
+    assert.ok(guideHtml.includes('Cách Cục, Cổ Thư &amp; AI') || guideHtml.includes('Cách Cục, Cổ Thư & AI'));
+    assert.ok(guideHtml.includes(sampleChart.amDuongNamNu));
+    assert.ok(guideHtml.includes(sampleChart.banMenhNapAm));
+    assert.ok(guideHtml.includes(sampleChart.cucName));
+
+    // 6. LasoChart Export Wrapper includes .chart-export-yunxian-banner reflecting Đại Hạn / Lưu Niên / Lưu Nguyệt
+    const daxianChartExportHtml = renderToStaticMarkup(
+      React.createElement(LasoChart, {
+        result: sampleChart,
+        inputData: sampleInput,
+        yunxianState: { mode: 'daxian', daXianChiIndex: 2, viewYear: 2026, lunarMonth: 1 },
+      })
+    );
+    assert.ok(daxianChartExportHtml.includes('chart-export-yunxian-banner'));
+    assert.ok(daxianChartExportHtml.includes('Đại Hạn:'));
+    assert.ok(daxianChartExportHtml.includes('ĐH.Lộc:'));
+    assert.ok(daxianChartExportHtml.includes('ĐH.Quyền:'));
+
+    const liunianChartExportHtml = renderToStaticMarkup(
+      React.createElement(LasoChart, {
+        result: sampleChart,
+        inputData: sampleInput,
+        yunxianState: { mode: 'liunian', viewYear: 2028, lunarMonth: 1 },
+      })
+    );
+    assert.ok(liunianChartExportHtml.includes('chart-export-yunxian-banner'));
+    assert.ok(liunianChartExportHtml.includes('Lưu Niên: Năm 2028'));
+    assert.ok(liunianChartExportHtml.includes('LN.Lộc:'));
+    assert.ok(liunianChartExportHtml.includes('LN.Kỵ:'));
+
+    const liuyueChartExportHtml = renderToStaticMarkup(
+      React.createElement(LasoChart, {
+        result: sampleChart,
+        inputData: sampleInput,
+        yunxianState: { mode: 'liuyue', viewYear: 2026, lunarMonth: 7 },
+      })
+    );
+    assert.ok(liuyueChartExportHtml.includes('chart-export-yunxian-banner'));
+    assert.ok(liuyueChartExportHtml.includes('Lưu Nguyệt: Tháng 7 Âm Lịch'));
+    assert.ok(liuyueChartExportHtml.includes('LNg.Lộc:'));
+
+    // 7. ShareCard with yunxianState
+    const shareCardHtml = renderToStaticMarkup(
+      React.createElement(ShareCard, {
+        result: sampleChart,
+        inputData: sampleInput,
+        yunxianState: { mode: 'liunian', viewYear: 2026, lunarMonth: 1 },
+      })
+    );
+    assert.ok(shareCardHtml.includes('share-card-wrapper'));
+    assert.ok(shareCardHtml.includes('Chia sẻ lá số lên mạng xã hội'));
   } finally {
     await server.close();
   }

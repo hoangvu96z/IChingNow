@@ -1,5 +1,10 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { toPng } from 'html-to-image';
+import {
+  buildYunxianOverlay,
+  THIEN_CAN,
+  DIA_CHI,
+} from '../utils/tuViZiweiModule.js';
 
 /**
  * ShareCard — Generates a beautiful, compact social sharing card
@@ -12,7 +17,7 @@ import { toPng } from 'html-to-image';
  * - Web Share API integration (or fallback to download)
  * - Copy image to clipboard
  */
-export default function ShareCard({ result, inputData }) {
+export default function ShareCard({ result, inputData, yunxianState }) {
   const cardRef = useRef(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
@@ -28,6 +33,45 @@ export default function ShareCard({ result, inputData }) {
 
   const isDark = typeof document !== 'undefined' &&
     document.documentElement.getAttribute('data-theme') === 'dark';
+
+  // Dynamic Vận Hạn calculation if yunxianState is supplied
+  const dynamicOverlay = useMemo(() => {
+    if (!result || !result.palates || !yunxianState) return null;
+    return buildYunxianOverlay(result, {
+      mode: yunxianState.mode,
+      daXianChiIndex: yunxianState.daXianChiIndex,
+      viewYear: yunxianState.viewYear,
+      lunarMonth: yunxianState.lunarMonth,
+      schoolConfig: inputData?.schoolConfig,
+      birthYear: inputData?.lunarYear,
+    });
+  }, [result, yunxianState, inputData]);
+
+  const activeMode = yunxianState?.mode || (result.viewYear ? 'liunian' : 'mingpan');
+  const activeViewYear = yunxianState?.viewYear !== undefined && yunxianState?.viewYear !== null
+    ? Number(yunxianState.viewYear)
+    : (result.viewYear ? Number(result.viewYear) : null);
+
+  const activeYearCanChi = useMemo(() => {
+    if (!activeViewYear) return result.viewYearCanChi || '';
+    const stem = THIEN_CAN[((activeViewYear - 4) % 10 + 10) % 10];
+    const branch = DIA_CHI[((activeViewYear - 4) % 12 + 12) % 12];
+    return `${stem} ${branch}`;
+  }, [activeViewYear, result.viewYearCanChi]);
+
+  const activeTuoiAm = useMemo(() => {
+    if (!inputData?.lunarYear || !activeViewYear) return result.tuoiAm || null;
+    return activeViewYear - inputData.lunarYear + 1;
+  }, [activeViewYear, inputData?.lunarYear, result.tuoiAm]);
+
+  const activeDaXianObj = dynamicOverlay?.activeDaXian || null;
+  const activeSihuaTransforms = useMemo(() => {
+    if (!dynamicOverlay?.sihuaLayers) return null;
+    if (activeMode === 'daxian') return dynamicOverlay.sihuaLayers.daXian?.transforms || null;
+    if (activeMode === 'liunian') return dynamicOverlay.sihuaLayers.liuNian?.transforms || null;
+    if (activeMode === 'liuyue') return dynamicOverlay.sihuaLayers.liuYue?.transforms || null;
+    return null;
+  }, [dynamicOverlay, activeMode]);
 
   // Determine element based on Nạp Âm
   const getElementEmoji = (napAm) => {
@@ -193,6 +237,64 @@ export default function ShareCard({ result, inputData }) {
                 <span className="share-card-item-label">Chủ Thân</span>
                 <span className="share-card-item-value">{chuThan}</span>
               </div>
+
+              {/* Active Vận Hạn & Tứ Hóa when selected */}
+              {activeMode === 'daxian' && activeDaXianObj && (
+                <>
+                  <div className="share-card-item span-2 share-card-yunxian-item">
+                    <span className="share-card-item-label">Đang Xem Đại Hạn</span>
+                    <span className="share-card-item-value highlight">
+                      {activeDaXianObj.label} ({activeDaXianObj.fullLabel || activeDaXianObj.chiName})
+                    </span>
+                  </div>
+                  {activeSihuaTransforms && (
+                    <div className="share-card-item span-2 share-card-sihua-item">
+                      <span className="share-card-item-label">Đại Hạn Tứ Hóa</span>
+                      <span className="share-card-item-value">
+                        Lộc: {activeSihuaTransforms['Hóa Lộc']} · Quyền: {activeSihuaTransforms['Hóa Quyền']} · Khoa: {activeSihuaTransforms['Hóa Khoa']} · Kỵ: {activeSihuaTransforms['Hóa Kỵ']}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeMode === 'liunian' && activeViewYear && (
+                <>
+                  <div className="share-card-item span-2 share-card-yunxian-item">
+                    <span className="share-card-item-label">Đang Xem Lưu Niên</span>
+                    <span className="share-card-item-value highlight">
+                      Năm {activeViewYear} ({activeYearCanChi}{activeTuoiAm ? ` · ${activeTuoiAm} Tuổi` : ''})
+                    </span>
+                  </div>
+                  {activeSihuaTransforms && (
+                    <div className="share-card-item span-2 share-card-sihua-item">
+                      <span className="share-card-item-label">Lưu Niên Tứ Hóa</span>
+                      <span className="share-card-item-value">
+                        Lộc: {activeSihuaTransforms['Hóa Lộc']} · Quyền: {activeSihuaTransforms['Hóa Quyền']} · Khoa: {activeSihuaTransforms['Hóa Khoa']} · Kỵ: {activeSihuaTransforms['Hóa Kỵ']}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeMode === 'liuyue' && yunxianState?.lunarMonth && (
+                <>
+                  <div className="share-card-item span-2 share-card-yunxian-item">
+                    <span className="share-card-item-label">Đang Xem Lưu Nguyệt</span>
+                    <span className="share-card-item-value highlight">
+                      Tháng {yunxianState.lunarMonth} Âm Lịch (Năm {activeViewYear} · {activeYearCanChi})
+                    </span>
+                  </div>
+                  {activeSihuaTransforms && (
+                    <div className="share-card-item span-2 share-card-sihua-item">
+                      <span className="share-card-item-label">Lưu Nguyệt Tứ Hóa</span>
+                      <span className="share-card-item-value">
+                        Lộc: {activeSihuaTransforms['Hóa Lộc']} · Quyền: {activeSihuaTransforms['Hóa Quyền']} · Khoa: {activeSihuaTransforms['Hóa Khoa']} · Kỵ: {activeSihuaTransforms['Hóa Kỵ']}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Watermark */}

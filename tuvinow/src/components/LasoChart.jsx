@@ -13,7 +13,13 @@ import {
   DIA_CHI,
 } from '../utils/tuViZiweiModule.js';
 
-export default function LasoChart({ result, inputData, initialYunxianMode }) {
+export default function LasoChart({
+  result,
+  inputData,
+  initialYunxianMode,
+  yunxianState: externalYunxianState,
+  onYunxianChange,
+}) {
   const chartRef = useRef(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState(null); // 'png' | 'pdf' | null
@@ -22,12 +28,33 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
 
   // 🏛️ Điều hướng Vận Hạn Động (TimeNav)
   const initialMode = initialYunxianMode || (result?.viewYear ? 'liunian' : 'mingpan');
-  const [yunxianMode, setYunxianMode] = useState(initialMode);
-  const [selectedDaXianChiIndex, setSelectedDaXianChiIndex] = useState(null);
-  const [activeViewYear, setActiveViewYear] = useState(() => {
+  const [internalMode, setInternalMode] = useState(initialMode);
+  const [internalSelectedDaXian, setInternalSelectedDaXian] = useState(null);
+  const [internalViewYear, setInternalViewYear] = useState(() => {
     return result?.viewYear ? Number(result.viewYear) : new Date().getFullYear();
   });
-  const [selectedLunarMonth, setSelectedLunarMonth] = useState(1);
+  const [internalLunarMonth, setInternalLunarMonth] = useState(1);
+
+  const yunxianMode = externalYunxianState?.mode !== undefined ? externalYunxianState.mode : internalMode;
+  const selectedDaXianChiIndex = externalYunxianState?.daXianChiIndex !== undefined ? externalYunxianState.daXianChiIndex : internalSelectedDaXian;
+  const activeViewYear = externalYunxianState?.viewYear !== undefined && externalYunxianState?.viewYear !== null ? Number(externalYunxianState.viewYear) : internalViewYear;
+  const selectedLunarMonth = externalYunxianState?.lunarMonth !== undefined ? externalYunxianState.lunarMonth : internalLunarMonth;
+
+  const updateYunxian = useCallback((updates) => {
+    if (updates.mode !== undefined) setInternalMode(updates.mode);
+    if (updates.daXianChiIndex !== undefined) setInternalSelectedDaXian(updates.daXianChiIndex);
+    if (updates.viewYear !== undefined) setInternalViewYear(updates.viewYear);
+    if (updates.lunarMonth !== undefined) setInternalLunarMonth(updates.lunarMonth);
+
+    if (onYunxianChange) {
+      onYunxianChange({
+        mode: updates.mode !== undefined ? updates.mode : yunxianMode,
+        daXianChiIndex: updates.daXianChiIndex !== undefined ? updates.daXianChiIndex : selectedDaXianChiIndex,
+        viewYear: updates.viewYear !== undefined ? updates.viewYear : activeViewYear,
+        lunarMonth: updates.lunarMonth !== undefined ? updates.lunarMonth : selectedLunarMonth,
+      });
+    }
+  }, [onYunxianChange, yunxianMode, selectedDaXianChiIndex, activeViewYear, selectedLunarMonth]);
 
   // 🎯 Interactive Tam Phương Tứ Chính (Palace Selection)
   const [selectedPalaceChi, setSelectedPalaceChi] = useState(null);
@@ -184,7 +211,20 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
-    return `${raw || 'la-so-tu-vi'}.${ext}`;
+
+    let modeSuffix = '';
+    if (yunxianMode === 'daxian' && currentActiveDaXian) {
+      const range = (currentActiveDaXian.startAge !== undefined && currentActiveDaXian.endAge !== undefined)
+        ? `${currentActiveDaXian.startAge}-${currentActiveDaXian.endAge}`
+        : currentActiveDaXian.label.replace(/[^0-9-]+/g, '') || 'daxian';
+      modeSuffix = `-dai-han-${range}`;
+    } else if (yunxianMode === 'liunian' && activeViewYear) {
+      modeSuffix = `-luu-nien-${activeViewYear}`;
+    } else if (yunxianMode === 'liuyue' && selectedLunarMonth) {
+      modeSuffix = `-luu-nguyet-t${selectedLunarMonth}-${activeViewYear}`;
+    }
+
+    return `${raw || 'la-so-tu-vi'}${modeSuffix}.${ext}`;
   };
 
   const handleExportPNG = useCallback(async () => {
@@ -292,11 +332,23 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
       <div className="chart-actions-bar">
         <div className="chart-actions-title">
           <span>🔮 Lá Số Tử Vi — {inputData?.name || 'Bản Mệnh'}</span>
-          {result.viewYearCanChi && (
+          {yunxianMode === 'daxian' && currentActiveDaXian ? (
+            <span className="chart-year-label">
+              Đại Hạn {currentActiveDaXian.label} ({currentActiveDaXian.fullLabel || currentActiveDaXian.chiName})
+            </span>
+          ) : yunxianMode === 'liunian' && activeViewYear ? (
+            <span className="chart-year-label">
+              Lưu Niên {activeViewYear} · {activeYearCanChi}{activeTuoiAm ? ` (${activeTuoiAm} Tuổi)` : ''}
+            </span>
+          ) : yunxianMode === 'liuyue' ? (
+            <span className="chart-year-label">
+              Lưu Nguyệt Tháng {selectedLunarMonth} · Năm {activeViewYear} ({activeYearCanChi})
+            </span>
+          ) : result.viewYearCanChi ? (
             <span className="chart-year-label">
               Lưu Niên {result.viewYear || ''} · {result.viewYearCanChi}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="chart-actions-buttons">
           {exportMessage && <span className="export-status-msg">{exportMessage}</span>}
@@ -340,7 +392,7 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
           <button
             type="button"
             className={`timenav-tab ${yunxianMode === 'mingpan' ? 'is-active' : ''}`}
-            onClick={() => setYunxianMode('mingpan')}
+            onClick={() => updateYunxian({ mode: 'mingpan' })}
           >
             🏛️ Bản Mệnh
           </button>
@@ -348,10 +400,10 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
             type="button"
             className={`timenav-tab ${yunxianMode === 'daxian' ? 'is-active' : ''}`}
             onClick={() => {
-              setYunxianMode('daxian');
-              if (selectedDaXianChiIndex === null && ziweiMeta?.daXianList?.[0]) {
-                setSelectedDaXianChiIndex(ziweiMeta.daXianList[0].chiIndex);
-              }
+              const targetDaXian = (selectedDaXianChiIndex === null && ziweiMeta?.daXianList?.[0])
+                ? ziweiMeta.daXianList[0].chiIndex
+                : selectedDaXianChiIndex;
+              updateYunxian({ mode: 'daxian', daXianChiIndex: targetDaXian });
             }}
           >
             🪐 Đại Hạn (10 Năm)
@@ -359,14 +411,14 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
           <button
             type="button"
             className={`timenav-tab ${yunxianMode === 'liunian' ? 'is-active' : ''}`}
-            onClick={() => setYunxianMode('liunian')}
+            onClick={() => updateYunxian({ mode: 'liunian' })}
           >
             📅 Lưu Niên (1 Năm)
           </button>
           <button
             type="button"
             className={`timenav-tab ${yunxianMode === 'liuyue' ? 'is-active' : ''}`}
-            onClick={() => setYunxianMode('liuyue')}
+            onClick={() => updateYunxian({ mode: 'liuyue' })}
           >
             🌙 Lưu Nguyệt (Tháng)
           </button>
@@ -386,7 +438,7 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
                     key={dx.chiIndex}
                     type="button"
                     className={`daxian-chip ${isActive ? 'is-active' : ''}`}
-                    onClick={() => setSelectedDaXianChiIndex(dx.chiIndex)}
+                    onClick={() => updateYunxian({ daXianChiIndex: dx.chiIndex })}
                     title={dx.fullLabel}
                   >
                     {dx.label}
@@ -412,7 +464,7 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
               <button
                 type="button"
                 className="year-step-btn"
-                onClick={() => setActiveViewYear((y) => y - 1)}
+                onClick={() => updateYunxian({ viewYear: activeViewYear - 1 })}
                 title="Xem năm trước"
               >
                 ‹ Năm {activeViewYear - 1}
@@ -424,7 +476,7 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
               <button
                 type="button"
                 className="year-step-btn"
-                onClick={() => setActiveViewYear((y) => y + 1)}
+                onClick={() => updateYunxian({ viewYear: activeViewYear + 1 })}
                 title="Xem năm kế tiếp"
               >
                 Năm {activeViewYear + 1} ›
@@ -450,7 +502,7 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
                   key={m}
                   type="button"
                   className={`liuyue-chip ${selectedLunarMonth === m ? 'is-active' : ''}`}
-                  onClick={() => setSelectedLunarMonth(m)}
+                  onClick={() => updateYunxian({ lunarMonth: m })}
                 >
                   Tháng {m}
                 </button>
@@ -476,6 +528,57 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
         data-exporting={isExporting ? 'true' : undefined}
         id="tuvi-chart-capture"
       >
+        {/* Banner Vận Hạn Đang Xem khi Xuất Ảnh / PDF */}
+        <div className="chart-export-yunxian-banner">
+          <div className="export-banner-main">
+            <span className="export-banner-icon">
+              {yunxianMode === 'daxian' ? '🪐' : yunxianMode === 'liunian' ? '📅' : yunxianMode === 'liuyue' ? '🌙' : '🏛️'}
+            </span>
+            <div className="export-banner-info">
+              <span className="export-banner-mode">
+                {yunxianMode === 'daxian' && currentActiveDaXian
+                  ? `Đại Hạn: ${currentActiveDaXian.label} (${currentActiveDaXian.fullLabel || currentActiveDaXian.chiName})`
+                  : yunxianMode === 'liunian'
+                  ? `Lưu Niên: Năm ${activeViewYear} (${activeYearCanChi}${activeTuoiAm ? ` · ${activeTuoiAm} Tuổi` : ''})`
+                  : yunxianMode === 'liuyue'
+                  ? `Lưu Nguyệt: Tháng ${selectedLunarMonth} Âm Lịch (Năm ${activeViewYear} · ${activeYearCanChi})`
+                  : `Chế Độ: Lá Số Bản Mệnh · ${canChiNam} (${banMenhNapAm})`}
+              </span>
+              <span className="export-banner-sub">
+                {inputData?.name ? `Đương số: ${inputData.name} · ` : ''}
+                Mệnh: {menhCung} · Thân: {thanCung} · Cục: {cucName}
+              </span>
+            </div>
+          </div>
+          {/* Active Tứ Hóa Strip in Export Banner */}
+          {yunxianMode === 'daxian' && dynamicOverlay?.sihuaLayers?.daXian?.transforms && (
+            <div className="export-banner-sihua">
+              <span className="export-sihua-title">Đại Hạn Tứ Hóa:</span>
+              <span className="export-sihua-item loc">ĐH.Lộc: {dynamicOverlay.sihuaLayers.daXian.transforms['Hóa Lộc']}</span>
+              <span className="export-sihua-item quyen">ĐH.Quyền: {dynamicOverlay.sihuaLayers.daXian.transforms['Hóa Quyền']}</span>
+              <span className="export-sihua-item khoa">ĐH.Khoa: {dynamicOverlay.sihuaLayers.daXian.transforms['Hóa Khoa']}</span>
+              <span className="export-sihua-item ky">ĐH.Kỵ: {dynamicOverlay.sihuaLayers.daXian.transforms['Hóa Kỵ']}</span>
+            </div>
+          )}
+          {yunxianMode === 'liunian' && dynamicOverlay?.sihuaLayers?.liuNian?.transforms && (
+            <div className="export-banner-sihua">
+              <span className="export-sihua-title">Lưu Niên Tứ Hóa:</span>
+              <span className="export-sihua-item loc">LN.Lộc: {dynamicOverlay.sihuaLayers.liuNian.transforms['Hóa Lộc']}</span>
+              <span className="export-sihua-item quyen">LN.Quyền: {dynamicOverlay.sihuaLayers.liuNian.transforms['Hóa Quyền']}</span>
+              <span className="export-sihua-item khoa">LN.Khoa: {dynamicOverlay.sihuaLayers.liuNian.transforms['Hóa Khoa']}</span>
+              <span className="export-sihua-item ky">LN.Kỵ: {dynamicOverlay.sihuaLayers.liuNian.transforms['Hóa Kỵ']}</span>
+            </div>
+          )}
+          {yunxianMode === 'liuyue' && dynamicOverlay?.sihuaLayers?.liuYue?.transforms && (
+            <div className="export-banner-sihua">
+              <span className="export-sihua-title">Lưu Nguyệt Tứ Hóa:</span>
+              <span className="export-sihua-item loc">LNg.Lộc: {dynamicOverlay.sihuaLayers.liuYue.transforms['Hóa Lộc']}</span>
+              <span className="export-sihua-item quyen">LNg.Quyền: {dynamicOverlay.sihuaLayers.liuYue.transforms['Hóa Quyền']}</span>
+              <span className="export-sihua-item khoa">LNg.Khoa: {dynamicOverlay.sihuaLayers.liuYue.transforms['Hóa Khoa']}</span>
+              <span className="export-sihua-item ky">LNg.Kỵ: {dynamicOverlay.sihuaLayers.liuYue.transforms['Hóa Kỵ']}</span>
+            </div>
+          )}
+        </div>
         <div className="chart-grid">
           {/* Render 12 palace cards */}
           {palates.map((palace, i) => {
@@ -622,21 +725,54 @@ export default function LasoChart({ result, inputData, initialYunxianMode }) {
                     <span className="value">{result.canLuongStr}</span>
                   </div>
                 )}
-                {result.tuoiAm != null && (
-                  <div className="center-info-row">
-                    <span className="label">Tuổi âm:</span>
+                {yunxianMode === 'daxian' && currentActiveDaXian ? (
+                  <div className="center-info-row yunxian-active-row">
+                    <span className="label">Đại hạn:</span>
                     <span className="value">
-                      {result.tuoiAm} · Tiểu hạn {result.tieuHanCung}
+                      {currentActiveDaXian.label} ({currentActiveDaXian.canName} {currentActiveDaXian.chiName})
                     </span>
                   </div>
-                )}
-                {result.viewYearCanChi && (
-                  <div className="center-info-row">
-                    <span className="label">Lưu niên:</span>
+                ) : yunxianMode === 'liunian' ? (
+                  <>
+                    <div className="center-info-row yunxian-active-row">
+                      <span className="label">Lưu niên:</span>
+                      <span className="value">
+                        {activeViewYear} {activeYearCanChi}{activeTuoiAm ? ` · ${activeTuoiAm} tuổi` : ''}
+                      </span>
+                    </div>
+                    {(dynamicOverlay?.tieuHanCungName || result.tieuHanCung) && (
+                      <div className="center-info-row">
+                        <span className="label">Tiểu hạn:</span>
+                        <span className="value">{dynamicOverlay?.tieuHanCungName || result.tieuHanCung}</span>
+                      </div>
+                    )}
+                  </>
+                ) : yunxianMode === 'liuyue' ? (
+                  <div className="center-info-row yunxian-active-row">
+                    <span className="label">Lưu nguyệt:</span>
                     <span className="value">
-                      {result.viewYear || ''} {result.viewYearCanChi}
+                      Tháng {selectedLunarMonth} Âm lịch (Năm {activeViewYear})
                     </span>
                   </div>
+                ) : (
+                  <>
+                    {result.tuoiAm != null && (
+                      <div className="center-info-row">
+                        <span className="label">Tuổi âm:</span>
+                        <span className="value">
+                          {result.tuoiAm} · Tiểu hạn {result.tieuHanCung}
+                        </span>
+                      </div>
+                    )}
+                    {result.viewYearCanChi && (
+                      <div className="center-info-row">
+                        <span className="label">Lưu niên:</span>
+                        <span className="value">
+                          {result.viewYear || ''} {result.viewYearCanChi}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="center-name">{inputData?.name || 'Lá Số Tử Vi'}</div>
 
