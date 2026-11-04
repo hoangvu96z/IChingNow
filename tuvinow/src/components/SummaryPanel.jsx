@@ -7,36 +7,59 @@ export default function SummaryPanel({ result, inputData }) {
   if (!result) return null;
 
   const {
-    amDuongNamNu, canChiNam, banMenhNapAm, cucName, cucNumber,
-    chuMenh, chuThan, menhCung, thanCung, tuanCung, trietCung, isThuan, palates
+    amDuongNamNu,
+    canChiNam,
+    banMenhNapAm,
+    cucName,
+    chuMenh,
+    chuThan,
+    menhCung,
+    thanCung,
+    tuanCung,
+    trietCung,
+    isThuan,
+    palates = [],
+    ziweiMeta,
   } = result;
 
   // Find Mệnh palace stars
-  const menhPalace = palates.find(p => p.isMenh);
-  const thanPalace = palates.find(p => p.isThan);
+  const menhPalace = palates.find((p) => p.isMenh);
+  const thanPalace = palates.find((p) => p.isThan);
 
-  const menhStars = menhPalace?.chinhTinh?.join(', ') || 'Không có chính tinh';
-  const thanStars = thanPalace?.chinhTinh?.join(', ') || 'Không có chính tinh';
+  const menhStars = menhPalace?.chinhTinh?.join(', ') || 'Không có chính tinh (Vô Chính Diệu)';
+  const thanStars = thanPalace?.chinhTinh?.join(', ') || 'Không có chính tinh (Vô Chính Diệu)';
+
+  const laiNhan = ziweiMeta?.laiNhanCung;
+  const fourPillars = ziweiMeta?.fourPillarsInfo?.fourPillars;
 
   return (
     <div className="summary-panel">
       <h3 className="summary-title">
-        📋 Tổng Quan Lá Số
+        📋 Tổng Quan Lá Số Tử Vi
       </h3>
 
       <div className="summary-grid">
-        {result.canLuongStr && <div className="summary-item">
-          <div className="summary-item-label">Cân lượng</div>
-          <div className="summary-item-value gold">{result.canLuongStr}</div>
-        </div>}
-        {result.tuoiAm != null && <div className="summary-item">
-          <div className="summary-item-label">Tuổi âm · năm {result.viewYear}</div>
-          <div className="summary-item-value">{result.tuoiAm} tuổi</div>
-        </div>}
-        {result.tieuHanCung && <div className="summary-item">
-          <div className="summary-item-label">Tiểu hạn</div>
-          <div className="summary-item-value gold">{result.tieuHanCung}</div>
-        </div>}
+        {result.canLuongStr && (
+          <div className="summary-item">
+            <div className="summary-item-label">Cân Lượng</div>
+            <div className="summary-item-value gold">{result.canLuongStr}</div>
+          </div>
+        )}
+
+        {result.tuoiAm != null && (
+          <div className="summary-item">
+            <div className="summary-item-label">Tuổi Âm · Năm {result.viewYear}</div>
+            <div className="summary-item-value">{result.tuoiAm} tuổi</div>
+          </div>
+        )}
+
+        {result.tieuHanCung && (
+          <div className="summary-item">
+            <div className="summary-item-label">Tiểu Hạn</div>
+            <div className="summary-item-value gold">{result.tieuHanCung}</div>
+          </div>
+        )}
+
         <div className="summary-item">
           <div className="summary-item-label">Họ Tên</div>
           <div className="summary-item-value gold">{inputData?.name || '—'}</div>
@@ -44,7 +67,9 @@ export default function SummaryPanel({ result, inputData }) {
 
         <div className="summary-item">
           <div className="summary-item-label">Âm Dương / Giới Tính</div>
-          <div className="summary-item-value">{amDuongNamNu} ({isThuan ? 'Thuận hành' : 'Nghịch hành'})</div>
+          <div className="summary-item-value">
+            {amDuongNamNu} ({isThuan ? 'Thuận hành' : 'Nghịch hành'})
+          </div>
         </div>
 
         <div className="summary-item">
@@ -82,6 +107,24 @@ export default function SummaryPanel({ result, inputData }) {
           <div className="summary-item-value">{chuThan}</div>
         </div>
 
+        {laiNhan && (
+          <div className="summary-item">
+            <div className="summary-item-label">Lai Nhân Cung</div>
+            <div className="summary-item-value gold">
+              Cung {laiNhan.chucNang} ({laiNhan.canName} {laiNhan.chiName})
+            </div>
+          </div>
+        )}
+
+        {fourPillars && (
+          <div className="summary-item">
+            <div className="summary-item-label">Bát Tự Tứ Trụ</div>
+            <div className="summary-item-value">
+              {fourPillars.join(' · ')}
+            </div>
+          </div>
+        )}
+
         <div className="summary-item">
           <div className="summary-item-label">Chính Tinh tại Mệnh</div>
           <div className="summary-item-value">{menhStars}</div>
@@ -101,10 +144,17 @@ export default function SummaryPanel({ result, inputData }) {
           </div>
         </div>
       </div>
-      {result.canLuongStr && <p className="annual-chart-note">LN. là cung lưu niên đại hạn; L. là sao lưu niên.
-        {result.tuoiAm == null ? ' Chọn năm xem khi lập lá số để hiển thị tuổi âm và Tiểu hạn.' :
-          !palates.some(p => p.luuNienChucNang) ? ' Tuổi đang xem chưa nằm trong các đại hạn của lá số nên chưa có cung LN.' : ''}
-      </p>}
+
+      {result.canLuongStr && (
+        <p className="annual-chart-note">
+          LN. là cung lưu niên đại hạn; L. là sao lưu niên.
+          {result.tuoiAm == null
+            ? ' Chọn năm xem khi lập lá số để hiển thị tuổi âm và Tiểu hạn.'
+            : !palates.some((p) => p.luuNienChucNang)
+            ? ' Tuổi đang xem chưa nằm trong các đại hạn của lá số nên chưa có cung LN.'
+            : ''}
+        </p>
+      )}
     </div>
   );
 }

@@ -24,7 +24,6 @@ export default function ShareCard({ result, inputData }) {
     chuMenh, chuThan, menhCung, thanCung, palates } = result;
 
   const menhPalace = palates.find(p => p.isMenh);
-  const thanPalace = palates.find(p => p.isThan);
   const menhStars = menhPalace?.chinhTinh?.join(', ') || 'Không có chính tinh';
 
   const isDark = typeof document !== 'undefined' &&

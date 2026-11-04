@@ -210,6 +210,63 @@ function PairSession({ initial, onStored }) {
       </div>
       <p>{card.detail}</p>
     </section>)}</div>
+
+    {/* Phi Hóa Tương Tham 2 Chiều (Chồng ⇄ Vợ) */}
+    {pair.synastry?.highlights && pair.synastry.highlights.length > 0 && (
+      <section className="hh-card hh-synastry-card">
+        <header>
+          <h3><span className="hh-card-icon">✨</span>Phi Hóa Tương Tham 2 Chiều (Chồng ⇄ Vợ)</h3>
+        </header>
+        <p className="hh-synastry-subtitle">
+          Khảo sát Can Năm Sinh, Can Cung Mệnh và Can Cung Phu Thê của hai người phi Tứ Hóa chiếu sang các cung trọng yếu:
+        </p>
+        <div className="hh-synastry-list">
+          {pair.synastry.highlights.map((h, i) => (
+            <div key={i} className={`hh-synastry-item ${h.isAuspicious ? 'auspicious' : 'challenging'}`}>
+              <span className="hh-synastry-badge">{h.isAuspicious ? '🌟 Cát Tường' : '⚠️ Dung Hòa'}</span>
+              <span className="hh-synastry-text">{h.summary}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* Lời Giảng Hôn Nhân Thiên Kỷ Nghê Hải Hạ */}
+    {pair.hemingKnowledge && (
+      <section className="hh-card hh-heming-card">
+        <header>
+          <h3><span className="hh-card-icon">☯️</span>Lời Giảng Hôn Nhân Thiên Kỷ Nghê Hải Hạ</h3>
+        </header>
+        <p className="hh-heming-methodology">
+          {pair.hemingKnowledge.HEMING_METHODOLOGY?.principles?.[0] ||
+            'Theo Thiên Kỷ Nghê Hải Hạ: Xem hôn nhân không chỉ nhìn cung Phu Thê mà phải liên tham cung Phúc Đức, quan sát sự tôn trọng và bao dung giữa hai bản mệnh.'}
+        </p>
+        <div className="hh-fuqi-quotes-grid">
+          {(pair.chong.person?.phuTheStars || [])
+            .map(s => pair.hemingKnowledge.STAR_IN_FUQI_GU?.[s])
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((q, idx) => (
+              <div key={`chong-${idx}`} className="hh-fuqi-quote-box">
+                <strong>Chồng · Phu Thê {q.star}:</strong>
+                <p>"{q.quote}"</p>
+                <div className="advice">💡 {q.advice}</div>
+              </div>
+            ))}
+          {(pair.vo.person?.phuTheStars || [])
+            .map(s => pair.hemingKnowledge.STAR_IN_FUQI_GU?.[s])
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((q, idx) => (
+              <div key={`vo-${idx}`} className="hh-fuqi-quote-box">
+                <strong>Vợ · Phu Thê {q.star}:</strong>
+                <p>"{q.quote}"</p>
+                <div className="advice">💡 {q.advice}</div>
+              </div>
+            ))}
+        </div>
+      </section>
+    )}
     <section className="hh-card"><h3>📖 Cách đọc kết quả</h3><p>Điểm trước làm tròn: {a.rawScore}/100. Tổng hợp bằng trọng số 30% Ngũ hành, 30% Phu Thê, 25% Tứ Hóa và 15% Đào hoa.</p>
       <p>Đây là kết quả của bộ quy tắc tham khảo, không phải xác suất hôn nhân thành công. Sự thấu hiểu, giao tiếp và cách hai người cùng giải quyết vấn đề vẫn cần được xem xét trong thực tế.</p>
       <details><summary>Dữ kiện hai lá số</summary><pre className="hh-data">{compatibilityText(pair)}</pre></details>

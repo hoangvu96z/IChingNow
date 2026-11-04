@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lookupTuViTerm, TUVI_GLOSSARY } from '../src/data/tuViGlossary.js';
+import { lookupTuViTerm } from '../src/data/tuViGlossary.js';
 
 test('lookupTuViTerm: tra cứu chính xác 14 chính tinh và đắc hãm', () => {
   const tuVi = lookupTuViTerm('Tử Vi (M)');

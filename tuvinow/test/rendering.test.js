@@ -8,7 +8,7 @@ import react from '@vitejs/plugin-react';
 import { anLaSoTuVi } from '../src/utils/tuViEngine.js';
 
 test('answer and actual palace components render evidence and legacy text', async () => {
-  const server = await createServer({ configFile: false, plugins: [react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const server = await createServer({ configFile: false, plugins: [react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
   try {
     const { default: Provider } = await server.ssrLoadModule('/src/components/TuViEvidenceProvider.jsx');
     const { default: Answer } = await server.ssrLoadModule('/src/components/TuViEvidenceAnswer.jsx');
@@ -109,4 +109,191 @@ test('answer and actual palace components render evidence and legacy text', asyn
     assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-grid\s*\{[\s\S]*?flex-direction:\s*column[\s\S]*?min-width:\s*0/);
     assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-center\s*\{[\s\S]*?order:\s*-1/);
   } finally { await server.close(); }
+});
+
+test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, BirthInputForm, and TuViGlossaryModal', async () => {
+  const server = await createServer({
+    configFile: false,
+    plugins: [react()],
+    optimizeDeps: { noDiscovery: true, include: [] },
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: 'custom',
+  });
+
+  try {
+    const { default: TuViPatternsPanel } = await server.ssrLoadModule('/src/components/TuViPatternsPanel.jsx');
+    const { default: LasoChart } = await server.ssrLoadModule('/src/components/LasoChart.jsx');
+    const { default: BirthInputForm } = await server.ssrLoadModule('/src/components/BirthInputForm.jsx');
+    const { default: TuViGlossaryModal } = await server.ssrLoadModule('/src/components/TuViGlossaryModal.jsx');
+    const { getStarDetail, FAMOUS_CHARTS } = await server.ssrLoadModule('/src/utils/tuViZiweiModule.js');
+
+    const sampleChart = anLaSoTuVi({
+      lunarYear: 1996,
+      lunarMonth: 4,
+      lunarDay: 12,
+      lunarHourIndex: 3,
+      yearCanIndex: 2,
+      yearChiIndex: 0,
+      gender: 1,
+      viewYear: 2026,
+      viewYearCanIndex: 2,
+      viewYearChiIndex: 6,
+    });
+    const sampleInput = {
+      name: 'Người Mẫu',
+      day: 12,
+      month: 4,
+      year: 1996,
+      hourIndex: 3,
+      gender: 1,
+      isLunar: true,
+      viewYear: 2026,
+    };
+
+    // 1. TuViPatternsPanel SSR Rendering (all 4 tabs)
+    // Tab 1: Cách Cục Đẩu Số
+    const patternsHtml = renderToStaticMarkup(
+      React.createElement(TuViPatternsPanel, { result: sampleChart, inputData: sampleInput, initialTab: 'patterns' })
+    );
+    assert.ok(patternsHtml.includes('Phân Tích Chuyên Sâu Đẩu Số'));
+    assert.ok(patternsHtml.includes('Cách Cục Đẩu Số'));
+    assert.ok(patternsHtml.includes('Thượng Cách'));
+    assert.ok(patternsHtml.includes('Cát Cách'));
+    assert.ok(patternsHtml.includes('Bình Hòa'));
+    assert.ok(patternsHtml.includes('Hung Cách / Lưu Ý'));
+    assert.ok(patternsHtml.includes('patterns-tabs-nav'));
+
+    // Tab 2: Lai Nhân Cung & Phi Tinh Tứ Hóa
+    const sihuaHtml = renderToStaticMarkup(
+      React.createElement(TuViPatternsPanel, { result: sampleChart, inputData: sampleInput, initialTab: 'sihua' })
+    );
+    assert.ok(sihuaHtml.includes('LAI NHÂN CUNG'));
+    assert.ok(sihuaHtml.includes('flying-sihua-table'));
+    assert.ok(sihuaHtml.includes('Hóa Lộc'));
+    assert.ok(sihuaHtml.includes('Hóa Quyền'));
+    assert.ok(sihuaHtml.includes('Hóa Khoa'));
+    assert.ok(sihuaHtml.includes('Hóa Kỵ'));
+    assert.ok(sihuaHtml.includes('Tự Hóa'));
+
+    // Tab 3: Thơ Cân Xương Đoán Số
+    const canLuongHtml = renderToStaticMarkup(
+      React.createElement(TuViPatternsPanel, { result: sampleChart, inputData: sampleInput, initialTab: 'canLuong' })
+    );
+    assert.ok(canLuongHtml.includes('CÂN XƯƠNG ĐOÁN SỐ'));
+    assert.ok(canLuongHtml.includes('Bài Thơ Hán Việt'));
+    assert.ok(canLuongHtml.includes('Luận Giải Chi Tiết Vận Mệnh'));
+    assert.ok(canLuongHtml.includes(sampleChart.canLuongStr));
+
+    // Also verify poemDichNghia rendering when supplied via ziweiMeta
+    const customPoemChart = {
+      ...sampleChart,
+      ziweiMeta: {
+        canLuongPoem: {
+          canLuongStr: '5 lượng 2 chỉ',
+          title: 'Phú Quý Song Toàn',
+          poemHanViet: 'Nhất thế hanh thông...',
+          poemDichNghia: 'Một đời thông suốt muôn sự thành...',
+          interpretation: 'Tài năng toàn diện...',
+        },
+      },
+    };
+    const customPoemHtml = renderToStaticMarkup(
+      React.createElement(TuViPatternsPanel, { result: customPoemChart, inputData: sampleInput, initialTab: 'canLuong' })
+    );
+    assert.ok(customPoemHtml.includes('Thơ Dịch Nghĩa'));
+    assert.ok(customPoemHtml.includes('Một đời thông suốt muôn sự thành...'));
+
+    // Tab 4: Thư Viện Cổ Thư & Thiên Kỷ
+    const classicsHtml = renderToStaticMarkup(
+      React.createElement(TuViPatternsPanel, { result: sampleChart, inputData: sampleInput, initialTab: 'classics' })
+    );
+    assert.ok(classicsHtml.includes('classics-search-input'));
+    assert.ok(classicsHtml.includes('classics-book-tabs'));
+    assert.ok(classicsHtml.includes('Tử Vi Đẩu Số Toàn Thư'));
+    assert.ok(classicsHtml.includes('Đẩu Số Cốt Tủy Phú'));
+    assert.ok(classicsHtml.includes('Thiên Kỷ Nghê Hải Hạ'));
+    assert.ok(classicsHtml.includes('classic-passage-card'));
+    assert.ok(classicsHtml.includes('Cổ Quyết / Hán Việt:'));
+    assert.ok(classicsHtml.includes('Dịch Nghĩa &amp; Luận Giải:') || classicsHtml.includes('Dịch Nghĩa & Luận Giải:'));
+
+    // 2. LasoChart with TimeNav (Bản Mệnh, Đại Hạn, Lưu Niên, Lưu Nguyệt)
+    const mingpanChartHtml = renderToStaticMarkup(
+      React.createElement(LasoChart, { result: sampleChart, inputData: sampleInput, initialYunxianMode: 'mingpan' })
+    );
+    assert.ok(mingpanChartHtml.includes('tuvi-timenav'));
+    assert.ok(mingpanChartHtml.includes('Bản Mệnh'));
+    assert.ok(mingpanChartHtml.includes('Đại Hạn (10 Năm)'));
+    assert.ok(mingpanChartHtml.includes('Lưu Niên (1 Năm)'));
+    assert.ok(mingpanChartHtml.includes('Lưu Nguyệt (Tháng)'));
+
+    const daxianChartHtml = renderToStaticMarkup(
+      React.createElement(LasoChart, { result: sampleChart, inputData: sampleInput, initialYunxianMode: 'daxian' })
+    );
+    assert.ok(daxianChartHtml.includes('daxian-subnav'));
+    assert.ok(daxianChartHtml.includes('Chọn Kỳ Đại Hạn:'));
+    assert.ok(daxianChartHtml.includes('daxian-chip'));
+
+    const liunianChartHtml = renderToStaticMarkup(
+      React.createElement(LasoChart, { result: sampleChart, inputData: sampleInput, initialYunxianMode: 'liunian' })
+    );
+    assert.ok(liunianChartHtml.includes('liunian-subnav'));
+    assert.ok(liunianChartHtml.includes('year-stepper'));
+
+    const liuyueChartHtml = renderToStaticMarkup(
+      React.createElement(LasoChart, { result: sampleChart, inputData: sampleInput, initialYunxianMode: 'liuyue' })
+    );
+    assert.ok(liuyueChartHtml.includes('liuyue-subnav'));
+    assert.ok(liuyueChartHtml.includes('liuyue-chip'));
+
+    // 3. BirthInputForm with FAMOUS_CHARTS, Chân Thái Dương Thời, and Cấu Hình Trường Phái
+    const birthFormHtml = renderToStaticMarkup(
+      React.createElement(BirthInputForm, {
+        onSubmit: () => {},
+        initialShowTrueSolar: true,
+        initialShowSchoolConfig: true,
+      })
+    );
+    assert.ok(birthFormHtml.includes('Chọn Nhanh Lá Số Mẫu / Danh Nhân'));
+    assert.ok(birthFormHtml.includes('famous-charts-strip'));
+    for (const famous of FAMOUS_CHARTS.slice(0, 5)) {
+      assert.ok(birthFormHtml.includes(famous.name), `FAMOUS_CHARTS should contain ${famous.name}`);
+    }
+    // Chân Thái Dương Thời section & controls
+    assert.ok(birthFormHtml.includes('Hiệu Chỉnh Giờ Mặt Trời Thật (Chân Thái Dương Thời)'));
+    assert.ok(birthFormHtml.includes('Tỉnh / Thành phố nơi sinh'));
+    assert.ok(birthFormHtml.includes('Kinh độ (°E)'));
+    assert.ok(birthFormHtml.includes('Chân Thái Dương'));
+
+    // Cấu Hình Trường Phái & Lịch Pháp section & controls
+    assert.ok(birthFormHtml.includes('Cấu Hình Trường Phái &amp; Lịch Pháp') || birthFormHtml.includes('Cấu Hình Trường Phái & Lịch Pháp'));
+    assert.ok(birthFormHtml.includes('Phân Đoạn Giờ Tý Sớm / Muộn (23:00–00:00)'));
+    assert.ok(birthFormHtml.includes('Chính Sách Tháng Nhuận'));
+    assert.ok(birthFormHtml.includes('Trường Phái Độ Sáng Sao (Miếu / Vượng / Đắc / Hãm)'));
+    assert.ok(birthFormHtml.includes('Trường Phái Tứ Hóa Can Canh'));
+
+    // 4. TuViGlossaryModal rendering deep star details
+    const starDetail = getStarDetail('Tử Vi');
+    assert.ok(starDetail, 'getStarDetail("Tử Vi") must return detail');
+    assert.equal(starDetail.name, 'Tử Vi');
+    assert.ok(starDetail.classicQuote, 'classicQuote must exist');
+    assert.ok(starDetail.niHaixiaQuote, 'niHaixiaQuote must exist');
+    assert.ok(starDetail.career, 'career must exist');
+    assert.ok(starDetail.health, 'health must exist');
+
+    const glossaryModalHtml = renderToStaticMarkup(
+      React.createElement(TuViGlossaryModal, { term: 'Tử Vi', onClose: () => {} })
+    );
+    assert.ok(glossaryModalHtml.includes('Tử Vi'));
+    assert.ok(glossaryModalHtml.includes('Chính Tinh'));
+    assert.ok(glossaryModalHtml.includes('Điển Tích &amp; Cổ Quyết Đẩu Số') || glossaryModalHtml.includes('Điển Tích & Cổ Quyết Đẩu Số'));
+    assert.ok(glossaryModalHtml.includes(starDetail.classicQuote.replace(/"/g, '&quot;')));
+    assert.ok(glossaryModalHtml.includes('Nghê Hải Hạ Tiên Sinh Giảng Trong 《Thiên Kỷ》'));
+    assert.ok(glossaryModalHtml.includes(starDetail.niHaixiaQuote.replace(/"/g, '&quot;')));
+    assert.ok(glossaryModalHtml.includes('Công danh &amp; Sự nghiệp') || glossaryModalHtml.includes('Công danh & Sự nghiệp'));
+    assert.ok(glossaryModalHtml.includes(starDetail.career));
+    assert.ok(glossaryModalHtml.includes('Sức khỏe &amp; Đông Y Nhân Kỷ') || glossaryModalHtml.includes('Sức khỏe & Đông Y Nhân Kỷ'));
+    assert.ok(glossaryModalHtml.includes(starDetail.health));
+  } finally {
+    await server.close();
+  }
 });

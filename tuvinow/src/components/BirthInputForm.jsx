@@ -1,5 +1,25 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { solarToLunar, validateLunarDate, validateSolarDate, getYearCanChi, GIO_SINH_OPTIONS, getMonthsInYear, getDaysInMonth, getYearOptions, getViewYearOptions } from '../utils/lunarConverter';
+import {
+  solarToLunar,
+  validateLunarDate,
+  validateSolarDate,
+  getYearCanChi,
+  GIO_SINH_OPTIONS,
+  getMonthsInYear,
+  getDaysInMonth,
+  getYearOptions,
+  getViewYearOptions,
+} from '../utils/lunarConverter';
+import {
+  VN_LOCATIONS,
+  calculateTrueSolarTime,
+  resolveZiweiDayOffset,
+  formatTrueSolarClock,
+  formatSignedMinutes,
+  DEFAULT_SCHOOL_CONFIG,
+  SCHOOL_OPTIONS,
+  FAMOUS_CHARTS,
+} from '../utils/tuViZiweiModule.js';
 
 export function buildBirthInputPayload({
   name,
@@ -10,37 +30,80 @@ export function buildBirthInputPayload({
   gender = 1,
   isLunar = false,
   viewYear = '',
+  schoolConfig,
+  clockHour,
+  clockMinute,
+  longitude,
+  locationName,
+  applyTrueSolar,
 }) {
   const trimmedName = (name || '').trim();
   if (!trimmedName) {
     throw new Error('Vui lòng nhập họ tên trước khi lập lá số!');
   }
 
+  let effectiveHourIndex = hourIndex;
+  let effectiveDay = day;
+  let effectiveMonth = month;
+  let effectiveYear = year;
+
+  if (
+    applyTrueSolar &&
+    !isLunar &&
+    clockHour !== undefined &&
+    clockMinute !== undefined &&
+    clockHour !== '' &&
+    clockMinute !== ''
+  ) {
+    try {
+      const calc = calculateTrueSolarTime({
+        year: Number(year),
+        month: Number(month),
+        day: Number(day),
+        clockHour: Number(clockHour),
+        clockMinute: Number(clockMinute),
+        longitude: longitude !== undefined && longitude !== '' ? Number(longitude) : undefined,
+      });
+      if (calc) {
+        effectiveHourIndex = calc.branch;
+        const dayOffset = resolveZiweiDayOffset(calc, schoolConfig?.lateZishi || 'next-day');
+        if (dayOffset !== 0) {
+          const date = new Date(year, month - 1, day + dayOffset);
+          effectiveYear = date.getFullYear();
+          effectiveMonth = date.getMonth() + 1;
+          effectiveDay = date.getDate();
+        }
+      }
+    } catch {
+      // Ignore calculation error and fallback
+    }
+  }
+
   let lunarData;
   if (isLunar) {
-    if (!validateLunarDate(year, month, day)) {
+    if (!validateLunarDate(effectiveYear, effectiveMonth, effectiveDay)) {
       throw new Error('Ngày âm lịch không tồn tại trong tháng đã chọn.');
     }
-    const yearCanIndex = ((year - 4) % 10 + 10) % 10;
-    const yearChiIndex = ((year - 4) % 12 + 12) % 12;
-    const [yearCanName, yearChiName] = getYearCanChi(year).split(' ');
+    const yearCanIndex = ((effectiveYear - 4) % 10 + 10) % 10;
+    const yearChiIndex = ((effectiveYear - 4) % 12 + 12) % 12;
+    const [yearCanName, yearChiName] = getYearCanChi(effectiveYear).split(' ');
     lunarData = {
-      lunarYear: year,
-      lunarMonth: month,
-      lunarDay: day,
+      lunarYear: effectiveYear,
+      lunarMonth: effectiveMonth,
+      lunarDay: effectiveDay,
       yearCanIndex,
       yearChiIndex,
       yearCanName,
       yearChiName,
       isLeap: false,
       solarDateStr: '(Nhập âm lịch)',
-      lunarDateStr: `${month}/${day}/${year} (Âm lịch)`,
+      lunarDateStr: `${effectiveMonth}/${effectiveDay}/${effectiveYear} (Âm lịch)`,
     };
   } else {
-    if (!validateSolarDate(year, month, day)) {
+    if (!validateSolarDate(effectiveYear, effectiveMonth, effectiveDay)) {
       throw new Error('Ngày dương lịch không tồn tại trong tháng đã chọn.');
     }
-    lunarData = solarToLunar(year, month, day);
+    lunarData = solarToLunar(effectiveYear, effectiveMonth, effectiveDay);
   }
 
   const annualYear = viewYear === '' || viewYear === undefined || viewYear === null ? undefined : Number(viewYear);
@@ -51,22 +114,31 @@ export function buildBirthInputPayload({
     throw new Error(`Năm xem lưu niên (${annualYear}) không thể trước năm sinh âm lịch (${lunarData.lunarYear}).`);
   }
 
+  const extra = {};
+  if (schoolConfig) extra.schoolConfig = schoolConfig;
+  if (clockHour !== undefined && clockHour !== '') extra.clockHour = clockHour;
+  if (clockMinute !== undefined && clockMinute !== '') extra.clockMinute = clockMinute;
+  if (longitude !== undefined && longitude !== '') extra.longitude = longitude;
+  if (locationName) extra.locationName = locationName;
+  if (applyTrueSolar !== undefined) extra.applyTrueSolar = applyTrueSolar;
+
   return {
     name: trimmedName,
     ...lunarData,
-    lunarHourIndex: hourIndex,
+    lunarHourIndex: effectiveHourIndex,
     gender,
     isLunar,
-    solarInput: isLunar ? null : { day, month, year },
+    solarInput: isLunar ? null : { day: effectiveDay, month: effectiveMonth, year: effectiveYear },
     ...(annualYear === undefined ? {} : {
       viewYear: annualYear,
       viewYearCanIndex: ((annualYear - 4) % 10 + 10) % 10,
       viewYearChiIndex: ((annualYear - 4) % 12 + 12) % 12,
     }),
+    ...extra,
   };
 }
 
-export default function BirthInputForm({ onSubmit }) {
+export default function BirthInputForm({ onSubmit, initialShowTrueSolar = false, initialShowSchoolConfig = false }) {
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState('');
   const [day, setDay] = useState(15);
@@ -78,11 +150,35 @@ export default function BirthInputForm({ onSubmit }) {
   const [viewYear, setViewYear] = useState('');
   const [formError, setFormError] = useState('');
 
+  // ☀️ Chân Thái Dương Thời State
+  const [showTrueSolar, setShowTrueSolar] = useState(initialShowTrueSolar);
+  const [locationId, setLocationId] = useState('vn-ha-noi');
+  const [clockHour, setClockHour] = useState('12');
+  const [clockMinute, setClockMinute] = useState('00');
+  const [customLongitude, setCustomLongitude] = useState('105.8542');
+  const [locationName, setLocationName] = useState('Hà Nội');
+  const [applyTrueSolar, setApplyTrueSolar] = useState(false);
+
+  // ⚙️ Cấu Hình Trường Phái State
+  const [showSchoolConfig, setShowSchoolConfig] = useState(initialShowSchoolConfig);
+  const [schoolConfig, setSchoolConfig] = useState({ ...DEFAULT_SCHOOL_CONFIG });
+
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const yearOptions = useMemo(() => getYearOptions(), []);
   const viewYearOptions = useMemo(() => getViewYearOptions(1920, 30), []);
   const monthOptions = useMemo(() => getMonthsInYear(), []);
   const dayOptions = useMemo(() => getDaysInMonth(isLunar, year, month), [isLunar, year, month]);
+
+  // Group locations by region
+  const locationsByRegion = useMemo(() => {
+    const groups = {};
+    for (const loc of VN_LOCATIONS) {
+      const reg = loc.region || 'Khác';
+      if (!groups[reg]) groups[reg] = [];
+      groups[reg].push(loc);
+    }
+    return groups;
+  }, []);
 
   useEffect(() => {
     const isValid = isLunar ? validateLunarDate(year, month, day) : validateSolarDate(year, month, day);
@@ -97,6 +193,70 @@ export default function BirthInputForm({ onSubmit }) {
     if (nameError && val.trim()) {
       setNameError('');
     }
+  };
+
+  // Chọn lá số mẫu / danh nhân
+  const handleSelectFamousChart = (chart) => {
+    setName(chart.name);
+    setNameError('');
+    setIsLunar(false);
+    setYear(chart.solarYear);
+    setMonth(chart.solarMonth);
+    setDay(chart.solarDay);
+    setHourIndex(chart.hourIndex);
+    setGender(chart.gender);
+    setViewYear('');
+    setFormError('');
+  };
+
+  // Thay đổi địa điểm nơi sinh
+  const handleLocationChange = (e) => {
+    const id = e.target.value;
+    setLocationId(id);
+    if (id === 'custom') {
+      setLocationName('Tùy chỉnh');
+      return;
+    }
+    const found = VN_LOCATIONS.find((l) => l.id === id);
+    if (found) {
+      setCustomLongitude(String(found.longitude));
+      setLocationName(found.name);
+    }
+  };
+
+  // Tính live preview Chân Thái Dương Thời
+  const solarCalculation = useMemo(() => {
+    if (isLunar || !year || !month || !day) return null;
+    const h = Number(clockHour);
+    const m = Number(clockMinute);
+    if (!Number.isInteger(h) || h < 0 || h > 23 || !Number.isInteger(m) || m < 0 || m > 59) return null;
+    const lon = customLongitude !== '' && Number.isFinite(Number(customLongitude)) ? Number(customLongitude) : 105.8542;
+    try {
+      return calculateTrueSolarTime({
+        year: Number(year),
+        month: Number(month),
+        day: Number(day),
+        clockHour: h,
+        clockMinute: m,
+        longitude: lon,
+      });
+    } catch {
+      return null;
+    }
+  }, [isLunar, year, month, day, clockHour, clockMinute, customLongitude]);
+
+  const handleApplySolarToForm = () => {
+    if (solarCalculation) {
+      setHourIndex(solarCalculation.branch);
+      setApplyTrueSolar(true);
+    }
+  };
+
+  const handleSchoolConfigChange = (key, value) => {
+    setSchoolConfig((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -121,6 +281,12 @@ export default function BirthInputForm({ onSubmit }) {
         gender,
         isLunar,
         viewYear,
+        schoolConfig,
+        clockHour: showTrueSolar ? clockHour : undefined,
+        clockMinute: showTrueSolar ? clockMinute : undefined,
+        longitude: showTrueSolar ? customLongitude : undefined,
+        locationName: showTrueSolar ? locationName : undefined,
+        applyTrueSolar: showTrueSolar ? applyTrueSolar : false,
       });
       onSubmit(payload);
     } catch (error) {
@@ -132,6 +298,27 @@ export default function BirthInputForm({ onSubmit }) {
 
   return (
     <div className="form-container">
+      {/* Chọn Nhanh Lá Số Mẫu / Danh Nhân */}
+      <div className="famous-charts-strip" aria-label="Chọn nhanh lá số mẫu hoặc danh nhân">
+        <div className="famous-charts-label">
+          <span>🌟 Chọn Nhanh Lá Số Mẫu / Danh Nhân:</span>
+        </div>
+        <div className="famous-charts-scroll">
+          {FAMOUS_CHARTS.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className="famous-chart-chip"
+              onClick={() => handleSelectFamousChart(c)}
+              title={`${c.subtitle} · ${c.solarDay}/${c.solarMonth}/${c.solarYear}`}
+            >
+              <span className="famous-chart-name">{c.name}</span>
+              <span className="famous-chart-sub">({c.category})</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <form className="form-card" onSubmit={handleSubmit}>
         <h2 className="form-title">🔮 Lập Lá Số Tử Vi</h2>
         <p className="form-subtitle">Nhập thông tin ngày giờ sinh để an lá số Tử Vi Đẩu{'\u00A0'}Số</p>
@@ -151,15 +338,17 @@ export default function BirthInputForm({ onSubmit }) {
             autoComplete="name"
           />
           {nameError && (
-            <div style={{
-              color: '#e53e3e',
-              fontSize: '0.78rem',
-              marginTop: 5,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              fontWeight: 500,
-            }}>
+            <div
+              style={{
+                color: '#e53e3e',
+                fontSize: '0.78rem',
+                marginTop: 5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                fontWeight: 500,
+              }}
+            >
               <span>⚠️</span> {nameError}
             </div>
           )}
@@ -171,7 +360,7 @@ export default function BirthInputForm({ onSubmit }) {
             className={`toggle-label ${!isLunar ? 'active' : ''}`}
             onClick={() => setIsLunar(false)}
           >
-            ☀️ Dương lịch
+            ☀️ Dương Lịch
           </span>
           <div
             className={`toggle-switch ${isLunar ? 'active' : ''}`}
@@ -184,14 +373,14 @@ export default function BirthInputForm({ onSubmit }) {
             className={`toggle-label ${isLunar ? 'active' : ''}`}
             onClick={() => setIsLunar(true)}
           >
-            🌙 Âm lịch
+            🌙 Âm Lịch
           </span>
         </div>
 
         {/* Ngày Sinh */}
         <div className="form-group">
           <label className="form-label">
-            Ngày sinh {isLunar ? '(Âm lịch)' : '(Dương lịch)'}
+            Ngày sinh {isLunar ? '(Âm Lịch)' : '(Dương Lịch)'}
           </label>
           <div className="form-row form-row-3">
             <select
@@ -235,7 +424,14 @@ export default function BirthInputForm({ onSubmit }) {
 
         {/* Giờ Sinh */}
         <div className="form-group">
-          <label className="form-label">Giờ sinh (12 Canh giờ)</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <label className="form-label" style={{ margin: 0 }}>Giờ sinh (12 Canh Giờ)</label>
+            {applyTrueSolar && solarCalculation && (
+              <span className="solar-applied-pill">
+                ☀️ Đang áp dụng Chân Thái Dương: Canh {solarCalculation.branchName}
+              </span>
+            )}
+          </div>
           <select
             className="form-select"
             value={hourIndex}
@@ -277,6 +473,7 @@ export default function BirthInputForm({ onSubmit }) {
           </div>
         </div>
 
+        {/* Năm Xem Lưu Niên */}
         <div className="form-group">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
             <label className="form-label" htmlFor="view-year" style={{ margin: 0 }}>
@@ -323,6 +520,213 @@ export default function BirthInputForm({ onSubmit }) {
             ))}
           </select>
         </div>
+
+        {/* ☀️ Collapsible Section: Chân Thái Dương Thời */}
+        <div className="collapsible-form-section">
+          <button
+            type="button"
+            className="collapsible-header"
+            onClick={() => setShowTrueSolar((prev) => !prev)}
+            aria-expanded={showTrueSolar}
+          >
+            <span>☀️ Hiệu Chỉnh Giờ Mặt Trời Thật (Chân Thái Dương Thời)</span>
+            <span className="collapsible-arrow">{showTrueSolar ? '▲' : '▼'}</span>
+          </button>
+
+          {showTrueSolar && (
+            <div className="collapsible-content">
+              <p className="collapsible-tip">
+                Hiệu chỉnh dựa trên Kinh độ nơi sinh và Phương trình thời gian (Equation of Time) theo chuẩn thiên văn học.
+              </p>
+
+              <div className="form-group">
+                <label className="form-label">Tỉnh / Thành phố nơi sinh</label>
+                <select
+                  className="form-select"
+                  value={locationId}
+                  onChange={handleLocationChange}
+                >
+                  {Object.entries(locationsByRegion).map(([region, locs]) => (
+                    <optgroup key={region} label={region}>
+                      {locs.map((loc) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.name} ({loc.longitude}°E)
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                  <option value="custom">-- Tùy chỉnh kinh độ riêng --</option>
+                </select>
+              </div>
+
+              <div className="form-row form-row-3">
+                <div className="form-group">
+                  <label className="form-label">Giờ đồng hồ (0–23)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="23"
+                    className="form-input"
+                    value={clockHour}
+                    onChange={(e) => setClockHour(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Phút đồng hồ (0–59)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    className="form-input"
+                    value={clockMinute}
+                    onChange={(e) => setClockMinute(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Kinh độ (°E)</label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    className="form-input"
+                    value={customLongitude}
+                    onChange={(e) => {
+                      setCustomLongitude(e.target.value);
+                      setLocationId('custom');
+                    }}
+                  />
+                </div>
+              </div>
+
+              {solarCalculation && (
+                <div className="solar-preview-card">
+                  <div className="solar-preview-header">
+                    <strong>Kết Quả Tính Toán Chân Thái Dương</strong>
+                    <span className="solar-clock-badge">
+                      {formatTrueSolarClock(solarCalculation)}
+                    </span>
+                  </div>
+                  <div className="solar-preview-grid">
+                    <div>
+                      <span className="label">Lệch kinh độ:</span>{' '}
+                      <strong>{formatSignedMinutes(solarCalculation.longitudeCorrectionMinutes)} phút</strong>
+                    </div>
+                    <div>
+                      <span className="label">Phương trình thời gian (EoT):</span>{' '}
+                      <strong>{formatSignedMinutes(solarCalculation.equationOfTimeMinutes)} phút</strong>
+                    </div>
+                    <div>
+                      <span className="label">Tổng hiệu chỉnh:</span>{' '}
+                      <strong>{formatSignedMinutes(solarCalculation.totalCorrectionMinutes)} phút</strong>
+                    </div>
+                    <div>
+                      <span className="label">Canh giờ quy đổi:</span>{' '}
+                      <strong className="gold">Giờ {solarCalculation.branchName}</strong>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 10, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn-apply-solar"
+                      onClick={handleApplySolarToForm}
+                    >
+                      ✓ Áp Dụng Giờ {solarCalculation.branchName} Vào Giờ Sinh
+                    </button>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={applyTrueSolar}
+                        onChange={(e) => setApplyTrueSolar(e.target.checked)}
+                      />
+                      <span>Tự động áp dụng Chân Thái Dương khi lập lá số</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ⚙️ Collapsible Section: Cấu Hình Trường Phái & Lịch Pháp */}
+        <div className="collapsible-form-section">
+          <button
+            type="button"
+            className="collapsible-header"
+            onClick={() => setShowSchoolConfig((prev) => !prev)}
+            aria-expanded={showSchoolConfig}
+          >
+            <span>⚙️ Cấu Hình Trường Phái & Lịch Pháp</span>
+            <span className="collapsible-arrow">{showSchoolConfig ? '▲' : '▼'}</span>
+          </button>
+
+          {showSchoolConfig && (
+            <div className="collapsible-content">
+              {/* Phân đoạn Giờ Tý */}
+              <div className="form-group">
+                <label className="form-label">Phân Đoạn Giờ Tý Sớm / Muộn (23:00–00:00)</label>
+                <select
+                  className="form-select"
+                  value={schoolConfig.lateZishi}
+                  onChange={(e) => handleSchoolConfigChange('lateZishi', e.target.value)}
+                >
+                  {SCHOOL_OPTIONS.lateZishi.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label} — {opt.desc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Chính sách Tháng Nhuận */}
+              <div className="form-group">
+                <label className="form-label">Chính Sách Tháng Nhuận</label>
+                <select
+                  className="form-select"
+                  value={schoolConfig.leapMonth}
+                  onChange={(e) => handleSchoolConfigChange('leapMonth', e.target.value)}
+                >
+                  {SCHOOL_OPTIONS.leapMonth.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label} — {opt.desc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Trường phái Độ sáng sao */}
+              <div className="form-group">
+                <label className="form-label">Trường Phái Độ Sáng Sao (Miếu / Vượng / Đắc / Hãm)</label>
+                <select
+                  className="form-select"
+                  value={schoolConfig.brightnessSchool}
+                  onChange={(e) => handleSchoolConfigChange('brightnessSchool', e.target.value)}
+                >
+                  {SCHOOL_OPTIONS.brightnessSchool.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label} — {opt.desc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tứ Hóa Can Canh */}
+              <div className="form-group">
+                <label className="form-label">Trường Phái Tứ Hóa Can Canh</label>
+                <select
+                  className="form-select"
+                  value={schoolConfig.gengYearSihua}
+                  onChange={(e) => handleSchoolConfigChange('gengYearSihua', e.target.value)}
+                >
+                  {SCHOOL_OPTIONS.gengYearSihua.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label} — {opt.desc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
         {formError && <p role="alert" className="form-error">{formError}</p>}
         <button
           type="submit"

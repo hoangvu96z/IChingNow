@@ -1,3 +1,9 @@
+import {
+  detectPatterns,
+  getCanLuongPoem,
+  buildChartFlyingSihua,
+} from './tuViZiweiModule.js';
+
 const HOURS = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
 export const TOPICS = { overview: 'Tổng quan', career: 'Công việc & tài chính', love: 'Tình cảm & gia đình', custom: 'Câu hỏi riêng' };
 
@@ -5,11 +11,11 @@ const palaceName = p => p ? `${p.chucNang} tại ${p.chiName}` : 'Chưa có dữ
 const show = value => value === undefined || value === null || value === '' ? 'Chưa có dữ liệu' : value;
 
 function exportContext(result) {
-  const palaces = result.palates;
-  const annualStars = palaces.flatMap(p => p.phuTinh.filter(s => s.startsWith('L.')));
+  const palaces = result.palates || [];
+  const annualStars = palaces.flatMap(p => (p.phuTinh || []).filter(s => s.startsWith('L.')));
   const activeDecade = Number.isInteger(result.tuoiAm)
     ? palaces.find(p => p.daiHan <= result.tuoiAm && result.tuoiAm < p.daiHan + 10) : null;
-  return [
+  const baseLines = [
     '\nBỐI CẢNH VÀ PHẠM VI DỮ LIỆU:',
     `Phiên bản an số của lá số: ${result.engineVersion || 'Không ghi nhận (lá số lịch sử)'}. Đây là kết quả đã tính, không yêu cầu an lại.`,
     `Thân cư: ${palaceName(palaces.find(p => p.isThan || p.chiName === result.thanCung))}`,
@@ -26,8 +32,49 @@ function exportContext(result) {
       return `${palaceName(p)}: hai cung tam hợp = ${at(4)} / ${at(8)}; xung chiếu = ${at(6)}; hai cung giáp = ${at(11)} / ${at(1)}.`;
     }),
     '\nPHÂN BỐ TỨ HÓA GỐC VÀ LƯU NIÊN:',
-    ...palaces.flatMap(p => p.phuTinh.filter(s => s.startsWith('Hóa ') || s.startsWith('L.Hóa ')).map(s => `${s}: ${palaceName(p)}`)),
-  ].join('\n');
+    ...palaces.flatMap(p => (p.phuTinh || []).filter(s => s.startsWith('Hóa ') || s.startsWith('L.Hóa ')).map(s => `${s}: ${palaceName(p)}`)),
+  ];
+
+  let extraPatterns = [];
+  try {
+    if (palaces.length === 12) {
+      const patterns = detectPatterns(result);
+      if (patterns?.length > 0) {
+        extraPatterns = [
+          '\nCÁCH CỤC ĐẨU SỐ ĐƯỢC NHẬN DIỆN:',
+          ...patterns.map(p => `- ${p.name} (${p.levelLabel || p.level}): ${p.description}`),
+        ];
+      }
+    }
+  } catch {}
+
+  let extraSihua = [];
+  try {
+    if (palaces.length === 12) {
+      const flying = buildChartFlyingSihua(result);
+      if (flying?.laiNhanCung) {
+        extraSihua.push(`\nLAI NHÂN CUNG: Cung ${flying.laiNhanCung.chucNang} (${flying.laiNhanCung.canName} ${flying.laiNhanCung.chiName}). Nơi phát khởi tiền duyên nghiệp quả.`);
+      }
+      const selfSihuaList = (flying?.palaces || []).flatMap(p =>
+        (p.selfSihua || []).map(s => `Cung ${p.chucNang} tự hóa ${s.siHua.replace('Hóa ', '')} (${s.starName})`)
+      );
+      if (selfSihuaList.length > 0) {
+        extraSihua.push('TỰ HÓA NỘI TẠI:\n' + selfSihuaList.map(s => `- ${s}`).join('\n'));
+      }
+    }
+  } catch {}
+
+  let extraPoem = [];
+  try {
+    if (result.canLuongStr) {
+      const poem = getCanLuongPoem(result.canLuongStr);
+      if (poem?.title) {
+        extraPoem.push(`\nTHƠ CÂN XƯƠNG ĐOÁN SỐ VIÊN THIÊN CƯƠNG: ${poem.title}. Luận giải: ${poem.interpretation}`);
+      }
+    }
+  } catch {}
+
+  return [...baseLines, ...extraPatterns, ...extraSihua, ...extraPoem].join('\n');
 }
 
 export function buildTuViText(result, input) {
@@ -41,17 +88,17 @@ export function buildTuViText(result, input) {
     `Âm dương / giới tính: ${result.amDuongNamNu}; ${result.isThuan ? 'Thuận' : 'Nghịch'} hành`,
     `Can chi năm: ${result.canChiNam}; Bản mệnh: ${result.banMenhNapAm}; Cục: ${result.cucName}`,
     `Mệnh tại ${result.menhCung}; Thân tại ${result.thanCung}; Chủ Mệnh: ${result.chuMenh}; Chủ Thân: ${result.chuThan}`,
-    `Tuần: ${result.tuanCung.join(', ')}; Triệt: ${result.trietCung.join(', ')}`,
+    `Tuần: ${(result.tuanCung || []).join(', ')}; Triệt: ${(result.trietCung || []).join(', ')}`,
     ...(result.canLuongStr ? [`Cân lượng: ${result.canLuongStr}`] : []),
     ...(result.tuoiAm != null ? [`Tuổi âm năm xem: ${result.tuoiAm}; Tiểu hạn tại ${result.tieuHanCung}`] : []),
     ...(result.viewYearCanChi ? [`Lưu niên: ${result.viewYear || ''} ${result.viewYearCanChi}. L. là sao lưu niên; LN. là cung lưu niên đại hạn. Dùng đúng các mục được liệt kê.`] : []),
     'Ký hiệu sao: M = Miếu, V = Vượng, Đ = Đắc, B = Bình, H = Hãm.',
     '\nCHI TIẾT 12 CUNG:',
   ];
-  for (const palace of result.palates) {
+  for (const palace of (result.palates || [])) {
     lines.push(`\n${palace.chucNang} — ${palace.canName} ${palace.chiName}${palace.isMenh ? ' [Mệnh]' : ''}${palace.isThan ? ' [Thân]' : ''}`,
-      `Chính tinh: ${palace.chinhTinh.join(', ') || 'Vô chính diệu'}`,
-      `Phụ tinh: ${palace.phuTinh.join(', ') || 'Không có'}`,
+      `Chính tinh: ${(palace.chinhTinh || []).join(', ') || 'Vô chính diệu'}`,
+      `Phụ tinh: ${(palace.phuTinh || []).join(', ') || 'Không có'}`,
       `Tràng Sinh: ${palace.trangSinh}; Đại hạn: ${palace.daiHan}–${palace.daiHan + 9} tuổi`,
       `Tuần: ${palace.isTuan ? 'Có' : 'Không'}; Triệt: ${palace.isTriet ? 'Có' : 'Không'}`,
       ...(palace.isTieuHan ? ['Cung Tiểu hạn của năm xem'] : []),

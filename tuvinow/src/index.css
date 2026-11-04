@@ -2183,3 +2183,1238 @@ body {
     font-size: 0.78rem;
   }
 }
+
+/* ============================================================================
+ * TuVi Now — Advanced ZiWei UI Upgrade Styles
+ * ============================================================================ */
+
+/* ─── Famous Charts Strip ─────────────────────────────────────────────────── */
+.famous-charts-strip {
+  width: 100%;
+  max-width: 550px;
+  margin: 0 auto 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.famous-charts-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.famous-charts-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.famous-chart-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+}
+
+.famous-chart-chip:hover {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+  transform: translateY(-1px);
+}
+
+.famous-chart-name {
+  font-weight: 600;
+}
+
+.famous-chart-sub {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+/* ─── Collapsible Form Sections ───────────────────────────────────────────── */
+.collapsible-form-section {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.collapsible-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.collapsible-header:hover {
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+}
+
+.collapsible-arrow {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.collapsible-content {
+  padding: 14px;
+  border-top: 1px solid var(--border-subtle);
+  animation: fadeIn 0.2s ease;
+}
+
+.collapsible-tip {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.solar-preview-card {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+}
+
+.solar-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.solar-clock-badge {
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: var(--accent-gold);
+  color: #fff;
+  border-radius: 4px;
+}
+
+.solar-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.solar-preview-grid .label {
+  color: var(--text-secondary);
+}
+
+.btn-apply-solar {
+  padding: 6px 12px;
+  background: var(--accent-gold);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-apply-solar:hover {
+  opacity: 0.9;
+}
+
+.solar-applied-pill {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold-bright);
+  border: 1px solid var(--accent-gold);
+  font-weight: 600;
+}
+
+/* ─── TimeNav: Thanh Điều Hướng Vận Hạn Động ────────────────────────────────── */
+.tuvi-timenav {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto 10px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.timenav-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.timenav-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.timenav-tab:hover {
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.timenav-tab.is-active {
+  background: var(--accent-gold);
+  color: #ffffff;
+  border-color: var(--accent-gold-bright);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+.timenav-subnav {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.daxian-chips-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.daxian-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.daxian-chip {
+  padding: 4px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.daxian-chip:hover {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+}
+
+.daxian-chip.is-active {
+  background: var(--accent-purple);
+  color: #ffffff;
+  border-color: var(--accent-purple);
+}
+
+.timenav-sihua-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.sihua-strip-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sihua-strip-item {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.sihua-strip-item.loc {
+  background: rgba(21, 128, 61, 0.15);
+  color: var(--hoa-loc);
+}
+.sihua-strip-item.quyen {
+  background: rgba(185, 28, 28, 0.15);
+  color: var(--hoa-quyen);
+}
+.sihua-strip-item.khoa {
+  background: rgba(29, 78, 216, 0.15);
+  color: var(--hoa-khoa);
+}
+.sihua-strip-item.ky {
+  background: rgba(71, 85, 105, 0.15);
+  color: var(--hoa-ky);
+}
+
+/* Year Stepper in Lưu Niên */
+.year-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 4px 0;
+}
+
+.year-step-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-gold);
+  background: var(--bg-card);
+  color: var(--accent-gold);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.year-step-btn:hover {
+  background: var(--accent-gold);
+  color: #ffffff;
+}
+
+.year-stepper-current {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.year-stepper-current .year-number {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.year-stepper-current .year-canchi {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Lưu Nguyệt Chips */
+.liuyue-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.liuyue-chip {
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.liuyue-chip:hover {
+  border-color: var(--accent-cyan);
+}
+
+.liuyue-chip.is-active {
+  background: var(--accent-cyan);
+  color: #ffffff;
+  border-color: var(--accent-cyan);
+}
+
+/* ─── Tam Phương Tứ Chính Highlights on Palace Cards ───────────────────────── */
+.palace-card {
+  cursor: pointer !important;
+}
+
+.palace-card.is-ban-cung {
+  box-shadow: inset 0 0 0 3px #b45309 !important;
+  background: rgba(180, 83, 9, 0.05);
+}
+
+.palace-card.is-xung-chieu {
+  box-shadow: inset 0 0 0 2.5px #dc2626 !important;
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.palace-card.is-tam-hop {
+  box-shadow: inset 0 0 0 2.5px #2563eb !important;
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.palace-card.is-giap-cung {
+  box-shadow: inset 0 0 0 2px #7c3aed !important;
+  background: rgba(124, 58, 237, 0.03);
+}
+
+.san-fang-tag {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.san-fang-tag.tag-ban-cung {
+  background: #b45309;
+  color: #ffffff;
+}
+.san-fang-tag.tag-xung-chieu {
+  background: #dc2626;
+  color: #ffffff;
+}
+.san-fang-tag.tag-tam-hop {
+  background: #2563eb;
+  color: #ffffff;
+}
+.san-fang-tag.tag-giap-cung {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+/* Rotated Palace Badge */
+.rotated-palace-badge {
+  font-size: 0.72rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--accent-purple-dim);
+  color: var(--accent-purple);
+  border: 1px solid var(--accent-purple);
+  font-weight: 700;
+}
+
+/* School Star Brightness Tag */
+.school-brightness-tag {
+  font-size: 0.68rem;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.school-brightness-tag.is-cat {
+  background: rgba(21, 128, 61, 0.15);
+  color: var(--star-dac);
+}
+.school-brightness-tag.is-ham {
+  background: rgba(185, 28, 28, 0.15);
+  color: var(--star-ham);
+}
+
+/* Vô Chính Diệu note */
+.palace-vcd-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2px 0;
+}
+
+.vcd-borrowed-text {
+  font-size: 0.72rem;
+  color: var(--accent-cyan);
+}
+
+/* Active Yunxian Sihua Pills */
+.yunxian-hoa-pill {
+  font-size: 0.68rem !important;
+  border-style: dashed !important;
+}
+
+/* Thập Nhị Thần Strip */
+.palace-shiershen-strip {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.shiershen-tag {
+  font-size: 0.68rem;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.shiershen-tag.boshi {
+  background: rgba(15, 118, 110, 0.1);
+  color: #0f766e;
+}
+.shiershen-tag.jiangqian {
+  background: rgba(120, 53, 15, 0.1);
+  color: #78350f;
+}
+
+/* Tự Hóa & Lai Nhân Badges */
+.mini-badge.lai-nhan {
+  background: linear-gradient(135deg, #b45309, #d97706);
+  color: #ffffff;
+}
+
+.mini-badge.tu-hoa {
+  border: 1px solid currentColor;
+}
+
+/* Center Selected Palace Inspection */
+.center-selected-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.selected-palace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid var(--border-gold);
+  padding-bottom: 4px;
+}
+
+.selected-palace-title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.selected-palace-canchi {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-left: 6px;
+}
+
+.btn-clear-selection {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.btn-clear-selection:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-gold);
+}
+
+.sanfang-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8rem;
+}
+
+.sanfang-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sf-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #ffffff;
+}
+
+.flying-sihua-box {
+  background: var(--bg-secondary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.flying-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+
+.flying-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  font-size: 0.78rem;
+}
+
+.flying-cell {
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.flying-cell.loc { background: rgba(21, 128, 61, 0.08); }
+.flying-cell.quyen { background: rgba(185, 28, 28, 0.08); }
+.flying-cell.khoa { background: rgba(29, 78, 216, 0.08); }
+.flying-cell.ky { background: rgba(71, 85, 105, 0.08); }
+
+.flying-target {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.center-vcd-note {
+  font-size: 0.78rem;
+  color: var(--accent-cyan);
+  font-style: italic;
+  padding: 3px 0;
+}
+
+.center-info-row.mini {
+  font-size: 0.78rem;
+  gap: 4px;
+}
+
+/* ─── TuViPatternsPanel Component ─────────────────────────────────────────── */
+.tuvi-patterns-panel {
+  width: 98%;
+  max-width: 1200px;
+  margin: 0 auto var(--gap-lg);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.patterns-panel-header {
+  margin-bottom: 16px;
+}
+
+.patterns-panel-title {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.patterns-panel-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.patterns-tabs-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  border-bottom: 2px solid var(--border-subtle);
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+}
+
+.patterns-tab-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.patterns-tab-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.patterns-tab-btn.is-active {
+  background: var(--accent-gold);
+  color: #ffffff;
+  border-color: var(--accent-gold-bright);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Pattern Filter Chips */
+.pattern-filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.p-filter-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.p-filter-chip:hover {
+  border-color: var(--accent-gold);
+}
+
+.p-filter-chip.active {
+  background: var(--accent-gold);
+  color: #ffffff;
+  border-color: var(--accent-gold);
+}
+
+.pattern-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.pattern-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pattern-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+
+.pattern-card.level-excellent {
+  border-left: 4px solid #b45309;
+}
+.pattern-card.level-good {
+  border-left: 4px solid #15803d;
+}
+.pattern-card.level-neutral {
+  border-left: 4px solid #1d4ed8;
+}
+.pattern-card.level-caution {
+  border-left: 4px solid #b91c1c;
+}
+
+.pattern-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.pattern-name {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.pattern-name-zh {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.pattern-palaces {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.pattern-level-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.pattern-level-badge.level-excellent {
+  background: rgba(180, 83, 9, 0.15);
+  color: #b45309;
+}
+.pattern-level-badge.level-good {
+  background: rgba(21, 128, 61, 0.15);
+  color: #15803d;
+}
+.pattern-level-badge.level-neutral {
+  background: rgba(29, 78, 216, 0.15);
+  color: #1d4ed8;
+}
+.pattern-level-badge.level-caution {
+  background: rgba(185, 28, 28, 0.15);
+  color: #b91c1c;
+}
+
+.pattern-desc {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+.pattern-conditions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  background: var(--bg-secondary);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.condition-row ul {
+  padding-left: 18px;
+  margin-top: 3px;
+}
+
+.condition-row.required strong { color: var(--star-dac); }
+.condition-row.bonus strong { color: var(--accent-gold); }
+.condition-row.breaking strong { color: var(--star-ham); }
+
+.pattern-source {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: auto;
+}
+
+.patterns-empty-notice {
+  padding: 30px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Lai Nhân Banner */
+.lai-nhan-banner {
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.08), rgba(88, 28, 135, 0.06));
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.lai-nhan-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.lai-nhan-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--accent-gold);
+  color: #ffffff;
+}
+
+.lai-nhan-palace {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.lai-nhan-desc {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+/* Flying Sihua 12 Palaces Table */
+.flying-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.flying-sihua-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  text-align: left;
+}
+
+.flying-sihua-table th {
+  background: var(--bg-secondary);
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.flying-sihua-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.flight-cell.loc { color: var(--hoa-loc); font-weight: 600; }
+.flight-cell.quyen { color: var(--hoa-quyen); font-weight: 600; }
+.flight-cell.khoa { color: var(--hoa-khoa); font-weight: 600; }
+.flight-cell.ky { color: var(--hoa-ky); font-weight: 600; }
+
+.target-pill {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: normal;
+}
+
+.self-sihua-pill {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(180, 83, 9, 0.15);
+  color: #b45309;
+  border: 1px solid var(--border-gold);
+}
+
+/* Cân Lượng Card */
+.can-luong-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.can-luong-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid var(--border-gold);
+  padding-bottom: 10px;
+}
+
+.can-luong-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.can-luong-weight {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.can-luong-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.can-luong-poem-box {
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.can-luong-poem-box.han-viet {
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--border-gold);
+}
+
+.can-luong-poem-box.dich-nghia {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.box-label {
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-bottom: 6px;
+}
+
+.poem-text {
+  font-family: inherit;
+  white-space: pre-line;
+  font-style: italic;
+  color: var(--text-primary);
+}
+
+.can-luong-interp-box {
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.interp-text {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* Thư Viện Cổ Thư */
+.classics-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.classics-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.classics-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.classics-book-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.classics-book-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.classics-book-tab.active {
+  background: var(--accent-gold);
+  color: #ffffff;
+  border-color: var(--accent-gold);
+}
+
+.classics-passages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.classic-passage-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.passage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.passage-title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+}
+
+.passage-title-zh {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.passage-book-tag {
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.passage-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.passage-quote {
+  font-family: inherit;
+  white-space: pre-line;
+  font-style: italic;
+  padding: 10px 12px;
+  background: var(--accent-gold-dim);
+  border-left: 3px solid var(--accent-gold);
+  border-radius: 4px;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+}
+
+.passage-text,
+.passage-commentary-text {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.passage-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.passage-tag {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ─── Hợp Hôn Page Additions ──────────────────────────────────────────────── */
+.hh-synastry-card,
+.hh-heming-card {
+  margin-top: 16px;
+}
+
+.hh-synastry-subtitle,
+.hh-heming-methodology {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.hh-synastry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hh-synastry-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.hh-synastry-item.auspicious {
+  background: rgba(21, 128, 61, 0.08);
+  border-left: 3px solid var(--hoa-loc);
+}
+
+.hh-synastry-item.challenging {
+  background: rgba(185, 28, 28, 0.08);
+  border-left: 3px solid var(--hoa-quyen);
+}
+
+.hh-synastry-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.hh-synastry-item.auspicious .hh-synastry-badge {
+  background: rgba(21, 128, 61, 0.2);
+  color: var(--hoa-loc);
+}
+.hh-synastry-item.challenging .hh-synastry-badge {
+  background: rgba(185, 28, 28, 0.2);
+  color: var(--hoa-quyen);
+}
+
+.hh-fuqi-quotes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.hh-fuqi-quote-box {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.hh-fuqi-quote-box strong {
+  color: var(--accent-gold);
+}
+
+.hh-fuqi-quote-box p {
+  font-style: italic;
+  margin: 4px 0 6px;
+  color: var(--text-primary);
+}
+
+.hh-fuqi-quote-box .advice {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
