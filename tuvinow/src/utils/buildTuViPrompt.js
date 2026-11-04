@@ -11,6 +11,8 @@ import {
   DIA_CHI,
 } from './tuViZiweiModule.js';
 import { anLaSoTuVi } from './tuViEngine.js';
+import { buildChartStarEvaluation } from './tuViStarRating.js';
+import { luanSoTuViToanDien } from './tuViInterpretationV5.js';
 
 export { computeZiweiMeta };
 
@@ -20,6 +22,17 @@ export const TOPICS = {
   career: 'Công việc & tài chính',
   love: 'Tình cảm & gia đình',
   custom: 'Câu hỏi riêng',
+};
+
+export const PROMPT_STYLES = {
+  concise: 'Tổng quát & Trọng tâm (Khuyên dùng)',
+  topic_focused: 'Xoáy sâu Chủ đề & Vận hạn đang chọn',
+  full_12_palaces: 'Phân tích chi tiết cả 12 cung',
+};
+
+export const DEFAULT_EXPORT_OPTIONS = {
+  includeZiweiEngine: true,
+  promptStyle: 'concise',
 };
 
 const palaceName = (p) => (p ? `${p.chucNang} tại ${p.chiName}` : 'Chưa có dữ liệu');
@@ -161,7 +174,16 @@ function buildSolarAndSchoolSection(input, _result) {
   return parts.join('\n');
 }
 
-function exportContext(result, input = {}, yunxianState = null) {
+function stripMdFormatting(text = '') {
+  return String(text || '')
+    .replace(/\*\*/g, '')
+    .replace(/\n+/g, ' | ')
+    .replace(/•\s*/g, '')
+    .trim();
+}
+
+function exportContext(result, input = {}, yunxianState = null, exportOptions = {}) {
+  const includeZiweiEngine = exportOptions?.includeZiweiEngine !== false;
   const palaces = result.palates || [];
   const annualStars = palaces.flatMap((p) => (p.phuTinh || []).filter((s) => s.startsWith('L.')));
   const activeDecade = Number.isInteger(result.tuoiAm)
@@ -186,7 +208,7 @@ function exportContext(result, input = {}, yunxianState = null) {
     ? `Có dữ liệu vận hạn tháng: Lưu Nguyệt Tháng ${yunxianState.lunarMonth || 1} Âm Lịch.`
     : 'Không có dữ liệu hạn theo tháng/ngày. Không tự biến đại hạn, sao lưu niên hoặc cung LN. thành dự đoán ngày/tháng cụ thể.';
 
-  const resolvedPoem = result.canLuongStr ? getCanLuongPoem(result.canLuongStr) : null;
+  const resolvedPoem = includeZiweiEngine && result.canLuongStr ? getCanLuongPoem(result.canLuongStr) : null;
   const canLuongContextLine = resolvedPoem
     ? `Cân lượng: ${result.canLuongStr} (${resolvedPoem.tier || resolvedPoem.title}) — Đã kèm nguyên văn bài thơ và luận giải Cân Xương Đoán Số bên dưới.`
     : `Cân lượng: ${result.canLuongStr || 'Chưa có dữ liệu'}; không kèm bài thơ hay quy tắc giải nghĩa cân lượng.`;
@@ -211,119 +233,178 @@ function exportContext(result, input = {}, yunxianState = null) {
     ...palaces.flatMap((p) => (p.phuTinh || []).filter((s) => s.startsWith('Hóa ') || s.startsWith('L.Hóa ')).map((s) => `${s}: ${palaceName(p)}`)),
   ];
 
+  // 0. Kết quả Đánh giá chung (1-5 sao, 6 phương diện) & Luận đoán nền tảng từ Engine ZiWei mới (v6 & v12)
+  let extraEngineSummary = [];
+  if (includeZiweiEngine) {
+    try {
+      if (palaces.length === 12 && result.amDuongNamNu && result.menhCung && result.cucName) {
+        const starEval = buildChartStarEvaluation(result, input, yunxianState);
+        const v6Report = luanSoTuViToanDien(result);
+
+        extraEngineSummary.push('\nKẾT QUẢ ĐÁNH GIÁ & LUẬN ĐOÁN TỪ ENGINE ZIWEI MỚI (V6 & V12):');
+        if (starEval?.overall) {
+          extraEngineSummary.push(
+            `- Đánh giá tổng thể lá số: ${starEval.overall.score}/5.0 sao (${starEval.overall.starsText} · Quy đổi ${starEval.overall.score100}/100 điểm · Xếp hạng: ${starEval.overall.tierLabel})`
+          );
+          if (Array.isArray(starEval.aspects) && starEval.aspects.length > 0) {
+            extraEngineSummary.push('- Điểm đánh giá 6 phương diện cuộc đời:');
+            for (const asp of starEval.aspects) {
+              extraEngineSummary.push(
+                `  + ${asp.name}: ${asp.stars}/5.0 sao (${asp.tierLabel}) — ${asp.comment}`
+              );
+            }
+          }
+          if (starEval.overall.coreAdvice) {
+            extraEngineSummary.push(`- Lời khuyên trọng tâm từ Engine: ${starEval.overall.coreAdvice}`);
+          }
+        }
+        if (starEval?.activeYunxian?.title) {
+          extraEngineSummary.push(
+            `- Đánh giá kỳ Vận Hạn đang chọn (${starEval.activeYunxian.title}): ${starEval.activeYunxian.stars}/5.0 sao (${starEval.activeYunxian.tierLabel})`
+          );
+        }
+        if (v6Report) {
+          extraEngineSummary.push('- Tóm tắt nhận định nền tảng từ Engine Luận Giải v6:');
+          if (v6Report.step1_ThienBan) {
+            extraEngineSummary.push(`  + Thiên bàn & Mệnh–Cục: ${stripMdFormatting(v6Report.step1_ThienBan)}`);
+          }
+          if (v6Report.step2_MenhThan) {
+            extraEngineSummary.push(`  + Mệnh & Thân: ${stripMdFormatting(v6Report.step2_MenhThan)}`);
+          }
+          if (v6Report.step3_TamHop) {
+            extraEngineSummary.push(`  + Tam hợp & Cách cục: ${stripMdFormatting(v6Report.step3_TamHop)}`);
+          }
+          if (v6Report.step4_SatTinhTuHoa) {
+            extraEngineSummary.push(`  + Tứ Hóa & Sát tinh: ${stripMdFormatting(v6Report.step4_SatTinhTuHoa)}`);
+          }
+        }
+      }
+    } catch {}
+  }
+
   // 1. Cách Cục Đẩu Số
   let extraPatterns = [];
-  try {
-    if (palaces.length === 12) {
-      const patterns = detectPatterns(result);
-      if (patterns?.length > 0) {
-        extraPatterns = [
-          '\nCÁCH CỤC ĐẨU SỐ ĐƯỢC NHẬN DIỆN:',
-          ...patterns.map((p) => {
-            const palTag = Array.isArray(p.palaces) && p.palaces.length > 0 ? ` [Tại cung: ${p.palaces.join(', ')}]` : '';
-            const bonusNote = p.conditions?.bonus?.length > 0 ? ` | Điểm cộng: ${p.conditions.bonus.join('; ')}.` : '';
-            const breakNote = p.conditions?.breaking?.length > 0 ? ` | Lưu ý phá cách / giảm lực: ${p.conditions.breaking.join('; ')}.` : '';
-            return `- ${p.name} (${p.levelLabel || p.level})${palTag}: ${p.description}${bonusNote}${breakNote}`;
-          }),
-        ];
+  if (includeZiweiEngine) {
+    try {
+      if (palaces.length === 12) {
+        const patterns = detectPatterns(result);
+        if (patterns?.length > 0) {
+          extraPatterns = [
+            '\nCÁCH CỤC ĐẨU SỐ ĐƯỢC NHẬN DIỆN:',
+            ...patterns.map((p) => {
+              const palTag = Array.isArray(p.palaces) && p.palaces.length > 0 ? ` [Tại cung: ${p.palaces.join(', ')}]` : '';
+              const bonusNote = p.conditions?.bonus?.length > 0 ? ` | Điểm cộng: ${p.conditions.bonus.join('; ')}.` : '';
+              const breakNote = p.conditions?.breaking?.length > 0 ? ` | Lưu ý phá cách / giảm lực: ${p.conditions.breaking.join('; ')}.` : '';
+              return `- ${p.name} (${p.levelLabel || p.level})${palTag}: ${p.description}${bonusNote}${breakNote}`;
+            }),
+          ];
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   // 2. Ma trận Phi Tinh Tứ Hóa 12 cung + Lai Nhân Cung + Tự Hóa
   let extraSihua = [];
-  try {
-    if (palaces.length === 12) {
-      const flying = buildChartFlyingSihua(result, input?.schoolConfig);
-      if (flying?.palaces?.length) {
-        extraSihua.push('\nMA TRẬN PHI TINH TỨ HÓA 12 CUNG:');
-        for (const p of flying.palaces) {
-          const loc = p.flights?.find((f) => f.siHua === 'Hóa Lộc');
-          const quyen = p.flights?.find((f) => f.siHua === 'Hóa Quyền');
-          const khoa = p.flights?.find((f) => f.siHua === 'Hóa Khoa');
-          const ky = p.flights?.find((f) => f.siHua === 'Hóa Kỵ');
+  if (includeZiweiEngine) {
+    try {
+      if (palaces.length === 12) {
+        const flying = buildChartFlyingSihua(result, input?.schoolConfig);
+        if (flying?.palaces?.length) {
+          extraSihua.push('\nMA TRẬN PHI TINH TỨ HÓA 12 CUNG:');
+          for (const p of flying.palaces) {
+            const loc = p.flights?.find((f) => f.siHua === 'Hóa Lộc');
+            const quyen = p.flights?.find((f) => f.siHua === 'Hóa Quyền');
+            const khoa = p.flights?.find((f) => f.siHua === 'Hóa Khoa');
+            const ky = p.flights?.find((f) => f.siHua === 'Hóa Kỵ');
+            extraSihua.push(
+              `- Cung ${p.fromChucNang || p.chucNang} (Can ${p.fromCanName || p.canName}): ` +
+              `Hóa Lộc (${loc?.starName || '—'}) → Cung ${loc?.targetChucNang || 'Chưa rõ'}, ` +
+              `Hóa Quyền (${quyen?.starName || '—'}) → Cung ${quyen?.targetChucNang || 'Chưa rõ'}, ` +
+              `Hóa Khoa (${khoa?.starName || '—'}) → Cung ${khoa?.targetChucNang || 'Chưa rõ'}, ` +
+              `Hóa Kỵ (${ky?.starName || '—'}) → Cung ${ky?.targetChucNang || 'Chưa rõ'}`
+            );
+          }
+        }
+
+        if (flying?.laiNhanCung) {
+          extraSihua.push(`\nLAI NHÂN CUNG: Cung ${flying.laiNhanCung.chucNang} (${flying.laiNhanCung.canName} ${flying.laiNhanCung.chiName}). Nơi phát khởi tiền duyên nghiệp quả.`);
+        }
+
+        const selfOutList = (flying?.palaces || []).flatMap((p) =>
+          (p.selfOut || p.selfSihua || []).map((s) => `Cung ${p.fromChucNang || p.chucNang} tự hóa ${s.siHua.replace('Hóa ', '')} (${s.starName})`)
+        );
+        const huongTamList = (flying?.palaces || []).flatMap((p) =>
+          (p.oppositeIn || []).map((s) => `Cung ${p.fromChucNang || p.chucNang} nhận Hướng Tâm ${s.siHua.replace('Hóa ', '')} (${s.starName}) từ Cung ${s.fromChucNang}`)
+        );
+        if (selfOutList.length > 0 || huongTamList.length > 0) {
           extraSihua.push(
-            `- Cung ${p.fromChucNang || p.chucNang} (Can ${p.fromCanName || p.canName}): ` +
-            `Hóa Lộc (${loc?.starName || '—'}) → Cung ${loc?.targetChucNang || 'Chưa rõ'}, ` +
-            `Hóa Quyền (${quyen?.starName || '—'}) → Cung ${quyen?.targetChucNang || 'Chưa rõ'}, ` +
-            `Hóa Khoa (${khoa?.starName || '—'}) → Cung ${khoa?.targetChucNang || 'Chưa rõ'}, ` +
-            `Hóa Kỵ (${ky?.starName || '—'}) → Cung ${ky?.targetChucNang || 'Chưa rõ'}`
+            'TỰ HÓA NỘI TẠI & HƯỚNG TÂM TỰ HÓA:\n' +
+            [...selfOutList.map((s) => `- Tự Hóa Xuất: ${s}`), ...huongTamList.map((s) => `- Hướng Tâm Tự Hóa: ${s}`)].join('\n')
           );
         }
       }
-
-      if (flying?.laiNhanCung) {
-        extraSihua.push(`\nLAI NHÂN CUNG: Cung ${flying.laiNhanCung.chucNang} (${flying.laiNhanCung.canName} ${flying.laiNhanCung.chiName}). Nơi phát khởi tiền duyên nghiệp quả.`);
-      }
-
-      const selfOutList = (flying?.palaces || []).flatMap((p) =>
-        (p.selfOut || p.selfSihua || []).map((s) => `Cung ${p.fromChucNang || p.chucNang} tự hóa ${s.siHua.replace('Hóa ', '')} (${s.starName})`)
-      );
-      const huongTamList = (flying?.palaces || []).flatMap((p) =>
-        (p.oppositeIn || []).map((s) => `Cung ${p.fromChucNang || p.chucNang} nhận Hướng Tâm ${s.siHua.replace('Hóa ', '')} (${s.starName}) từ Cung ${s.fromChucNang}`)
-      );
-      if (selfOutList.length > 0 || huongTamList.length > 0) {
-        extraSihua.push(
-          'TỰ HÓA NỘI TẠI & HƯỚNG TÂM TỰ HÓA:\n' +
-          [...selfOutList.map((s) => `- Tự Hóa Xuất: ${s}`), ...huongTamList.map((s) => `- Hướng Tâm Tự Hóa: ${s}`)].join('\n')
-        );
-      }
-    }
-  } catch {}
+    } catch {}
+  }
 
   // 3. Vô Chính Diệu mượn sao xung chiếu
   let extraVcd = [];
-  try {
-    const vcdPalaces = palaces.filter((p) => !p.chinhTinh || p.chinhTinh.length === 0);
-    if (vcdPalaces.length > 0) {
-      extraVcd = [
-        '\nVÔ CHÍNH DIỆU VÀ MƯỢN SAO XUNG CHIẾU (70% LỰC):',
-        ...vcdPalaces.map((p) => {
-          const opp = palaces.find((o) => o.chiIndex === (p.chiIndex + 6) % 12);
-          const borrowed = (opp?.chinhTinh || []).join(', ') || 'Không có';
-          return `- Cung ${p.chucNang} (${p.canName} ${p.chiName}) Vô Chính Diệu: mượn chính tinh [${borrowed}] từ Cung ${opp?.chucNang || 'đối diện'} (${opp?.canName || ''} ${opp?.chiName || ''}) xung chiếu (lực chiếu hưởng khoảng 70%).`;
-        }),
-      ];
-    }
-  } catch {}
-
-  // 4. 3 Vòng Thập Nhị Thần
-  let extraShierShen = [];
-  try {
-    if (palaces.length === 12) {
-      const shierShen = buildShierShenForChart(result, {
-        yearCanIndex: input?.yearCanIndex,
-        yearChiIndex: input?.yearChiIndex,
-        gender: input?.gender,
-        activeBranchIndex: input?.viewYearChiIndex,
-      });
-      if (Array.isArray(shierShen) && shierShen.length === 12) {
-        extraShierShen = [
-          '\nBA VÒNG THẬP NHỊ THẦN (BÁC SỸ, THÁI TUẾ, TƯỚNG TIỀN):',
-          ...palaces.map((p) => {
-            const entry = shierShen[p.chiIndex] || {};
-            const bs = entry.boshi || '—';
-            const tt = entry.natalThaiTue || entry.activeThaiTue || '—';
-            const tq = entry.natalJiangQian || entry.activeJiangQian || '—';
-            return `- Cung ${p.chucNang} (${p.chiName}): Vòng Bác Sỹ: ${bs} | Vòng Thái Tuế: ${tt} | Vòng Tướng Tiền: ${tq}`;
+  if (includeZiweiEngine) {
+    try {
+      const vcdPalaces = palaces.filter((p) => !p.chinhTinh || p.chinhTinh.length === 0);
+      if (vcdPalaces.length > 0) {
+        extraVcd = [
+          '\nVÔ CHÍNH DIỆU VÀ MƯỢN SAO XUNG CHIẾU (70% LỰC):',
+          ...vcdPalaces.map((p) => {
+            const opp = palaces.find((o) => o.chiIndex === (p.chiIndex + 6) % 12);
+            const borrowed = (opp?.chinhTinh || []).join(', ') || 'Không có';
+            return `- Cung ${p.chucNang} (${p.canName} ${p.chiName}) Vô Chính Diệu: mượn chính tinh [${borrowed}] từ Cung ${opp?.chucNang || 'đối diện'} (${opp?.canName || ''} ${opp?.chiName || ''}) xung chiếu (lực chiếu hưởng khoảng 70%).`;
           }),
         ];
       }
-    }
-  } catch {}
+    } catch {}
+  }
+
+  // 4. 3 Vòng Thập Nhị Thần
+  let extraShierShen = [];
+  if (includeZiweiEngine) {
+    try {
+      if (palaces.length === 12) {
+        const shierShen = buildShierShenForChart(result, {
+          yearCanIndex: input?.yearCanIndex,
+          yearChiIndex: input?.yearChiIndex,
+          gender: input?.gender,
+          activeBranchIndex: input?.viewYearChiIndex,
+        });
+        if (Array.isArray(shierShen) && shierShen.length === 12) {
+          extraShierShen = [
+            '\nBA VÒNG THẬP NHỊ THẦN (BÁC SỸ, THÁI TUẾ, TƯỚNG TIỀN):',
+            ...palaces.map((p) => {
+              const entry = shierShen[p.chiIndex] || {};
+              const bs = entry.boshi || '—';
+              const tt = entry.natalThaiTue || entry.activeThaiTue || '—';
+              const tq = entry.natalJiangQian || entry.activeJiangQian || '—';
+              return `- Cung ${p.chucNang} (${p.chiName}): Vòng Bác Sỹ: ${bs} | Vòng Thái Tuế: ${tt} | Vòng Tướng Tiền: ${tq}`;
+            }),
+          ];
+        }
+      }
+    } catch {}
+  }
 
   // 5. Thơ Cân Xương Đoán Số
   let extraPoem = [];
-  try {
-    if (result.canLuongStr) {
-      const poem = getCanLuongPoem(result.canLuongStr);
-      if (poem?.title) {
-        extraPoem.push(`\nTHƠ CÂN XƯƠNG ĐOÁN SỐ VIÊN THIÊN CƯƠNG: ${poem.title}. Luận giải: ${poem.interpretation}`);
-        if (poem.poemHanViet) extraPoem.push(`- Bài thơ Hán Việt: ${poem.poemHanViet}`);
-        if (poem.poemDichNghia) extraPoem.push(`- Dịch nghĩa: ${poem.poemDichNghia}`);
+  if (includeZiweiEngine) {
+    try {
+      if (result.canLuongStr) {
+        const poem = getCanLuongPoem(result.canLuongStr);
+        if (poem?.title) {
+          extraPoem.push(`\nTHƠ CÂN XƯƠNG ĐOÁN SỐ VIÊN THIÊN CƯƠNG: ${poem.title}. Luận giải: ${poem.interpretation}`);
+          if (poem.poemHanViet) extraPoem.push(`- Bài thơ Hán Việt: ${poem.poemHanViet}`);
+          if (poem.poemDichNghia) extraPoem.push(`- Dịch nghĩa: ${poem.poemDichNghia}`);
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   // 6. Ngữ cảnh Vận Hạn Động (Đại Hạn, Lưu Niên, Lưu Nguyệt)
   let extraYunxian = [];
@@ -414,6 +495,7 @@ function exportContext(result, input = {}, yunxianState = null) {
 
   return [
     ...baseLines,
+    ...extraEngineSummary,
     ...extraPatterns,
     ...extraSihua,
     ...extraVcd,
@@ -423,7 +505,7 @@ function exportContext(result, input = {}, yunxianState = null) {
   ].join('\n');
 }
 
-export function buildTuViText(result, input = {}, yunxianState = null) {
+export function buildTuViText(result, input = {}, yunxianState = null, exportOptions = {}) {
   const effectiveResult = resolveEffectiveChart(result, input, yunxianState);
 
   let yunxianHeaderLines = [];
@@ -524,11 +606,32 @@ export function buildTuViText(result, input = {}, yunxianState = null) {
         : [])
     );
   }
-  return lines.join('\n') + '\n' + exportContext(effectiveResult, input, yunxianState);
+  return lines.join('\n') + '\n' + exportContext(effectiveResult, input, yunxianState, exportOptions);
 }
 
+const CONCISE_READING = `
+HƯỚNG DẪN CẤU TRÚC LUẬN GIẢI (CHẾ ĐỘ TỔNG QUÁT & TRỌNG TÂM):
+Hãy trình bày mạch lạc, thực tế, dễ hiểu cho người đọc và đi thẳng vào bức tranh tổng quát của đương số (KHÔNG liệt kê giải thích dàn trải từng cung lẻ tẻ trong 12 cung):
+1. Bức tranh Tổng quát & Khí chất cốt lõi: Tóm tắt ngắn gọn Âm Dương Thuận/Nghịch lý, tương quan Mệnh – Cục, Cân lượng và thế đứng của trục Mệnh – Thân (tính cách, năng lực cốt lõi, cách cục chủ đạo và xu hướng hậu vận khi Thân cư).
+2. Đánh giá 3 Trục Trọng Yếu của Cuộc Đời:
+   - Trục Sự Nghiệp & Tài Chính (Mệnh – Tài Bạch – Quan Lộc – Điền Trạch): Ngành nghề phù hợp, khả năng kiếm tiền, giữ tiền và tích lũy tài sản.
+   - Trục Tình Duyên & Gia Đạo (Phu Thê – Phúc Đức – Tử Tức): Xu hướng hôn nhân, hình mẫu bạn đời và phúc phần gia đình.
+   - Trục Quý Nhân & Sức Khỏe (Thiên Di – Nô Bộc – Tật Ách): Môi trường xã hội bên ngoài, bạn bè/đối tác và điểm sức khỏe cần lưu tâm.
+3. Trọng tâm Chủ đề / Câu hỏi & Vận hạn đang chọn: Phân tích trực diện vào câu hỏi của người dùng và giai đoạn Vận hạn (Bản Mệnh / Đại Vận / Lưu Niên / Lưu Nguyệt) đang chọn dựa trên Tứ Hóa, Tiểu hạn và các cung trực tiếp liên quan.
+4. Tổng kết Điểm mạnh, Điểm nghẽn & 3 Lời khuyên hành động thực tế: Ngắn gọn, cụ thể, dễ áp dụng ngay trong đời sống.
+`;
+
+const TOPIC_FOCUSED_READING = `
+HƯỚNG DẪN CẤU TRÚC LUẬN GIẢI (CHẾ ĐỘ XOÁY SÂU CHỦ ĐỀ & VẬN HẠN):
+Hãy đi thẳng vào trọng tâm câu hỏi và giai đoạn vận hạn đang chọn, bỏ qua việc diễn giải dài dòng các cung không liên quan:
+1. Điểm tựa Bản Mệnh (Tóm tắt ngắn gọn 3–4 ý): Nêu nhanh thế mạnh/điểm yếu cốt lõi của Mệnh – Thân tác động trực tiếp đến chủ đề đang hỏi.
+2. Phân tích chuyên sâu Chủ đề & Câu hỏi: Khảo sát kỹ cung chủ sự và Tam phương tứ chính liên quan trực tiếp đến chủ đề (Chính tinh, Phụ tinh, Tứ Hóa, Tuần/Triệt).
+3. Biến chuyển trong Kỳ Vận Hạn đang xem: Đối chiếu Đại Hạn, Lưu Niên (hoặc Lưu Nguyệt), Lưu Tứ Hóa (ĐH / LN / LNg) và sao lưu (L.) để chỉ rõ thời cơ, rủi ro và bước ngoặt.
+4. Giải pháp & 3 Hành động thực tế: Đưa ra chiến lược ứng xử cụ thể cho câu hỏi của đương số.
+`;
+
 const DETAILED_READING = `
-HƯỚNG DẪN LUẬN GIẢI CHI TIẾT:
+HƯỚNG DẪN LUẬN GIẢI CHI TIẾT (KHẢO SÁT ĐỦ 12 CUNG):
 1. Tóm tắt thông tin lá số: nhắc lại ngắn gọn ngày âm/dương, giờ Chi, Âm Dương Nam Nữ, Mệnh–Thân, Cục, Cân lượng (kèm bài thơ Cân Xương Đoán Số đã cung cấp), năm và tuổi đang xem; sau đó đi thẳng vào luận giải (các trường trong dữ liệu đã được tính toán chuẩn xác, không cần kiểm tra mâu thuẫn).
 2. Tổng quan: phân tích Mệnh–Thân, bản mệnh và Cục, chính tinh cùng trạng thái, phụ tinh, Tuần/Triệt. Giải thích các yếu tố hỗ trợ và cản trở thay vì chỉ kể tên sao.
 3. Tam phương tứ chính: đối chiếu tam hợp, xung chiếu, hai cung giáp từ danh sách vị trí. Phân biệt sao tọa thủ với sao hội chiếu; không chuyển sao sang cung khác. Khi Mệnh vô chính diệu, chỉ xem xét các sao thực sự có ở cung liên quan.
@@ -546,9 +649,11 @@ export function buildTuViPrompt(
   topic = 'overview',
   question = '',
   structured = false,
-  yunxianState = null
+  yunxianState = null,
+  exportOptions = {}
 ) {
   const effectiveResult = resolveEffectiveChart(result, input, yunxianState);
+  const promptStyle = exportOptions?.promptStyle || DEFAULT_EXPORT_OPTIONS.promptStyle;
 
   let focusInstruction = '';
   if (yunxianState) {
@@ -567,7 +672,20 @@ export function buildTuViPrompt(
     }
   }
 
-  return `Bạn là người luận giải Tử Vi Đẩu Số. Hãy phân tích lá số bên dưới bằng tiếng Việt.\nChủ đề: ${TOPICS[topic] || TOPICS.overview}\nCâu hỏi: ${question.trim() || 'Luận giải tổng quan lá số và đưa ra lời khuyên thực tế.'}\n\n${buildTuViText(effectiveResult, input, yunxianState)}${structured ? '' : DETAILED_READING}\n\nYÊU CẦU:\n- Dùng đúng dữ liệu lá số, không tự an lại sao hoặc thêm sao không có.\n- Phân tích Mệnh–Thân, các cung liên quan và mối liên hệ giữa các cung; dẫn rõ dữ kiện làm căn cứ.\n- Chỉ luận đại hạn ở mức dữ liệu đã có. ${effectiveResult.viewYearCanChi ? 'Chỉ dùng sao lưu niên, Tiểu hạn và các cung chức năng lưu niên thực sự được liệt kê; kết hợp bài thơ Cân Xương Đoán Số đã cung cấp để bổ trợ luận giải.' : 'Chưa có tiểu hạn/lưu niên nên không dự đoán chi tiết theo năm.'}${focusInstruction}\n- Nội dung cần có: Tổng quan, Phân tích chủ đề/câu hỏi, Điểm thuận lợi và thách thức, 3 lời khuyên thực tế. Không khẳng định số phận chắc chắn.\n${structured ? '- Đưa các mục luận giải vào sections theo định dạng JSON được yêu cầu bên dưới.' : '- Kết thúc bằng dòng ---SUGGESTED_QUESTIONS--- và 3 câu hỏi đào sâu, mỗi câu một dòng.'}`;
+  const readingGuide = structured
+    ? ''
+    : promptStyle === 'full_12_palaces'
+    ? DETAILED_READING
+    : promptStyle === 'topic_focused'
+    ? TOPIC_FOCUSED_READING
+    : CONCISE_READING;
+
+  const styleRequirementLine =
+    promptStyle === 'full_12_palaces'
+      ? '- Phân tích Mệnh–Thân, khảo sát chi tiết đủ 12 cung và mối liên hệ giữa các cung; dẫn rõ dữ kiện làm căn cứ.'
+      : '- Tập trung luận giải tổng quát, nắm bắt cốt lõi Mệnh–Thân, các trục chính và chủ đề đang hỏi (không cần giải thích dàn trải cả 12 cung trừ những cung trực tiếp liên quan); dẫn rõ dữ kiện làm căn cứ.';
+
+  return `Bạn là người luận giải Tử Vi Đẩu Số. Hãy phân tích lá số bên dưới bằng tiếng Việt.\nChủ đề: ${TOPICS[topic] || TOPICS.overview}\nCâu hỏi: ${question.trim() || 'Luận giải tổng quan lá số và đưa ra lời khuyên thực tế.'}\n\n${buildTuViText(effectiveResult, input, yunxianState, exportOptions)}${readingGuide}\n\nYÊU CẦU:\n- Dùng đúng dữ liệu lá số, không tự an lại sao hoặc thêm sao không có.\n${styleRequirementLine}\n- Chỉ luận đại hạn ở mức dữ liệu đã có. ${effectiveResult.viewYearCanChi ? 'Chỉ dùng sao lưu niên, Tiểu hạn và các cung chức năng lưu niên thực sự được liệt kê; kết hợp bài thơ Cân Xương Đoán Số đã cung cấp để bổ trợ luận giải.' : 'Chưa có tiểu hạn/lưu niên nên không dự đoán chi tiết theo năm.'}${focusInstruction}\n- Nội dung cần có: Tổng quan, Phân tích chủ đề/câu hỏi, Điểm thuận lợi và thách thức, 3 lời khuyên thực tế. Không khẳng định số phận chắc chắn.${structured ? '\n- Đưa các mục luận giải vào sections theo định dạng JSON được yêu cầu bên dưới.' : ''}`;
 }
 
 export function splitSuggestions(content) {

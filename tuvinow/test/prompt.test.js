@@ -39,7 +39,9 @@ test('full external export preserves annual facts and derives relationships from
   const annual = anLaSoTuVi(annualInput);
   const before = structuredClone(annual);
   const text = buildTuViPrompt(annual, annualInput, 'love', 'Về gia đình?');
-  assert.ok(text.includes('Khảo sát đủ 12 cung'));
+  assert.ok(text.includes('HƯỚNG DẪN CẤU TRÚC LUẬN GIẢI (CHẾ ĐỘ TỔNG QUÁT & TRỌNG TÂM):'));
+  assert.ok(!text.includes('---SUGGESTED_QUESTIONS---'));
+  assert.ok(text.includes('KẾT QUẢ ĐÁNH GIÁ & LUẬN ĐOÁN TỪ ENGINE ZIWEI MỚI (V6 & V12):'));
   assert.ok(text.includes('Tuổi âm năm xem: 31'));
   assert.ok(text.includes(annual.canLuongStr));
   for (const p of annual.palates) {
@@ -51,6 +53,41 @@ test('full external export preserves annual facts and derives relationships from
   assert.ok(!text.includes('chỉ có 5'));
   assert.ok(!text.includes('undefined'));
   assert.deepEqual(annual, before);
+});
+
+test('exportOptions toggles includeZiweiEngine (on/off) and switches promptStyle (concise, topic_focused, full_12_palaces)', () => {
+  const withEngine = buildTuViPrompt(result, input, 'overview', '', false, null, {
+    includeZiweiEngine: true,
+    promptStyle: 'concise',
+  });
+  assert.ok(withEngine.includes('KẾT QUẢ ĐÁNH GIÁ & LUẬN ĐOÁN TỪ ENGINE ZIWEI MỚI (V6 & V12):'));
+  assert.ok(withEngine.includes('- Điểm đánh giá 6 phương diện cuộc đời:'));
+  assert.ok(withEngine.includes('- Tóm tắt nhận định nền tảng từ Engine Luận Giải v6:'));
+  assert.ok(withEngine.includes('CÁCH CỤC ĐẨU SỐ ĐƯỢC NHẬN DIỆN:'));
+  assert.ok(withEngine.includes('MA TRẬN PHI TINH TỨ HÓA 12 CUNG:'));
+  assert.ok(withEngine.includes('HƯỚNG DẪN CẤU TRÚC LUẬN GIẢI (CHẾ ĐỘ TỔNG QUÁT & TRỌNG TÂM):'));
+
+  const withoutEngine = buildTuViPrompt(result, input, 'overview', '', false, null, {
+    includeZiweiEngine: false,
+    promptStyle: 'concise',
+  });
+  assert.ok(!withoutEngine.includes('KẾT QUẢ ĐÁNH GIÁ & LUẬN ĐOÁN TỪ ENGINE ZIWEI MỚI (V6 & V12):'));
+  assert.ok(!withoutEngine.includes('CÁCH CỤC ĐẨU SỐ ĐƯỢC NHẬN DIỆN:'));
+  assert.ok(!withoutEngine.includes('MA TRẬN PHI TINH TỨ HÓA 12 CUNG:'));
+  assert.ok(withoutEngine.includes('CHI TIẾT 12 CUNG:'));
+
+  const topicFocused = buildTuViPrompt(result, input, 'career', 'Thăng tiến?', false, null, {
+    includeZiweiEngine: true,
+    promptStyle: 'topic_focused',
+  });
+  assert.ok(topicFocused.includes('HƯỚNG DẪN CẤU TRÚC LUẬN GIẢI (CHẾ ĐỘ XOÁY SÂU CHỦ ĐỀ & VẬN HẠN):'));
+
+  const full12Palaces = buildTuViPrompt(result, input, 'overview', '', false, null, {
+    includeZiweiEngine: true,
+    promptStyle: 'full_12_palaces',
+  });
+  assert.ok(full12Palaces.includes('HƯỚNG DẪN LUẬN GIẢI CHI TIẾT (KHẢO SÁT ĐỦ 12 CUNG):'));
+  assert.ok(full12Palaces.includes('Khảo sát đủ 12 cung'));
 });
 
 test('older charts retain absent annual fields and incomplete birth input is explicit', () => {

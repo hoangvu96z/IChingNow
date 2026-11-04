@@ -36,9 +36,9 @@ test('legacy, truncated and empty answers never gain invented links', () => {
   assert.equal(parseTuViAnswer('{"version":1,"sections":[],"questions":["Hỏi tiếp?"]}', catalog).fallback, '');
   assert.deepEqual(parseTuViAnswer('{"version":99,"sections":[{"text":"Luận giải","references":["palace.0"]}]}', catalog).sections[0].references, []);
 });
-test('API prompt has one output format while export keeps Markdown', () => {
+test('API prompt has one output format while export keeps Markdown without SUGGESTED_QUESTIONS', () => {
   const api = buildTuViPrompt(result, input, 'career', '', true) + tuViEvidencePrompt(catalog);
   assert.ok(!api.includes('Kết thúc bằng dòng ---SUGGESTED_QUESTIONS---'));
   assert.ok(api.includes('palace.0'));
-  assert.ok(buildTuViPrompt(result, input).includes('Kết thúc bằng dòng ---SUGGESTED_QUESTIONS---'));
+  assert.ok(!buildTuViPrompt(result, input).includes('---SUGGESTED_QUESTIONS---'));
 });

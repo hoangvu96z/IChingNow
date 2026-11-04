@@ -440,6 +440,13 @@ test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, Birth
     assert.ok(standaloneAiPanelHtml.includes('🪐 Đại Vận (10 Năm)'));
     assert.ok(standaloneAiPanelHtml.includes('📅 Lưu Niên (Năm)'));
     assert.ok(standaloneAiPanelHtml.includes('🌙 Lưu Nguyệt (Tháng)'));
+    assert.ok(standaloneAiPanelHtml.includes('id="tv-include-ziwei-engine"'), 'Must include includeZiweiEngine checkbox');
+    assert.ok(standaloneAiPanelHtml.includes('Đính kèm kết quả phân tích từ Engine ZiWei mới'), 'Must include ZiWei engine checkbox label');
+    assert.ok(standaloneAiPanelHtml.includes('Kiểu cấu trúc Prompt (Tránh lan man 12 cung):'), 'Must include prompt style fieldset');
+    assert.ok(standaloneAiPanelHtml.includes('id="tv-prompt-style-concise"'), 'Must include concise radio');
+    assert.ok(standaloneAiPanelHtml.includes('id="tv-prompt-style-topic_focused"'), 'Must include topic_focused radio');
+    assert.ok(standaloneAiPanelHtml.includes('id="tv-prompt-style-full_12_palaces"'), 'Must include full_12_palaces radio');
+    assert.ok(!standaloneAiPanelHtml.includes('---SUGGESTED_QUESTIONS---'), 'Exported prompt must not include ---SUGGESTED_QUESTIONS---');
   } finally {
     await server.close();
   }

@@ -4,6 +4,7 @@ import { useTuViEvidence } from '../context/tuViEvidenceState';
 import { parseTuViAnswer, tuViAnswerText, tuViEvidencePrompt } from '../utils/tuViEvidence';
 import {
   TOPICS,
+  PROMPT_STYLES,
   buildTuViText,
   buildTuViPrompt,
 } from '../utils/buildTuViPrompt';
@@ -76,6 +77,8 @@ export default function TuViAiPanel({
   const [coupon, setCoupon] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [exportTab, setExportTab] = useState('prompt');
+  const [includeZiweiEngine, setIncludeZiweiEngine] = useState(true);
+  const [promptStyle, setPromptStyle] = useState('concise');
   const [elapsed, setElapsed] = useState(0);
   const controller = useRef(null);
   const mounted = useRef(false);
@@ -177,13 +180,18 @@ export default function TuViAiPanel({
     return 'Bản Mệnh';
   }, [effectiveYunxianState, result?.viewYear]);
 
-  const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured, effectiveYunxianState));
+  const exportOptions = useMemo(
+    () => ({ includeZiweiEngine, promptStyle }),
+    [includeZiweiEngine, promptStyle],
+  );
+
+  const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured, effectiveYunxianState, exportOptions));
   const prompt = makePrompt(topic, question, false);
   const parsed = parseTuViAnswer(conversation?.initialInterpretation || '', catalog);
   const answerText = tuViAnswerText(conversation?.initialInterpretation || '');
   const followUps = conversation?.followUps || [];
   const exportText =
-    exportTab === 'prompt' ? prompt : readingContext?.exportText || buildTuViText(result, inputData, effectiveYunxianState);
+    exportTab === 'prompt' ? prompt : readingContext?.exportText || buildTuViText(result, inputData, effectiveYunxianState, exportOptions);
   const exportCopied = copiedText === exportText;
 
   const checkConfig = useCallback(async (signal) => {
@@ -874,6 +882,46 @@ export default function TuViAiPanel({
                       ))}
                     </select>
                   </div>
+                )}
+              </div>
+
+              <div className="tv-export-options-row">
+                <label htmlFor="tv-include-ziwei-engine" className="tv-export-checkbox-label">
+                  <input
+                    type="checkbox"
+                    id="tv-include-ziwei-engine"
+                    name="includeZiweiEngine"
+                    checked={includeZiweiEngine}
+                    onChange={(e) => setIncludeZiweiEngine(e.target.checked)}
+                  />
+                  <span>
+                    Đính kèm kết quả phân tích từ Engine ZiWei mới (Đánh giá 1–5★ 6 phương diện, Cách cục, Phi Tinh Tứ Hóa, Cân lượng &amp; Luận giải nền v6)
+                  </span>
+                </label>
+
+                {exportTab === 'prompt' && (
+                  <fieldset className="tv-prompt-style-fieldset">
+                    <legend>Kiểu cấu trúc Prompt (Tránh lan man 12 cung):</legend>
+                    <div className="tv-prompt-style-options">
+                      {Object.entries(PROMPT_STYLES).map(([styleKey, styleLabel]) => (
+                        <label
+                          key={styleKey}
+                          htmlFor={`tv-prompt-style-${styleKey}`}
+                          className={`tv-prompt-style-radio-label ${promptStyle === styleKey ? 'is-selected' : ''}`}
+                        >
+                          <input
+                            type="radio"
+                            id={`tv-prompt-style-${styleKey}`}
+                            name="promptStyle"
+                            value={styleKey}
+                            checked={promptStyle === styleKey}
+                            onChange={(e) => setPromptStyle(e.target.value)}
+                          />
+                          <span>{styleLabel}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
                 )}
               </div>
             </div>
