@@ -154,11 +154,12 @@ export default function PalateCard({
       </div>
 
       {/* Year Context */}
-      {(palace.isTieuHan || palace.luuNienChucNang) && (
+      {(palace.isTieuHan || palace.isLuuDaiHan || palace.luuNienChucNang) && (
         <div className="palace-year-context">
           {palace.isTieuHan && <span className="palace-tieuhan">Tiểu hạn</span>}
+          {palace.isLuuDaiHan && <span className="palace-luudaihan" title="Cung Lưu Đại Hạn của năm xem">Lưu ĐH</span>}
           {palace.luuNienChucNang && (
-            <span title="Cung lưu niên đại hạn">{palace.luuNienChucNang}</span>
+            <span title="Cung chức năng Lưu Niên">{palace.luuNienChucNang}</span>
           )}
         </div>
       )}

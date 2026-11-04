@@ -1,11 +1,14 @@
 /**
  * ============================================================================
- * THUẬT TOÁN AN LÁ SỐ TỬ VI ĐẨU SỐ TOÀN DIỆN & LƯU NIÊN, CÂN LƯỢNG (Engine v11)
+ * THUẬT TOÁN AN LÁ SỐ TỬ VI ĐẨU SỐ TOÀN DIỆN & LƯU NIÊN, CÂN LƯỢNG (Engine v12)
  * ============================================================================
- * Bổ sung 3 thuật toán quan trọng theo yêu cầu:
- * 1. Thuật toán Cân Lượng Chỉ (Cân Xương Đoán Số - Viên Thiên Cương)
- * 2. Thuật toán Xác định Cung TIỂU HẠN (Hạn 1 năm theo Tam Hợp & Chiều Nam/Nữ)
- * 3. Thuật toán An 12 Cung LƯU NIÊN ĐẠI HẠN (LN.Mệnh, LN.Phụ, LN.Phúc...)
+ * Phiên bản v12 (Đã vá lỗi & chuẩn hóa Nam Phái):
+ * 1. Sửa Nạp Âm Giáp Tý - Ất Sửu thành Hải Trung Kim.
+ * 2. Chuẩn hóa bảng Cân Lượng Chỉ (Viên Thiên Cương) cho Ất Sửu, Nhâm Dần, Đinh Tỵ, Canh Thân.
+ * 3. Chuẩn hóa toàn bộ bảng MIEU_HAM_MAP của 14 Chính Tinh theo chuẩn Nam Phái.
+ * 4. Tách bạch 12 cung chức năng Lưu Niên (khởi từ Lưu Thái Tuế) và Lưu Đại Hạn (nhảy xung chiếu).
+ * 5. Tự động đồng bộ namXem <-> viewYearCanIndex / viewYearChiIndex, bổ sung L.Thiên Khôi & L.Thiên Việt.
+ * 6. Phân biệt rõ Quan Phủ (vòng Bác Sỹ) và Quan Phù (vòng Thái Tuế).
  * ============================================================================
  */
 
@@ -33,7 +36,7 @@ const NGU_HANH_CUC_NAME = {
 };
 
 const NAP_AM_MAP = {
-    "Giáp Tý": "Giản Hạ Thủy", "Ất Sửu": "Giản Hạ Thủy",
+    "Giáp Tý": "Hải Trung Kim", "Ất Sửu": "Hải Trung Kim",
     "Bính Dần": "Lư Trung Hỏa", "Đinh Mão": "Lư Trung Hỏa",
     "Mậu Thìn": "Đại Lâm Mộc", "Kỷ Tỵ": "Đại Lâm Mộc",
     "Canh Ngọ": "Lộ Trung Thổ", "Tân Mùi": "Lộ Trung Thổ",
@@ -69,18 +72,18 @@ const NAP_AM_MAP = {
 // 1. BẢNG DỮ LIỆU VÀ THUẬT TOÁN CÂN LƯỢNG CHỈ (CÂN XƯƠNG ĐOÁN SỐ - VIÊN THIÊN CƯƠNG)
 // ----------------------------------------------------------------------------
 const CAN_LUONG_YEAR_MAP = {
-    "Giáp Tý": 1.2, "Ất Sửu": 0.6, "Bính Dần": 0.6, "Đinh Mão": 0.7, "Mậu Thìn": 1.2,
+    "Giáp Tý": 1.2, "Ất Sửu": 0.9, "Bính Dần": 0.6, "Đinh Mão": 0.7, "Mậu Thìn": 1.2,
     "Kỷ Tỵ": 0.5, "Canh Ngọ": 0.9, "Tân Mùi": 0.8, "Nhâm Thân": 0.7, "Quý Dậu": 0.8,
     "Giáp Tuất": 1.5, "Ất Hợi": 0.9, "Bính Tý": 1.6, "Đinh Sửu": 0.8, "Mậu Dần": 0.8,
     "Kỷ Mão": 1.9, "Canh Thìn": 1.2, "Tân Tỵ": 0.6, "Nhâm Ngọ": 0.8, "Quý Mùi": 0.7,
     "Giáp Thân": 0.5, "Ất Dậu": 1.5, "Bính Tuất": 0.6, "Đinh Hợi": 1.6, "Mậu Tý": 1.5,
     "Kỷ Sửu": 0.7, "Canh Dần": 0.9, "Tân Mão": 1.2, "Nhâm Thìn": 1.0, "Quý Tỵ": 0.7,
     "Giáp Ngọ": 1.5, "Ất Mùi": 0.6, "Bính Thân": 0.5, "Đinh Dậu": 1.4, "Mậu Tuất": 1.4,
-    "Kỷ Hợi": 0.9, "Canh Tý": 0.7, "Tân Sửu": 0.7, "Nhâm Dần": 1.2, "Quý Mão": 1.2,
+    "Kỷ Hợi": 0.9, "Canh Tý": 0.7, "Tân Sửu": 0.7, "Nhâm Dần": 0.9, "Quý Mão": 1.2,
     "Giáp Thìn": 0.8, "Ất Tỵ": 0.7, "Bính Ngọ": 1.3, "Đinh Mùi": 0.5, "Mậu Thân": 1.4,
     "Kỷ Dậu": 0.5, "Canh Tuất": 0.9, "Tân Hợi": 1.7, "Nhâm Tý": 0.5, "Quý Sửu": 0.7,
-    "Giáp Dần": 1.2, "Ất Mão": 0.8, "Bính Thìn": 0.8, "Đinh Tỵ": 1.6, "Mậu Ngọ": 1.9,
-    "Kỷ Mùi": 0.6, "Canh Thân": 1.4, "Tân Dậu": 1.6, "Nhâm Tuất": 1.0, "Quý Hợi": 0.7
+    "Giáp Dần": 1.2, "Ất Mão": 0.8, "Bính Thìn": 0.8, "Đinh Tỵ": 0.6, "Mậu Ngọ": 1.9,
+    "Kỷ Mùi": 0.6, "Canh Thân": 0.8, "Tân Dậu": 1.6, "Nhâm Tuất": 1.0, "Quý Hợi": 0.7
 };
 
 const CAN_LUONG_MONTH_MAP = {
@@ -139,7 +142,8 @@ function getTieuHanIndex({ yearChiIndex, gender, tuoiAm }) {
 }
 
 // ----------------------------------------------------------------------------
-// BẢNG VÀ MÃ TRẠNG THÁI CHÍNH TINH
+// 3. BẢNG VÀ MÃ TRẠNG THÁI 14 CHÍNH TINH (CHUẨN NAM PHÁI - VÂN ĐẰNG THÁI THỨ LANG)
+// Thứ tự 12 cung: [Tý(0), Sửu(1), Dần(2), Mão(3), Thìn(4), Tỵ(5), Ngọ(6), Mùi(7), Thân(8), Dậu(9), Tuất(10), Hợi(11)]
 // ----------------------------------------------------------------------------
 const CHU_MENH = {
     0: "Tham Lang", 1: "Cự Môn", 2: "Lộc Tồn", 3: "Văn Khúc",
@@ -154,20 +158,21 @@ const CHU_THAN = {
 };
 
 const MIEU_HAM_MAP = {
-    "Tử Vi":      ["B", "Đ", "V", "M", "M", "B", "M", "Đ", "V", "M", "M", "B"],
-    "Thiên Cơ":   ["Đ", "H", "M", "M", "M", "H", "Đ", "H", "M", "M", "M", "H"],
-    "Thái Dương": ["H", "H", "V", "M", "V", "M", "M", "Đ", "H", "H", "H", "H"],
-    "Vũ Khúc":    ["V", "M", "B", "M", "M", "B", "V", "M", "B", "M", "M", "B"],
-    "Thiên Đồng": ["M", "H", "Đ", "H", "B", "M", "H", "H", "Đ", "H", "B", "M"],
-    "Liêm Trinh": ["V", "Đ", "M", "H", "V", "H", "V", "Đ", "M", "H", "V", "H"],
-    "Thiên Phủ":  ["M", "M", "M", "B", "M", "B", "M", "M", "M", "B", "M", "B"],
+    //              Tý   Sửu  Dần  Mão  Thìn Tỵ   Ngọ  Mùi  Thân Dậu  Tuất Hợi
+    "Tử Vi":      ["B", "Đ", "M", "B", "Đ", "M", "M", "Đ", "M", "B", "Đ", "B"],
+    "Thiên Cơ":   ["M", "Đ", "V", "M", "M", "H", "M", "Đ", "V", "M", "M", "H"],
+    "Thái Dương": ["H", "Đ", "V", "M", "V", "M", "M", "Đ", "B", "H", "H", "H"],
+    "Vũ Khúc":    ["V", "M", "V", "Đ", "M", "H", "V", "M", "V", "Đ", "M", "H"],
+    "Thiên Đồng": ["V", "H", "M", "Đ", "H", "Đ", "H", "H", "M", "H", "H", "Đ"],
+    "Liêm Trinh": ["V", "Đ", "V", "H", "M", "H", "V", "Đ", "V", "H", "M", "H"],
+    "Thiên Phủ":  ["M", "Đ", "M", "B", "V", "Đ", "M", "Đ", "M", "B", "V", "Đ"],
     "Thái Âm":    ["V", "Đ", "H", "H", "H", "H", "H", "Đ", "V", "M", "M", "M"],
     "Tham Lang":  ["H", "M", "Đ", "H", "V", "H", "H", "M", "Đ", "H", "V", "H"],
     "Cự Môn":     ["V", "H", "V", "M", "H", "H", "V", "H", "Đ", "M", "H", "Đ"],
     "Thiên Tướng":["V", "Đ", "M", "H", "V", "Đ", "V", "Đ", "M", "H", "V", "Đ"],
     "Thiên Lương":["V", "Đ", "V", "V", "M", "H", "M", "Đ", "V", "H", "M", "H"],
-    "Thất Sát":   ["M", "H", "M", "H", "V", "Đ", "M", "H", "M", "H", "V", "Đ"],
-    "Phá Quân":   ["M", "V", "H", "H", "V", "H", "M", "V", "H", "H", "Đ", "H"]
+    "Thất Sát":   ["M", "Đ", "M", "H", "H", "V", "M", "Đ", "M", "H", "H", "V"],
+    "Phá Quân":   ["M", "V", "H", "H", "Đ", "H", "M", "V", "H", "H", "Đ", "H"]
 };
 
 function getTrangThaiStar(starName, chiIndex) {
@@ -241,6 +246,18 @@ function anLaSoTuVi({
     viewYearCanIndex, 
     viewYearChiIndex 
 }) {
+    // Đồng bộ namSinh và Can Chi năm sinh nếu thiếu
+    if (namSinh !== undefined) {
+        if (yearCanIndex === undefined) yearCanIndex = ((namSinh - 4) % 10 + 10) % 10;
+        if (yearChiIndex === undefined) yearChiIndex = ((namSinh - 4) % 12 + 12) % 12;
+    }
+
+    // Đồng bộ namXem và Can Chi năm xem hạn (viewYearCanIndex / viewYearChiIndex)
+    if (namXem !== undefined) {
+        if (viewYearCanIndex === undefined) viewYearCanIndex = ((namXem - 4) % 10 + 10) % 10;
+        if (viewYearChiIndex === undefined) viewYearChiIndex = ((namXem - 4) % 12 + 12) % 12;
+    }
+
     const isDuongCan = yearCanIndex % 2 === 0;
     const isNam = gender === 1;
     const isThuan = (isDuongCan && isNam) || (!isDuongCan && !isNam);
@@ -253,15 +270,31 @@ function anLaSoTuVi({
     // 1. Cân Lượng Chỉ
     const canLuongStr = tinhCanLuongChi({ yearCanChiStr, lunarMonth, lunarDay, lunarHourIndex });
 
-    // 2. Tính tuổi âm (tuổi mụ)
+    // 2. Tính tuổi âm (tuổi mụ) an toàn, tránh nhảy vọt 12 năm
     let tuoiAm = null;
     if (namSinh !== undefined && namXem !== undefined) {
         tuoiAm = namXem - namSinh + 1;
     } else if (namSinh !== undefined && viewYearChiIndex !== undefined) {
         const curYear = new Date().getFullYear();
-        let vy = curYear;
-        while ((vy % 12) !== ((viewYearChiIndex + 4) % 12)) vy++;
-        tuoiAm = vy - namSinh + 1;
+        let bestYear = curYear;
+        let minDiff = Infinity;
+        for (let y = namSinh; y <= curYear + 60; y++) {
+            const chiY = ((y - 4) % 12 + 12) % 12;
+            const canY = ((y - 4) % 10 + 10) % 10;
+            const matchChi = chiY === viewYearChiIndex;
+            const matchCan = viewYearCanIndex === undefined || canY === viewYearCanIndex;
+            if (matchChi && matchCan) {
+                const diff = Math.abs(y - curYear);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestYear = y;
+                }
+            }
+        }
+        tuoiAm = bestYear - namSinh + 1;
+        if (viewYearCanIndex === undefined) {
+            viewYearCanIndex = ((bestYear - 4) % 10 + 10) % 10;
+        }
     }
 
     // 3. Khởi tạo 12 Cung
@@ -275,6 +308,7 @@ function anLaSoTuVi({
         isTuan: false,
         isTriet: false,
         isTieuHan: false,
+        isLuuDaiHan: false,
         luuNienChucNang: "",
         chinhTinh: [],
         phuTinh: []
@@ -282,40 +316,55 @@ function anLaSoTuVi({
 
     // Gán 12 Cung Chức Năng cố định (luôn chạy thuận), chỉ đảo chiều Đại Hạn
     for (let i = 0; i < 12; i++) {
-        // Cung chức năng luôn chạy thuận theo chiều Địa Chi
         palates[(menhIndex + i) % 12].chucNang = TEN_CUNG_CHUC_NANG[i];
-        
-        // Đại hạn mới chạy thuận/nghịch theo Âm Dương Nam Nữ
         let posDaiHan = isThuan ? (menhIndex + i) % 12 : (menhIndex - i + 120) % 12;
         palates[posDaiHan].daiHan = cuc.number + i * 10;
     }
     palates[thanIndex].chucNang += " <THÂN>";
 
-    // 4. Xác Định Cung TIỂU HẠN & 12 CUNG LƯU NIÊN ĐẠI HẠN
+    // 4. Xác Định Cung TIỂU HẠN, LƯU ĐẠI HẠN & 12 CUNG CHỨC NĂNG LƯU NIÊN
     let tieuHanCung = null;
-    if (tuoiAm !== null) {
+    let luuDaiHanCung = null;
+
+    if (viewYearChiIndex !== undefined) {
+        // 12 Cung chức năng Lưu Niên: LN.Mệnh đặt tại cung Địa Chi năm xem hạn (Lưu Thái Tuế) và đi thuận
+        for (let i = 0; i < 12; i++) {
+            palates[(viewYearChiIndex + i) % 12].luuNienChucNang = TEN_LN_CHUC_NANG[i];
+        }
+    }
+
+    if (tuoiAm !== null && tuoiAm >= 1) {
         // Cung Tiểu Hạn
         const tieuHanIndex = getTieuHanIndex({ yearChiIndex, gender, tuoiAm });
         palates[tieuHanIndex].isTieuHan = true;
         tieuHanCung = DIA_CHI[tieuHanIndex];
 
-        // 12 Cung Lưu Niên Đại Hạn
+        // Cung Lưu Đại Hạn chuẩn Nam Phái (Vân Đằng Thái Thứ Lang)
         const daiHanPalate = palates.find(p => p.daiHan <= tuoiAm && tuoiAm < p.daiHan + 10);
         if (daiHanPalate) {
-            const startAge = daiHanPalate.daiHan;
-            const daiHanIndex = daiHanPalate.chiIndex;
-            const offset = tuoiAm - startAge;
+            const offset = tuoiAm - daiHanPalate.daiHan; // 0..9
+            const dhIdx = daiHanPalate.chiIndex;
+            const stepDir = isThuan ? 1 : -1;
+            let luuDaiHanIndex;
 
-            let lnMenhIndex;
-            if (isNam) {
-                lnMenhIndex = (daiHanIndex + offset) % 12;
+            if (offset === 0 || offset === 9) {
+                luuDaiHanIndex = dhIdx; // Năm thứ 1 và năm thứ 10 tại cung Đại Hạn gốc
+            } else if (offset === 1) {
+                luuDaiHanIndex = (dhIdx + 6) % 12; // Năm thứ 2 nhảy sang cung Xung Chiếu
             } else {
-                lnMenhIndex = (daiHanIndex - offset + 120) % 12;
+                // Năm thứ 3 lùi 1 cung từ cung xung chiếu (ngược chiều Đại Hạn), sau đó tiến theo chiều Đại Hạn đến năm thứ 9
+                const year3Pos = (dhIdx + 6 - stepDir + 120) % 12;
+                luuDaiHanIndex = (year3Pos + (offset - 2) * stepDir + 120) % 12;
             }
 
-            for (let i = 0; i < 12; i++) {
-                // 12 Cung chức năng Lưu Niên luôn tịnh tiến theo chiều thuận
-                palates[(lnMenhIndex + i) % 12].luuNienChucNang = TEN_LN_CHUC_NANG[i];
+            palates[luuDaiHanIndex].isLuuDaiHan = true;
+            luuDaiHanCung = DIA_CHI[luuDaiHanIndex];
+
+            // Nếu người dùng không truyền viewYearChiIndex, fallback LN.Mệnh theo Lưu Đại Hạn
+            if (viewYearChiIndex === undefined) {
+                for (let i = 0; i < 12; i++) {
+                    palates[(luuDaiHanIndex + i) % 12].luuNienChucNang = TEN_LN_CHUC_NANG[i];
+                }
             }
         }
     }
@@ -376,10 +425,10 @@ function anLaSoTuVi({
     palates[(locTonIndex + 1) % 12].phuTinh.push("Kình Dương");
     palates[(locTonIndex - 1 + 12) % 12].phuTinh.push("Đà La");
 
-    // Vòng Bác Sỹ
+    // Vòng Bác Sỹ (Đổi "Quan Phù" thành "Quan Phủ" để không trùng với vòng Thái Tuế)
     const vongLocTonNames = [
         "Bác Sỹ", "Lực Sĩ", "Thanh Long", "Tiểu Hao", "Tướng Quân", 
-        "Tấu Thư", "Phi Liêm", "Hỷ Thần", "Bệnh Phù", "Đại Hao", "Phục Binh", "Quan Phù"
+        "Tấu Thư", "Phi Liêm", "Hỷ Thần", "Bệnh Phù", "Đại Hao", "Phục Binh", "Quan Phủ"
     ];
     for (let i = 0; i < 12; i++) {
         let pos = isThuan ? (locTonIndex + i) % 12 : (locTonIndex - i + 120) % 12;
@@ -421,7 +470,7 @@ function anLaSoTuVi({
     palates[hoaIndex].phuTinh.push("Hỏa Tinh");
     palates[linhIndex].phuTinh.push("Linh Tinh");
 
-    // Các Sao Theo Can / Chi Năm (Đã sửa Khôi-Việt cho Can Đinh & Tân)
+    // Các Sao Theo Can / Chi Năm
     const khoiMap = { 0: 1, 1: 0, 2: 11, 3: 11, 4: 1, 5: 0, 6: 1, 7: 6, 8: 3, 9: 3 };
     const vietMap = { 0: 7, 1: 8, 2: 9, 3: 9, 4: 7, 5: 8, 6: 7, 7: 2, 8: 5, 9: 5 };
     palates[khoiMap[yearCanIndex]].phuTinh.push("Thiên Khôi");
@@ -463,7 +512,7 @@ function anLaSoTuVi({
     palates[(7 + lunarMonth - 1) % 12].phuTinh.push("Địa Giải");
     palates[phuongCatPos].phuTinh.push("Giải Thần");
 
-    // Thiên Hình, Thiên Diêu
+    // Thiên Hình, Thiên Diêu, Thiên Y
     palates[(9 + lunarMonth - 1) % 12].phuTinh.push("Thiên Hình");
     palates[(1 + lunarMonth - 1) % 12].phuTinh.push("Thiên Diêu");
     palates[(1 + lunarMonth - 1) % 12].phuTinh.push("Thiên Y");
@@ -562,6 +611,10 @@ function anLaSoTuVi({
         palates[lLocTon].phuTinh.push("L.Lộc Tồn");
         palates[(lLocTon + 1) % 12].phuTinh.push("L.Kình Dương");
         palates[(lLocTon - 1 + 12) % 12].phuTinh.push("L.Đà La");
+
+        // L.Thiên Khôi, L.Thiên Việt
+        palates[khoiMap[viewYearCanIndex]].phuTinh.push("L.Thiên Khôi");
+        palates[vietMap[viewYearCanIndex]].phuTinh.push("L.Thiên Việt");
         
         // L.Thiên Mã
         palates[maMap[viewYearChiIndex]].phuTinh.push("L.Thiên Mã");
@@ -598,6 +651,7 @@ function anLaSoTuVi({
         canLuongStr,
         tuoiAm,
         tieuHanCung,
+        luuDaiHanCung,
         viewYearStr: (viewYearCanIndex !== undefined && viewYearChiIndex !== undefined) ? (THIEN_CAN[viewYearCanIndex] + " " + DIA_CHI[viewYearChiIndex]) : null,
         palates
     };

@@ -112,7 +112,7 @@ const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân',
 const CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
 
 export const NAP_AM_MAP = {
-  'Giáp Tý': 'Giản Hạ Thủy', 'Ất Sửu': 'Giản Hạ Thủy',
+  'Giáp Tý': 'Hải Trung Kim', 'Ất Sửu': 'Hải Trung Kim',
   'Bính Dần': 'Lư Trung Hỏa', 'Đinh Mão': 'Lư Trung Hỏa',
   'Mậu Thìn': 'Đại Lâm Mộc', 'Kỷ Tỵ': 'Đại Lâm Mộc',
   'Canh Ngọ': 'Lộ Trung Thổ', 'Tân Mùi': 'Lộ Trung Thổ',

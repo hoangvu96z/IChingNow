@@ -239,10 +239,10 @@ test('Ngô Thị Tâm (24/7/2001 Dương -> 4/6/2001 Âm, Giờ Thìn, Âm Nữ,
   assert.ok(prompt.includes('Đông tây nam bắc tận giai thông'));
   assert.ok(!prompt.includes('không kèm bài thơ hay quy tắc giải nghĩa cân lượng'));
 
-  // 3. Lưu Niên Đại Hạn (LN.Mệnh at Sửu) vs Lưu Niên Thái Tuế (Thái Tuế.Mệnh at Mùi) are clearly separated
-  assert.ok(prompt.includes('12 Cung Lưu Niên Thái Tuế'));
-  assert.ok(prompt.includes('Thái Tuế.Mệnh tại Mùi'));
-  assert.ok(!prompt.includes('+ 12 Cung Lưu Niên: LN.'));
+  // 3. Lưu Niên (LN.Mệnh at Mùi) & Lưu Đại Hạn (Lưu Đại Hạn tại Tý) are 100% synchronized in Engine v12
+  assert.ok(prompt.includes('Lưu Đại Hạn tại Tý'));
+  assert.ok(prompt.includes('Cung Lưu Đại Hạn của năm xem'));
+  assert.ok(prompt.includes('LN.Mệnh tại Mùi'));
 
   // 4. Patterns include target palace and breaking conditions (Thiên Tướng lạc hãm + Địa Kiếp)
   assert.ok(prompt.includes('[Tại cung: Tài Bạch, Mệnh]'));

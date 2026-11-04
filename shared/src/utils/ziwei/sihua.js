@@ -9,7 +9,7 @@ import { STEMS_ZH, THIEN_CAN, DIA_CHI } from './solarTime.js';
 export const SIHUA_TYPES = ['Hóa Lộc', 'Hóa Quyền', 'Hóa Khoa', 'Hóa Kỵ'];
 export const SIHUA_KEYS = ['Loc', 'Quyen', 'Khoa', 'Ky'];
 
-// Bảng Tứ Hóa chuẩn Nam Phái (v11): Can Canh = Nhật - Vũ - Đồng - Âm
+// Bảng Tứ Hóa chuẩn Nam Phái (v11/v12): Can Canh = Nhật - Vũ - Đồng - Âm, Can Tân = Cự - Lương - Khúc - Xương
 export const SI_HUA_TABLE_V11 = {
   0: ['Liêm Trinh', 'Phá Quân', 'Vũ Khúc', 'Thái Dương'],   // Giáp
   1: ['Thiên Cơ', 'Thiên Lương', 'Tử Vi', 'Thái Âm'],       // Ất
@@ -18,7 +18,7 @@ export const SI_HUA_TABLE_V11 = {
   4: ['Tham Lang', 'Thái Âm', 'Hữu Bật', 'Thiên Cơ'],       // Mậu
   5: ['Vũ Khúc', 'Tham Lang', 'Thiên Lương', 'Văn Khúc'],   // Kỷ
   6: ['Thái Dương', 'Vũ Khúc', 'Thiên Đồng', 'Thái Âm'],    // Canh (Nam Phái: Nhật Vũ Đồng Âm)
-  7: ['Cự Môn', 'Thái Dương', 'Văn Khúc', 'Văn Xương'],     // Tân
+  7: ['Cự Môn', 'Thiên Lương', 'Văn Khúc', 'Văn Xương'],    // Tân (Nam Phái v12: Cự Lương Khúc Xương)
   8: ['Thiên Lương', 'Tử Vi', 'Tả Phụ', 'Vũ Khúc'],         // Nhâm
   9: ['Phá Quân', 'Cự Môn', 'Thái Âm', 'Tham Lang'],        // Quý
 };

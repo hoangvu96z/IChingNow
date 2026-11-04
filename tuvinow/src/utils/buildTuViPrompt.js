@@ -197,7 +197,7 @@ function exportContext(result, input = {}, yunxianState = null) {
     `Thân cư: ${palaceName(palaces.find((p) => p.isThan || p.chiName === result.thanCung))}`,
     `Đại hạn ứng với tuổi đang xem: ${activeDecade ? `${palaceName(activeDecade)}; ${activeDecade.daiHan}–${activeDecade.daiHan + 9} tuổi` : 'Chưa xác định từ dữ liệu tuổi và các đại hạn hiện có'}`,
     `Sao lưu niên đã an: ${annualStars.join(', ') || 'Chưa có dữ liệu'}`,
-    `Tiểu hạn: ${result.tieuHanCung || 'Chưa có dữ liệu'}. Cung lưu niên đại hạn: ${palaces.some((p) => p.luuNienChucNang) ? 'Đã có, xem từng cung (lưu ý: LN. trong 12 cung là Lưu Niên Đại Hạn tính theo bước nhảy tuổi từ cung Đại Hạn; khác với 12 Cung Lưu Niên Thái Tuế khởi từ Địa Chi năm xem)' : 'Chưa có dữ liệu'}.`,
+    `Tiểu hạn: ${result.tieuHanCung || 'Chưa có dữ liệu'}. Lưu Đại Hạn: ${result.luuDaiHanCung || 'Chưa có dữ liệu'}. Cung lưu niên đại hạn: ${palaces.some((p) => p.luuNienChucNang) ? 'Đã có, xem từng cung (LN. khởi từ Lưu Thái Tuế Địa Chi năm xem)' : 'Chưa có dữ liệu'}.`,
     canLuongContextLine,
     solarOrFallback,
     monthFallback,
@@ -377,7 +377,7 @@ function exportContext(result, input = {}, yunxianState = null) {
           const branch = DIA_CHI[((overlay.viewYear - 4) % 12 + 12) % 12];
           const lnAge = overlay.age || (input?.lunarYear ? overlay.viewYear - input.lunarYear + 1 : 'Chưa rõ');
 
-          extraYunxian.push(`- LƯU NIÊN ĐANG XEM: Năm ${overlay.viewYear} (${stem} ${branch}), ${lnAge} tuổi âm. Cung Tiểu Hạn: ${overlay.tieuHanCungName || result.tieuHanCung || 'Chưa có'}.`);
+          extraYunxian.push(`- LƯU NIÊN ĐANG XEM: Năm ${overlay.viewYear} (${stem} ${branch}), ${lnAge} tuổi âm. Cung Tiểu Hạn: ${overlay.tieuHanCungName || result.tieuHanCung || 'Chưa có'}. Cung Lưu Đại Hạn: ${result.luuDaiHanCung || 'Chưa có'}.`);
           extraYunxian.push('  + Tứ Hóa Lưu Niên:');
           extraYunxian.push(`    * LN.Hóa Lộc: ${lnTransforms['Hóa Lộc'] || 'Không'} đóng tại ${findPalaceWithStar(lnTransforms['Hóa Lộc'])}`);
           extraYunxian.push(`    * LN.Hóa Quyền: ${lnTransforms['Hóa Quyền'] || 'Không'} đóng tại ${findPalaceWithStar(lnTransforms['Hóa Quyền'])}`);
@@ -388,11 +388,10 @@ function exportContext(result, input = {}, yunxianState = null) {
             const lnMapStr = Object.entries(overlay.luuNienPalaceMap)
               .map(([chiIdx, name]) => {
                 const pal = palaces.find((p) => p.chiIndex === Number(chiIdx));
-                const thaiTueLabel = String(name).replace(/^LN\./, 'Thái Tuế.');
-                return `${thaiTueLabel} tại ${pal?.chiName || chiIdx}`;
+                return `${name} tại ${pal?.chiName || chiIdx}`;
               })
               .join(', ');
-            extraYunxian.push(`  + 12 Cung Lưu Niên Thái Tuế (khởi Lưu Niên Mệnh tại Địa Chi năm xem ${branch} — độc lập với Lưu Niên Đại Hạn LN. trong 12 cung): ${lnMapStr}`);
+            extraYunxian.push(`  + 12 Cung Lưu Niên (khởi LN.Mệnh tại Lưu Thái Tuế ${branch}, đồng bộ với LN. trong 12 cung): ${lnMapStr}`);
           }
         }
 
@@ -501,7 +500,7 @@ export function buildTuViText(result, input = {}, yunxianState = null) {
     `Mệnh tại ${effectiveResult.menhCung}; Thân tại ${effectiveResult.thanCung}; Chủ Mệnh: ${effectiveResult.chuMenh}; Chủ Thân: ${effectiveResult.chuThan}`,
     `Tuần: ${(effectiveResult.tuanCung || []).join(', ')}; Triệt: ${(effectiveResult.trietCung || []).join(', ')}`,
     ...(effectiveResult.canLuongStr ? [`Cân lượng: ${effectiveResult.canLuongStr}`] : []),
-    ...(effectiveResult.tuoiAm != null ? [`Tuổi âm năm xem: ${effectiveResult.tuoiAm}; Tiểu hạn tại ${effectiveResult.tieuHanCung}`] : []),
+    ...(effectiveResult.tuoiAm != null ? [`Tuổi âm năm xem: ${effectiveResult.tuoiAm}; Tiểu hạn tại ${effectiveResult.tieuHanCung}${effectiveResult.luuDaiHanCung ? `; Lưu Đại Hạn tại ${effectiveResult.luuDaiHanCung}` : ''}`] : []),
     ...(effectiveResult.viewYearCanChi ? [`Lưu niên: ${effectiveResult.viewYear || ''} ${effectiveResult.viewYearCanChi}. L. là sao lưu niên; LN. là cung lưu niên đại hạn. Dùng đúng các mục được liệt kê.`] : []),
     'Ký hiệu sao: M = Miếu, V = Vượng, Đ = Đắc, B = Bình, H = Hãm.',
     ...yunxianHeaderLines,
@@ -515,6 +514,7 @@ export function buildTuViText(result, input = {}, yunxianState = null) {
       `Tràng Sinh: ${palace.trangSinh}; Đại hạn: ${palace.daiHan}–${palace.daiHan + 9} tuổi`,
       `Tuần: ${palace.isTuan ? 'Có' : 'Không'}; Triệt: ${palace.isTriet ? 'Có' : 'Không'}`,
       ...(palace.isTieuHan ? ['Cung Tiểu hạn của năm xem'] : []),
+      ...(palace.isLuuDaiHan ? ['Cung Lưu Đại Hạn của năm xem'] : []),
       ...(palace.luuNienChucNang ? [`Cung lưu niên đại hạn: ${palace.luuNienChucNang}`] : []),
       ...(yunxianState && overlay && mode !== 'mingpan' && overlay.daXianPalaceMap?.[palace.chiIndex]
         ? [`Cung Đại hạn đang xem: ${overlay.daXianPalaceMap[palace.chiIndex]}`]

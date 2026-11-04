@@ -28,12 +28,19 @@ test('v11 age, annual palaces and weight match source across age boundaries and 
 
 test('missing annual year never invokes wall-clock fallback and pre-birth years are rejected', () => {
   const input = { yearCanIndex: 2, yearChiIndex: 0, gender: 1, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3, lunarYear: 1996 };
-  for (const extra of [{}, { viewYearCanIndex: 2, viewYearChiIndex: 6 }]) {
-    const result = anLaSoTuVi({ ...input, ...extra });
-    assert.equal(result.tuoiAm, null);
-    assert.equal(result.tieuHanCung, null);
-    assert.ok(result.palates.every(p => !p.isTieuHan && !p.luuNienChucNang));
-  }
+  const resultNoViewYear = anLaSoTuVi(input);
+  assert.equal(resultNoViewYear.tuoiAm, null);
+  assert.equal(resultNoViewYear.tieuHanCung, null);
+  assert.equal(resultNoViewYear.luuDaiHanCung, null);
+  assert.ok(resultNoViewYear.palates.every(p => !p.isTieuHan && !p.isLuuDaiHan && !p.luuNienChucNang));
+
+  const resultCanChiOnly = anLaSoTuVi({ ...input, viewYearCanIndex: 2, viewYearChiIndex: 6 });
+  assert.equal(resultCanChiOnly.tuoiAm, null);
+  assert.equal(resultCanChiOnly.tieuHanCung, null);
+  assert.equal(resultCanChiOnly.luuDaiHanCung, null);
+  assert.ok(resultCanChiOnly.palates.every(p => !p.isTieuHan && !p.isLuuDaiHan));
+  assert.equal(resultCanChiOnly.palates[6].luuNienChucNang, 'LN.Mệnh');
+
   assert.throws(() => anLaSoTuVi({ ...input, viewYear: 1995 }), /Năm xem/);
 });
 

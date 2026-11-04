@@ -33,7 +33,7 @@ export const THAI_TUE_SHEN_VI = [
  */
 export const BOSHI_SHEN = [
   'Bác Sỹ', 'Lực Sĩ', 'Thanh Long', 'Tiểu Hao', 'Tướng Quân', 'Tấu Thư',
-  'Phi Liêm', 'Hỷ Thần', 'Bệnh Phù', 'Đại Hao', 'Phục Binh', 'Quan Phù',
+  'Phi Liêm', 'Hỷ Thần', 'Bệnh Phù', 'Đại Hao', 'Phục Binh', 'Quan Phủ',
 ];
 
 // Bảng Lộc Tồn theo Thiên Can năm sinh (0=Giáp .. 9=Quý) -> Địa Chi (0=Tý .. 11=Hợi)
