@@ -137,6 +137,7 @@ test('answer and actual palace components render evidence and legacy text', asyn
     assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.center-info-row\s*\{[\s\S]*?flex-wrap:\s*nowrap/);
     assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-grid\s*\{[\s\S]*?display:\s*grid[\s\S]*?grid-template-columns:\s*repeat\(4,/);
     assert.match(css, /\.tuvi-overview-hub\s*\{[\s\S]*?max-width:\s*1200px/);
+    assert.match(css, /\.tuvi-radar-chart-container\s*\{[\s\S]*?flex-direction:\s*column/);
   } finally { await server.close(); }
 });
 
