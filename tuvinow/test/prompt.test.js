@@ -132,3 +132,72 @@ test('buildTuViPrompt with True Solar Time, Birthplace, and SchoolConfig outputs
   assert.ok(!text.includes('Không cung cấp nơi sinh, múi giờ sinh, phút sinh hoặc hiệu chỉnh giờ mặt trời.'));
 });
 
+test('buildTuViText and buildTuViPrompt dynamically adapt to mingpan, daxian, liunian (2026 -> 2029 updates L.*, tuổi âm, tiểu hạn), and liuyue (tháng 3 -> tháng 9)', () => {
+  // 1. Mingpan mode
+  const mingpanState = { mode: 'mingpan' };
+  const mingpanText = buildTuViText(result, input, mingpanState);
+  const mingpanPrompt = buildTuViPrompt(result, input, 'overview', '', false, mingpanState);
+
+  assert.ok(mingpanText.includes('TÙY CHỌN VẬN HẠN ĐANG XEM / XUẤT CHO AI:'));
+  assert.ok(mingpanText.includes('- Chế độ trọng tâm: BẢN MỆNH'));
+  assert.ok(mingpanPrompt.includes('Trọng tâm luận giải: Tập trung phân tích chuyên sâu BẢN MỆNH'));
+
+  // 2. Daxian mode (selecting specific daXianChiIndex)
+  const daxianState1 = { mode: 'daxian', daXianChiIndex: 2 }; // Dần
+  const daxianText1 = buildTuViText(result, input, daxianState1);
+  const daxianPrompt1 = buildTuViPrompt(result, input, 'career', 'Sự nghiệp đại vận?', false, daxianState1);
+
+  assert.ok(daxianText1.includes('- Chế độ trọng tâm: ĐẠI VẬN (ĐẠI HẠN 10 NĂM)'));
+  assert.ok(daxianText1.includes('Tứ Hóa Đại Hạn: ĐH.Lộc'));
+  assert.ok(daxianText1.includes('Cung Đại hạn đang xem:'));
+  assert.ok(daxianPrompt1.includes('Trọng tâm luận giải: Tập trung phân tích chuyên sâu ĐẠI HẠN 10 NĂM đang chọn'));
+
+  const daxianState2 = { mode: 'daxian', daXianChiIndex: 6 }; // Ngọ
+  const daxianText2 = buildTuViText(result, input, daxianState2);
+  assert.notEqual(daxianText1, daxianText2);
+
+  // 3. Liunian mode: 2026 vs 2029
+  // 2026: Bính Ngọ (31 tuổi âm)
+  const liunian2026State = { mode: 'liunian', viewYear: 2026 };
+  const text2026 = buildTuViText(result, input, liunian2026State);
+  const prompt2026 = buildTuViPrompt(result, input, 'love', '', false, liunian2026State);
+
+  assert.ok(text2026.includes('- Chế độ trọng tâm: LƯU NIÊN (VẬN HẠN THEO NĂM)'));
+  assert.ok(text2026.includes('Năm 2026 (Bính Ngọ, 31 tuổi âm)'));
+  assert.ok(text2026.includes('Tuổi âm năm xem: 31'));
+  assert.ok(text2026.includes('LN.Lộc'));
+  assert.ok(text2026.includes('L.Thái Tuế'));
+  assert.ok(prompt2026.includes('Trọng tâm luận giải: Tập trung phân tích chuyên sâu LƯU NIÊN Năm 2026'));
+
+  // 2029: Kỷ Dậu (34 tuổi âm)
+  const liunian2029State = { mode: 'liunian', viewYear: 2029 };
+  const text2029 = buildTuViText(result, input, liunian2029State);
+  const prompt2029 = buildTuViPrompt(result, input, 'love', '', false, liunian2029State);
+
+  assert.ok(text2029.includes('Năm 2029 (Kỷ Dậu, 34 tuổi âm)'));
+  assert.ok(text2029.includes('Tuổi âm năm xem: 34'));
+  assert.ok(prompt2029.includes('Trọng tâm luận giải: Tập trung phân tích chuyên sâu LƯU NIÊN Năm 2029'));
+  // Ensure annual stars and tiểu hạn changed between 2026 and 2029
+  assert.notEqual(text2026, text2029);
+
+  // 4. Liuyue mode: tháng 3 vs tháng 9
+  const liuyue3State = { mode: 'liuyue', viewYear: 2026, lunarMonth: 3 };
+  const textMonth3 = buildTuViText(result, input, liuyue3State);
+  const promptMonth3 = buildTuViPrompt(result, input, 'overview', '', false, liuyue3State);
+
+  assert.ok(textMonth3.includes('- Chế độ trọng tâm: LƯU NGUYỆT (VẬN HẠN CHI TIẾT THEO THÁNG ÂM LỊCH)'));
+  assert.ok(textMonth3.includes('Tháng 3 Âm Lịch'));
+  assert.ok(textMonth3.includes('Cung Lưu nguyệt Tháng 3:'));
+  assert.ok(textMonth3.includes('Tứ Hóa Lưu Nguyệt: LNg.Lộc'));
+  assert.ok(promptMonth3.includes('Trọng tâm luận giải: Tập trung phân tích chuyên sâu LƯU NGUYỆT Tháng 3 Âm Lịch (Năm 2026)'));
+
+  const liuyue9State = { mode: 'liuyue', viewYear: 2026, lunarMonth: 9 };
+  const textMonth9 = buildTuViText(result, input, liuyue9State);
+  const promptMonth9 = buildTuViPrompt(result, input, 'overview', '', false, liuyue9State);
+
+  assert.ok(textMonth9.includes('Tháng 9 Âm Lịch'));
+  assert.ok(textMonth9.includes('Cung Lưu nguyệt Tháng 9:'));
+  assert.ok(promptMonth9.includes('Trọng tâm luận giải: Tập trung phân tích chuyên sâu LƯU NGUYỆT Tháng 9 Âm Lịch (Năm 2026)'));
+  assert.notEqual(textMonth3, textMonth9);
+});
+

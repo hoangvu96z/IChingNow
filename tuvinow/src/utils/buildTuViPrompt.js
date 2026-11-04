@@ -1,4 +1,5 @@
 import {
+  computeZiweiMeta,
   detectPatterns,
   getCanLuongPoem,
   buildChartFlyingSihua,
@@ -9,6 +10,9 @@ import {
   THIEN_CAN,
   DIA_CHI,
 } from './tuViZiweiModule.js';
+import { anLaSoTuVi } from './tuViEngine.js';
+
+export { computeZiweiMeta };
 
 const HOURS = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
 export const TOPICS = {
@@ -20,6 +24,55 @@ export const TOPICS = {
 
 const palaceName = (p) => (p ? `${p.chucNang} tại ${p.chiName}` : 'Chưa có dữ liệu');
 const show = (value) => (value === undefined || value === null || value === '' ? 'Chưa có dữ liệu' : value);
+
+export function resolveEffectiveChart(result, input = {}, yunxianState = null) {
+  if (!result || !yunxianState) return result;
+  const mode = yunxianState.mode || (result?.viewYear ? 'liunian' : 'mingpan');
+  const hasViewYear =
+    yunxianState.viewYear !== undefined &&
+    yunxianState.viewYear !== null &&
+    Number.isInteger(Number(yunxianState.viewYear));
+  const shouldResolveYear =
+    mode === 'liunian' ||
+    mode === 'liuyue' ||
+    (hasViewYear && mode !== 'mingpan' && mode !== 'daxian');
+
+  if (shouldResolveYear && hasViewYear) {
+    const targetYear = Number(yunxianState.viewYear);
+    if (result.viewYear !== targetYear && input?.lunarYear && input?.lunarMonth && input?.lunarDay) {
+      try {
+        const canIdx = ((targetYear - 4) % 10 + 10) % 10;
+        const chiIdx = ((targetYear - 4) % 12 + 12) % 12;
+        const effective = anLaSoTuVi({
+          ...input,
+          viewYear: targetYear,
+          viewYearCanIndex: canIdx,
+          viewYearChiIndex: chiIdx,
+        });
+        if (effective && Array.isArray(effective.palates) && effective.palates.length === 12) {
+          return effective;
+        }
+      } catch {
+        // Fallback to original result
+      }
+    }
+  } else if ((mode === 'mingpan' || mode === 'daxian') && result.viewYear && input?.lunarYear && input?.lunarMonth && input?.lunarDay) {
+    try {
+      const natal = anLaSoTuVi({
+        ...input,
+        viewYear: undefined,
+        viewYearCanIndex: undefined,
+        viewYearChiIndex: undefined,
+      });
+      if (natal && Array.isArray(natal.palates) && natal.palates.length === 12) {
+        return natal;
+      }
+    } catch {
+      // Fallback to original result
+    }
+  }
+  return result;
+}
 
 function buildSolarAndSchoolSection(input, _result) {
   const parts = [];
@@ -248,8 +301,9 @@ function exportContext(result, input = {}, yunxianState = null) {
         birthYear: input?.lunarYear,
       });
       if (overlay) {
+        const mode = overlay.mode || yunxianState.mode || 'mingpan';
         extraYunxian.push('\nNGỮ CẢNH VẬN HẠN ĐỘNG THEO LỰA CHỌN HIỆN TẠI (TIMENAV):');
-        extraYunxian.push(`Chế độ vận hạn đang kích hoạt: ${String(overlay.mode).toUpperCase()}`);
+        extraYunxian.push(`Chế độ vận hạn đang kích hoạt: ${String(mode).toUpperCase()}`);
 
         const findPalaceWithStar = (star) => {
           if (!star) return 'Không rõ';
@@ -258,7 +312,7 @@ function exportContext(result, input = {}, yunxianState = null) {
         };
 
         // Đại Hạn
-        if (overlay.activeDaXian) {
+        if (overlay.activeDaXian && (mode !== 'mingpan' || (yunxianState.daXianChiIndex !== null && yunxianState.daXianChiIndex !== undefined))) {
           const dx = overlay.activeDaXian;
           const dxTransforms = overlay.sihuaLayers?.daXian?.transforms || {};
           extraYunxian.push(`- ĐẠI HẠN ĐANG XEM: Cung ${dx.natalChucNang || dx.chiName} (${dx.canName} ${dx.chiName}), ${dx.startAge}–${dx.endAge} tuổi. Thiên Can Đại Hạn: ${dx.canName}.`);
@@ -280,7 +334,7 @@ function exportContext(result, input = {}, yunxianState = null) {
         }
 
         // Lưu Niên
-        if (overlay.viewYear) {
+        if (overlay.viewYear && (mode === 'liunian' || mode === 'liuyue')) {
           const lnTransforms = overlay.sihuaLayers?.liuNian?.transforms || {};
           const stem = THIEN_CAN[((overlay.viewYear - 4) % 10 + 10) % 10];
           const branch = DIA_CHI[((overlay.viewYear - 4) % 12 + 12) % 12];
@@ -305,7 +359,7 @@ function exportContext(result, input = {}, yunxianState = null) {
         }
 
         // Lưu Nguyệt
-        if (overlay.lunarMonth && overlay.sihuaLayers?.liuYue) {
+        if (overlay.lunarMonth && overlay.sihuaLayers?.liuYue && (mode === 'liuyue' || (mode === 'liunian' && (yunxianState.lunarMonth !== null && yunxianState.lunarMonth !== undefined)))) {
           const lyTransforms = overlay.sihuaLayers.liuYue.transforms || {};
           const lyBranch = overlay.sihuaLayers.liuYue.branchIndex;
           const lyPalace = palaces.find((p) => p.chiIndex === lyBranch);
@@ -333,6 +387,70 @@ function exportContext(result, input = {}, yunxianState = null) {
 }
 
 export function buildTuViText(result, input = {}, yunxianState = null) {
+  const effectiveResult = resolveEffectiveChart(result, input, yunxianState);
+
+  let yunxianHeaderLines = [];
+  let overlay = null;
+  const mode = yunxianState ? (yunxianState.mode || (effectiveResult?.viewYear ? 'liunian' : 'mingpan')) : null;
+
+  if (yunxianState && effectiveResult?.palates?.length === 12) {
+    try {
+      overlay = buildYunxianOverlay(effectiveResult, {
+        mode: yunxianState.mode,
+        daXianChiIndex: yunxianState.daXianChiIndex,
+        viewYear: yunxianState.viewYear,
+        lunarMonth: yunxianState.lunarMonth,
+        schoolConfig: input?.schoolConfig,
+        birthYear: input?.lunarYear,
+      });
+      if (overlay) {
+        yunxianHeaderLines.push('\nTÙY CHỌN VẬN HẠN ĐANG XEM / XUẤT CHO AI:');
+
+        const dx = overlay.activeDaXian;
+        const dxPalaceTitle = dx ? (dx.natalChucNang || dx.chiName) : 'Chưa rõ';
+        const dxCanChi = dx ? `${dx.canName} ${dx.chiName}` : 'Chưa rõ';
+        const dxAges = dx ? `${dx.startAge}–${dx.endAge} tuổi` : 'Chưa rõ';
+        const dxTransforms = overlay.sihuaLayers?.daXian?.transforms || {};
+
+        const lnTransforms = overlay.sihuaLayers?.liuNian?.transforms || {};
+        const stem = overlay.viewYear ? THIEN_CAN[((overlay.viewYear - 4) % 10 + 10) % 10] : '';
+        const branch = overlay.viewYear ? DIA_CHI[((overlay.viewYear - 4) % 12 + 12) % 12] : '';
+        const lnAge = overlay.age || (input?.lunarYear && overlay.viewYear ? overlay.viewYear - input.lunarYear + 1 : 'Chưa rõ');
+
+        if (mode === 'mingpan') {
+          yunxianHeaderLines.push('- Chế độ trọng tâm: BẢN MỆNH (Tập trung luận giải nguyên cục 12 cung Bản Mệnh & Thân)');
+        } else if (mode === 'daxian') {
+          yunxianHeaderLines.push('- Chế độ trọng tâm: ĐẠI VẬN (ĐẠI HẠN 10 NĂM)');
+          yunxianHeaderLines.push(
+            `- Đại vận đang chọn: Cung ${dxPalaceTitle} (${dxCanChi}), ${dxAges} | Tứ Hóa Đại Hạn: ĐH.Lộc (${dxTransforms['Hóa Lộc'] || 'Không'}), ĐH.Quyền (${dxTransforms['Hóa Quyền'] || 'Không'}), ĐH.Khoa (${dxTransforms['Hóa Khoa'] || 'Không'}), ĐH.Kỵ (${dxTransforms['Hóa Kỵ'] || 'Không'})`
+          );
+        } else if (mode === 'liunian') {
+          yunxianHeaderLines.push('- Chế độ trọng tâm: LƯU NIÊN (VẬN HẠN THEO NĂM)');
+          yunxianHeaderLines.push(`- Đại vận hiện hành: Cung ${dxPalaceTitle} (${dxCanChi}), ${dxAges}`);
+          yunxianHeaderLines.push(
+            `- Năm Lưu Niên đang chọn: Năm ${overlay.viewYear} (${stem} ${branch}, ${lnAge} tuổi âm) · Tiểu hạn tại ${effectiveResult.tieuHanCung || 'Chưa rõ'} | Tứ Hóa Lưu Niên: LN.Lộc (${lnTransforms['Hóa Lộc'] || 'Không'}), LN.Quyền (${lnTransforms['Hóa Quyền'] || 'Không'}), LN.Khoa (${lnTransforms['Hóa Khoa'] || 'Không'}), LN.Kỵ (${lnTransforms['Hóa Kỵ'] || 'Không'})`
+          );
+          if (yunxianState.lunarMonth !== undefined && yunxianState.lunarMonth !== null) {
+            yunxianHeaderLines.push(`- Tháng Lưu Nguyệt kèm theo: Tháng ${overlay.lunarMonth || yunxianState.lunarMonth} Âm Lịch`);
+          }
+        } else if (mode === 'liuyue') {
+          const lyTransforms = overlay.sihuaLayers?.liuYue?.transforms || {};
+          const lyBranch = overlay.sihuaLayers?.liuYue?.branchIndex;
+          const lyPalace = effectiveResult.palates?.find((p) => p.chiIndex === lyBranch);
+
+          yunxianHeaderLines.push('- Chế độ trọng tâm: LƯU NGUYỆT (VẬN HẠN CHI TIẾT THEO THÁNG ÂM LỊCH)');
+          yunxianHeaderLines.push(`- Đại vận hiện hành: Cung ${dxPalaceTitle} (${dxCanChi}), ${dxAges}`);
+          yunxianHeaderLines.push(
+            `- Năm Lưu Niên đang chọn: Năm ${overlay.viewYear} (${stem} ${branch}, ${lnAge} tuổi âm) · Tiểu hạn tại ${effectiveResult.tieuHanCung || 'Chưa rõ'}`
+          );
+          yunxianHeaderLines.push(
+            `- Tháng Lưu Nguyệt đang chọn: Tháng ${overlay.lunarMonth || 1} Âm Lịch · Cung Lưu Nguyệt Mệnh tại ${lyPalace ? palaceName(lyPalace) : 'Chưa rõ'} | Tứ Hóa Lưu Nguyệt: LNg.Lộc (${lyTransforms['Hóa Lộc'] || 'Không'}), LNg.Quyền (${lyTransforms['Hóa Quyền'] || 'Không'}), LNg.Khoa (${lyTransforms['Hóa Khoa'] || 'Không'}), LNg.Kỵ (${lyTransforms['Hóa Kỵ'] || 'Không'})`
+          );
+        }
+      }
+    } catch {}
+  }
+
   const lines = [
     'LÁ SỐ TỬ VI ĐẨU SỐ',
     `Họ tên: ${input.name || 'Ẩn danh'}`,
@@ -340,17 +458,18 @@ export function buildTuViText(result, input = {}, yunxianState = null) {
     `Ngày sinh âm lịch: ${show(input.lunarDay)}/${show(input.lunarMonth)}/${show(input.lunarYear)}${input.isLeap ? ' (tháng nhuận)' : ''}`,
     'Thứ tự ngày tháng trong dữ liệu: ngày/tháng/năm.',
     `Giờ sinh: ${show(HOURS[input.lunarHourIndex])} (theo Địa Chi; không có giờ/phút chính xác)`,
-    `Âm dương / giới tính: ${result.amDuongNamNu}; ${result.isThuan ? 'Thuận' : 'Nghịch'} hành`,
-    `Can chi năm: ${result.canChiNam}; Bản mệnh: ${result.banMenhNapAm}; Cục: ${result.cucName}`,
-    `Mệnh tại ${result.menhCung}; Thân tại ${result.thanCung}; Chủ Mệnh: ${result.chuMenh}; Chủ Thân: ${result.chuThan}`,
-    `Tuần: ${(result.tuanCung || []).join(', ')}; Triệt: ${(result.trietCung || []).join(', ')}`,
-    ...(result.canLuongStr ? [`Cân lượng: ${result.canLuongStr}`] : []),
-    ...(result.tuoiAm != null ? [`Tuổi âm năm xem: ${result.tuoiAm}; Tiểu hạn tại ${result.tieuHanCung}`] : []),
-    ...(result.viewYearCanChi ? [`Lưu niên: ${result.viewYear || ''} ${result.viewYearCanChi}. L. là sao lưu niên; LN. là cung lưu niên đại hạn. Dùng đúng các mục được liệt kê.`] : []),
+    `Âm dương / giới tính: ${effectiveResult.amDuongNamNu}; ${effectiveResult.isThuan ? 'Thuận' : 'Nghịch'} hành`,
+    `Can chi năm: ${effectiveResult.canChiNam}; Bản mệnh: ${effectiveResult.banMenhNapAm}; Cục: ${effectiveResult.cucName}`,
+    `Mệnh tại ${effectiveResult.menhCung}; Thân tại ${effectiveResult.thanCung}; Chủ Mệnh: ${effectiveResult.chuMenh}; Chủ Thân: ${effectiveResult.chuThan}`,
+    `Tuần: ${(effectiveResult.tuanCung || []).join(', ')}; Triệt: ${(effectiveResult.trietCung || []).join(', ')}`,
+    ...(effectiveResult.canLuongStr ? [`Cân lượng: ${effectiveResult.canLuongStr}`] : []),
+    ...(effectiveResult.tuoiAm != null ? [`Tuổi âm năm xem: ${effectiveResult.tuoiAm}; Tiểu hạn tại ${effectiveResult.tieuHanCung}`] : []),
+    ...(effectiveResult.viewYearCanChi ? [`Lưu niên: ${effectiveResult.viewYear || ''} ${effectiveResult.viewYearCanChi}. L. là sao lưu niên; LN. là cung lưu niên đại hạn. Dùng đúng các mục được liệt kê.`] : []),
     'Ký hiệu sao: M = Miếu, V = Vượng, Đ = Đắc, B = Bình, H = Hãm.',
+    ...yunxianHeaderLines,
     '\nCHI TIẾT 12 CUNG:',
   ];
-  for (const palace of result.palates || []) {
+  for (const palace of effectiveResult.palates || []) {
     lines.push(
       `\n${palace.chucNang} — ${palace.canName} ${palace.chiName}${palace.isMenh ? ' [Mệnh]' : ''}${palace.isThan ? ' [Thân]' : ''}`,
       `Chính tinh: ${(palace.chinhTinh || []).join(', ') || 'Vô chính diệu'}`,
@@ -358,10 +477,16 @@ export function buildTuViText(result, input = {}, yunxianState = null) {
       `Tràng Sinh: ${palace.trangSinh}; Đại hạn: ${palace.daiHan}–${palace.daiHan + 9} tuổi`,
       `Tuần: ${palace.isTuan ? 'Có' : 'Không'}; Triệt: ${palace.isTriet ? 'Có' : 'Không'}`,
       ...(palace.isTieuHan ? ['Cung Tiểu hạn của năm xem'] : []),
-      ...(palace.luuNienChucNang ? [`Cung lưu niên đại hạn: ${palace.luuNienChucNang}`] : [])
+      ...(palace.luuNienChucNang ? [`Cung lưu niên đại hạn: ${palace.luuNienChucNang}`] : []),
+      ...(yunxianState && overlay && mode !== 'mingpan' && overlay.daXianPalaceMap?.[palace.chiIndex]
+        ? [`Cung Đại hạn đang xem: ${overlay.daXianPalaceMap[palace.chiIndex]}`]
+        : []),
+      ...(yunxianState && overlay && (mode === 'liuyue' || (yunxianState.lunarMonth !== undefined && yunxianState.lunarMonth !== null)) && overlay.luuNguyetPalaceMap?.[palace.chiIndex]
+        ? [`Cung Lưu nguyệt Tháng ${overlay.lunarMonth || 1}: ${overlay.luuNguyetPalaceMap[palace.chiIndex]}`]
+        : [])
     );
   }
-  return lines.join('\n') + '\n' + exportContext(result, input, yunxianState);
+  return lines.join('\n') + '\n' + exportContext(effectiveResult, input, yunxianState);
 }
 
 const DETAILED_READING = `
@@ -385,7 +510,26 @@ export function buildTuViPrompt(
   structured = false,
   yunxianState = null
 ) {
-  return `Bạn là người luận giải Tử Vi Đẩu Số. Hãy phân tích lá số bên dưới bằng tiếng Việt.\nChủ đề: ${TOPICS[topic] || TOPICS.overview}\nCâu hỏi: ${question.trim() || 'Luận giải tổng quan lá số và đưa ra lời khuyên thực tế.'}\n\n${buildTuViText(result, input, yunxianState)}${structured ? '' : DETAILED_READING}\n\nYÊU CẦU:\n- Dùng đúng dữ liệu lá số, không tự an lại sao hoặc thêm sao không có.\n- Phân tích Mệnh–Thân, các cung liên quan và mối liên hệ giữa các cung; dẫn rõ dữ kiện làm căn cứ.\n- Chỉ luận đại hạn ở mức dữ liệu đã có. ${result.viewYearCanChi ? 'Chỉ dùng sao lưu niên, Tiểu hạn và cung LN. thực sự được liệt kê; không suy diễn thêm dữ liệu hạn hoặc tự luận Cân lượng khi chưa có quy tắc.' : 'Chưa có tiểu hạn/lưu niên nên không dự đoán chi tiết theo năm.'}\n- Nội dung cần có: Tổng quan, Phân tích chủ đề/câu hỏi, Điểm thuận lợi và thách thức, 3 lời khuyên thực tế. Không khẳng định số phận chắc chắn.\n${structured ? '- Đưa các mục luận giải vào sections theo định dạng JSON được yêu cầu bên dưới.' : '- Kết thúc bằng dòng ---SUGGESTED_QUESTIONS--- và 3 câu hỏi đào sâu, mỗi câu một dòng.'}`;
+  const effectiveResult = resolveEffectiveChart(result, input, yunxianState);
+
+  let focusInstruction = '';
+  if (yunxianState) {
+    const mode = yunxianState.mode || (effectiveResult?.viewYear ? 'liunian' : 'mingpan');
+    if (mode === 'daxian') {
+      focusInstruction = ' Trọng tâm luận giải: Tập trung phân tích chuyên sâu ĐẠI HẠN 10 NĂM đang chọn kết hợp cùng Bản Mệnh và Tứ Hóa Đại Hạn.';
+    } else if (mode === 'liunian') {
+      const yr = yunxianState.viewYear || effectiveResult?.viewYear || '';
+      focusInstruction = ` Trọng tâm luận giải: Tập trung phân tích chuyên sâu LƯU NIÊN Năm ${yr} kết hợp Đại Hạn hiện hành, Tiểu hạn và Tứ Hóa Lưu Niên.`;
+    } else if (mode === 'liuyue') {
+      const yr = yunxianState.viewYear || effectiveResult?.viewYear || '';
+      const mo = yunxianState.lunarMonth || 1;
+      focusInstruction = ` Trọng tâm luận giải: Tập trung phân tích chuyên sâu LƯU NGUYỆT Tháng ${mo} Âm Lịch (Năm ${yr}) kết hợp cùng Lưu Niên và Đại Hạn.`;
+    } else if (mode === 'mingpan') {
+      focusInstruction = ' Trọng tâm luận giải: Tập trung phân tích chuyên sâu BẢN MỆNH, Thân và nguyên cục 12 cung.';
+    }
+  }
+
+  return `Bạn là người luận giải Tử Vi Đẩu Số. Hãy phân tích lá số bên dưới bằng tiếng Việt.\nChủ đề: ${TOPICS[topic] || TOPICS.overview}\nCâu hỏi: ${question.trim() || 'Luận giải tổng quan lá số và đưa ra lời khuyên thực tế.'}\n\n${buildTuViText(effectiveResult, input, yunxianState)}${structured ? '' : DETAILED_READING}\n\nYÊU CẦU:\n- Dùng đúng dữ liệu lá số, không tự an lại sao hoặc thêm sao không có.\n- Phân tích Mệnh–Thân, các cung liên quan và mối liên hệ giữa các cung; dẫn rõ dữ kiện làm căn cứ.\n- Chỉ luận đại hạn ở mức dữ liệu đã có. ${effectiveResult.viewYearCanChi ? 'Chỉ dùng sao lưu niên, Tiểu hạn và cung LN. thực sự được liệt kê; không suy diễn thêm dữ liệu hạn hoặc tự luận Cân lượng khi chưa có quy tắc.' : 'Chưa có tiểu hạn/lưu niên nên không dự đoán chi tiết theo năm.'}${focusInstruction}\n- Nội dung cần có: Tổng quan, Phân tích chủ đề/câu hỏi, Điểm thuận lợi và thách thức, 3 lời khuyên thực tế. Không khẳng định số phận chắc chắn.\n${structured ? '- Đưa các mục luận giải vào sections theo định dạng JSON được yêu cầu bên dưới.' : '- Kết thúc bằng dòng ---SUGGESTED_QUESTIONS--- và 3 câu hỏi đào sâu, mỗi câu một dòng.'}`;
 }
 
 export function splitSuggestions(content) {

@@ -408,7 +408,32 @@ test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, Birth
       assert.ok(fullViewHtml.includes('tuvi-ai'), `TuViAiPanel must render in mode ${mode}`);
       assert.ok(fullViewHtml.includes('Bạn muốn tìm hiểu điều gì?'), `TuViAiPanel topic prompt must render in mode ${mode}`);
       assert.ok(fullViewHtml.includes('Đang gửi kèm ngữ cảnh:'), `TuViAiPanel yunxian badge must render in mode ${mode}`);
+      assert.ok(fullViewHtml.includes('Chọn Đại Vận xuất AI'), `TuViAiPanel da xian selector must render in mode ${mode}`);
+      assert.ok(fullViewHtml.includes('Chọn Năm Lưu Niên xuất AI'), `TuViAiPanel liu nian selector must render in mode ${mode}`);
+      assert.ok(fullViewHtml.includes('Chọn Tháng Lưu Nguyệt xuất AI'), `TuViAiPanel liu yue selector must render in mode ${mode}`);
     }
+
+    // 9. Standalone TuViAiPanel SSR Rendering with quick yunxian controls
+    const standaloneAiPanelHtml = renderToStaticMarkup(
+      React.createElement(
+        TuViEvidenceProvider,
+        { result: sampleChart },
+        React.createElement(TuViAiPanel, {
+          result: sampleChart,
+          inputData: sampleInput,
+          yunxianState: { mode: 'liunian', viewYear: 2026 },
+        })
+      )
+    );
+    assert.ok(standaloneAiPanelHtml.includes('tv-yunxian-controls'), 'Must include tv-yunxian-controls');
+    assert.ok(standaloneAiPanelHtml.includes('aria-label="Chọn Đại Vận xuất AI"'), 'Must include daXian select');
+    assert.ok(standaloneAiPanelHtml.includes('aria-label="Chọn Năm Lưu Niên xuất AI"'), 'Must include viewYear select');
+    assert.ok(standaloneAiPanelHtml.includes('aria-label="Chọn Tháng Lưu Nguyệt xuất AI"'), 'Must include lunarMonth select');
+    assert.ok(standaloneAiPanelHtml.includes('aria-label="Chọn Chủ Đề xuất AI"'), 'Must include topic select');
+    assert.ok(standaloneAiPanelHtml.includes('🏛️ Bản Mệnh'));
+    assert.ok(standaloneAiPanelHtml.includes('🪐 Đại Vận (10 Năm)'));
+    assert.ok(standaloneAiPanelHtml.includes('📅 Lưu Niên (Năm)'));
+    assert.ok(standaloneAiPanelHtml.includes('🌙 Lưu Nguyệt (Tháng)'));
   } finally {
     await server.close();
   }

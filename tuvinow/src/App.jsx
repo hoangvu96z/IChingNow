@@ -73,7 +73,7 @@ function ThemeToggleButton({ theme, onToggle }) {
   );
 }
 
-function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved, yunxianState }) {
+function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved, yunxianState, onYunxianChange }) {
   const active = useRef(false);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const savedId = useRef(reading?.id || null);
@@ -83,7 +83,16 @@ function ReadingSession({ result, inputData, reading, persistReading, ensureChar
     savedId.current = id;
     if (active.current) onSaved(id);
   };
-  return <TuViAiPanel result={result} inputData={inputData} initialConversation={reading?.data?.aiConversation} onSave={save} yunxianState={yunxianState} />;
+  return (
+    <TuViAiPanel
+      result={result}
+      inputData={inputData}
+      initialConversation={reading?.data?.aiConversation}
+      onSave={save}
+      yunxianState={yunxianState}
+      onYunxianChange={onYunxianChange}
+    />
+  );
 }
 
 export default function App() {
@@ -127,15 +136,59 @@ export default function App() {
     mode: 'mingpan',
     daXianChiIndex: null,
     viewYear: null,
-    lunarMonth: 1,
+    lunarMonth: null,
   });
 
   const handleYunxianChange = useCallback((nextState) => {
-    setYunxianState((prev) => ({
-      ...prev,
-      ...nextState,
-    }));
-  }, []);
+    setYunxianState((prev) => {
+      const merged = { ...prev, ...nextState };
+      if (merged.mode === 'liuyue' && (merged.lunarMonth === null || merged.lunarMonth === undefined)) {
+        merged.lunarMonth = 1;
+      } else if ((merged.mode === 'mingpan' || merged.mode === 'daxian') && nextState.lunarMonth === undefined) {
+        merged.lunarMonth = null;
+      }
+      return merged;
+    });
+
+    const targetMode = nextState.mode ?? yunxianState.mode;
+    const targetViewYear = nextState.viewYear !== undefined && nextState.viewYear !== null
+      ? Number(nextState.viewYear)
+      : yunxianState.viewYear;
+
+    if (inputData?.lunarYear && inputData?.lunarMonth && inputData?.lunarDay) {
+      if ((targetMode === 'liunian' || targetMode === 'liuyue') && targetViewYear && chartResult?.viewYear !== targetViewYear) {
+        try {
+          const canIdx = ((targetViewYear - 4) % 10 + 10) % 10;
+          const chiIdx = ((targetViewYear - 4) % 12 + 12) % 12;
+          const updatedChart = anLaSoTuVi({
+            ...inputData,
+            viewYear: targetViewYear,
+            viewYearCanIndex: canIdx,
+            viewYearChiIndex: chiIdx,
+          });
+          if (updatedChart && updatedChart.palates) {
+            setChartResult(updatedChart);
+          }
+        } catch (err) {
+          console.error('Failed to recalculate chart for target viewYear:', err);
+        }
+      } else if ((targetMode === 'mingpan' || targetMode === 'daxian') && chartResult?.viewYear) {
+        try {
+          const natalChart = anLaSoTuVi({
+            ...inputData,
+            viewYear: undefined,
+            viewYearCanIndex: undefined,
+            viewYearChiIndex: undefined,
+          });
+          if (natalChart && natalChart.palates) {
+            setChartResult(natalChart);
+          }
+        } catch (err) {
+          console.error('Failed to recalculate natal chart:', err);
+        }
+      }
+    }
+  }, [inputData, chartResult?.viewYear, yunxianState.mode, yunxianState.viewYear]);
 
   const [showForm, setShowForm] = useState(true);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -163,7 +216,7 @@ export default function App() {
       mode: result?.viewYear ? 'liunian' : 'mingpan',
       daXianChiIndex: null,
       viewYear: result?.viewYear ? Number(result.viewYear) : new Date().getFullYear(),
-      lunarMonth: 1,
+      lunarMonth: null,
     });
     setShowForm(false);
     chartSaveRef.current = null;
@@ -182,7 +235,7 @@ export default function App() {
       mode: 'mingpan',
       daXianChiIndex: null,
       viewYear: null,
-      lunarMonth: 1,
+      lunarMonth: null,
     });
     setShowForm(true);
     chartSaveRef.current = null;
@@ -243,7 +296,7 @@ export default function App() {
       mode: result?.viewYear ? 'liunian' : 'mingpan',
       daXianChiIndex: null,
       viewYear: result?.viewYear ? Number(result.viewYear) : new Date().getFullYear(),
-      lunarMonth: 1,
+      lunarMonth: null,
     });
     setShowForm(false);
     setShowHistoryModal(false);
@@ -383,6 +436,7 @@ export default function App() {
               ensureChartSaved={ensureChartSaved}
               onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }}
               yunxianState={yunxianState}
+              onYunxianChange={handleYunxianChange}
             />
             </TuViEvidenceProvider>
           </>

@@ -7,6 +7,7 @@ import {
   buildTuViText,
   buildTuViPrompt,
 } from '../utils/buildTuViPrompt';
+import { THIEN_CAN, DIA_CHI } from '../utils/tuViZiweiModule.js';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../hooks/usePlan';
 import { ssoRequest } from '../services/ssoApi';
@@ -46,7 +47,8 @@ export default function TuViAiPanel({
   initialConversation,
   onSave,
   readingContext,
-  yunxianState,
+  yunxianState: externalYunxianState,
+  onYunxianChange,
 }) {
   const { isAuthenticated, login } = useAuth();
   const {
@@ -82,27 +84,106 @@ export default function TuViAiPanel({
   const evidence = useTuViEvidence();
   const catalog = evidence?.catalog || [];
 
+  const [localYunxianState, setLocalYunxianState] = useState(() => ({
+    mode: externalYunxianState?.mode || (result?.viewYear ? 'liunian' : 'mingpan'),
+    daXianChiIndex: externalYunxianState?.daXianChiIndex ?? null,
+    viewYear: externalYunxianState?.viewYear !== undefined && externalYunxianState?.viewYear !== null
+      ? Number(externalYunxianState.viewYear)
+      : (result?.viewYear ? Number(result.viewYear) : new Date().getFullYear()),
+    lunarMonth: externalYunxianState?.lunarMonth ?? null,
+  }));
+
+  useEffect(() => {
+    if (externalYunxianState) {
+      setLocalYunxianState((prev) => ({
+        ...prev,
+        ...externalYunxianState,
+      }));
+    }
+  }, [externalYunxianState]);
+
+  const effectiveYunxianState = useMemo(() => {
+    return {
+      mode: externalYunxianState?.mode ?? localYunxianState.mode,
+      daXianChiIndex: externalYunxianState?.daXianChiIndex !== undefined
+        ? externalYunxianState.daXianChiIndex
+        : localYunxianState.daXianChiIndex,
+      viewYear: externalYunxianState?.viewYear !== undefined && externalYunxianState?.viewYear !== null
+        ? Number(externalYunxianState.viewYear)
+        : localYunxianState.viewYear,
+      lunarMonth: externalYunxianState?.lunarMonth !== undefined
+        ? externalYunxianState.lunarMonth
+        : localYunxianState.lunarMonth,
+    };
+  }, [externalYunxianState, localYunxianState]);
+
+  const updateYunxian = useCallback((patch) => {
+    setLocalYunxianState((prev) => ({ ...prev, ...patch }));
+    if (onYunxianChange) {
+      const merged = { ...effectiveYunxianState, ...patch };
+      onYunxianChange(merged);
+    }
+  }, [onYunxianChange, effectiveYunxianState]);
+
+  const daXianOptions = useMemo(() => {
+    if (!result?.palates || !Array.isArray(result.palates)) return [];
+    return [...result.palates]
+      .filter((p) => p.daiHan !== undefined && p.daiHan !== null)
+      .sort((a, b) => a.daiHan - b.daiHan)
+      .map((p) => ({
+        chiIndex: p.chiIndex,
+        daiHan: p.daiHan,
+        startAge: p.daiHan,
+        endAge: p.daiHan + 9,
+        chucNang: p.chucNang,
+        canName: p.canName,
+        chiName: p.chiName,
+        label: `${p.daiHan}–${p.daiHan + 9} tuổi · Cung ${p.chucNang} (${p.canName} ${p.chiName})`,
+      }));
+  }, [result?.palates]);
+
+  const birthYear = inputData?.lunarYear || 1950;
+  const maxYear = Math.max(birthYear + 95, new Date().getFullYear() + 20);
+
+  const yearOptions = useMemo(() => {
+    const bYear = inputData?.lunarYear || 1950;
+    const mYear = Math.max(bYear + 95, new Date().getFullYear() + 20);
+    const years = [];
+    for (let y = bYear; y <= mYear; y++) {
+      const stem = THIEN_CAN[((y - 4) % 10 + 10) % 10];
+      const branch = DIA_CHI[((y - 4) % 12 + 12) % 12];
+      const age = inputData?.lunarYear ? y - inputData.lunarYear + 1 : null;
+      years.push({
+        year: y,
+        canChi: `${stem} ${branch}`,
+        age,
+        label: `Năm ${y} (${stem} ${branch}${age ? ` · ${age} tuổi` : ''})`,
+      });
+    }
+    return years;
+  }, [inputData?.lunarYear]);
+
   const yunxianBadge = useMemo(() => {
-    if (!yunxianState) return null;
-    if (yunxianState.mode === 'daxian') {
+    if (!effectiveYunxianState) return null;
+    if (effectiveYunxianState.mode === 'daxian') {
       return 'Đại Hạn (10 Năm)';
     }
-    if (yunxianState.mode === 'liunian') {
-      return `Lưu Niên Năm ${yunxianState.viewYear || result?.viewYear || ''}`;
+    if (effectiveYunxianState.mode === 'liunian') {
+      return `Lưu Niên Năm ${effectiveYunxianState.viewYear || result?.viewYear || ''}`;
     }
-    if (yunxianState.mode === 'liuyue') {
-      return `Lưu Nguyệt Tháng ${yunxianState.lunarMonth || 1} (Năm ${yunxianState.viewYear || result?.viewYear || ''})`;
+    if (effectiveYunxianState.mode === 'liuyue') {
+      return `Lưu Nguyệt Tháng ${effectiveYunxianState.lunarMonth || 1} (Năm ${effectiveYunxianState.viewYear || result?.viewYear || ''})`;
     }
     return 'Bản Mệnh';
-  }, [yunxianState, result?.viewYear]);
+  }, [effectiveYunxianState, result?.viewYear]);
 
-  const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured, yunxianState));
+  const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured, effectiveYunxianState));
   const prompt = makePrompt(topic, question, false);
   const parsed = parseTuViAnswer(conversation?.initialInterpretation || '', catalog);
   const answerText = tuViAnswerText(conversation?.initialInterpretation || '');
   const followUps = conversation?.followUps || [];
   const exportText =
-    exportTab === 'prompt' ? prompt : readingContext?.exportText || buildTuViText(result, inputData, yunxianState);
+    exportTab === 'prompt' ? prompt : readingContext?.exportText || buildTuViText(result, inputData, effectiveYunxianState);
   const exportCopied = copiedText === exportText;
 
   const checkConfig = useCallback(async (signal) => {
@@ -633,6 +714,170 @@ export default function TuViAiPanel({
               Dữ liệu lá số
             </button>
           </div>
+
+          {!readingContext && (
+            <div className="tv-yunxian-controls" aria-label="Bộ tùy chỉnh nhanh Vận Hạn xuất AI">
+              <div className="tv-yunxian-mode-pills" role="group" aria-label="Chọn Chế độ Vận Hạn xuất AI">
+                <button
+                  type="button"
+                  className={`tv-yunxian-pill ${effectiveYunxianState.mode === 'mingpan' ? 'is-active' : ''}`}
+                  onClick={() => updateYunxian({ mode: 'mingpan' })}
+                >
+                  🏛️ Bản Mệnh
+                </button>
+                <button
+                  type="button"
+                  className={`tv-yunxian-pill ${effectiveYunxianState.mode === 'daxian' ? 'is-active' : ''}`}
+                  onClick={() => updateYunxian({ mode: 'daxian' })}
+                >
+                  🪐 Đại Vận (10 Năm)
+                </button>
+                <button
+                  type="button"
+                  className={`tv-yunxian-pill ${effectiveYunxianState.mode === 'liunian' ? 'is-active' : ''}`}
+                  onClick={() => updateYunxian({ mode: 'liunian' })}
+                >
+                  📅 Lưu Niên (Năm)
+                </button>
+                <button
+                  type="button"
+                  className={`tv-yunxian-pill ${effectiveYunxianState.mode === 'liuyue' ? 'is-active' : ''}`}
+                  onClick={() => updateYunxian({ mode: 'liuyue', lunarMonth: effectiveYunxianState.lunarMonth || 1 })}
+                >
+                  🌙 Lưu Nguyệt (Tháng)
+                </button>
+              </div>
+
+              <div className="tv-yunxian-select-row">
+                <div className="tv-yunxian-field">
+                  <label htmlFor="tv-ai-daxian-select">Chọn Đại Vận (10 năm):</label>
+                  <select
+                    id="tv-ai-daxian-select"
+                    aria-label="Chọn Đại Vận xuất AI"
+                    value={effectiveYunxianState.daXianChiIndex !== null && effectiveYunxianState.daXianChiIndex !== undefined ? effectiveYunxianState.daXianChiIndex : ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        updateYunxian({ daXianChiIndex: null });
+                      } else {
+                        updateYunxian({
+                          daXianChiIndex: Number(val),
+                          ...(effectiveYunxianState.mode === 'mingpan' ? { mode: 'daxian' } : {}),
+                        });
+                      }
+                    }}
+                  >
+                    <option value="">Tự động theo tuổi / năm xem</option>
+                    {daXianOptions.map((dx) => (
+                      <option key={dx.chiIndex} value={dx.chiIndex}>
+                        {dx.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="tv-yunxian-field tv-yunxian-year-field">
+                  <label htmlFor="tv-ai-year-select">Chọn Năm Lưu Niên:</label>
+                  <div className="tv-yunxian-year-stepper">
+                    <button
+                      type="button"
+                      className="tv-step-btn"
+                      aria-label="Năm trước"
+                      title="Năm trước"
+                      onClick={() => {
+                        const prevY = (effectiveYunxianState.viewYear || new Date().getFullYear()) - 1;
+                        if (prevY >= birthYear) {
+                          updateYunxian({
+                            viewYear: prevY,
+                            ...((effectiveYunxianState.mode === 'mingpan' || effectiveYunxianState.mode === 'daxian') ? { mode: 'liunian' } : {}),
+                          });
+                        }
+                      }}
+                    >
+                      ‹
+                    </button>
+                    <select
+                      id="tv-ai-year-select"
+                      aria-label="Chọn Năm Lưu Niên xuất AI"
+                      value={effectiveYunxianState.viewYear || ''}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        updateYunxian({
+                          viewYear: val,
+                          ...((effectiveYunxianState.mode === 'mingpan' || effectiveYunxianState.mode === 'daxian') ? { mode: 'liunian' } : {}),
+                        });
+                      }}
+                    >
+                      {yearOptions.map((yo) => (
+                        <option key={yo.year} value={yo.year}>
+                          {yo.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="tv-step-btn"
+                      aria-label="Năm sau"
+                      title="Năm sau"
+                      onClick={() => {
+                        const nextY = (effectiveYunxianState.viewYear || new Date().getFullYear()) + 1;
+                        if (nextY <= maxYear) {
+                          updateYunxian({
+                            viewYear: nextY,
+                            ...((effectiveYunxianState.mode === 'mingpan' || effectiveYunxianState.mode === 'daxian') ? { mode: 'liunian' } : {}),
+                          });
+                        }
+                      }}
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+
+                <div className="tv-yunxian-field">
+                  <label htmlFor="tv-ai-month-select">Chọn Tháng Lưu Nguyệt:</label>
+                  <select
+                    id="tv-ai-month-select"
+                    aria-label="Chọn Tháng Lưu Nguyệt xuất AI"
+                    value={effectiveYunxianState.lunarMonth || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) {
+                        updateYunxian({ lunarMonth: null, mode: 'liunian' });
+                      } else {
+                        updateYunxian({ lunarMonth: Number(val), mode: 'liuyue' });
+                      }
+                    }}
+                  >
+                    <option value="">Cả năm (Không chọn tháng lẻ)</option>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                      <option key={m} value={m}>
+                        Tháng {m} Âm lịch
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {exportTab === 'prompt' && (
+                  <div className="tv-yunxian-field">
+                    <label htmlFor="tv-ai-topic-select">Chọn Chủ Đề:</label>
+                    <select
+                      id="tv-ai-topic-select"
+                      aria-label="Chọn Chủ Đề xuất AI"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                    >
+                      {Object.entries(TOPICS).map(([key, label]) => (
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="tv-terminal">
             <div className="tv-terminal-header">
               <span className="tv-terminal-dots">
