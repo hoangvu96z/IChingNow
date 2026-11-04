@@ -83,10 +83,17 @@ export function computeZiweiMeta(chart, inputData = {}, schoolConfig = DEFAULT_S
   });
 
   // Tính Chân Thái Dương Thời nếu có giờ phút đồng hồ
+  let parsedSolarFromStr = null;
+  if (inputData && !inputData.isLunar && typeof inputData.solarDateStr === 'string') {
+    const m = inputData.solarDateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) {
+      parsedSolarFromStr = { day: Number(m[1]), month: Number(m[2]), year: Number(m[3]) };
+    }
+  }
   const solarSrc = inputData?.solarInput || (
     inputData && !inputData.isLunar && inputData.year && inputData.month && inputData.day
       ? { year: Number(inputData.year), month: Number(inputData.month), day: Number(inputData.day) }
-      : null
+      : parsedSolarFromStr
   );
   let trueSolarTimeInfo = null;
   if (

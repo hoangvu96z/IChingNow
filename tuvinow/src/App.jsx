@@ -4,10 +4,7 @@ import { useAuth } from './context/AuthContext.jsx';
 import { anLaSoTuVi } from './utils/tuViEngine';
 import BirthInputForm from './components/BirthInputForm.jsx';
 import LasoChart from './components/LasoChart.jsx';
-import TuViSelfGuidePanel from './components/TuViSelfGuidePanel.jsx';
-import SummaryPanel from './components/SummaryPanel.jsx';
-import TuViPatternsPanel from './components/TuViPatternsPanel.jsx';
-import TuViLocalReport from './components/TuViLocalReport.jsx';
+import TuViOverviewDashboard from './components/TuViOverviewDashboard.jsx';
 import TuViAiPanel from './components/TuViAiPanel.jsx';
 import HopHonPage from './components/HopHonPage.jsx';
 import { useReadingsApi } from './hooks/useReadingsApi';
@@ -416,7 +413,6 @@ export default function App() {
             </div>
 
             <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
-            <TuViSelfGuidePanel result={chartResult} inputData={inputData} yunxianState={yunxianState} />
             <LasoChart
               result={chartResult}
               inputData={inputData}
@@ -424,9 +420,11 @@ export default function App() {
               onYunxianChange={handleYunxianChange}
             />
             <ShareCard result={chartResult} inputData={inputData} yunxianState={yunxianState} />
-            <SummaryPanel result={chartResult} inputData={inputData} />
-            <TuViPatternsPanel result={chartResult} inputData={inputData} />
-            <TuViLocalReport result={chartResult} />
+            <TuViOverviewDashboard
+              result={chartResult}
+              inputData={inputData}
+              yunxianState={yunxianState}
+            />
             <ReadingSession
               key={`${user?.id || 'guest'}-${sessionId}`}
               result={chartResult}

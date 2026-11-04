@@ -438,3 +438,214 @@ test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, Birth
     await server.close();
   }
 });
+
+test('comprehensive SSR rendering of TuViOverviewDashboard and tuViStarRating suite', async () => {
+  const server = await createServer({
+    configFile: false,
+    plugins: [SHARED_SHIM_PLUGIN, react()],
+    resolve: VITE_RESOLVE,
+    optimizeDeps: { noDiscovery: true, include: [] },
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: 'custom',
+  });
+
+  try {
+    const {
+      renderStarsText,
+      evaluatePalaceRating,
+      evaluateSixLifeAspects,
+      evaluateActiveYunxianRating,
+      buildChartStarEvaluation,
+    } = await server.ssrLoadModule('/src/utils/tuViStarRating.js');
+    const { default: TuViOverviewDashboard } = await server.ssrLoadModule('/src/components/TuViOverviewDashboard.jsx');
+    const { default: TuViEvidenceProvider } = await server.ssrLoadModule('/src/components/TuViEvidenceProvider.jsx');
+
+    // 1. Test renderStarsText
+    assert.equal(renderStarsText(5.0), '★★★★★');
+    assert.equal(renderStarsText(4.5), '★★★★½');
+    assert.equal(renderStarsText(4.0), '★★★★☆');
+    assert.equal(renderStarsText(3.5), '★★★½☆');
+    assert.equal(renderStarsText(3.0), '★★★☆☆');
+    assert.equal(renderStarsText(2.5), '★★½☆☆');
+    assert.equal(renderStarsText(2.0), '★★☆☆☆');
+
+    const sampleChart = anLaSoTuVi({
+      lunarYear: 1996,
+      lunarMonth: 4,
+      lunarDay: 12,
+      lunarHourIndex: 3,
+      yearCanIndex: 2,
+      yearChiIndex: 0,
+      gender: 1,
+      viewYear: 2026,
+      viewYearCanIndex: 2,
+      viewYearChiIndex: 6,
+    });
+    const sampleInput = {
+      name: 'Người Mẫu',
+      day: 12,
+      month: 4,
+      year: 1996,
+      hourIndex: 3,
+      gender: 1,
+      isLunar: true,
+      viewYear: 2026,
+    };
+
+    // 1b. Test evaluatePalaceRating, evaluateSixLifeAspects, evaluateActiveYunxianRating directly
+    const directPalaceRating = evaluatePalaceRating(sampleChart.palates[0], sampleChart.palates, sampleChart);
+    assert.ok(directPalaceRating.stars >= 2.0 && directPalaceRating.stars <= 5.0);
+    const directSixAspects = evaluateSixLifeAspects(sampleChart, [directPalaceRating]);
+    assert.equal(directSixAspects.length, 6);
+    const directYunxian = evaluateActiveYunxianRating(sampleChart, sampleInput, { mode: 'mingpan' }, [directPalaceRating]);
+    assert.equal(directYunxian.mode, 'mingpan');
+
+    // 2. Test buildChartStarEvaluation
+    const evalData = buildChartStarEvaluation(sampleChart, sampleInput, { mode: 'liunian', viewYear: 2026 });
+    assert.ok(evalData, 'Evaluation must not be null');
+    assert.ok(evalData.overall.score >= 2.0 && evalData.overall.score <= 5.0);
+    assert.ok(evalData.overall.stars >= 2.0 && evalData.overall.stars <= 5.0);
+    assert.ok(evalData.overall.starsText.includes('★'));
+    assert.ok(evalData.overall.score100 >= 40 && evalData.overall.score100 <= 100);
+    assert.ok(evalData.overall.tierLabel);
+    assert.equal(evalData.overall.topStrengths.length, 2);
+    assert.ok(evalData.overall.coreAdvice.length > 10);
+
+    // 6 Aspects
+    assert.equal(evalData.aspects.length, 6);
+    const aspectIds = evalData.aspects.map((a) => a.id);
+    assert.deepEqual(aspectIds, ['career', 'wealth', 'love', 'fortune', 'social', 'health']);
+    for (const aspect of evalData.aspects) {
+      assert.ok(aspect.stars >= 2.0 && aspect.stars <= 5.0);
+      assert.ok(aspect.score100 === Math.round(aspect.stars * 20));
+      assert.ok(aspect.tierLabel);
+      assert.ok(aspect.comment && aspect.comment.length > 5);
+    }
+
+    // 12 Palaces
+    assert.equal(evalData.palaceRatings.length, 12);
+    for (const p of evalData.palaceRatings) {
+      assert.ok(p.stars >= 2.0 && p.stars <= 5.0);
+      assert.ok(p.score100 === Math.round(p.stars * 20));
+      assert.ok(p.tierLabel);
+      assert.ok(p.summary && p.summary.length > 5);
+    }
+
+    // Active Yunxian: Liu Nian
+    assert.equal(evalData.activeYunxian.mode, 'liunian');
+    assert.ok(evalData.activeYunxian.title.includes('2026'));
+    assert.equal(evalData.activeYunxian.highlights.length, 3);
+
+    // Active Yunxian: Da Xian
+    const evalDaXian = buildChartStarEvaluation(sampleChart, sampleInput, { mode: 'daxian', daXianChiIndex: 4 });
+    assert.equal(evalDaXian.activeYunxian.mode, 'daxian');
+    assert.ok(evalDaXian.activeYunxian.title.includes('Đại Hạn'));
+    assert.equal(evalDaXian.activeYunxian.highlights.length, 3);
+
+    // Active Yunxian: Ming Pan
+    const evalMing = buildChartStarEvaluation(sampleChart, sampleInput, { mode: 'mingpan' });
+    assert.equal(evalMing.activeYunxian.mode, 'mingpan');
+    assert.equal(evalMing.activeYunxian.title, 'Bản Mệnh Trọn Đời');
+    assert.equal(evalMing.activeYunxian.highlights.length, 3);
+
+    // 3. SSR Render TuViOverviewDashboard (Tab 1: Overview)
+    const overviewHtml = renderToStaticMarkup(
+      React.createElement(
+        TuViEvidenceProvider,
+        { result: sampleChart },
+        React.createElement(TuViOverviewDashboard, {
+          result: sampleChart,
+          inputData: sampleInput,
+          yunxianState: { mode: 'liunian', viewYear: 2026 },
+          initialTab: 'overview',
+        })
+      )
+    );
+
+    assert.ok(overviewHtml.includes('tuvi-overview-hub'), 'Must contain tuvi-overview-hub');
+    assert.ok(overviewHtml.includes('tuvi-hub-tabs'), 'Must contain 4 tabs');
+    assert.ok(overviewHtml.includes('Đánh Giá Sao &amp; Biểu Đồ'), 'Must contain tab 1 label');
+    assert.ok(overviewHtml.includes('Hướng Dẫn Tự Xem (6 Bước)'), 'Must contain tab 2 label');
+    assert.ok(overviewHtml.includes('Luận Đoán Tự Động (Chi Tiết)'), 'Must contain tab 3 label');
+    assert.ok(overviewHtml.includes('Phân Tích Chuyên Sâu &amp; Cổ Thư'), 'Must contain tab 4 label');
+
+    // Section 1: Hero rating
+    assert.ok(overviewHtml.includes('tuvi-rating-hero'));
+    assert.ok(overviewHtml.includes('tuvi-big-score'));
+    assert.ok(overviewHtml.includes('Điểm Mạnh Lớn Nhất'));
+    assert.ok(overviewHtml.includes('Lời Khuyên Trọng Tâm'));
+    assert.ok(overviewHtml.includes('Âm Dương Thuận Lý'));
+
+    // Section 2: SVG Radar Chart and 6 Aspect Cards
+    assert.ok(overviewHtml.includes('tuvi-radar-svg'), 'Must render SVG radar chart');
+    assert.ok(overviewHtml.includes('tuvi-radar-data-polygon'), 'Must render radar data polygon');
+    assert.ok(overviewHtml.includes('Công Danh &amp; Sự Nghiệp'));
+    assert.ok(overviewHtml.includes('Tài Lộc &amp; Điền Sản'));
+    assert.ok(overviewHtml.includes('Tình Duyên &amp; Gia Đạo'));
+    assert.ok(overviewHtml.includes('Phúc Đức &amp; Nội Tâm'));
+    assert.ok(overviewHtml.includes('Quý Nhân &amp; Xã Giao'));
+    assert.ok(overviewHtml.includes('Sức Khỏe &amp; Bình An'));
+    assert.equal((overviewHtml.match(/class="tuvi-aspect-card"/g) || []).length, 6);
+
+    // Section 3: Active Yunxian
+    assert.ok(overviewHtml.includes('tuvi-yunxian-rating-card'));
+    assert.ok(overviewHtml.includes('Lưu Niên Năm 2026'));
+    assert.equal((overviewHtml.match(/class="tuvi-yunxian-highlight-item"/g) || []).length, 3);
+
+    // Section 4: 12 Palaces Rating
+    assert.ok(overviewHtml.includes('tuvi-12palaces-section'));
+    assert.ok(overviewHtml.includes('Xếp Hạng 12 Cung Số'));
+    assert.equal((overviewHtml.match(/class="tuvi-palace-rating-card /g) || []).length, 12);
+
+    // 4. SSR Render TuViOverviewDashboard (Tab 2: Guide)
+    const guideHtml = renderToStaticMarkup(
+      React.createElement(
+        TuViEvidenceProvider,
+        { result: sampleChart },
+        React.createElement(TuViOverviewDashboard, {
+          result: sampleChart,
+          inputData: sampleInput,
+          yunxianState: { mode: 'liunian', viewYear: 2026 },
+          initialTab: 'guide',
+        })
+      )
+    );
+    assert.ok(guideHtml.includes('id="panel-guide"'));
+    assert.ok(guideHtml.includes('tuvi-self-guide-panel'));
+
+    // 5. SSR Render TuViOverviewDashboard (Tab 3: Report)
+    const reportHtml = renderToStaticMarkup(
+      React.createElement(
+        TuViEvidenceProvider,
+        { result: sampleChart },
+        React.createElement(TuViOverviewDashboard, {
+          result: sampleChart,
+          inputData: sampleInput,
+          yunxianState: { mode: 'liunian', viewYear: 2026 },
+          initialTab: 'report',
+        })
+      )
+    );
+    assert.ok(reportHtml.includes('id="panel-report"'));
+    assert.ok(reportHtml.includes('tuvi-local-report'));
+    assert.ok(reportHtml.includes('summary-panel'));
+
+    // 6. SSR Render TuViOverviewDashboard (Tab 4: Deep analysis)
+    const deepHtml = renderToStaticMarkup(
+      React.createElement(
+        TuViEvidenceProvider,
+        { result: sampleChart },
+        React.createElement(TuViOverviewDashboard, {
+          result: sampleChart,
+          inputData: sampleInput,
+          yunxianState: { mode: 'liunian', viewYear: 2026 },
+          initialTab: 'deep',
+        })
+      )
+    );
+    assert.ok(deepHtml.includes('id="panel-deep"'));
+    assert.ok(deepHtml.includes('tuvi-patterns-panel'));
+  } finally {
+    await server.close();
+  }
+});

@@ -541,6 +541,16 @@ export const CAN_LUONG_POEMS = {
     meaning: 'Tiền vận dày công vun đắp, trung và hậu vận tài nguyên hưng vượng, con cháu hiếu thảo hiền tài, gia đạo viên mãn.',
     tier: 'Gia Đạo Viên Mãn',
   },
+  '4.6': {
+    poem: 'Đông tây nam bắc tận giai thông, xuất tính canh danh cánh hữu công. Trung vận lộc nguyên đa phú túc, vãn niên vinh quý tự hưng long.',
+    meaning: 'Số có duyên đi xa, đổi mới môi trường hoặc lập nghiệp phương xa rất đắc lợi; trung vận tài lộc sung túc, hậu vận vinh hiển hưng vượng.',
+    tier: 'Phương Xa Đắc Lộc',
+  },
+  '4.7': {
+    poem: 'Bình sinh tính vượng tại hậu niên, tảo tuế bôn ba vị đắc nhàn. Thời vận nhất lai hoan hỷ chí, tài nguyên cổn cổn tự thiên ban.',
+    meaning: 'Vượng khí tụ mạnh ở trung và hậu vận; tuổi trẻ năng động bươn chải, đến khi gặp thời thì tài lộc cuồn cuộn tự nhiên tới.',
+    tier: 'Hậu Vận Đại Vượng',
+  },
   '4.8': {
     poem: 'Sơ niên vận đạo vị từng thông, kỷ độ bôn ba kỷ độ không. Hậu vận tự nhiên hưng gia nghiệp, vinh hoa phú quý nhập môn trung.',
     meaning: 'Tuổi trẻ trải qua vài phen thử thách để trui rèn bản lĩnh; trung hậu vận tự tay hưng khởi đại nghiệp, phú quý đầy nhà.',
@@ -601,12 +611,16 @@ export function getCanLuongPoem(canLuongStr) {
   const key = `${luong}.${chi}`;
 
   if (CAN_LUONG_POEMS[key]) {
+    const entry = CAN_LUONG_POEMS[key];
     return {
       canLuongStr,
       luong,
       chi,
       totalChi,
-      ...CAN_LUONG_POEMS[key],
+      ...entry,
+      title: entry.tier,
+      poemHanViet: entry.poem,
+      interpretation: entry.meaning,
     };
   }
 
@@ -624,6 +638,7 @@ export function getCanLuongPoem(canLuongStr) {
   }
 
   const base = CAN_LUONG_POEMS[closestKey];
+  const tier = totalChi >= 50 ? 'Thượng Cách Phúc Hậu' : totalChi >= 38 ? 'Trung Thượng Cách Khởi Phát' : 'Tự Lập Tiền Khổ Hậu Thành';
   return {
     canLuongStr,
     luong,
@@ -631,7 +646,10 @@ export function getCanLuongPoem(canLuongStr) {
     totalChi,
     poem: base.poem,
     meaning: base.meaning,
-    tier: totalChi >= 50 ? 'Thượng Cách Phúc Hậu' : totalChi >= 38 ? 'Trung Thượng Cách Khởi Phát' : 'Tự Lập Tiền Khổ Hậu Thành',
+    tier,
+    title: tier,
+    poemHanViet: base.poem,
+    interpretation: base.meaning,
   };
 }
 

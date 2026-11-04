@@ -4312,4 +4312,742 @@ body {
   }
 }
 
+/* ============================================================================
+ * TuViOverviewDashboard — Hub Đánh Giá Sao (1–5 ⭐) & Biểu Đồ Lục Giác
+ * ============================================================================ */
+
+.tuvi-overview-hub {
+  margin: 20px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 4 Tab Switcher */
+.tuvi-hub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tuvi-hub-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tuvi-hub-tab {
+  flex: 1;
+  min-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tuvi-hub-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.tuvi-hub-tab.is-active {
+  background: var(--btn-submit-bg);
+  color: var(--btn-submit-color);
+  border-color: var(--border-gold);
+  box-shadow: 0 3px 12px var(--btn-submit-glow);
+}
+
+.tuvi-hub-tab:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+.tuvi-tab-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.tuvi-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: tuviTabFadeIn 0.25s ease-out;
+}
+
+@keyframes tuviTabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tier Badges */
+.tuvi-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tuvi-tier-badge.mini {
+  padding: 2px 7px;
+  font-size: 0.72rem;
+}
+
+.tuvi-tier-badge.tier-thuong-cat {
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.tuvi-tier-badge.tier-cat-loi {
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.tuvi-tier-badge.tier-kha-tot {
+  background: rgba(59, 130, 246, 0.14);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.tuvi-tier-badge.tier-binh-hoa {
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.tuvi-tier-badge.tier-can-luu-y {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+/* 1. Thẻ Tổng Điểm & Xếp Hạng Hero */
+.tuvi-rating-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 16px;
+}
+
+.tuvi-hero-main-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.tuvi-hero-main-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #f59e0b, #8b5cf6, #ec4899);
+}
+
+.tuvi-hero-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tuvi-hero-header-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-gold);
+  letter-spacing: 0.02em;
+}
+
+.tuvi-hero-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.tuvi-big-score-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.tuvi-big-score {
+  font-size: 3.2rem;
+  font-weight: 800;
+  font-family: var(--font-serif);
+  color: var(--accent-gold);
+  line-height: 1;
+}
+
+.tuvi-big-score-max {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tuvi-hero-stars-display {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tuvi-stars-symbols {
+  font-size: 1.55rem;
+  color: #f59e0b;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.tuvi-stars-subtext {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tuvi-quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.tuvi-quick-tag-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.tuvi-hero-insights-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tuvi-hero-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  flex: 1;
+}
+
+.tuvi-strength-box {
+  border-left: 4px solid #10b981;
+}
+
+.tuvi-advice-box {
+  border-left: 4px solid var(--accent-gold);
+}
+
+.tuvi-hero-box-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.tuvi-hero-box-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.tuvi-hero-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tuvi-strength-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.tuvi-strength-stars {
+  font-size: 0.8rem;
+  color: #f59e0b;
+}
+
+.tuvi-strength-desc,
+.tuvi-advice-text {
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* 2. Khối Biểu Đồ Lục Giác & 6 Phương Diện */
+.tuvi-aspects-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.tuvi-section-header {
+  margin-bottom: 20px;
+}
+
+.tuvi-section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tuvi-section-desc {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.tuvi-aspects-grid-wrap {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.tuvi-aspects-radar-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tuvi-radar-chart-container {
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tuvi-radar-svg {
+  overflow: visible;
+}
+
+.tuvi-radar-ring {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.tuvi-radar-level-text {
+  font-size: 8px;
+  font-family: var(--font-sans);
+  fill: var(--text-muted);
+  font-weight: 600;
+}
+
+.tuvi-radar-axis-line {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+.tuvi-radar-label {
+  font-size: 10px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.tuvi-radar-data-polygon {
+  stroke: #8b5cf6;
+  stroke-width: 2.2;
+}
+
+.tuvi-radar-dot {
+  fill: #f59e0b;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  transition: r 0.2s ease;
+}
+
+[data-theme="dark"] .tuvi-radar-dot {
+  stroke: #1e1e38;
+}
+
+.tuvi-aspects-cards-col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.tuvi-aspect-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.tuvi-aspect-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.tuvi-aspect-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tuvi-aspect-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tuvi-aspect-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.tuvi-aspect-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tuvi-aspect-rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+}
+
+.tuvi-aspect-stars-text {
+  color: #f59e0b;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+.tuvi-aspect-score-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.tuvi-aspect-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .tuvi-aspect-bar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tuvi-aspect-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s ease-out;
+}
+
+.tuvi-aspect-comment {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* 3. Thẻ Vận Hạn Đang Chọn */
+.tuvi-yunxian-rating-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: linear-gradient(135deg, var(--bg-card) 70%, var(--accent-gold-dim) 100%);
+}
+
+.tuvi-yunxian-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tuvi-yunxian-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tuvi-yunxian-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.tuvi-yunxian-mode-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-gold);
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.tuvi-yunxian-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tuvi-yunxian-stars-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tuvi-yunxian-stars {
+  font-size: 1.25rem;
+  color: #f59e0b;
+  letter-spacing: 1px;
+}
+
+.tuvi-yunxian-highlights {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tuvi-yunxian-highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.tuvi-highlight-bullet {
+  color: var(--accent-gold);
+  line-height: 1.45;
+  font-weight: bold;
+}
+
+.tuvi-yunxian-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent-gold);
+}
+
+/* 4. Lưới Xếp Hạng 12 Cung */
+.tuvi-12palaces-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.tuvi-12palaces-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tuvi-12palaces-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tuvi-12palaces-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+.tuvi-toggle-12palaces-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tuvi-toggle-12palaces-btn:hover {
+  background: var(--border-subtle);
+}
+
+.tuvi-12palaces-rating-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.tuvi-palace-rating-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.15s ease;
+}
+
+.tuvi-palace-rating-card:hover {
+  transform: translateY(-2px);
+}
+
+.tuvi-palace-rating-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tuvi-palace-name-col {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.tuvi-palace-rating-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tuvi-palace-chi-tag {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.tuvi-palace-rating-stars-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tuvi-palace-stars {
+  color: #f59e0b;
+  font-size: 0.86rem;
+  letter-spacing: 1px;
+}
+
+.tuvi-palace-score-num {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.tuvi-palace-rating-summary {
+  font-size: 0.8rem;
+  line-height: 1.38;
+  color: var(--text-secondary);
+}
+
+/* Mobile responsive for TuViOverviewDashboard */
+@media (max-width: 900px) {
+  .tuvi-rating-hero {
+    grid-template-columns: 1fr;
+  }
+  .tuvi-aspects-grid-wrap {
+    grid-template-columns: 1fr;
+  }
+  .tuvi-12palaces-rating-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .tuvi-aspects-cards-col {
+    grid-template-columns: 1fr;
+  }
+  .tuvi-12palaces-rating-grid {
+    grid-template-columns: 1fr;
+  }
+  .tuvi-hub-tabs {
+    padding: 4px;
+  }
+  .tuvi-hub-tab {
+    min-width: 140px;
+    padding: 10px 12px;
+    font-size: 0.84rem;
+  }
+  .tuvi-big-score {
+    font-size: 2.6rem;
+  }
+}
+
+
 

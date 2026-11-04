@@ -201,3 +201,53 @@ test('buildTuViText and buildTuViPrompt dynamically adapt to mingpan, daxian, li
   assert.notEqual(textMonth3, textMonth9);
 });
 
+test('Ngô Thị Tâm (24/7/2001 Dương -> 4/6/2001 Âm, Giờ Thìn, Âm Nữ, Lưu Niên 2027) has zero data contradictions in AI prompt', () => {
+  const ngoThiTamInput = {
+    name: 'Ngô Thị Tâm',
+    lunarYear: 2001,
+    lunarMonth: 6,
+    lunarDay: 4,
+    lunarHourIndex: 4, // Thìn
+    yearCanIndex: 7,   // Tân
+    yearChiIndex: 5,   // Tỵ
+    gender: 0,         // Nữ
+    isLunar: false,
+    solarDateStr: '24/7/2001 (Dương lịch)',
+    lunarDateStr: '6/4/2001 (Âm lịch)',
+    viewYear: 2027,
+    viewYearCanIndex: 3, // Đinh
+    viewYearChiIndex: 7, // Mùi
+    schoolConfig: {
+      lateZishiRule: 'ziwei_standard',
+      brightnessSchool: 'v11',
+      gengStemSchool: 'XD',
+      leapPolicy: 'mid',
+    },
+  };
+  const chart = anLaSoTuVi(ngoThiTamInput);
+  const prompt = buildTuViPrompt(chart, ngoThiTamInput, 'overview', '', false, {
+    mode: 'liunian',
+    viewYear: 2027,
+  });
+
+  // 1. Solar Four Pillars must use 24/7/2001 (Tháng Ất Mùi · Ngày Mậu Tý · Giờ Bính Thìn), NOT Lunar 4/6/2001 treated as June 4 (Tháng Quý Tỵ · Ngày Mậu Tuất)!
+  assert.ok(prompt.includes('Năm Tân Tỵ · Tháng Ất Mùi · Ngày Mậu Tý · Giờ Bính Thìn'));
+  assert.ok(!prompt.includes('Tháng Quý Tỵ'));
+
+  // 2. Bone Weight poem for 4 lượng 6 chỉ is included with poem & meaning, not "không kèm bài thơ"
+  assert.ok(prompt.includes('THƠ CÂN XƯƠNG ĐOÁN SỐ VIÊN THIÊN CƯƠNG:'));
+  assert.ok(prompt.includes('Đông tây nam bắc tận giai thông'));
+  assert.ok(!prompt.includes('không kèm bài thơ hay quy tắc giải nghĩa cân lượng'));
+
+  // 3. Lưu Niên Đại Hạn (LN.Mệnh at Sửu) vs Lưu Niên Thái Tuế (Thái Tuế.Mệnh at Mùi) are clearly separated
+  assert.ok(prompt.includes('12 Cung Lưu Niên Thái Tuế'));
+  assert.ok(prompt.includes('Thái Tuế.Mệnh tại Mùi'));
+  assert.ok(!prompt.includes('+ 12 Cung Lưu Niên: LN.'));
+
+  // 4. Patterns include target palace and breaking conditions (Thiên Tướng lạc hãm + Địa Kiếp)
+  assert.ok(prompt.includes('[Tại cung: Tài Bạch, Mệnh]'));
+  assert.ok(prompt.includes('Thiên Tướng lạc hãm tại Mão'));
+  assert.ok(prompt.includes('Cung Mệnh gặp Địa Không / Địa Kiếp'));
+});
+
+

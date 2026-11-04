@@ -252,15 +252,19 @@ function detectFuXiangChaoYuan(chart, ming, patterns) {
   const breaking = [];
   if (hasStar(ming, 'Lộc Tồn') || palaceHasSiHua(ming, 'Hóa Lộc', chart)) bonus.push('Cung Mệnh đắc Lộc (Lộc Tồn hoặc Hóa Lộc)');
   if (sanFangAllStars(chart).has('Tả Phụ') || sanFangAllStars(chart).has('Hữu Bật')) bonus.push('Hội thêm Tả Phụ / Hữu Bật');
-  if (hasShaInPalace(ming, SHA_HARD)) breaking.push('Cung Mệnh tọa Tứ Sát');
-  if (sanFangShaCount(chart, SHA_HARD) >= 3) breaking.push('Tam Phương Tứ Chính hội nhiều sát tinh');
+  if (isDim(tianxiang, 'Thiên Tướng')) breaking.push(`Thiên Tướng lạc hãm tại ${tianxiang.chiName} làm suy giảm ấn lực`);
+  if (isDim(tianfu, 'Thiên Phủ')) breaking.push(`Thiên Phủ lạc hãm tại ${tianfu.chiName}`);
+  if (hasShaInPalace(ming, SHA_HARD)) breaking.push('Cung Mệnh tọa Tứ Sát (Kình/Đà/Hỏa/Linh)');
+  if (hasShaInPalace(ming, SHA_KONG)) breaking.push('Cung Mệnh gặp Địa Không / Địa Kiếp (Phủ Tướng kỵ Không Kiếp)');
+  if (sanFangShaCount(chart, SHA_NAMES) >= 3) breaking.push('Tam Phương Tứ Chính hội nhiều sát tinh / Không Kiếp');
 
+  const resolvedLevel = breaking.length >= 2 ? 'neutral' : breaking.length === 1 ? 'good' : 'excellent';
   pushPattern(patterns, {
     id: 'phu-tuong-trieu-vien',
     name: 'Phủ Tướng Triều Viên',
     nameZh: '府相朝垣',
-    level: breaking.length ? 'good' : 'excellent',
-    description: 'Thiên Phủ (Tài khố) và Thiên Tướng (Ấn tinh) phân cư Tam Phương Tứ Chính chầu về Mệnh, cổ thư ca ngợi "Phủ Tướng triều viên thiên chung thực lộc". Chủ về bổng lộc dồi dào, nhân duyên đắc lực, cực hợp chính giới, tài chính, quản trị doanh nghiệp.',
+    level: resolvedLevel,
+    description: 'Thiên Phủ (Tài khố) và Thiên Tướng (Ấn tinh) phân cư Tam Phương Tứ Chính chầu về Mệnh, cổ thư ca ngợi "Phủ Tướng triều viên thiên chung thực lộc". Chủ về bổng lộc dồi dào, nhân duyên đắc lực, cực hợp chính giới, tài chính, quản trị doanh nghiệp (cần Phủ Tướng miếu vượng và tránh Không Kiếp/Tứ Sát xâm phạm).',
     palaces: [cleanPalaceName(tianfu.chucNang), cleanPalaceName(tianxiang.chucNang)],
     conditions: { required, bonus, breaking },
     source: '《Tử Vi Đẩu Số Toàn Thư · Phủ Tướng Triều Viên Cách》',
