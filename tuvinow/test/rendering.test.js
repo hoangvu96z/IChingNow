@@ -121,16 +121,19 @@ test('answer and actual palace components render evidence and legacy text', asyn
     assert.ok(chartHtml.includes('26/12/2023'));
     assert.ok(chartHtml.includes('tuvi-tap-to-learn-banner'));
     assert.ok(chartHtml.includes('chart-export-wrapper'));
+    assert.ok(chartHtml.includes('chart-scale-viewport'));
+    assert.ok(chartHtml.includes('chart-mobile-viewbar'));
+    assert.ok(chartHtml.includes('chart-sanfang-svg'));
     assert.equal((chartHtml.match(/class="palace-card /g) || []).length, 12);
     assert.ok(chartHtml.includes('class="chart-center"'));
 
-    // Mobile responsive CSS keeps center info first and stacks 12 palaces below 480px while preserving 4x4 export capture
+    // Mobile responsive CSS preserves the 4x4 12-palace grid on mobile (never collapsing to 1 column) and aligns .tuvi-overview-hub to 1200px frame
     const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
     assert.match(css, /\.chart-export-wrapper\.is-exporting\s*\{[\s\S]*?min-width:\s*1024px/);
     assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.center-name\s*\{[\s\S]*?white-space:\s*nowrap/);
     assert.match(css, /\.chart-export-wrapper\.is-exporting\s+\.center-info-row\s*\{[\s\S]*?flex-wrap:\s*nowrap/);
-    assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-grid\s*\{[\s\S]*?flex-direction:\s*column[\s\S]*?min-width:\s*0/);
-    assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-center\s*\{[\s\S]*?order:\s*-1/);
+    assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?\.chart-export-wrapper:not\(\.is-exporting\)\s+\.chart-grid\s*\{[\s\S]*?display:\s*grid[\s\S]*?grid-template-columns:\s*repeat\(4,/);
+    assert.match(css, /\.tuvi-overview-hub\s*\{[\s\S]*?max-width:\s*1200px/);
   } finally { await server.close(); }
 });
 
@@ -564,7 +567,7 @@ test('comprehensive SSR rendering of TuViOverviewDashboard and tuViStarRating su
 
     assert.ok(overviewHtml.includes('tuvi-overview-hub'), 'Must contain tuvi-overview-hub');
     assert.ok(overviewHtml.includes('tuvi-hub-tabs'), 'Must contain 4 tabs');
-    assert.ok(overviewHtml.includes('Đánh Giá Sao &amp; Biểu Đồ'), 'Must contain tab 1 label');
+    assert.ok(overviewHtml.includes('Đánh Giá Chung &amp; Biểu Đồ'), 'Must contain tab 1 label');
     assert.ok(overviewHtml.includes('Hướng Dẫn Tự Xem (6 Bước)'), 'Must contain tab 2 label');
     assert.ok(overviewHtml.includes('Luận Đoán Tự Động (Chi Tiết)'), 'Must contain tab 3 label');
     assert.ok(overviewHtml.includes('Phân Tích Chuyên Sâu &amp; Cổ Thư'), 'Must contain tab 4 label');

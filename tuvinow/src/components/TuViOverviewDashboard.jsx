@@ -6,10 +6,10 @@ import TuViPatternsPanel from './TuViPatternsPanel.jsx';
 import { buildChartStarEvaluation } from '../utils/tuViStarRating.js';
 
 function RadarChart({ aspects = [] }) {
-  const size = 300;
-  const cx = 150;
-  const cy = 150;
-  const maxR = 95;
+  const size = 340;
+  const cx = 170;
+  const cy = 170;
+  const maxR = 90;
 
   const count = aspects.length || 6;
   const angleStep = (2 * Math.PI) / count;
@@ -174,7 +174,7 @@ export default function TuViOverviewDashboard({
           onClick={() => setActiveTab('overview')}
         >
           <span className="tuvi-tab-icon" aria-hidden="true">📊</span>
-          <span>Đánh Giá Sao & Biểu Đồ</span>
+          <span>Đánh Giá Chung & Biểu Đồ</span>
         </button>
 
         <button
@@ -224,7 +224,7 @@ export default function TuViOverviewDashboard({
           <div className="tuvi-rating-hero">
             <div className="tuvi-hero-main-card">
               <div className="tuvi-hero-badge-row">
-                <span className="tuvi-hero-header-label">⭐ Đánh Giá Tổng Thể Lá Số</span>
+                <span className="tuvi-hero-header-label">📊 Đánh Giá Chung Tổng Thể Lá Số</span>
                 <span className={`tuvi-tier-badge ${overall.badgeClass}`}>
                   {overall.tierLabel}
                 </span>

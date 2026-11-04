@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import PalateCard from './PalateCard';
@@ -13,6 +13,24 @@ import {
   DIA_CHI,
 } from '../utils/tuViZiweiModule.js';
 
+// Tọa độ điểm neo 12 Địa Chi trên khung lưới 4×4 (viewBox 0 0 400 400, tâm Thiên Bàn 100..300)
+const PALACE_ANCHOR_POINTS = {
+  0: { x: 250, y: 300 },  // Tý (hàng 4, cột 3)
+  1: { x: 150, y: 300 },  // Sửu (hàng 4, cột 2)
+  2: { x: 100, y: 300 },  // Dần (hàng 4, cột 1)
+  3: { x: 100, y: 250 },  // Mão (hàng 3, cột 1)
+  4: { x: 100, y: 150 },  // Thìn (hàng 2, cột 1)
+  5: { x: 100, y: 100 },  // Tỵ (hàng 1, cột 1)
+  6: { x: 150, y: 100 },  // Ngọ (hàng 1, cột 2)
+  7: { x: 250, y: 100 },  // Mùi (hàng 1, cột 3)
+  8: { x: 300, y: 100 },  // Thân (hàng 1, cột 4)
+  9: { x: 300, y: 150 },  // Dậu (hàng 2, cột 4)
+  10: { x: 300, y: 250 }, // Tuất (hàng 3, cột 4)
+  11: { x: 300, y: 300 }, // Hợi (hàng 4, cột 4)
+};
+
+const MOBILE_STAGE_WIDTH = 920;
+
 export default function LasoChart({
   result,
   inputData,
@@ -21,10 +39,42 @@ export default function LasoChart({
   onYunxianChange,
 }) {
   const chartRef = useRef(null);
+  const viewportRef = useRef(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState(null); // 'png' | 'pdf' | null
   const [exportMessage, setExportMessage] = useState(null);
   const [selectedLearnTerm, setSelectedLearnTerm] = useState(null);
+
+  // 📱 Chế độ hiển thị khung 12 cung trên Mobile: 'fit' (thu vừa màn hình như SVG/ảnh tương tác) | 'zoom' (phóng to kéo ngang)
+  const [mobileViewMode, setMobileViewMode] = useState('fit');
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [stageHeight, setStageHeight] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') return undefined;
+    const vpEl = viewportRef.current;
+    const chEl = chartRef.current;
+    if (!vpEl && !chEl) return undefined;
+
+    const updateMetrics = () => {
+      if (viewportRef.current) {
+        setViewportWidth(viewportRef.current.clientWidth || 0);
+      }
+      if (chartRef.current) {
+        setStageHeight(chartRef.current.offsetHeight || 0);
+      }
+    };
+
+    updateMetrics();
+    const ro = new ResizeObserver(updateMetrics);
+    if (vpEl) ro.observe(vpEl);
+    if (chEl) ro.observe(chEl);
+    window.addEventListener('resize', updateMetrics);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateMetrics);
+    };
+  }, [result, isExporting, mobileViewMode]);
 
   // 🏛️ Điều hướng Vận Hạn Động (TimeNav)
   const initialMode = initialYunxianMode || (result?.viewYear ? 'liunian' : 'mingpan');
@@ -95,11 +145,31 @@ export default function LasoChart({
     });
   }, [result, yunxianMode, selectedDaXianChiIndex, activeViewYear, selectedLunarMonth, inputData]);
 
-  // 📐 Tam Phương Tứ Chính for selected palace
+  // 📐 Tam Phương Tứ Chính for selected palace (hoặc mặc định Cung Mệnh để vẽ đường SVG Tam Hợp)
   const sanFangInfo = useMemo(() => {
     if (selectedPalaceChi === null || selectedPalaceChi === undefined) return null;
     return getTamPhuongTuChinh(selectedPalaceChi);
   }, [selectedPalaceChi]);
+
+  const menhChiIndex = useMemo(() => {
+    const menhPalace = palates.find((p) => p.chiName === menhCung || (p.chucNang || '').includes('Mệnh'));
+    return menhPalace ? menhPalace.chiIndex : 0;
+  }, [palates, menhCung]);
+
+  const svgSanFang = useMemo(() => {
+    if (sanFangInfo) return { ...sanFangInfo, isExplicit: true };
+    const fallback = getTamPhuongTuChinh(menhChiIndex);
+    return fallback ? { ...fallback, isExplicit: false } : null;
+  }, [sanFangInfo, menhChiIndex]);
+
+  const isCompactViewport = !isExporting && viewportWidth > 0 && viewportWidth < MOBILE_STAGE_WIDTH;
+  const mobileScale = useMemo(() => {
+    if (!isCompactViewport) return 1;
+    if (mobileViewMode === 'zoom') {
+      return Math.min(1, Math.max(0.66, viewportWidth / 600));
+    }
+    return Math.min(1, Math.max(0.32, (viewportWidth - 2) / MOBILE_STAGE_WIDTH));
+  }, [isCompactViewport, mobileViewMode, viewportWidth]);
 
   // Can Chi & Tuổi Âm của activeViewYear
   const activeYearCanChi = useMemo(() => {
@@ -523,13 +593,57 @@ export default function LasoChart({
         )}
       </div>
 
-      {/* Captured Export Wrapper */}
+      {/* Mobile 4×4 Interactive View Mode Switcher */}
+      <div className="chart-mobile-viewbar" aria-label="Tùy chỉnh hiển thị khung 12 cung trên di động">
+        <span className="chart-mobile-viewbar-label">📱 Khung 12 cung (4×4):</span>
+        <div className="chart-mobile-viewbar-btns">
+          <button
+            type="button"
+            className={`chart-mobile-view-btn ${mobileViewMode === 'fit' ? 'is-active' : ''}`}
+            onClick={() => setMobileViewMode('fit')}
+          >
+            📐 Vừa màn hình (Tương tác)
+          </button>
+          <button
+            type="button"
+            className={`chart-mobile-view-btn ${mobileViewMode === 'zoom' ? 'is-active' : ''}`}
+            onClick={() => setMobileViewMode('zoom')}
+          >
+            🔍 Phóng to đọc rõ
+          </button>
+        </div>
+      </div>
+
+      {/* Responsive Interactive 4×4 Viewport */}
       <div
-        ref={chartRef}
-        className={`chart-export-wrapper${isExporting ? ' is-exporting' : ''}`}
-        data-exporting={isExporting ? 'true' : undefined}
-        id="tuvi-chart-capture"
+        ref={viewportRef}
+        className={`chart-scale-viewport${isCompactViewport ? ` is-scaled mode-${mobileViewMode}` : ''}`}
+        style={
+          isCompactViewport && stageHeight > 0
+            ? {
+                height: `${Math.ceil(stageHeight * mobileScale) + 6}px`,
+              }
+            : undefined
+        }
       >
+        {/* Captured Export Wrapper */}
+        <div
+          ref={chartRef}
+          className={`chart-export-wrapper${isExporting ? ' is-exporting' : ''}${isCompactViewport ? ' is-mobile-stage' : ''}`}
+          data-exporting={isExporting ? 'true' : undefined}
+          id="tuvi-chart-capture"
+          style={
+            isCompactViewport
+              ? {
+                  width: `${MOBILE_STAGE_WIDTH}px`,
+                  minWidth: `${MOBILE_STAGE_WIDTH}px`,
+                  maxWidth: `${MOBILE_STAGE_WIDTH}px`,
+                  transform: `scale(${mobileScale})`,
+                  transformOrigin: 'top left',
+                }
+              : undefined
+          }
+        >
         {/* Banner Vận Hạn Đang Xem khi Xuất Ảnh / PDF */}
         <div className="chart-export-yunxian-banner">
           <div className="export-banner-main">
@@ -625,6 +739,52 @@ export default function LasoChart({
 
           {/* Center Info Panel */}
           <div className="chart-center">
+            {/* Interactive SVG Tam Phương Tứ Chính Overlay */}
+            {svgSanFang && PALACE_ANCHOR_POINTS[svgSanFang.target] && (
+              <svg
+                className={`chart-sanfang-svg ${svgSanFang.isExplicit ? 'is-explicit' : 'is-default'}`}
+                viewBox="100 100 200 200"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient id="sanfangGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#d97706" stopOpacity="0.55" />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.45" />
+                  </linearGradient>
+                </defs>
+                {/* Tam Hợp Triangle */}
+                {svgSanFang.tamHop?.length === 2 &&
+                  PALACE_ANCHOR_POINTS[svgSanFang.tamHop[0]] &&
+                  PALACE_ANCHOR_POINTS[svgSanFang.tamHop[1]] && (
+                    <polygon
+                      points={[
+                        `${PALACE_ANCHOR_POINTS[svgSanFang.target].x},${PALACE_ANCHOR_POINTS[svgSanFang.target].y}`,
+                        `${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[0]].x},${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[0]].y}`,
+                        `${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[1]].x},${PALACE_ANCHOR_POINTS[svgSanFang.tamHop[1]].y}`,
+                      ].join(' ')}
+                      className="sanfang-svg-triangle"
+                    />
+                  )}
+                {/* Xung Chiếu Line */}
+                {PALACE_ANCHOR_POINTS[svgSanFang.xungChieu] && (
+                  <line
+                    x1={PALACE_ANCHOR_POINTS[svgSanFang.target].x}
+                    y1={PALACE_ANCHOR_POINTS[svgSanFang.target].y}
+                    x2={PALACE_ANCHOR_POINTS[svgSanFang.xungChieu].x}
+                    y2={PALACE_ANCHOR_POINTS[svgSanFang.xungChieu].y}
+                    className="sanfang-svg-xung"
+                  />
+                )}
+                {/* Target Palace Anchor Dot */}
+                <circle
+                  cx={PALACE_ANCHOR_POINTS[svgSanFang.target].x}
+                  cy={PALACE_ANCHOR_POINTS[svgSanFang.target].y}
+                  r="4.5"
+                  className="sanfang-svg-dot target"
+                />
+              </svg>
+            )}
             {selectedPalaceChi !== null && selectedPalaceObj ? (
               /* Selected Palace Deep Inspection View */
               <div className="center-selected-panel">
@@ -934,6 +1094,7 @@ export default function LasoChart({
               </>
             )}
           </div>
+        </div>
         </div>
       </div>
 

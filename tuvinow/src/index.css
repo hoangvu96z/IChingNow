@@ -1030,6 +1030,115 @@ body {
   justify-content: center;
   gap: 5px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-center > *:not(.chart-sanfang-svg) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Interactive SVG Tam Phương Tứ Chính Lines in Thiên Bàn */
+.chart-sanfang-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.42;
+  transition: opacity 0.25s ease;
+}
+
+.chart-sanfang-svg.is-explicit {
+  opacity: 0.85;
+}
+
+.sanfang-svg-triangle {
+  fill: url(#sanfangGrad);
+  fill-opacity: 0.08;
+  stroke: var(--accent-gold);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 3;
+}
+
+.sanfang-svg-xung {
+  stroke: #ef4444;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+  opacity: 0.85;
+}
+
+.sanfang-svg-dot.target {
+  fill: var(--accent-gold);
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+/* Mobile 4×4 Interactive Viewport & Switcher */
+.chart-mobile-viewbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+
+.chart-mobile-viewbar-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.chart-mobile-viewbar-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.chart-mobile-view-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chart-mobile-view-btn.is-active {
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold-bright);
+  border-color: var(--accent-gold);
+}
+
+.chart-scale-viewport {
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
+.chart-scale-viewport.is-scaled.mode-fit {
+  overflow: hidden;
+}
+
+.chart-scale-viewport.is-scaled.mode-zoom {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 920px) {
+  .chart-mobile-viewbar {
+    display: flex;
+  }
 }
 
 .center-name {
@@ -1548,96 +1657,106 @@ body {
   }
 
   .chart-export-wrapper:not(.is-exporting) {
-    overflow-x: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chart-export-wrapper:not(.is-exporting) .chart-grid {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    grid-template-rows: repeat(4, auto);
+    min-width: 740px;
     width: 100%;
-    font-size: 1rem;
+    font-size: 0.85rem;
     gap: 2px;
   }
 
+  .chart-export-wrapper.is-mobile-stage:not(.is-exporting) {
+    overflow: visible;
+  }
+
+  .chart-export-wrapper.is-mobile-stage:not(.is-exporting) .chart-grid {
+    grid-template-columns: repeat(4, minmax(210px, 1fr));
+    min-width: 900px;
+    font-size: 0.92rem;
+  }
+
   .chart-export-wrapper:not(.is-exporting) .chart-center {
-    grid-area: auto;
-    order: -1;
-    padding: 16px 12px;
-    gap: 6px;
-    border-bottom: 1.5px solid var(--border-gold);
+    grid-area: 2 / 2 / 4 / 4;
+    order: 0;
+    padding: 12px 10px;
+    gap: 5px;
   }
 
   .chart-export-wrapper:not(.is-exporting) .center-name {
-    font-size: 1.4rem;
-    white-space: normal;
+    font-size: 1.45rem;
+    white-space: nowrap;
   }
 
   .chart-export-wrapper:not(.is-exporting) .center-info-row {
-    font-size: 0.875rem;
-    white-space: normal;
-    flex-wrap: wrap;
+    font-size: 0.84rem;
+    white-space: nowrap;
+    flex-wrap: nowrap;
   }
 
   .chart-export-wrapper:not(.is-exporting) .center-badge {
-    font-size: 0.8125rem;
+    font-size: 0.78rem;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-card {
-    grid-area: auto;
-    min-height: 0;
-    padding: 12px 12px;
-    gap: 6px;
+    min-height: 145px;
+    padding: 8px 7px;
+    gap: 3px;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-name {
-    font-size: 1rem;
-    white-space: normal;
+    font-size: 0.9rem;
+    white-space: nowrap;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-name.menh-label {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-canchi {
-    font-size: 0.8125rem;
+    font-size: 0.76rem;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-daihan {
-    font-size: 0.875rem;
+    font-size: 0.82rem;
   }
 
   .chart-export-wrapper:not(.is-exporting) .chinh-tinh {
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: 0.88rem;
+    line-height: 1.35;
   }
 
   .chart-export-wrapper:not(.is-exporting) .phu-tinh {
-    font-size: 0.8125rem;
-    line-height: 1.5;
+    font-size: 0.76rem;
+    line-height: 1.4;
   }
 
   .chart-export-wrapper:not(.is-exporting) .hoa-pill {
-    font-size: 0.75rem;
-    padding: 2px 6px;
+    font-size: 0.7rem;
+    padding: 1px 5px;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-annual-stars {
-    font-size: 0.8125rem;
-    line-height: 1.5;
+    font-size: 0.74rem;
+    line-height: 1.45;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-year-context {
-    font-size: 0.8125rem;
+    font-size: 0.74rem;
   }
 
   .chart-export-wrapper:not(.is-exporting) .palace-trangsinh {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
   }
 
   .chart-export-wrapper:not(.is-exporting) .mini-badge {
-    font-size: 0.75rem;
-    padding: 2px 7px;
+    font-size: 0.7rem;
+    padding: 2px 5px;
   }
 }
 
@@ -2031,7 +2150,9 @@ body {
    ═══════════════════════════════════════════════════════════════════════ */
 
 .share-card-wrapper {
-  margin: 24px 0;
+  width: 98%;
+  max-width: 1200px;
+  margin: 24px auto;
 }
 
 .share-card-toggle-btn {
@@ -4313,14 +4434,26 @@ body {
 }
 
 /* ============================================================================
- * TuViOverviewDashboard — Hub Đánh Giá Sao (1–5 ⭐) & Biểu Đồ Lục Giác
+ * TuViOverviewDashboard — Hub Đánh Giá Chung (1–5 ⭐) & Biểu Đồ Lục Giác
  * ============================================================================ */
 
 .tuvi-overview-hub {
-  margin: 20px 0 32px;
+  width: 98%;
+  max-width: 1200px;
+  margin: 20px auto 32px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.tuvi-overview-hub .tuvi-self-guide-panel,
+.tuvi-overview-hub .tuvi-local-report,
+.tuvi-overview-hub .summary-panel,
+.tuvi-overview-hub .tuvi-patterns-panel {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* 4 Tab Switcher */
@@ -4654,7 +4787,7 @@ body {
 
 .tuvi-aspects-grid-wrap {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 340px 1fr;
   gap: 24px;
   align-items: center;
 }
@@ -4666,8 +4799,9 @@ body {
 }
 
 .tuvi-radar-chart-container {
-  width: 300px;
-  height: 300px;
+  width: 340px;
+  max-width: 100%;
+  height: 340px;
   display: flex;
   align-items: center;
   justify-content: center;
