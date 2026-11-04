@@ -60,3 +60,49 @@ test('Markdown shows literal Thân, Tuần, Triệt markers and real list items 
   assert.ok(html.includes('<li>'));
   assert.ok(!html.includes('<script>'));
 });
+
+test('v6 interpretation engine covers Cân Lượng, full 2-word palace names, VCD, Tam Hợp Cách Cục, Lưu Đại Hạn and L.Khôi/L.Việt', () => {
+  // Ngô Thị Tâm chart: Tân Tỵ (2001), lunar 4/6, hour Thìn (4), gender Nữ (0), viewYear 2027 (Đinh Mùi)
+  const chart = anLaSoTuVi({
+    lunarYear: 2001,
+    lunarMonth: 6,
+    lunarDay: 4,
+    lunarHourIndex: 4,
+    yearCanIndex: 7,
+    yearChiIndex: 5,
+    gender: 0,
+    viewYear: 2027,
+    viewYearCanIndex: 3,
+    viewYearChiIndex: 7,
+  });
+  const report = buildTuViInterpretation(chart);
+  const { sections } = report;
+
+  // Step 1: Cân Xương Đoán Số
+  assert.ok(sections.step1_ThienBan.includes('Cân Xương Đoán Số (Viên Thiên Cương)'));
+  assert.ok(sections.step1_ThienBan.includes(chart.canLuongStr));
+
+  // Step 2 & Step 3: Thiên Tướng độc tọa (Hãm Địa) - Hội Tử Vũ Liêm & Sát Phá Tham
+  assert.ok(sections.step2_MenhThan.includes('Thiên Tướng (H)'));
+  assert.ok(sections.step3_TamHop.includes('Cách Cục Thiên Tướng Độc Tọa (Hãm Địa) - Hội Tử Vũ Liêm & Sát Phá Tham'));
+
+  // Step 4: Full 2-word palace names (no truncation like "Cung Phụ" or "Cung Điền") + Sát Tinh & Cát Tinh
+  assert.ok(sections.step4_SatTinhTuHoa.includes('Cung Phụ Mẫu'));
+  assert.ok(sections.step4_SatTinhTuHoa.includes('Cung Điền Trạch'));
+  assert.ok(sections.step4_SatTinhTuHoa.includes('Cung Huynh Đệ'));
+  assert.ok(sections.step4_SatTinhTuHoa.includes('Cung Nô Bộc'));
+  assert.ok(sections.step4_SatTinhTuHoa.includes('CẢNH BÁO QUAN TRỌNG'));
+
+  // Step 5: Priority Phụ Tinh (Hóa Kỵ in Điền Trạch is preserved even though it's the 13th star) + Đại Hạn Đương Thời
+  assert.ok(sections.step5_12CungAndVanHan.includes('Hóa Kỵ'));
+  assert.ok(sections.step5_12CungAndVanHan.includes('[ĐẠI HẠN HIỆN TẠI: 23 - 32 tuổi]'));
+  assert.ok(sections.step5_12CungAndVanHan.includes('Đại Hạn Đương Thời (27 tuổi âm)'));
+
+  // Step 6: Gốc Đại Hạn, Cung Lưu Đại Hạn, Cung Tiểu Hạn, LN.Mệnh, L.Thiên Khôi / L.Thiên Việt
+  assert.ok(sections.step6_LuuNien.includes('Gốc Đại Hạn 10 Năm (23-32 tuổi)'));
+  assert.ok(sections.step6_LuuNien.includes('Cung Lưu Đại Hạn'));
+  assert.ok(sections.step6_LuuNien.includes('Cung Tiểu Hạn (1 Năm)'));
+  assert.ok(sections.step6_LuuNien.includes('Cung Lưu Niên Mệnh (LN.Mệnh / Thái Tuế Lưu Niên)'));
+  assert.ok(sections.step6_LuuNien.includes('L.Thiên Khôi'));
+  assert.ok(sections.step6_LuuNien.includes('L.Thiên Việt'));
+});

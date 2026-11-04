@@ -13,7 +13,7 @@ export default function TuViLocalReport({ result }) {
       <header className="local-report-header">
         <div>
           <h2 id="local-report-title">Luận đoán lá số</h2>
-          <p>Theo bộ quy tắc Tử Vi v5 · Tự động từ lá số của bạn</p>
+          <p>Theo bộ quy tắc Tử Vi v6 (Chuẩn Nam Phái) · Tự động từ lá số của bạn</p>
         </div>
         <span className="local-report-badge">Miễn phí</span>
       </header>

@@ -38,7 +38,7 @@ export function prepareInterpretationInput(result) {
 
 export function buildTuViInterpretation(result) {
   const input = prepareInterpretationInput(result);
-  return { sections: luanSoTuViToanDien(input), hasViewYear: Boolean(input.viewYearStr) };
+  return { sections: luanSoTuViToanDien(input), hasViewYear: Boolean(input.viewYearStr || (input.tuoiAm !== null && input.tuoiAm !== undefined)) };
 }
 
 // Presentation only: retain literal chart markers instead of treating them as HTML.
