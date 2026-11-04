@@ -5275,6 +5275,138 @@ body {
   color: var(--text-secondary);
 }
 
+.tuvi-hero-header-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tuvi-hero-context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--accent-gold-bright);
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--border-gold);
+  border-radius: 999px;
+  padding: 2px 10px;
+  width: fit-content;
+}
+
+.tuvi-natal-delta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border: 1px solid var(--border-subtle);
+}
+
+.tuvi-natal-delta-badge.is-up {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+[data-theme="dark"] .tuvi-natal-delta-badge.is-up {
+  color: #4ade80;
+}
+
+.tuvi-natal-delta-badge.is-down {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="dark"] .tuvi-natal-delta-badge.is-down {
+  color: #f87171;
+}
+
+.tuvi-natal-delta-badge.is-flat {
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
+.tuvi-strength-rotated-tag {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--accent-gold-bright);
+  margin-bottom: 3px;
+}
+
+.tuvi-radar-natal-polygon {
+  fill: none;
+  stroke: var(--accent-gold);
+  stroke-width: 1.6;
+  stroke-dasharray: 4 3;
+  opacity: 0.78;
+}
+
+.tuvi-radar-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.tuvi-radar-legend-item.is-active-period {
+  color: #8b5cf6;
+}
+
+.tuvi-radar-legend-item.is-natal-base {
+  color: var(--accent-gold-bright);
+}
+
+.tuvi-aspect-delta-inline {
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+.tuvi-aspect-delta-inline.is-up {
+  color: #15803d;
+}
+
+[data-theme="dark"] .tuvi-aspect-delta-inline.is-up {
+  color: #4ade80;
+}
+
+.tuvi-aspect-delta-inline.is-down {
+  color: #b91c1c;
+}
+
+[data-theme="dark"] .tuvi-aspect-delta-inline.is-down {
+  color: #f87171;
+}
+
+.tuvi-aspect-rotated-focus {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--accent-gold-bright);
+  margin-bottom: 2px;
+}
+
+.tuvi-palace-rotated-pill {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-gold-bright);
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--border-gold);
+}
+
 /* Mobile responsive for TuViOverviewDashboard */
 @media (max-width: 900px) {
   .tuvi-rating-hero {

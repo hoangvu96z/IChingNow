@@ -5,7 +5,7 @@ import SummaryPanel from './SummaryPanel.jsx';
 import TuViPatternsPanel from './TuViPatternsPanel.jsx';
 import { buildChartStarEvaluation } from '../utils/tuViStarRating.js';
 
-function RadarChart({ aspects = [] }) {
+function RadarChart({ aspects = [], natalAspects = null, isDynamic = false }) {
   const size = 340;
   const cx = 170;
   const cy = 170;
@@ -60,6 +60,20 @@ function RadarChart({ aspects = [] }) {
       dy,
     };
   });
+
+  // Natal baseline polygon points (when viewing Đại Hạn / Lưu Niên / Lưu Nguyệt)
+  const natalPointsStr =
+    isDynamic && Array.isArray(natalAspects) && natalAspects.length === aspects.length
+      ? natalAspects
+          .map((a, i) => {
+            const angle = -Math.PI / 2 + i * angleStep;
+            const r = (Math.max(1, Math.min(5, a.stars)) / 5.0) * maxR;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+          })
+          .join(' ')
+      : '';
 
   // Data polygon points
   const dataPoints = aspects.map((a, i) => {
@@ -124,6 +138,14 @@ function RadarChart({ aspects = [] }) {
           </g>
         ))}
 
+        {/* Natal baseline polygon in dynamic mode */}
+        {natalPointsStr && (
+          <polygon
+            points={natalPointsStr}
+            className="tuvi-radar-natal-polygon"
+          />
+        )}
+
         {/* Data polygon */}
         <polygon
           points={dataPointsStr}
@@ -137,6 +159,13 @@ function RadarChart({ aspects = [] }) {
           <circle key={i} cx={pt.x} cy={pt.y} r={4.5} className="tuvi-radar-dot" />
         ))}
       </svg>
+
+      {isDynamic && (
+        <div className="tuvi-radar-legend" aria-label="Chú giải biểu đồ lục giác">
+          <span className="tuvi-radar-legend-item is-active-period">● Kỳ vận hạn đang chọn</span>
+          <span className="tuvi-radar-legend-item is-natal-base">┈ Nền tảng Bản Mệnh gốc</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -158,7 +187,7 @@ export default function TuViOverviewDashboard({
     return null;
   }
 
-  const { overall, aspects, palaceRatings, activeYunxian, quickTags } = evaluation;
+  const { overall, aspects, natalAspects, palaceRatings, activeYunxian, quickTags } = evaluation;
 
   return (
     <section className="tuvi-overview-hub" aria-label="Trung tâm đánh giá và giải mã lá số">
@@ -224,7 +253,12 @@ export default function TuViOverviewDashboard({
           <div className="tuvi-rating-hero">
             <div className="tuvi-hero-main-card">
               <div className="tuvi-hero-badge-row">
-                <span className="tuvi-hero-header-label">📊 Đánh Giá Chung Tổng Thể Lá Số</span>
+                <div className="tuvi-hero-header-stack">
+                  <span className="tuvi-hero-header-label">📊 Đánh Giá Chung Tổng Thể Lá Số</span>
+                  <span className="tuvi-hero-context-pill">
+                    {overall.isDynamic ? `⚡ Đang tính theo: ${overall.contextLabel}` : '🏛️ Chế độ: Bản Mệnh Trọn Đời'}
+                  </span>
+                </div>
                 <span className={`tuvi-tier-badge ${overall.badgeClass}`}>
                   {overall.tierLabel}
                 </span>
@@ -237,7 +271,23 @@ export default function TuViOverviewDashboard({
                 </div>
                 <div className="tuvi-hero-stars-display" aria-label={`${overall.stars} sao`}>
                   <div className="tuvi-stars-symbols">{overall.starsText}</div>
-                  <div className="tuvi-stars-subtext">Quy đổi: {overall.score100} / 100 điểm</div>
+                  <div className="tuvi-stars-subtext">
+                    Quy đổi: {overall.score100} / 100 điểm
+                    {overall.isDynamic && (
+                      <span
+                        className={`tuvi-natal-delta-badge ${
+                          overall.deltaScore > 0 ? 'is-up' : overall.deltaScore < 0 ? 'is-down' : 'is-flat'
+                        }`}
+                      >
+                        {overall.deltaScore > 0
+                          ? `▲ +${overall.deltaScore}★`
+                          : overall.deltaScore < 0
+                            ? `▼ ${overall.deltaScore}★`
+                            : '═ 0.0★'}{' '}
+                        so với Bản Mệnh ({overall.natalScore}★)
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -257,7 +307,7 @@ export default function TuViOverviewDashboard({
               <div className="tuvi-hero-box tuvi-strength-box">
                 <div className="tuvi-hero-box-header">
                   <span className="tuvi-hero-box-icon" aria-hidden="true">🌟</span>
-                  <strong>Điểm Mạnh Lớn Nhất</strong>
+                  <strong>{overall.isDynamic ? `Điểm Mạnh Lớn Nhất (${activeYunxian?.modeLabel || 'Kỳ Hạn'})` : 'Điểm Mạnh Lớn Nhất'}</strong>
                 </div>
                 <ul className="tuvi-hero-list">
                   {overall.topStrengths.map((str, idx) => (
@@ -266,6 +316,9 @@ export default function TuViOverviewDashboard({
                         <span className="tuvi-strength-title">{str.icon} {str.name}</span>
                         <span className="tuvi-strength-stars">{str.starsText} ({str.stars}/5)</span>
                       </div>
+                      {str.rotatedFocus && (
+                        <div className="tuvi-strength-rotated-tag">Trọng điểm: {str.rotatedFocus}</div>
+                      )}
                       <p className="tuvi-strength-desc">{str.summary}</p>
                     </li>
                   ))}
@@ -289,14 +342,20 @@ export default function TuViOverviewDashboard({
                 <span aria-hidden="true">🕸️</span> Biểu Đồ Lục Giác & 6 Phương Diện Cuộc Đời
               </h3>
               <p className="tuvi-section-desc">
-                Cân đối tổng thể giữa Công Danh, Tài Lộc, Tình Duyên, Phúc Đức, Quý Nhân và Sức Khỏe.
+                {overall.isDynamic
+                  ? `Đang hiển thị biến chuyển 6 phương diện theo ${overall.contextLabel} (kết hợp cung xoay chiều, Tứ Hóa vận hạn & sao Lưu đối chiếu với nền tảng Bản Mệnh).`
+                  : 'Cân đối tổng thể giữa Công Danh, Tài Lộc, Tình Duyên, Phúc Đức, Quý Nhân và Sức Khỏe theo Bản Mệnh gốc.'}
               </p>
             </div>
 
             <div className="tuvi-aspects-grid-wrap">
               {/* Cột trái: Biểu đồ Radar Lục Giác SVG */}
               <div className="tuvi-aspects-radar-col">
-                <RadarChart aspects={aspects} />
+                <RadarChart
+                  aspects={aspects}
+                  natalAspects={natalAspects}
+                  isDynamic={overall.isDynamic}
+                />
               </div>
 
               {/* Cột phải: 6 Thẻ Phương Diện Cuộc Đời */}
@@ -315,8 +374,24 @@ export default function TuViOverviewDashboard({
 
                     <div className="tuvi-aspect-rating-row">
                       <span className="tuvi-aspect-stars-text">{aspect.starsText}</span>
-                      <span className="tuvi-aspect-score-label">{aspect.stars} / 5.0 ⭐</span>
+                      <span className="tuvi-aspect-score-label">
+                        {aspect.stars} / 5.0 ⭐
+                        {overall.isDynamic && aspect.deltaStars !== undefined && aspect.deltaStars !== 0 && (
+                          <span
+                            className={`tuvi-aspect-delta-inline ${aspect.deltaStars > 0 ? 'is-up' : 'is-down'}`}
+                            title={`Bản Mệnh gốc: ${aspect.natalStars}/5.0 sao`}
+                          >
+                            {aspect.deltaStars > 0 ? ` ▲+${aspect.deltaStars}` : ` ▼${aspect.deltaStars}`}
+                          </span>
+                        )}
+                      </span>
                     </div>
+
+                    {overall.isDynamic && aspect.rotatedFocus && (
+                      <div className="tuvi-aspect-rotated-focus">
+                        📍 Ứng kỳ: {aspect.rotatedFocus}
+                      </div>
+                    )}
 
                     <div className="tuvi-aspect-bar-track" aria-hidden="true">
                       <div
@@ -375,7 +450,11 @@ export default function TuViOverviewDashboard({
             <div className="tuvi-12palaces-header">
               <div className="tuvi-12palaces-title-wrap">
                 <h4 className="tuvi-12palaces-title">🏛️ Xếp Hạng 12 Cung Số</h4>
-                <span className="tuvi-12palaces-sub">Đánh giá độ đắc hãm và năng lượng từng cung vị</span>
+                <span className="tuvi-12palaces-sub">
+                  {overall.isDynamic
+                    ? `Đánh giá năng lượng 12 cung kèm vai trò xoay cung trong ${overall.contextLabel}`
+                    : 'Đánh giá độ đắc hãm và năng lượng từng cung vị'}
+                </span>
               </div>
               <button
                 type="button"
@@ -395,6 +474,9 @@ export default function TuViOverviewDashboard({
                       <div className="tuvi-palace-name-col">
                         <span className="tuvi-palace-rating-name">Cung {p.palaceName}</span>
                         <span className="tuvi-palace-chi-tag">({p.chiName})</span>
+                        {p.rotatedRole && (
+                          <span className="tuvi-palace-rotated-pill">{p.rotatedRole}</span>
+                        )}
                       </div>
                       <span className={`tuvi-tier-badge mini ${p.badgeClass}`}>
                         {p.tierLabel}

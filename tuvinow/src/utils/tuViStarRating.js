@@ -4,6 +4,55 @@
  */
 
 import { buildYunxianOverlay } from './tuViZiweiModule.js';
+import { anLaSoTuVi } from './tuViEngine.js';
+
+function resolveEffectiveChartForRating(result, inputData = {}, yunxianState = null) {
+  if (!result || !yunxianState) return result;
+  const mode = yunxianState.mode;
+  if (mode !== 'liunian' && mode !== 'liuyue') return result;
+
+  const targetYear = yunxianState.viewYear !== undefined && yunxianState.viewYear !== null
+    ? Number(yunxianState.viewYear)
+    : null;
+  if (!targetYear || !Number.isFinite(targetYear)) return result;
+  if (result.viewYear === targetYear) return result;
+
+  if (
+    inputData &&
+    Number.isInteger(inputData.yearCanIndex) &&
+    Number.isInteger(inputData.yearChiIndex) &&
+    Number.isInteger(inputData.lunarMonth) &&
+    Number.isInteger(inputData.lunarDay) &&
+    Number.isInteger(inputData.lunarHourIndex) &&
+    Number.isInteger(inputData.gender) &&
+    Number.isInteger(inputData.lunarYear) &&
+    targetYear >= inputData.lunarYear
+  ) {
+    try {
+      const viewYearCanIndex = ((targetYear - 4) % 10 + 10) % 10;
+      const viewYearChiIndex = ((targetYear - 4) % 12 + 12) % 12;
+      return anLaSoTuVi({
+        ...inputData,
+        viewYear: targetYear,
+        namXem: targetYear,
+        viewYearCanIndex,
+        viewYearChiIndex,
+      });
+    } catch {
+      return result;
+    }
+  }
+  return result;
+}
+
+function palaceHasStarName(palace, targetStar) {
+  if (!palace || !targetStar) return false;
+  const all = [...(palace.chinhTinh || []), ...(palace.phuTinh || [])];
+  return all.some((s) => {
+    const clean = String(s).split('(')[0].trim();
+    return clean === targetStar;
+  });
+}
 
 export const STAR_BRIGHTNESS_DELTAS = {
   M: 0.65,
@@ -120,13 +169,14 @@ function hasMieuVuongInStars(starList) {
  *   nếu có Miếu/Vượng giảm 50% mức trừ.
  * - Giới hạn [2.0, 5.0], làm tròn 0.5.
  */
-export function evaluatePalaceRating(palace, allPalaces = [], _result = null) {
+export function evaluatePalaceRating(palace, allPalaces = [], _result = null, yunxianContext = null) {
   if (!palace) return null;
 
   let score = 3.0;
   const chinhTinh = Array.isArray(palace.chinhTinh) ? palace.chinhTinh : [];
   const phuTinh = Array.isArray(palace.phuTinh) ? palace.phuTinh : [];
   const nonAnnualPhuTinh = phuTinh.filter((s) => !String(s).startsWith('L.'));
+  const annualPhuTinh = phuTinh.filter((s) => String(s).startsWith('L.'));
 
   const isVoChinhDieu = chinhTinh.length === 0;
   let hasMieuVuong = false;
@@ -212,6 +262,101 @@ export function evaluatePalaceRating(palace, allPalaces = [], _result = null) {
     }
   }
 
+  // 4b. Tác động động của Vận Hạn (Đại Hạn / Lưu Niên / Lưu Nguyệt) lên cung vị
+  let rotatedRole = null;
+  const activeTransforms = [];
+  if (yunxianContext && yunxianContext.mode && yunxianContext.mode !== 'mingpan') {
+    const { mode, overlay } = yunxianContext;
+    if (mode === 'daxian') {
+      rotatedRole = overlay?.daXianPalaceMap?.[palace.chiIndex] || null;
+    } else if (mode === 'liunian') {
+      rotatedRole = overlay?.luuNienPalaceMap?.[palace.chiIndex] || null;
+    } else if (mode === 'liuyue') {
+      rotatedRole = overlay?.luuNguyetPalaceMap?.[palace.chiIndex] || null;
+    }
+
+    const activeLayers = [];
+    if (mode === 'daxian') {
+      if (overlay?.sihuaLayers?.daXian?.transforms) {
+        activeLayers.push({ transforms: overlay.sihuaLayers.daXian.transforms, weight: 0.9, prefix: 'ĐH.' });
+      }
+    } else if (mode === 'liunian') {
+      if (overlay?.sihuaLayers?.daXian?.transforms) {
+        activeLayers.push({ transforms: overlay.sihuaLayers.daXian.transforms, weight: 0.45, prefix: 'ĐH.' });
+      }
+      if (overlay?.sihuaLayers?.liuNian?.transforms) {
+        activeLayers.push({ transforms: overlay.sihuaLayers.liuNian.transforms, weight: 0.95, prefix: 'LN.' });
+      }
+    } else if (mode === 'liuyue') {
+      if (overlay?.sihuaLayers?.daXian?.transforms) {
+        activeLayers.push({ transforms: overlay.sihuaLayers.daXian.transforms, weight: 0.3, prefix: 'ĐH.' });
+      }
+      if (overlay?.sihuaLayers?.liuNian?.transforms) {
+        activeLayers.push({ transforms: overlay.sihuaLayers.liuNian.transforms, weight: 0.5, prefix: 'LN.' });
+      }
+      if (overlay?.sihuaLayers?.liuYue?.transforms) {
+        activeLayers.push({ transforms: overlay.sihuaLayers.liuYue.transforms, weight: 1.0, prefix: 'LNg.' });
+      }
+    }
+
+    const sanFangPalaces = sanFangBranches
+      .map((b) => allPalaces.find((item) => item.chiIndex === b))
+      .filter(Boolean);
+
+    for (const { transforms, weight, prefix } of activeLayers) {
+      const locStar = transforms['Hóa Lộc'];
+      const quyenStar = transforms['Hóa Quyền'];
+      const khoaStar = transforms['Hóa Khoa'];
+      const kyStar = transforms['Hóa Kỵ'];
+
+      if (palaceHasStarName(palace, locStar)) {
+        score += 0.65 * weight;
+        activeTransforms.push(`${prefix}Lộc`);
+      } else if (sanFangPalaces.some((sp) => palaceHasStarName(sp, locStar))) {
+        score += 0.22 * weight;
+      }
+
+      if (palaceHasStarName(palace, quyenStar)) {
+        score += 0.52 * weight;
+        activeTransforms.push(`${prefix}Quyền`);
+      } else if (sanFangPalaces.some((sp) => palaceHasStarName(sp, quyenStar))) {
+        score += 0.18 * weight;
+      }
+
+      if (palaceHasStarName(palace, khoaStar)) {
+        score += 0.50 * weight;
+        activeTransforms.push(`${prefix}Khoa`);
+      } else if (sanFangPalaces.some((sp) => palaceHasStarName(sp, khoaStar))) {
+        score += 0.18 * weight;
+      }
+
+      if (palaceHasStarName(palace, kyStar)) {
+        score -= 0.58 * weight * penaltyFactor;
+        activeTransforms.push(`${prefix}Kỵ`);
+      } else if (sanFangPalaces.some((sp) => palaceHasStarName(sp, kyStar))) {
+        score -= 0.20 * weight * penaltyFactor;
+      }
+    }
+
+    if (mode === 'liunian' || mode === 'liuyue') {
+      const annualWeight = mode === 'liunian' ? 0.85 : 0.55;
+      for (const s of annualPhuTinh) {
+        const raw = String(s).trim();
+        if (raw === 'L.Lộc Tồn') {
+          score += 0.38 * annualWeight;
+        } else if (raw === 'L.Thiên Mã' || raw === 'L.Thiên Khôi' || raw === 'L.Thiên Việt') {
+          score += 0.25 * annualWeight;
+        } else if (raw === 'L.Hồng Loan' || raw === 'L.Thiên Hỷ') {
+          score += 0.20 * annualWeight;
+        } else if (raw === 'L.Kình Dương' || raw === 'L.Đà La') {
+          score -= 0.32 * annualWeight * penaltyFactor;
+        } else if (raw === 'L.Bạch Hổ' || raw === 'L.Tang Môn' || raw === 'L.Thiên Khốc' || raw === 'L.Thiên Hư') {
+          score -= 0.18 * annualWeight * penaltyFactor;
+        }
+      }
+    }
+  }
+
   // 5. Giới hạn [2.0, 5.0], làm tròn 0.5
   const rawScore = score;
   const clamped = Math.max(2.0, Math.min(5.0, rawScore));
@@ -222,31 +367,34 @@ export function evaluatePalaceRating(palace, allPalaces = [], _result = null) {
 
   // 6. Câu tóm tắt 1 dòng ngắn gọn, dễ hiểu
   const pName = cleanPalaceName(palace.chucNang);
+  const transformSuffix = activeTransforms.length > 0 ? ` (Đang kích hoạt: ${activeTransforms.join(', ')})` : '';
   let summary = '';
   if (isVoChinhDieu) {
     if (palace.isTuan || palace.isTriet) {
-      summary = `Cung ${pName} Vô Chính Diệu đắc Tuần/Triệt, mượn chính tinh xung chiếu vững vàng, trong thử thách tự tạo cơ đồ.`;
+      summary = `Cung ${pName} Vô Chính Diệu đắc Tuần/Triệt, mượn chính tinh xung chiếu vững vàng, trong thử thách tự tạo cơ đồ.${transformSuffix}`;
     } else {
-      summary = `Cung ${pName} Vô Chính Diệu mượn chính tinh đối cung, cần dựa vào thực lực tích lũy và ngoại viện tam hợp.`;
+      summary = `Cung ${pName} Vô Chính Diệu mượn chính tinh đối cung, cần dựa vào thực lực tích lũy và ngoại viện tam hợp.${transformSuffix}`;
     }
   } else {
     const starNames = chinhTinh.map((s) => String(s).split('(')[0].trim()).join(', ');
     if (stars >= 4.5) {
-      summary = `Chính tinh ${starNames} tọa thủ đắc cách, cát tinh hội tụ hanh thông, là điểm sáng rực rỡ của lá số.`;
+      summary = `Chính tinh ${starNames} tọa thủ đắc cách, cát tinh hội tụ hanh thông, là điểm sáng rực rỡ của lá số.${transformSuffix}`;
     } else if (stars >= 4.0) {
-      summary = `Chính tinh ${starNames} thế cung cát lợi, khí sắc vững vàng, trợ lực phát triển thuận lợi bền bỉ.`;
+      summary = `Chính tinh ${starNames} thế cung cát lợi, khí sắc vững vàng, trợ lực phát triển thuận lợi bền bỉ.${transformSuffix}`;
     } else if (stars >= 3.5) {
-      summary = `Chính tinh ${starNames} tương đối ổn định, giữ tâm thế vững và phát huy sở trường sẽ đạt kết quả tốt.`;
+      summary = `Chính tinh ${starNames} tương đối ổn định, giữ tâm thế vững và phát huy sở trường sẽ đạt kết quả tốt.${transformSuffix}`;
     } else if (stars >= 3.0) {
-      summary = `Chính tinh ${starNames} ở thế bình hòa, cần kiên trì bồi đắp nền tảng và chủ động đón nhận cơ hội.`;
+      summary = `Chính tinh ${starNames} ở thế bình hòa, cần kiên trì bồi đắp nền tảng và chủ động đón nhận cơ hội.${transformSuffix}`;
     } else {
-      summary = `Chính tinh ${starNames} gặp sát tinh xung hội, cần bình tĩnh, rèn luyện tính kiên nhẫn để hóa giải thử thách.`;
+      summary = `Chính tinh ${starNames} gặp sát tinh xung hội, cần bình tĩnh, rèn luyện tính kiên nhẫn để hóa giải thử thách.${transformSuffix}`;
     }
   }
 
   return {
     palaceName: pName,
     rawPalaceName: palace.chucNang,
+    rotatedRole,
+    activeTransforms,
     chiIndex: palace.chiIndex,
     chiName: palace.chiName,
     canName: palace.canName,
@@ -326,11 +474,41 @@ export function getElementRelation(cucElement, menhElement) {
 }
 
 /**
- * Tìm đánh giá cung theo tên chức năng.
+ * Tìm đánh giá cung theo tên chức năng gốc hoặc tên cung xoay vận hạn (ĐH.* / LN.* / LNg.*).
  */
-function findRatingByPalaceName(ratings, targetName) {
+function findRatingByPalaceName(ratings, targetName, rotatedSuffix = null) {
+  if (rotatedSuffix) {
+    const rotFound = ratings.find(
+      (r) => r.rotatedRole && r.rotatedRole.endsWith(`.${rotatedSuffix}`)
+    );
+    if (rotFound) return rotFound;
+  }
   const found = ratings.find((r) => r.palaceName === targetName || r.palaceName.includes(targetName));
   return found || { rawScore: 3.0, stars: 3.0, score100: 60, tierLabel: 'Bình Hòa' };
+}
+
+function evaluateTatAchSafety(palace, includeAnnual = false) {
+  let healthSafety = 3.5;
+  if (!palace) return healthSafety;
+  const allTatAchStars = [
+    ...(palace.chinhTinh || []),
+    ...(palace.phuTinh || []).filter((s) => includeAnnual || !String(s).startsWith('L.')),
+  ];
+  if (allTatAchStars.some((s) => s.includes('Hóa Khoa'))) healthSafety += 0.5;
+  if (allTatAchStars.some((s) => s.includes('Thiên Lương'))) healthSafety += 0.5;
+  if (allTatAchStars.some((s) => s.includes('Thiên Đồng'))) healthSafety += 0.4;
+  if (palace.isTuan || palace.isTriet) healthSafety += 0.4;
+  if (allTatAchStars.some((s) => s.includes('Bác Sỹ') || s.includes('Ân Quang') || s.includes('Thiên Quý'))) {
+    healthSafety += 0.25;
+  }
+  for (const s of allTatAchStars) {
+    const raw = String(s).split('(')[0].trim().replace(/^L\./, '');
+    if (raw === 'Địa Không' || raw === 'Địa Kiếp') healthSafety -= 0.35;
+    else if (raw === 'Kình Dương' || raw === 'Đà La') healthSafety -= 0.30;
+    else if (raw === 'Hỏa Tinh' || raw === 'Linh Tinh' || raw === 'Hóa Kỵ') healthSafety -= 0.25;
+    else if (raw === 'Bạch Hổ' || raw === 'Tang Môn' || raw === 'Thiên Khốc' || raw === 'Thiên Hư') healthSafety -= 0.15;
+  }
+  return Math.max(2.0, Math.min(5.0, healthSafety));
 }
 
 /**
@@ -341,28 +519,56 @@ function findRatingByPalaceName(ratings, targetName) {
  * 4. fortune — Phúc Đức & Nội Tâm (Phúc Đức 55% + Mệnh 30% + Âm Dương/Mệnh Cục thuận lý 15%)
  * 5. social — Quý Nhân & Xã Giao (Thiên Di 55% + Nô Bộc 30% + Huynh Đệ 15%)
  * 6. health — Sức Khỏe & Bình An (Tật Ách an toàn + Mệnh)
+ *
+ * Khi yunxianContext (daxian / liunian / liuyue) được truyền vào, điểm 6 phương diện sẽ
+ * kết hợp cung xoay chiều của kỳ hạn đang chọn (70% trọng số ứng kỳ) với cung gốc Bản Mệnh (30% trọng số nền tảng).
  */
-export function evaluateSixLifeAspects(result, palaceRatings) {
-  const menh = findRatingByPalaceName(palaceRatings, 'Mệnh');
-  const quanLoc = findRatingByPalaceName(palaceRatings, 'Quan Lộc');
-  const taiBach = findRatingByPalaceName(palaceRatings, 'Tài Bạch');
-  const dienTrach = findRatingByPalaceName(palaceRatings, 'Điền Trạch');
-  const phucDuc = findRatingByPalaceName(palaceRatings, 'Phúc Đức');
-  const phuThe = findRatingByPalaceName(palaceRatings, 'Phu Thê');
-  const tuTuc = findRatingByPalaceName(palaceRatings, 'Tử Tức');
-  const thienDi = findRatingByPalaceName(palaceRatings, 'Thiên Di');
-  const noBoc = findRatingByPalaceName(palaceRatings, 'Nô Bộc');
-  const huynhDe = findRatingByPalaceName(palaceRatings, 'Huynh Đệ');
-  const tatAchPalace = (result?.palates || []).find((p) => cleanPalaceName(p.chucNang) === 'Tật Ách');
+export function evaluateSixLifeAspects(result, palaceRatings, yunxianContext = null, natalAspects = null) {
+  const isDynamic = Boolean(yunxianContext && yunxianContext.mode && yunxianContext.mode !== 'mingpan');
+
+  const menhNatal = findRatingByPalaceName(palaceRatings, 'Mệnh');
+  const quanLocNatal = findRatingByPalaceName(palaceRatings, 'Quan Lộc');
+  const taiBachNatal = findRatingByPalaceName(palaceRatings, 'Tài Bạch');
+  const dienTrachNatal = findRatingByPalaceName(palaceRatings, 'Điền Trạch');
+  const phucDucNatal = findRatingByPalaceName(palaceRatings, 'Phúc Đức');
+  const phuTheNatal = findRatingByPalaceName(palaceRatings, 'Phu Thê');
+  const tuTucNatal = findRatingByPalaceName(palaceRatings, 'Tử Tức');
+  const thienDiNatal = findRatingByPalaceName(palaceRatings, 'Thiên Di');
+  const noBocNatal = findRatingByPalaceName(palaceRatings, 'Nô Bộc');
+  const huynhDeNatal = findRatingByPalaceName(palaceRatings, 'Huynh Đệ');
+  const tatAchNatalPalace = (result?.palates || []).find((p) => cleanPalaceName(p.chucNang) === 'Tật Ách');
+
+  const menhRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Mệnh', 'Mệnh') : menhNatal;
+  const quanLocRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Quan Lộc', 'Quan') : quanLocNatal;
+  const taiBachRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Tài Bạch', 'Tài') : taiBachNatal;
+  const dienTrachRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Điền Trạch', 'Điền') : dienTrachNatal;
+  const phucDucRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Phúc Đức', 'Phúc') : phucDucNatal;
+  const phuTheRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Phu Thê', 'Phối') : phuTheNatal;
+  const tuTucRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Tử Tức', 'Tử') : tuTucNatal;
+  const thienDiRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Thiên Di', 'Di') : thienDiNatal;
+  const noBocRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Nô Bộc', 'Nô') : noBocNatal;
+  const huynhDeRot = isDynamic ? findRatingByPalaceName(palaceRatings, 'Huynh Đệ', 'Huynh') : huynhDeNatal;
+  const tatAchRotRating = isDynamic ? findRatingByPalaceName(palaceRatings, 'Tật Ách', 'Tật') : null;
+  const tatAchRotPalace = tatAchRotRating
+    ? (result?.palates || []).find((p) => p.chiIndex === tatAchRotRating.chiIndex)
+    : tatAchNatalPalace;
+
+  const blend = (rotVal, natalVal) => (isDynamic ? rotVal * 0.72 + natalVal * 0.28 : natalVal);
 
   // 1. Career
-  const careerRaw = quanLoc.rawScore * 0.55 + menh.rawScore * 0.30 + taiBach.rawScore * 0.15;
+  const careerNatalRaw = quanLocNatal.rawScore * 0.55 + menhNatal.rawScore * 0.30 + taiBachNatal.rawScore * 0.15;
+  const careerRotRaw = quanLocRot.rawScore * 0.55 + menhRot.rawScore * 0.30 + taiBachRot.rawScore * 0.15;
+  const careerRaw = blend(careerRotRaw, careerNatalRaw);
 
   // 2. Wealth
-  const wealthRaw = taiBach.rawScore * 0.55 + dienTrach.rawScore * 0.30 + phucDuc.rawScore * 0.15;
+  const wealthNatalRaw = taiBachNatal.rawScore * 0.55 + dienTrachNatal.rawScore * 0.30 + phucDucNatal.rawScore * 0.15;
+  const wealthRotRaw = taiBachRot.rawScore * 0.55 + dienTrachRot.rawScore * 0.30 + phucDucRot.rawScore * 0.15;
+  const wealthRaw = blend(wealthRotRaw, wealthNatalRaw);
 
   // 3. Love
-  const loveRaw = phuThe.rawScore * 0.55 + tuTuc.rawScore * 0.25 + phucDuc.rawScore * 0.20;
+  const loveNatalRaw = phuTheNatal.rawScore * 0.55 + tuTucNatal.rawScore * 0.25 + phucDucNatal.rawScore * 0.20;
+  const loveRotRaw = phuTheRot.rawScore * 0.55 + tuTucRot.rawScore * 0.25 + phucDucRot.rawScore * 0.20;
+  const loveRaw = blend(loveRotRaw, loveNatalRaw);
 
   // 4. Fortune
   let thuanLyScore = 3.5;
@@ -375,36 +581,24 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
   else if (rel === 'Mệnh Sinh Cục') thuanLyScore += 0.2;
   else if (rel === 'Cục Khắc Mệnh') thuanLyScore -= 0.4;
   const clampedThuanLy = Math.max(2.0, Math.min(5.0, thuanLyScore));
-  const fortuneRaw = phucDuc.rawScore * 0.55 + menh.rawScore * 0.30 + clampedThuanLy * 0.15;
+  const fortuneNatalRaw = phucDucNatal.rawScore * 0.55 + menhNatal.rawScore * 0.30 + clampedThuanLy * 0.15;
+  const fortuneRotRaw = phucDucRot.rawScore * 0.55 + menhRot.rawScore * 0.30 + clampedThuanLy * 0.15;
+  const fortuneRaw = blend(fortuneRotRaw, fortuneNatalRaw);
 
   // 5. Social
-  const socialRaw = thienDi.rawScore * 0.55 + noBoc.rawScore * 0.30 + huynhDe.rawScore * 0.15;
+  const socialNatalRaw = thienDiNatal.rawScore * 0.55 + noBocNatal.rawScore * 0.30 + huynhDeNatal.rawScore * 0.15;
+  const socialRotRaw = thienDiRot.rawScore * 0.55 + noBocRot.rawScore * 0.30 + huynhDeRot.rawScore * 0.15;
+  const socialRaw = blend(socialRotRaw, socialNatalRaw);
 
   // 6. Health
-  let healthSafety = 3.5;
-  if (tatAchPalace) {
-    const allTatAchStars = [
-      ...(tatAchPalace.chinhTinh || []),
-      ...(tatAchPalace.phuTinh || []).filter((s) => !String(s).startsWith('L.')),
-    ];
-    // Các sao cứu giải bệnh tật tốt nhất trong Tử Vi
-    if (allTatAchStars.some((s) => s.includes('Hóa Khoa'))) healthSafety += 0.5;
-    if (allTatAchStars.some((s) => s.includes('Thiên Lương'))) healthSafety += 0.5;
-    if (allTatAchStars.some((s) => s.includes('Thiên Đồng'))) healthSafety += 0.4;
-    if (tatAchPalace.isTuan || tatAchPalace.isTriet) healthSafety += 0.4;
-    if (allTatAchStars.some((s) => s.includes('Bác Sỹ') || s.includes('Ân Quang') || s.includes('Thiên Quý'))) {
-      healthSafety += 0.25;
-    }
-    // Sát tinh tại Tật Ách gây bất lợi sức khỏe
-    for (const s of allTatAchStars) {
-      const raw = String(s).split('(')[0].trim();
-      if (raw === 'Địa Không' || raw === 'Địa Kiếp') healthSafety -= 0.35;
-      else if (raw === 'Kình Dương' || raw === 'Đà La') healthSafety -= 0.30;
-      else if (raw === 'Hỏa Tinh' || raw === 'Linh Tinh' || raw === 'Hóa Kỵ') healthSafety -= 0.25;
-    }
-  }
-  const clampedHealthSafety = Math.max(2.0, Math.min(5.0, healthSafety));
-  const healthRaw = clampedHealthSafety * 0.65 + menh.rawScore * 0.35;
+  const natalHealthSafety = evaluateTatAchSafety(tatAchNatalPalace, false);
+  const rotHealthSafety = isDynamic
+    ? evaluateTatAchSafety(tatAchRotPalace, yunxianContext.mode === 'liunian' || yunxianContext.mode === 'liuyue') * 0.65 +
+      (tatAchRotRating ? tatAchRotRating.rawScore * 0.35 : natalHealthSafety * 0.35)
+    : natalHealthSafety;
+  const healthNatalRaw = natalHealthSafety * 0.65 + menhNatal.rawScore * 0.35;
+  const healthRotRaw = rotHealthSafety * 0.65 + menhRot.rawScore * 0.35;
+  const healthRaw = blend(healthRotRaw, healthNatalRaw);
 
   const aspectConfigs = [
     {
@@ -413,6 +607,7 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
       name: 'Công Danh & Sự Nghiệp',
       icon: '💼',
       raw: careerRaw,
+      rotatedFocus: isDynamic && quanLocRot?.rotatedRole ? `${quanLocRot.rotatedRole} tại ${quanLocRot.chiName} (${quanLocRot.palaceName})` : null,
       getComment: (s) =>
         s >= 4.5
           ? 'Công danh rộng mở, có cơ hội thăng tiến và khẳng định uy tín vững chắc trong sự nghiệp.'
@@ -430,6 +625,7 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
       name: 'Tài Lộc & Điền Sản',
       icon: '💰',
       raw: wealthRaw,
+      rotatedFocus: isDynamic && taiBachRot?.rotatedRole ? `${taiBachRot.rotatedRole} tại ${taiBachRot.chiName} (${taiBachRot.palaceName})` : null,
       getComment: (s) =>
         s >= 4.5
           ? 'Tài vận dồi dào hanh thông, có duyên tụ tài và khả năng gầy dựng điền sản hưng thịnh.'
@@ -447,6 +643,7 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
       name: 'Tình Duyên & Gia Đạo',
       icon: '💕',
       raw: loveRaw,
+      rotatedFocus: isDynamic && phuTheRot?.rotatedRole ? `${phuTheRot.rotatedRole} tại ${phuTheRot.chiName} (${phuTheRot.palaceName})` : null,
       getComment: (s) =>
         s >= 4.5
           ? 'Tình cảm thấu hiểu hài hòa, bạn đời là chỗ dựa tinh thần và đồng hành tin cậy trọn đời.'
@@ -464,6 +661,7 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
       name: 'Phúc Đức & Nội Tâm',
       icon: '🌿',
       raw: fortuneRaw,
+      rotatedFocus: isDynamic && phucDucRot?.rotatedRole ? `${phucDucRot.rotatedRole} tại ${phucDucRot.chiName} (${phucDucRot.palaceName})` : null,
       getComment: (s) =>
         s >= 4.5
           ? 'Phúc đức dày dặn, tâm hồn thanh thản an lạc, gặp hung hóa cát nhờ năng lượng thiện lành bền bỉ.'
@@ -481,6 +679,7 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
       name: 'Quý Nhân & Xã Giao',
       icon: '🤝',
       raw: socialRaw,
+      rotatedFocus: isDynamic && thienDiRot?.rotatedRole ? `${thienDiRot.rotatedRole} tại ${thienDiRot.chiName} (${thienDiRot.palaceName})` : null,
       getComment: (s) =>
         s >= 4.5
           ? 'Quý nhân nâng đỡ, đối tác và bạn hữu trợ lực đắc lực, ra ngoài mưu sự dễ gặp vận may lớn.'
@@ -498,6 +697,7 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
       name: 'Sức Khỏe & Bình An',
       icon: '❤️‍🩹',
       raw: healthRaw,
+      rotatedFocus: isDynamic && tatAchRotRating?.rotatedRole ? `${tatAchRotRating.rotatedRole} tại ${tatAchRotRating.chiName} (${tatAchRotRating.palaceName})` : null,
       getComment: (s) =>
         s >= 4.5
           ? 'Sức khỏe dồi dào, thân tâm an ổn, có sao cứu giải bảo vệ trước đau ốm và tai ương.'
@@ -516,6 +716,10 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
     const stars = Math.round(clamped * 2) / 2;
     const score100 = Math.round(stars * 20);
     const tier = getRatingTier(stars);
+    const natalItem = Array.isArray(natalAspects) ? natalAspects.find((n) => n.id === cfg.id) : null;
+    const natalStars = natalItem ? natalItem.stars : stars;
+    const deltaStars = Math.round((stars - natalStars) * 10) / 10;
+
     return {
       id: cfg.id,
       shortName: cfg.shortName,
@@ -525,6 +729,9 @@ export function evaluateSixLifeAspects(result, palaceRatings) {
       stars,
       starsText: renderStarsText(stars),
       score100,
+      natalStars,
+      deltaStars,
+      rotatedFocus: cfg.rotatedFocus,
       tierKey: tier.tierKey,
       tierLabel: tier.tierLabel,
       tierColor: tier.color,
@@ -677,10 +884,37 @@ export function evaluateActiveYunxianRating(result, inputData, yunxianState, pal
 export function buildChartStarEvaluation(result, inputData, yunxianState) {
   if (!result || !Array.isArray(result.palates)) return null;
 
-  const palates = result.palates;
-  const palaceRatings = palates.map((p) => evaluatePalaceRating(p, palates, result));
-  const aspects = evaluateSixLifeAspects(result, palaceRatings);
-  const activeYunxian = evaluateActiveYunxianRating(result, inputData, yunxianState, palaceRatings);
+  const effectiveResult = resolveEffectiveChartForRating(result, inputData, yunxianState);
+  const palates = effectiveResult.palates;
+  const mode = yunxianState?.mode || (effectiveResult?.viewYear ? 'liunian' : 'mingpan');
+  const isDynamic = mode !== 'mingpan';
+
+  const overlay = buildYunxianOverlay(effectiveResult, {
+    mode,
+    daXianChiIndex: yunxianState?.daXianChiIndex,
+    viewYear: yunxianState?.viewYear || effectiveResult?.viewYear,
+    lunarMonth: yunxianState?.lunarMonth || 1,
+    schoolConfig: inputData?.schoolConfig,
+    birthYear: inputData?.lunarYear,
+  });
+
+  // 1. Natal baseline (Bản Mệnh gốc)
+  const natalPalaceRatings = palates.map((p) => evaluatePalaceRating(p, palates, effectiveResult, null));
+  const natalAspects = evaluateSixLifeAspects(effectiveResult, natalPalaceRatings, null, null);
+  const natalAspectSum = natalAspects.reduce((sum, a) => sum + a.stars, 0);
+  const natalAvgRaw = natalAspectSum / natalAspects.length;
+  const natalStars = Math.round(natalAvgRaw * 2) / 2;
+  const natalScore = Math.round(natalAvgRaw * 10) / 10;
+
+  // 2. Active period evaluation (Bản Mệnh / Đại Hạn / Lưu Niên / Lưu Nguyệt)
+  const yunxianContext = isDynamic ? { mode, overlay } : null;
+  const palaceRatings = isDynamic
+    ? palates.map((p) => evaluatePalaceRating(p, palates, effectiveResult, yunxianContext))
+    : natalPalaceRatings;
+  const aspects = isDynamic
+    ? evaluateSixLifeAspects(effectiveResult, palaceRatings, yunxianContext, natalAspects)
+    : natalAspects;
+  const activeYunxian = evaluateActiveYunxianRating(effectiveResult, inputData, yunxianState, palaceRatings);
 
   // Overall score: trung bình cộng của 6 phương diện
   const aspectSum = aspects.reduce((sum, a) => sum + a.stars, 0);
@@ -689,41 +923,44 @@ export function buildChartStarEvaluation(result, inputData, yunxianState) {
   const overallScore = Math.round(avgStarsRaw * 10) / 10;
   const overallScore100 = Math.round(overallStars * 20);
   const overallTier = getRatingTier(overallStars);
+  const deltaScore = Math.round((overallScore - natalScore) * 10) / 10;
 
   // Top strengths (top 2 phương diện điểm cao nhất)
-  const sortedAspects = [...aspects].sort((a, b) => b.stars - a.stars);
+  const sortedAspects = [...aspects].sort((a, b) => b.stars - a.stars || b.rawScore - a.rawScore);
   const topStrengths = sortedAspects.slice(0, 2).map((a) => ({
     name: a.name,
     icon: a.icon,
     stars: a.stars,
     starsText: a.starsText,
+    rotatedFocus: a.rotatedFocus || null,
     summary: a.comment,
   }));
 
-  // Lời khuyên trọng tâm
+  // Lời khuyên trọng tâm theo kỳ vận hạn đang xem
   const lowestAspect = sortedAspects[sortedAspects.length - 1];
-  const coreAdvice = `Phát huy tối đa ưu thế ở ${sortedAspects[0].name.toLowerCase()} và ${sortedAspects[1].name.toLowerCase()}, đồng thời dành sự quan tâm chu toàn cho ${lowestAspect.name.toLowerCase()} để mọi phương diện luôn hài hòa viên mãn.`;
+  const periodPrefix = isDynamic && activeYunxian?.title ? `Trong ${activeYunxian.title}: ` : '';
+  const coreAdvice = `${periodPrefix}Phát huy tối đa ưu thế ở ${sortedAspects[0].name.toLowerCase()} và ${sortedAspects[1].name.toLowerCase()}, đồng thời dành sự quan tâm chu toàn cho ${lowestAspect.name.toLowerCase()} để mọi phương diện luôn hài hòa viên mãn.`;
 
   // Nhãn nhanh
   const quickTags = [];
-  if (result.isThuan !== undefined) {
-    quickTags.push(result.isThuan ? 'Âm Dương Thuận Lý' : 'Âm Dương Nghịch Lý');
+  if (effectiveResult.isThuan !== undefined) {
+    quickTags.push(effectiveResult.isThuan ? 'Âm Dương Thuận Lý' : 'Âm Dương Nghịch Lý');
   }
-  const menhEl = extractElementFromNapAm(result.banMenhNapAm);
-  const cucEl = extractElementFromCucName(result.cucName);
+  const menhEl = extractElementFromNapAm(effectiveResult.banMenhNapAm);
+  const cucEl = extractElementFromCucName(effectiveResult.cucName);
   if (menhEl && cucEl) {
     const relation = getElementRelation(cucEl, menhEl);
     if (relation) quickTags.push(relation);
   }
-  if (result.banMenhNapAm) {
-    quickTags.push(`Mệnh: ${result.banMenhNapAm}`);
+  if (effectiveResult.banMenhNapAm) {
+    quickTags.push(`Mệnh: ${effectiveResult.banMenhNapAm}`);
   }
   const thanPalace = palates.find((p) => p.isThan);
   if (thanPalace) {
     quickTags.push(`Thân: Cư ${cleanPalaceName(thanPalace.chucNang)}`);
   }
-  if (result.canLuongStr) {
-    quickTags.push(`Cân lượng: ${result.canLuongStr}`);
+  if (effectiveResult.canLuongStr) {
+    quickTags.push(`Cân lượng: ${effectiveResult.canLuongStr}`);
   }
 
   return {
@@ -732,6 +969,12 @@ export function buildChartStarEvaluation(result, inputData, yunxianState) {
       stars: overallStars,
       starsText: renderStarsText(overallStars),
       score100: overallScore100,
+      natalScore,
+      natalStars,
+      deltaScore,
+      isDynamic,
+      mode,
+      contextLabel: activeYunxian?.title || 'Bản Mệnh Trọn Đời',
       tierKey: overallTier.tierKey,
       tierLabel: overallTier.tierLabel,
       tierColor: overallTier.color,
@@ -740,6 +983,7 @@ export function buildChartStarEvaluation(result, inputData, yunxianState) {
       coreAdvice,
     },
     aspects,
+    natalAspects,
     palaceRatings,
     activeYunxian,
     quickTags,

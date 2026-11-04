@@ -560,6 +560,32 @@ test('comprehensive SSR rendering of TuViOverviewDashboard and tuViStarRating su
     assert.equal(evalMing.activeYunxian.mode, 'mingpan');
     assert.equal(evalMing.activeYunxian.title, 'Bản Mệnh Trọn Đời');
     assert.equal(evalMing.activeYunxian.highlights.length, 3);
+    assert.equal(evalMing.overall.isDynamic, false);
+    assert.equal(evalMing.overall.deltaScore, 0);
+
+    // Dynamic comparison across modes (Bản Mệnh vs Đại Hạn vs Lưu Niên 2026 vs Lưu Niên 2028 vs Lưu Nguyệt Tháng 1 vs Tháng 6)
+    const evalLiuNian2028 = buildChartStarEvaluation(sampleChart, { ...sampleInput, lunarYear: 1996, lunarMonth: 4, lunarDay: 12, lunarHourIndex: 3, yearCanIndex: 2, yearChiIndex: 0 }, { mode: 'liunian', viewYear: 2028 });
+    assert.equal(evalLiuNian2028.overall.isDynamic, true);
+    assert.notDeepEqual(
+      evalData.aspects.map((a) => a.rawScore),
+      evalLiuNian2028.aspects.map((a) => a.rawScore),
+      '6 life aspect scores must change dynamically when Lưu Niên year changes (2026 vs 2028)'
+    );
+
+    const evalLiuYue1 = buildChartStarEvaluation(sampleChart, sampleInput, { mode: 'liuyue', viewYear: 2026, lunarMonth: 1 });
+    const evalLiuYue6 = buildChartStarEvaluation(sampleChart, sampleInput, { mode: 'liuyue', viewYear: 2026, lunarMonth: 6 });
+    assert.equal(evalLiuYue1.overall.isDynamic, true);
+    assert.equal(evalLiuYue6.overall.isDynamic, true);
+    assert.notDeepEqual(
+      evalLiuYue1.aspects.map((a) => a.rawScore),
+      evalLiuYue6.aspects.map((a) => a.rawScore),
+      '6 life aspect scores must change dynamically when Lưu Nguyệt month changes (Tháng 1 vs Tháng 6)'
+    );
+    assert.notDeepEqual(
+      evalMing.aspects.map((a) => a.rawScore),
+      evalDaXian.aspects.map((a) => a.rawScore),
+      '6 life aspect scores must change dynamically when switching from Bản Mệnh to Đại Hạn'
+    );
 
     // 3. SSR Render TuViOverviewDashboard (Tab 1: Overview)
     const overviewHtml = renderToStaticMarkup(
