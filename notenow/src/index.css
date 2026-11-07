@@ -695,7 +695,7 @@ body {
 
 .nn-card-images {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 6px;
   margin-bottom: 10px;
   border-radius: var(--radius-md);
@@ -721,6 +721,54 @@ body {
   color: var(--text-muted);
   background: var(--bg-elevated);
   font-size: 0.75rem;
+}
+
+/* ─── Card Audio Attachments ─────────────────────────────────── */
+.nn-card-audios {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.nn-card-audio-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nn-card-audio-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nn-card-audio-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nn-card-audio-player {
+  width: 100%;
+  height: 32px;
+  outline: none;
+}
+
+.nn-card-audio-unavailable {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding: 4px 0;
 }
 
 .nn-note-inline-image-status {
@@ -1440,6 +1488,77 @@ body {
 
 .nn-editor-img-remove:hover {
   background: rgba(239, 68, 68, 0.9);
+}
+
+/* ─── Editor Audio Attachments ───────────────────────────────── */
+.nn-editor-audios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 20px 12px;
+}
+
+.nn-editor-audio-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.nn-editor-audio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nn-editor-audio-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.nn-editor-audio-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nn-editor-audio-player {
+  width: 100%;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.nn-editor-audio-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.nn-editor-audio-remove:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.nn-editor-audio-unavailable {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 6px 0;
 }
 
 /* TipTap toolbar */

@@ -13,7 +13,7 @@ export function NoteNowFeatureCards() {
         </div>
         <div className="nn-feature-content">
           <h4>{t('onboarding.f1_title', 'Ghi chú nhanh & Định dạng phong phú')}</h4>
-          <p>{t('onboarding.f1_desc', 'Soạn thảo trực quan với chữ đậm, nghiêng, gạch chân, danh sách và màu sắc. Hỗ trợ tải lên tối đa 2 hình ảnh (nén 720p).')}</p>
+          <p>{t('onboarding.f1_desc', 'Soạn thảo trực quan với chữ đậm, nghiêng, gạch chân, danh sách và màu sắc. Hỗ trợ tải lên tối đa 10 hình ảnh (nén 720p, dán clipboard Ctrl+V) và 10 tệp âm thanh.')}</p>
         </div>
       </div>
 

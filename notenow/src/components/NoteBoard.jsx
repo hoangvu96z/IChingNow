@@ -361,7 +361,7 @@ export default function NoteBoard({ user }) {
   // ─── Quick-create bar handler ──────────────────────────────────────────────
 
   const openNewNoteEditor = () => {
-    setEditingNote({ _isNew: true, title: '', content: '', bgColor: 'default', bgPattern: 'none', images: [] });
+    setEditingNote({ _isNew: true, title: '', content: '', bgColor: 'default', bgPattern: 'none', images: [], audios: [] });
   };
 
   // ─── Skeleton cards ───────────────────────────────────────────────────────
@@ -530,6 +530,11 @@ export default function NoteBoard({ user }) {
             onSave={handleEditorSave}
             onPasswordChanged={handlePasswordChanged}
             onClose={() => setEditingNote(null)}
+            onAttachmentsChange={({ id, images, audios }) => {
+              if (!id) return;
+              setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, images, audios } : n)));
+              setSharedNotes((prev) => prev.map((n) => (n.id === id ? { ...n, images, audios } : n)));
+            }}
           />
         </ErrorBoundary>
       )}

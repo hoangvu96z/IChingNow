@@ -2,12 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { stripHtml } from '../api.js';
 import ImageViewer from './ImageViewer.jsx';
 import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
+import { useNoteAudioSources } from '../hooks/useNoteAudioSources.js';
 import { contentWithProtectedImageSources, getInlineNoteImages, sanitizeNoteContent } from '../safeNoteContent.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   GripVertical, Pin,
   Users, User, Link2, Lock, Unlock,
-  Pencil, Trash2,
+  Pencil, Trash2, Music,
 } from 'lucide-react';
 
 const EMPTY_IMAGES = [];
@@ -28,6 +29,7 @@ export default function NoteCard({
   const isPasswordLocked = Boolean(note.hasPassword) && !isUnlocked;
 
   const attachmentImages = Array.isArray(note.images) && !isPasswordLocked ? note.images : EMPTY_IMAGES;
+  const attachmentAudios = Array.isArray(note.audios) && !isPasswordLocked ? note.audios : EMPTY_IMAGES;
   const sanitizedContent = useMemo(
     () => (isPasswordLocked ? '' : sanitizeNoteContent(note.content)),
     [note.content, isPasswordLocked],
@@ -35,6 +37,7 @@ export default function NoteCard({
   const inlineImages = useMemo(() => getInlineNoteImages(sanitizedContent), [sanitizedContent]);
   const imageRefs = useMemo(() => [...attachmentImages, ...inlineImages], [attachmentImages, inlineImages]);
   const { sources: imageSources, loading: imagesLoading } = useNoteImageSources(imageRefs, note.id, null, Boolean(note.isGuest));
+  const { sources: audioSources, loading: audiosLoading } = useNoteAudioSources(attachmentAudios, note.id, null, Boolean(note.isGuest));
   const contentPreview = isPasswordLocked ? '' : stripHtml(note.content || '');
   const contentPreviewHtml = useMemo(
     () => contentWithProtectedImageSources(sanitizedContent, imageSources, attachmentImages.length, imagesLoading),
@@ -159,6 +162,38 @@ export default function NoteCard({
             dangerouslySetInnerHTML={{ __html: contentPreviewHtml }}
           />
         )
+      )}
+
+      {/* Audios (hidden when password-locked) */}
+      {attachmentAudios.length > 0 && (
+        <div
+          className="nn-card-audios"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          role="presentation"
+        >
+          {attachmentAudios.map((audio, idx) => (
+            <div key={idx} className="nn-card-audio-item">
+              <div className="nn-card-audio-name" title={audio.originalName || audio.filename}>
+                <Music size={13} style={{ flexShrink: 0 }} />
+                <span>{audio.originalName || audio.filename || `Âm thanh ${idx + 1}`}</span>
+              </div>
+              {audioSources[idx] ? (
+                <audio
+                  controls
+                  loading="lazy"
+                  preload="metadata"
+                  src={audioSources[idx]}
+                  className="nn-card-audio-player"
+                />
+              ) : (
+                <div className="nn-card-audio-unavailable" role="status">
+                  {audiosLoading ? 'Đang tải âm thanh…' : 'Không tải được âm thanh'}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Footer */}

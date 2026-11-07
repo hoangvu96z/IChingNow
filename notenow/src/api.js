@@ -8,7 +8,7 @@ import {
   ssoFetch,
   clearSsoBearerToken,
 } from '../../shared/src/utils/ssoConfig.mjs';
-import { getNoteImageEndpoint } from './noteImages.mjs';
+import { getNoteImageEndpoint, getNoteAudioEndpoint } from './noteImages.mjs';
 // NoteNow API utility
 
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
@@ -247,6 +247,7 @@ export const notesApi = {
         bgColor: dto.bgColor || 'default',
         bgPattern: dto.bgPattern || 'none',
         images: [],
+        audios: [],
         isPinned: false,
         shareMode: 'none',
         shareToken: null,
@@ -316,6 +317,24 @@ export const notesApi = {
     const response = await ssoFetch(`${SSO_BASE}${endpoint}`, { credentials: 'include', headers });
     if (!response.ok) {
       throw new Error(`Không tải được ảnh đính kèm (HTTP ${response.status}).`);
+    }
+    return response.blob();
+  },
+
+  fetchAudio: async ({ noteId, shareToken, audio, guestOwned = false }) => {
+    const endpoint = getNoteAudioEndpoint({ noteId, shareToken, audio });
+    if (!endpoint) throw new Error('Không xác định được tệp âm thanh cần tải.');
+
+    const headers = {};
+    if (!shareToken) {
+      if (guestOwned) {
+        headers['x-guest-token'] = getOrCreateGuestToken();
+      }
+    }
+
+    const response = await ssoFetch(`${SSO_BASE}${endpoint}`, { credentials: 'include', headers });
+    if (!response.ok) {
+      throw new Error(`Không tải được âm thanh đính kèm (HTTP ${response.status}).`);
     }
     return response.blob();
   },
@@ -591,6 +610,106 @@ export const notesApi = {
       const n = notes.find((item) => item.shareToken === shareToken);
       if (n && n.images) {
         n.images.splice(index, 1);
+        saveLocalNotes(notes);
+      }
+      return { success: true };
+    }
+  },
+
+  uploadAudio: async (noteId, file) => {
+    try {
+      const guestToken = getOrCreateGuestToken();
+      const formData = new FormData();
+      formData.append('audio', file);
+      const headers = { 'x-guest-token': guestToken };
+      const res = await ssoFetch(`${SSO_BASE}/notes/${noteId}/audios`, {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: formData,
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const audioObj = {
+          url: reader.result,
+          filename: file.name,
+          originalName: file.name,
+          mimeType: file.type || 'audio/mpeg',
+          size: file.size || 0,
+        };
+        const notes = getLocalNotes();
+        const n = notes.find((item) => item.id === noteId);
+        if (n) {
+          n.audios = [...(n.audios || []), audioObj];
+          saveLocalNotes(notes);
+        }
+        resolve({ audio: audioObj });
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  deleteAudio: async (noteId, index) => {
+    try {
+      return await apiFetch(`/notes/${noteId}/audios/${index}`, { method: 'DELETE' });
+    } catch {
+      const notes = getLocalNotes();
+      const n = notes.find((item) => item.id === noteId);
+      if (n && n.audios) {
+        n.audios.splice(index, 1);
+        saveLocalNotes(notes);
+      }
+      return { success: true };
+    }
+  },
+
+  uploadAudioByShareToken: async (shareToken, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', file);
+      const guestToken = getOrCreateGuestToken();
+      const headers = { 'x-guest-token': guestToken };
+      const res = await ssoFetch(`${SSO_BASE}/notes/share/${shareToken}/audios`, {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: formData,
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const audioObj = {
+          url: reader.result,
+          filename: file.name,
+          originalName: file.name,
+          mimeType: file.type || 'audio/mpeg',
+          size: file.size || 0,
+        };
+        const notes = getLocalNotes();
+        const n = notes.find((item) => item.shareToken === shareToken);
+        if (n) {
+          n.audios = [...(n.audios || []), audioObj];
+          saveLocalNotes(notes);
+        }
+        resolve({ audio: audioObj });
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  deleteAudioByShareToken: async (shareToken, index) => {
+    try {
+      return await apiFetch(`/notes/share/${shareToken}/audios/${index}`, { method: 'DELETE' });
+    } catch {
+      const notes = getLocalNotes();
+      const n = notes.find((item) => item.shareToken === shareToken);
+      if (n && n.audios) {
+        n.audios.splice(index, 1);
         saveLocalNotes(notes);
       }
       return { success: true };

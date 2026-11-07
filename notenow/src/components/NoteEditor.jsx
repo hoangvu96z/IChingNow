@@ -11,7 +11,13 @@ import NoteColorPicker from './NoteColorPicker.jsx';
 import ImageViewer from './ImageViewer.jsx';
 import NotePasswordModal from './NotePasswordModal.jsx';
 import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
-import { getInlineImageOrphanIndices } from '../noteImages.mjs';
+import { useNoteAudioSources } from '../hooks/useNoteAudioSources.js';
+import {
+  getInlineImageOrphanIndices,
+  MAX_IMAGES_PER_NOTE,
+  MAX_AUDIOS_PER_NOTE,
+  extractClipboardMediaFiles,
+} from '../noteImages.mjs';
 import {
   contentWithPreservedInlineImages,
   contentWithInlineImagePlaceholders,
@@ -27,7 +33,7 @@ import {
   AlignLeft, AlignCenter, AlignRight,
   Image as ImageIcon, Palette, X, Check,
   Loader2, AlertCircle, Eye, Pencil, Plus,
-  History, RotateCcw, Lock, Unlock,
+  History, RotateCcw, Lock, Unlock, Music,
 } from 'lucide-react';
 
 // TipTap
@@ -64,6 +70,7 @@ export default function NoteEditor({
   isReadOnly = false,
   userIsLoggedIn,
   shareToken,
+  onAttachmentsChange,
 }) {
   const { t, language } = useLanguage();
   // 10x character limit: 100,000 for logged-in users, 20,480 for guests
@@ -81,6 +88,17 @@ export default function NoteEditor({
   const [bgPattern, setBgPattern] = useState(note?.bgPattern || 'none');
   const bgPatternRef = useRef(note?.bgPattern || 'none');
   const [images, setImages] = useState(note?.images || []);
+  const imagesRef = useRef(note?.images || []);
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  const [audios, setAudios] = useState(note?.audios || []);
+  const audiosRef = useRef(note?.audios || []);
+  useEffect(() => {
+    audiosRef.current = audios;
+  }, [audios]);
+
   const [hasPassword, setHasPassword] = useState(Boolean(note?.hasPassword));
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
@@ -140,12 +158,21 @@ export default function NoteEditor({
     Boolean(note?.isGuest || !userIsLoggedIn),
   );
 
+  const { sources: audioSources, loading: audioSourcesLoading, failedCount: audioLoadFailedCount } = useNoteAudioSources(
+    audios,
+    activeNoteId || note?.id,
+    shareToken,
+    Boolean(note?.isGuest || !userIsLoggedIn),
+  );
+
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [viewerIndex, setViewerIndex] = useState(null);
   const fileInputRef = useRef(null);
+  const audioInputRef = useRef(null);
   const autoSaveTimer = useRef(null);
 
   // Auto-save debounce while typing (works for both new notes and existing notes!)
@@ -203,7 +230,7 @@ export default function NoteEditor({
 
     // For a brand-new note during silent auto-save, skip if both title and content are still empty
     const plainText = stripHtml(contentToSave);
-    if (silent && !currentTargetId && !shareToken && !currentTitle.trim() && !plainText) {
+    if (silent && !currentTargetId && !shareToken && !currentTitle.trim() && !plainText && !imagesRef.current.length && !audiosRef.current.length) {
       return;
     }
 
@@ -338,12 +365,11 @@ export default function NoteEditor({
     await handleRestoreRevision(effectiveHistory[0], 0);
   };
 
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+  const uploadImageFiles = async (files) => {
+    if (!files || !files.length) return;
 
-    if (images.length + files.length > 2) {
-      setError(t('editor.max_images_error', 'Mỗi note chỉ được tối đa 2 hình ảnh'));
+    if (imagesRef.current.length + files.length > MAX_IMAGES_PER_NOTE) {
+      setError(t('editor.max_images_error', 'Mỗi note chỉ được tối đa 10 hình ảnh'));
       return;
     }
 
@@ -372,19 +398,94 @@ export default function NoteEditor({
         }
       }
 
-      for (const file of files.slice(0, 2 - images.length)) {
+      const filesToUpload = files.slice(0, MAX_IMAGES_PER_NOTE - imagesRef.current.length);
+      const uploadedImages = [];
+      for (const file of filesToUpload) {
         const compressed = await compressImageTo720p(file);
         const { image } = shareToken
           ? await notesApi.uploadImageByShareToken(shareToken, compressed)
           : await notesApi.uploadImage(targetId, compressed);
-        setImages((prev) => [...prev, image]);
+        uploadedImages.push(image);
       }
+      const nextImages = [...imagesRef.current, ...uploadedImages];
+      imagesRef.current = nextImages;
+      setImages(nextImages);
+      onAttachmentsChange?.({ id: targetId, images: nextImages, audios: audiosRef.current });
     } catch (e) {
       setError(e.message);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    await uploadImageFiles(files);
+  };
+
+  const uploadAudioFiles = async (files) => {
+    if (!files || !files.length) return;
+
+    if (audiosRef.current.length + files.length > MAX_AUDIOS_PER_NOTE) {
+      setError(t('editor.max_audios_error', 'Mỗi note chỉ được tối đa 10 tệp âm thanh'));
+      return;
+    }
+
+    const MAX_AUDIO_BYTES = 20 * 1024 * 1024; // 20MB
+    for (const file of files) {
+      if (file.size > MAX_AUDIO_BYTES) {
+        setError(t('editor.audio_too_large_error', 'Mỗi tệp âm thanh tối đa 20MB'));
+        return;
+      }
+    }
+
+    setUploadingAudio(true);
+    setError(null);
+    try {
+      let targetId = activeNoteIdRef.current;
+      // If new note without ID yet, create draft first
+      if (!targetId && !shareToken) {
+        const contentToSave = editor?.getHTML() || currentContent;
+        const dto = {
+          title: titleRef.current.trim() || null,
+          content: contentWithPreservedInlineImages(contentToSave, inlineImages),
+          bgColor: bgColorRef.current,
+          bgPattern: bgPatternRef.current,
+        };
+        const saved = await onSave(dto, null, { silent: true });
+        if (saved?.id) {
+          targetId = saved.id;
+          activeNoteIdRef.current = saved.id;
+          setActiveNoteId(saved.id);
+        }
+      }
+
+      const filesToUpload = files.slice(0, MAX_AUDIOS_PER_NOTE - audiosRef.current.length);
+      const uploadedAudios = [];
+      for (const file of filesToUpload) {
+        const { audio } = shareToken
+          ? await notesApi.uploadAudioByShareToken(shareToken, file)
+          : await notesApi.uploadAudio(targetId, file);
+        uploadedAudios.push(audio);
+      }
+      const nextAudios = [...audiosRef.current, ...uploadedAudios];
+      audiosRef.current = nextAudios;
+      setAudios(nextAudios);
+      onAttachmentsChange?.({ id: targetId, images: imagesRef.current, audios: nextAudios });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setUploadingAudio(false);
+      if (audioInputRef.current) audioInputRef.current.value = '';
+    }
+  };
+
+  const handleAudioUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    await uploadAudioFiles(files);
   };
 
   const handleRemoveImage = async (idx) => {
@@ -394,9 +495,42 @@ export default function NoteEditor({
       } else if (activeNoteIdRef.current) {
         await notesApi.deleteImage(activeNoteIdRef.current, idx);
       }
-      setImages((prev) => prev.filter((_, i) => i !== idx));
+      const nextImages = imagesRef.current.filter((_, i) => i !== idx);
+      imagesRef.current = nextImages;
+      setImages(nextImages);
+      onAttachmentsChange?.({ id: activeNoteIdRef.current, images: nextImages, audios: audiosRef.current });
     } catch (e) {
       setError(e.message);
+    }
+  };
+
+  const handleRemoveAudio = async (idx) => {
+    try {
+      if (shareToken) {
+        await notesApi.deleteAudioByShareToken(shareToken, idx);
+      } else if (activeNoteIdRef.current) {
+        await notesApi.deleteAudio(activeNoteIdRef.current, idx);
+      }
+      const nextAudios = audiosRef.current.filter((_, i) => i !== idx);
+      audiosRef.current = nextAudios;
+      setAudios(nextAudios);
+      onAttachmentsChange?.({ id: activeNoteIdRef.current, images: imagesRef.current, audios: nextAudios });
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const handleEditorPaste = (e) => {
+    if (isReadOnly) return;
+    const { imageFiles, audioFiles } = extractClipboardMediaFiles(e.clipboardData);
+    if (imageFiles.length === 0 && audioFiles.length === 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (imageFiles.length > 0) {
+      uploadImageFiles(imageFiles);
+    }
+    if (audioFiles.length > 0) {
+      uploadAudioFiles(audioFiles);
     }
   };
 
@@ -447,6 +581,7 @@ export default function NoteEditor({
         role="dialog"
         aria-modal="true"
         aria-label={isNew ? t('editor.badge_new', 'Tạo ghi chú mới') : t('editor.badge_editing', 'Chỉnh sửa ghi chú')}
+        onPasteCapture={handleEditorPaste}
       >
         <div className="nn-sheet-handle" aria-hidden="true" />
         <div className="nn-editor-header">
@@ -589,6 +724,48 @@ export default function NoteEditor({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Attached Audios */}
+          {audios.length > 0 && (
+            <div className="nn-editor-audios" aria-label="Tệp âm thanh đính kèm">
+              {audios.map((audio, idx) => (
+                <div key={idx} className="nn-editor-audio-item">
+                  <div className="nn-editor-audio-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+                      <Music size={15} className="nn-editor-audio-icon" />
+                      <span className="nn-editor-audio-name" title={audio.originalName || audio.filename}>
+                        {audio.originalName || audio.filename || `Âm thanh ${idx + 1}`}
+                      </span>
+                    </div>
+                    {!isReadOnly && (
+                      <button
+                        className="nn-editor-audio-remove"
+                        onClick={() => handleRemoveAudio(idx)}
+                        title={t('editor.delete_audio', 'Xoá tệp âm thanh')}
+                        aria-label={`${t('editor.delete_audio', 'Xoá tệp âm thanh')} ${idx + 1}`}
+                        type="button"
+                      >
+                        <X size={14} strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </div>
+                  {audioSources[idx] ? (
+                    <audio
+                      controls
+                      loading="lazy"
+                      preload="metadata"
+                      src={audioSources[idx]}
+                      className="nn-editor-audio-player"
+                    />
+                  ) : (
+                    <div className="nn-editor-audio-unavailable" role="status">
+                      {audioSourcesLoading ? 'Đang tải âm thanh…' : 'Không tải được âm thanh'}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
@@ -811,10 +988,10 @@ export default function NoteEditor({
           )}
 
           {/* Error */}
-          {(error || imageLoadFailedCount > 0) && (
+          {(error || imageLoadFailedCount > 0 || audioLoadFailedCount > 0) && (
             <div role="alert" style={{ padding: '0 20px 8px', fontSize: '0.8rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
               <AlertCircle size={13} strokeWidth={2} />
-              {error || `Không tải được ${imageLoadFailedCount} ảnh đính kèm.`}
+              {error || (imageLoadFailedCount > 0 ? `Không tải được ${imageLoadFailedCount} ảnh đính kèm.` : `Không tải được ${audioLoadFailedCount} tệp âm thanh đính kèm.`)}
             </div>
           )}
 
@@ -824,7 +1001,7 @@ export default function NoteEditor({
               {!isReadOnly && (
                 <>
                   {/* Image upload */}
-                  {images.length < 2 && (
+                  {images.length < MAX_IMAGES_PER_NOTE && (
                     <>
                       <input
                         ref={fileInputRef}
@@ -838,7 +1015,7 @@ export default function NoteEditor({
                       />
                       <button
                         className="btn btn-ghost btn-icon"
-                        title={t('editor.upload_image_count', `Upload hình (${images.length}/2)`, { count: images.length })}
+                        title={t('editor.upload_image_count', `Upload hình (${images.length}/10)`, { count: images.length })}
                         aria-label={t('editor.upload_image', 'Upload hình ảnh')}
                         type="button"
                         disabled={uploading}
@@ -848,6 +1025,36 @@ export default function NoteEditor({
                         {uploading
                           ? <Loader2 size={16} strokeWidth={2} className="nn-spin" />
                           : <ImageIcon size={16} strokeWidth={2} />
+                        }
+                      </button>
+                    </>
+                  )}
+
+                  {/* Audio upload */}
+                  {audios.length < MAX_AUDIOS_PER_NOTE && (
+                    <>
+                      <input
+                        ref={audioInputRef}
+                        type="file"
+                        accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.webm,.flac"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={handleAudioUpload}
+                        id="note-audio-upload"
+                        aria-label={t('editor.upload_audio', 'Đính kèm âm thanh')}
+                      />
+                      <button
+                        className="btn btn-ghost btn-icon"
+                        title={t('editor.upload_audio_count', `Đính kèm âm thanh (${audios.length}/10)`, { count: audios.length })}
+                        aria-label={t('editor.upload_audio', 'Đính kèm âm thanh')}
+                        type="button"
+                        disabled={uploadingAudio}
+                        onClick={() => audioInputRef.current?.click()}
+                        id="btn-upload-audio"
+                      >
+                        {uploadingAudio
+                          ? <Loader2 size={16} strokeWidth={2} className="nn-spin" />
+                          : <Music size={16} strokeWidth={2} />
                         }
                       </button>
                     </>

@@ -243,6 +243,7 @@ function ShareViewPage({ shareToken, user }) {
                 setNote(res);
                 return res;
               }}
+              onAttachmentsChange={({ images, audios }) => setNote((prev) => (prev ? { ...prev, images, audios } : prev))}
               onClose={() => { window.location.href = appBase; }}
             />
           </ErrorBoundary>
