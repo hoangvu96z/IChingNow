@@ -1,20 +1,88 @@
 /* ═══════════════════════════════════════════════════════════════
-   HopHonPage – Premium Redesign
+   HopHonPage – Tử Vi Đẩu Số Hợp Hôn Toàn Diện (Light & Dark Mode)
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Container ── */
+@property --hh-fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --hh-fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* ── Container & Scoped Semantic Tokens ── */
 .hop-hon {
-  max-width: 1200px;
+  --hh-good-fg: #15803d;
+  --hh-good-bg: rgba(21, 128, 61, 0.1);
+  --hh-good-border: rgba(21, 128, 61, 0.3);
+  --hh-warn-fg: #b45309;
+  --hh-warn-bg: rgba(180, 83, 9, 0.1);
+  --hh-warn-border: rgba(180, 83, 9, 0.3);
+  --hh-rose-fg: #be123c;
+  --hh-rose-bg: rgba(190, 18, 60, 0.1);
+  --hh-rose-border: rgba(190, 18, 60, 0.28);
+  --hh-sky-fg: #0369a1;
+  --hh-sky-bg: rgba(3, 105, 161, 0.1);
+  --hh-sky-border: rgba(3, 105, 161, 0.28);
+
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 0 16px 60px;
+  padding: 0 16px 64px;
   color: var(--text-primary);
   position: relative;
+}
+
+[data-theme="dark"] .hop-hon {
+  --hh-good-fg: #4ade80;
+  --hh-good-bg: rgba(74, 222, 128, 0.14);
+  --hh-good-border: rgba(74, 222, 128, 0.34);
+  --hh-warn-fg: #fbbf24;
+  --hh-warn-bg: rgba(251, 191, 36, 0.14);
+  --hh-warn-border: rgba(251, 191, 36, 0.34);
+  --hh-rose-fg: #fda4af;
+  --hh-rose-bg: rgba(253, 164, 175, 0.14);
+  --hh-rose-border: rgba(253, 164, 175, 0.34);
+  --hh-sky-fg: #7dd3fc;
+  --hh-sky-bg: rgba(125, 211, 252, 0.14);
+  --hh-sky-border: rgba(125, 211, 252, 0.34);
+}
+
+.hh-sr-only {
+  position: absolute;
+  clip-path: inset(50%);
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+
+.hh-muted {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.hh-alert {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--hh-rose-bg);
+  border: 1px solid var(--hh-rose-border);
+  color: var(--hh-rose-fg);
+  font-weight: 500;
 }
 
 /* ── Hero Section ── */
 .hh-hero {
   text-align: center;
-  padding: 48px 16px 32px;
+  padding: 40px 16px 28px;
   position: relative;
   overflow: hidden;
 }
@@ -23,60 +91,56 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 60% 50% at 50% 40%,
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 40%,
     var(--accent-gold-dim) 0%,
-    transparent 70%);
+    transparent 70%
+  );
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 0.65;
 }
 
 .hh-hero-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 80px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent-gold-dim), var(--accent-purple-dim));
   border: 2px solid var(--accent-gold);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   position: relative;
   animation: hh-pulse 3s ease-in-out infinite;
 }
 
 .hh-hero-icon span {
-  font-size: 36px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  font-size: 34px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
 @keyframes hh-pulse {
   0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--accent-gold-dim); }
-  50% { transform: scale(1.05); box-shadow: 0 0 20px 8px var(--accent-gold-dim); }
+  50% { transform: scale(1.04); box-shadow: 0 0 20px 8px var(--accent-gold-dim); }
 }
 
 .hh-hero h1 {
-  font: 600 2.6rem var(--font-serif);
+  font: 600 2.5rem var(--font-serif);
   background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 8px 0;
+  margin: 6px 0;
   position: relative;
 }
 
 .hh-hero p {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.96rem;
   line-height: 1.7;
-  max-width: 500px;
+  max-width: 640px;
   margin: 0 auto;
   position: relative;
-}
-
-.hh-muted {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  line-height: 1.7;
 }
 
 /* ── Floating hearts decoration ── */
@@ -107,24 +171,26 @@
   100% { transform: translateY(-200%); opacity: 0; }
 }
 
-/* ── Guide & History accordion ── */
-.hh-guide, .hh-history {
+/* ── Guide & History Accordion ── */
+.hh-guide,
+.hh-history {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
-  padding: 20px 24px;
+  padding: 18px 22px;
   margin-bottom: 24px;
   line-height: 1.7;
   backdrop-filter: blur(8px);
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition: border-color 0.25s, box-shadow 0.25s;
 }
 
-.hh-guide:hover, .hh-history:hover {
+.hh-guide:hover,
+.hh-history:hover {
   border-color: var(--accent-gold);
   box-shadow: 0 0 12px var(--accent-gold-dim);
 }
 
-.hop-hon summary {
+.hop-hon summary:not(:where(.tuvi-ai *, .hh-laso-embed *)) {
   cursor: pointer;
   color: var(--accent-gold);
   font-weight: 600;
@@ -132,27 +198,89 @@
   align-items: center;
   gap: 8px;
   user-select: none;
+  list-style: none;
 }
 
-.hop-hon summary::before {
+.hop-hon summary:not(:where(.tuvi-ai *, .hh-laso-embed *))::-webkit-details-marker {
+  display: none;
+}
+
+.hop-hon summary:not(:where(.tuvi-ai *, .hh-laso-embed *))::before {
   content: '▸';
   display: inline-block;
-  transition: transform 0.3s;
+  transition: transform 0.25s;
   font-size: 0.9em;
 }
 
-.hop-hon details[open] > summary::before {
+.hop-hon details[open] > summary:not(:where(.tuvi-ai *, .hh-laso-embed *))::before {
   transform: rotate(90deg);
 }
 
-.hh-guide p {
-  margin-top: 12px;
+.hh-guide-body {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
 }
 
-/* ── Form Grid ── */
+.hh-pillars-intro {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hh-pillars-intro li {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.hh-pillars-intro li strong {
+  color: var(--accent-gold);
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* ── Form & Toolbar ── */
 .hh-form {
   text-align: center;
   margin-bottom: 28px;
+}
+
+.hh-form-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.hop-hon .hh-swap-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-gold);
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.hop-hon .hh-swap-btn:hover {
+  background: var(--accent-gold);
+  color: var(--bg-primary);
 }
 
 .hh-form fieldset {
@@ -162,26 +290,22 @@
 .hh-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  margin-bottom: 28px;
+  gap: 22px;
+  margin-bottom: 24px;
 }
 
-/* ── Person Card ── */
-.hh-person, .hh-card {
+/* ── Person Form & Card Base ── */
+.hh-person,
+.hh-card {
   min-width: 0;
-  padding: 28px;
+  padding: 26px;
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   background: var(--bg-card);
-  line-height: 1.8;
+  line-height: 1.7;
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
-}
-
-.hh-person:hover, .hh-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.25s, border-color 0.25s;
 }
 
 .hh-person {
@@ -199,7 +323,7 @@
   border-radius: 20px 20px 0 0;
 }
 
-.hh-person:nth-child(2)::before {
+.hh-person-b::before {
   background: linear-gradient(90deg, var(--accent-purple), #a78bfa);
 }
 
@@ -210,20 +334,16 @@
   right: 0;
   width: 120px;
   height: 120px;
-  background: radial-gradient(circle at top right,
-    var(--accent-gold-dim) 0%,
-    transparent 70%);
+  background: radial-gradient(circle at top right, var(--accent-gold-dim) 0%, transparent 70%);
   pointer-events: none;
 }
 
-.hh-person:nth-child(2)::after {
-  background: radial-gradient(circle at top right,
-    var(--accent-purple-dim) 0%,
-    transparent 70%);
+.hh-person-b::after {
+  background: radial-gradient(circle at top right, var(--accent-purple-dim) 0%, transparent 70%);
 }
 
 .hh-person legend {
-  padding: 0 14px;
+  padding: 0 12px;
   color: var(--accent-gold);
   font: 600 1.3rem var(--font-serif);
   display: flex;
@@ -231,76 +351,166 @@
   gap: 8px;
 }
 
-.hh-person:nth-child(2) legend {
+.hh-person-b legend {
   color: var(--accent-purple);
 }
 
 .hh-person-icon {
   font-size: 1.1em;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
 }
 
-.hh-person label {
-  display: grid;
+.hh-field,
+.hh-hour-block {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  margin-bottom: 18px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  margin-bottom: 16px;
 }
 
-.hh-person input,
+.hh-field > label,
+.hh-label-row > label,
+.hh-field-heading {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hh-sub-label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.hh-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.hh-calendar-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.hh-calendar-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.hh-pill-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+}
+
+.hop-hon .hh-pill-toggle button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 13px;
+  min-height: 36px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.hop-hon .hh-pill-toggle button.is-active,
+.hop-hon .hh-pill-toggle button[aria-pressed="true"] {
+  background: var(--accent-gold-dim);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.hh-person input:not([type="checkbox"]),
 .hh-person select {
   width: 100%;
   min-width: 0;
-  padding: 12px 14px;
+  min-height: 48px;
+  padding: 10px 14px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--bg-input);
   color: var(--text-primary);
   font: inherit;
-  transition: border-color 0.25s, box-shadow 0.25s;
+  font-size: max(1rem, 1em);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.hh-person input:hover,
+.hh-person input:not([type="checkbox"]):hover,
 .hh-person select:hover {
   border-color: var(--accent-gold);
 }
 
-.hh-person input:focus,
+.hh-person input:not([type="checkbox"]):focus,
 .hh-person select:focus {
   border-color: var(--accent-gold);
   box-shadow: 0 0 0 3px var(--accent-gold-dim);
   outline: none;
 }
 
-.hh-person:nth-child(2) input:focus,
-.hh-person:nth-child(2) select:focus {
+.hh-person-b input:not([type="checkbox"]):focus,
+.hh-person-b select:focus {
   border-color: var(--accent-purple);
   box-shadow: 0 0 0 3px var(--accent-purple-dim);
 }
 
 .hh-person input[type="date"] {
   cursor: pointer;
-  min-height: 46px;
 }
 
-.hh-person input[type="date"]::-webkit-calendar-picker-indicator {
+.hh-date-readout {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding-inline-start: 2px;
+}
+
+.hh-lunar-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.35fr;
+  gap: 10px;
+}
+
+.hh-leap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.hh-leap-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-gold);
   cursor: pointer;
-  opacity: 0.75;
-  padding: 4px;
-  border-radius: 6px;
-  transition: opacity 0.2s, background-color 0.2s;
 }
 
-.hh-person input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-  background-color: var(--accent-gold-dim);
+.hh-leap-row label {
+  cursor: pointer;
 }
 
 .hh-two {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 12px;
 }
 
 .hh-can-chi {
@@ -309,15 +519,19 @@
   font-weight: 600;
 }
 
-/* ── Divider between form sections ── */
+.hh-person-footnote {
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+
+/* ── Divider & Buttons ── */
 .hh-divider {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 8px 0;
+  padding: 6px 0 14px;
   color: var(--text-secondary);
-  font-size: 0.8rem;
 }
 
 .hh-divider::before,
@@ -329,21 +543,20 @@
 }
 
 .hh-divider span {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   color: var(--accent-gold);
   animation: hh-heartbeat 1.8s ease-in-out infinite;
 }
 
 @keyframes hh-heartbeat {
   0%, 100% { transform: scale(1); }
-  14% { transform: scale(1.2); }
+  14% { transform: scale(1.18); }
   28% { transform: scale(1); }
-  42% { transform: scale(1.15); }
+  42% { transform: scale(1.12); }
   56% { transform: scale(1); }
 }
 
-/* ── Buttons ── */
-.hop-hon button:not(:where(.tuvi-ai *)) {
+.hop-hon button:not(:where(.tuvi-ai *, .hh-laso-embed *)) {
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 10px 16px;
@@ -351,90 +564,104 @@
   color: var(--text-primary);
   cursor: pointer;
   font: inherit;
-  transition: all 0.25s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
 }
 
-.hop-hon button:not(:where(.tuvi-ai *)):hover {
+.hop-hon button:not(:where(.tuvi-ai *, .hh-laso-embed *, [role="tab"])):hover {
   border-color: var(--accent-gold);
   background: var(--accent-gold-dim);
 }
 
-.hop-hon button:not(:where(.tuvi-ai *)):disabled {
+.hop-hon button:not(:where(.tuvi-ai *, .hh-laso-embed *)):disabled {
   opacity: 0.55;
   cursor: wait;
 }
 
-.hop-hon :is(input, select, button, summary):focus-visible {
+.hop-hon :is(input, select, button, summary):not(:where(.tuvi-ai *, .hh-laso-embed *)):focus-visible {
   outline: 2px solid var(--accent-gold);
   outline-offset: 3px;
 }
 
 .hop-hon .hh-primary {
-  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright));
-  color: var(--bg-primary);
+  background: var(--btn-submit-bg, linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright)));
+  color: var(--btn-submit-color, var(--bg-primary));
   font-weight: 600;
-  padding: 16px 40px;
+  padding: 15px 40px;
+  min-height: 52px;
   border: none;
   border-radius: 14px;
-  font-size: 1rem;
+  font-size: 1.02rem;
   letter-spacing: 0.02em;
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .hop-hon .hh-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 24px var(--accent-gold-dim);
+  background: var(--btn-submit-bg, linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright)));
 }
 
-.hop-hon .hh-primary::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.5s;
+/* ── Session Topbar & Hero Summary ── */
+.hh-session-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
 
-.hop-hon .hh-primary:hover:not(:disabled)::after {
-  transform: translateX(100%);
+.hop-hon .hh-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-gold);
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 
-/* ── Result Section ── */
 .hh-result {
   text-align: center;
-  padding: 40px 16px 20px;
+  padding: 32px 20px 26px;
+  margin-bottom: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
   position: relative;
+  overflow: hidden;
 }
 
 .hh-result::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: -40px;
   left: 50%;
   transform: translateX(-50%);
-  width: 300px;
-  height: 300px;
+  width: 380px;
+  height: 320px;
   background: radial-gradient(circle, var(--accent-gold-dim) 0%, transparent 70%);
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 .hh-eyebrow {
-  letter-spacing: 0.2em;
-  font-size: 0.72rem;
-  margin-bottom: 12px;
+  letter-spacing: 0.18em;
+  font-size: 0.74rem;
+  margin-bottom: 8px;
   color: var(--accent-gold);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   position: relative;
 }
 
 .hh-result h2 {
-  font: 600 2rem var(--font-serif);
+  font: 600 2.15rem var(--font-serif);
   overflow-wrap: anywhere;
   position: relative;
+  margin-bottom: 12px;
 }
 
 .hh-result h2 span {
@@ -442,9 +669,35 @@
   margin: 0 8px;
 }
 
-.hh-result h3 {
-  color: var(--accent-gold);
+.hh-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
   position: relative;
+}
+
+.hh-partner-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.hh-partner-pill-a {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+}
+
+.hh-partner-pill-b {
+  border-color: var(--accent-purple);
+  background: var(--accent-purple-dim);
+  color: var(--accent-purple);
 }
 
 /* ── Score Ring ── */
@@ -452,13 +705,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 32px auto;
+  margin: 24px auto 18px;
   position: relative;
 }
 
 .hh-score {
-  width: 170px;
-  height: 170px;
+  width: 176px;
+  height: 176px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -471,29 +724,28 @@
 
 .hh-score-ring {
   position: absolute;
-  width: 170px;
-  height: 170px;
+  width: 176px;
+  height: 176px;
   transform: rotate(-90deg);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .hh-score-ring-bg {
   fill: none;
   stroke: var(--border-subtle);
-  stroke-width: 6;
+  stroke-width: 7;
 }
 
 .hh-score-ring-fill {
   fill: none;
-  stroke: url(#scoreGradient);
-  stroke-width: 6;
+  stroke-width: 7;
   stroke-linecap: round;
-  stroke-dasharray: 452;
-  stroke-dashoffset: 452;
-  transition: stroke-dashoffset 1.5s ease-out;
+  transition: stroke-dashoffset 1.3s ease-out;
 }
 
 .hh-score strong {
-  font: 600 3.8rem var(--font-serif);
+  font: 600 3.7rem var(--font-serif);
   background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-bright));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -503,13 +755,14 @@
 
 .hh-score span {
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  margin-top: 4px;
 }
 
 .hh-score-glow {
   position: absolute;
-  width: 200px;
-  height: 200px;
+  width: 204px;
+  height: 204px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--accent-gold-dim) 0%, transparent 70%);
   animation: hh-glow 3s ease-in-out infinite;
@@ -517,157 +770,260 @@
 }
 
 @keyframes hh-glow {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.1); }
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.08); }
 }
 
-/* ── Elements Comparison ── */
-.hh-elements {
-  max-width: 600px;
-  display: flex;
-  gap: 24px;
+.hh-tier-badge {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 28px auto;
-  padding: 24px;
+  padding: 7px 20px;
+  border-radius: 999px;
+  font: 600 1.12rem var(--font-serif);
+  letter-spacing: 0.02em;
+  border: 1px solid var(--accent-gold);
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.hh-tier-badge.tier-thuong-dang {
+  border-color: var(--hh-good-border);
+  background: var(--hh-good-bg);
+  color: var(--hh-good-fg);
+}
+
+.hh-tier-badge.tier-can-hoa-giai {
+  border-color: var(--hh-warn-border);
+  background: var(--hh-warn-bg);
+  color: var(--hh-warn-fg);
+}
+
+.hh-rating-summary {
+  max-width: 760px;
+  margin: 0 auto 20px;
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+  line-height: 1.7;
+  position: relative;
+}
+
+/* ── Upgraded Ngũ Hành Nạp Âm · Thiên Can · Địa Chi Bar ── */
+.hh-elements-bar {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 18px 20px;
+  border-radius: 16px;
   border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(240px, 2fr) minmax(160px, 1fr);
+  gap: 16px;
+  align-items: center;
+  position: relative;
+}
+
+.hh-element-endpoint {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.hh-endpoint-a {
+  border-inline-start: 3px solid var(--accent-gold);
+}
+
+.hh-endpoint-b {
+  border-inline-end: 3px solid var(--accent-purple);
+}
+
+.hh-element-endpoint strong {
+  display: block;
+  font: 600 1.18rem var(--font-serif);
+  color: var(--text-primary);
+}
+
+.hh-element-endpoint small {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.hh-element-relations {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hh-rel-chip {
+  flex: 1 1 130px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.hh-rel-chip small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hh-rel-chip strong {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--accent-gold);
+  margin-top: 2px;
+}
+
+/* ── Sticky Scrollable Single-Row Tablist (modern-web-guidance: tabs) ── */
+.hh-tabs-sticky {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  margin: 18px 0 22px;
+  padding: 6px;
   border-radius: 16px;
   background: var(--bg-card);
-  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.hh-tablist {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  scroll-snap-type: inline proximity;
+  scroll-padding-inline: 2.5rem;
+  scrollbar-width: none;
+  --hh-fade-size: 2.2rem;
+  mask:
+    linear-gradient(black, black) no-clip subtract,
+    linear-gradient(to right, black, transparent) 0 0 / var(--hh-fade-start) 100% no-repeat no-clip,
+    linear-gradient(to right, transparent, black) 100% 0 / var(--hh-fade-end) 100% no-repeat no-clip;
+  animation: hh-reveal-fade-start linear both, hh-hide-fade-end linear both;
+  animation-timeline: scroll(self inline);
+  animation-range: 0 var(--hh-fade-size), calc(100% - var(--hh-fade-size)) 100%;
+}
+
+.hh-tablist::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes hh-reveal-fade-start {
+  to { --hh-fade-start: var(--hh-fade-size); }
+}
+
+@keyframes hh-hide-fade-end {
+  from { --hh-fade-end: var(--hh-fade-size); }
+}
+
+.hop-hon .hh-tablist [role="tab"] {
+  flex: none;
+  scroll-snap-align: start;
   position: relative;
-  overflow: hidden;
-}
-
-.hh-elements::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-    var(--accent-gold-dim) 0%,
-    transparent 40%,
-    transparent 60%,
-    var(--accent-purple-dim) 100%);
-  pointer-events: none;
-}
-
-.hh-elements > span {
-  font: 600 1.5rem var(--font-serif);
-  position: relative;
-  z-index: 1;
-}
-
-.hh-elements small {
-  display: block;
-  font: 0.75rem var(--font-sans);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 16px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
   color: var(--text-secondary);
-  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.hh-elements p {
-  font-size: 0.85rem;
-  max-width: 230px;
-  position: relative;
-  z-index: 1;
+.hop-hon .hh-tablist [role="tab"]:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
-/* ── Criteria Cards ── */
-.hh-card {
-  position: relative;
-  overflow: hidden;
+.hop-hon .hh-tablist [role="tab"][aria-selected="true"] {
+  color: var(--accent-gold);
+  background: var(--accent-gold-dim);
 }
 
-.hh-card::before {
-  content: '';
+.hop-hon .hh-tablist [role="tab"][aria-selected="true"]::after {
+  content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-gold), var(--accent-purple));
-  opacity: 0;
-  transition: opacity 0.3s;
+  inset: auto 10px 0;
+  border-block-end: 3px solid var(--accent-gold);
 }
 
-.hh-card:hover::before {
-  opacity: 1;
+/* Tabpanel inner wrapper holds spacing (never on [role="tabpanel"] itself) */
+.hh-tabpanel-inner {
+  padding-block: 4px 20px;
 }
 
+.hh-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Pillar & Section Cards ── */
 .hh-card header {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .hh-card-icon {
-  font-size: 1.3em;
-  margin-right: 6px;
+  font-size: 1.2em;
+  margin-inline-end: 6px;
 }
 
 .hh-card h3 {
-  font: 600 1.3rem var(--font-serif);
+  font: 600 1.35rem var(--font-serif);
   color: var(--accent-gold);
   display: flex;
   align-items: center;
-  gap: 4px;
 }
 
 .hh-card header strong {
   color: var(--accent-gold);
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   white-space: nowrap;
 }
 
-.hh-card small {
-  font-size: 0.7rem;
+.hh-card header strong small {
+  font-size: 0.75rem;
   color: var(--text-secondary);
+  margin-inline-start: 2px;
 }
 
-/* Custom progress bar */
 .hh-progress {
   width: 100%;
   height: 8px;
   background: var(--border-subtle);
   border-radius: 99px;
   overflow: hidden;
-  margin: 12px 0 8px;
+  margin: 10px 0 8px;
 }
 
 .hh-progress-fill {
   height: 100%;
   border-radius: 99px;
   background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-bright));
-  transition: width 1.2s ease-out;
-  position: relative;
+  transition: width 1s ease-out;
 }
 
-.hh-progress-fill::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  animation: hh-shimmer 2s infinite;
-}
-
-@keyframes hh-shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.hh-card p {
-  margin: 14px 0;
-  font-size: 0.9rem;
-}
-
-.hh-data {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-height: 420px;
-  overflow: auto;
-  font-size: 0.75rem;
-}
-
-/* ── Weight badge ── */
 .hh-weight {
   display: inline-flex;
   align-items: center;
@@ -676,83 +1032,1143 @@
   border-radius: 8px;
   background: var(--accent-gold-dim);
   color: var(--accent-gold);
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   font-weight: 600;
-  margin-top: 4px;
 }
 
-/* ── Save status ── */
+.hh-pillar-detail {
+  margin-top: 12px;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+/* ── Scoring Factors Breakdown ── */
+.hh-factors-details {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.hh-factors-details summary {
+  font-size: 0.83rem;
+}
+
+.hh-factors-list {
+  list-style: none;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.hh-factor-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  font-size: 0.84rem;
+}
+
+.hh-factor-pill {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.hh-pill-good {
+  background: var(--hh-good-bg);
+  border: 1px solid var(--hh-good-border);
+  color: var(--hh-good-fg);
+}
+
+.hh-pill-warn {
+  background: var(--hh-rose-bg);
+  border: 1px solid var(--hh-rose-border);
+  color: var(--hh-rose-fg);
+}
+
+.hh-pill-neutral {
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-gold);
+}
+
+/* ── Synthesis Strengths & Remedies ── */
+.hh-synthesis-grid {
+  margin-bottom: 0;
+}
+
+.hh-check-list {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.hh-check-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  font-size: 0.9rem;
+}
+
+.hh-bullet-icon {
+  color: var(--hh-good-fg);
+  font-weight: 700;
+}
+
+.hh-challenge-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.hh-challenge-item {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-inline-start: 3px solid var(--accent-gold);
+  display: grid;
+  gap: 6px;
+  font-size: 0.89rem;
+}
+
+.hh-challenge-issue strong {
+  color: var(--hh-warn-fg);
+}
+
+.hh-challenge-remedy strong {
+  color: var(--hh-good-fg);
+}
+
+/* ── Nghê Hải Hạ Quotes ── */
+.hh-heming-methodology {
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 16px;
+  font-size: 0.92rem;
+}
+
+.hh-fuqi-quotes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hh-fuqi-quote-box {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid var(--accent-gold);
+}
+
+.hh-fuqi-quote-b {
+  border-inline-start-color: var(--accent-purple);
+}
+
+.hh-fuqi-quote-box strong {
+  display: block;
+  color: var(--accent-gold);
+  font-size: 0.88rem;
+  margin-bottom: 4px;
+}
+
+.hh-fuqi-quote-b strong {
+  color: var(--accent-purple);
+}
+
+.hh-fuqi-quote-box p {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.hh-quote-advice {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+/* ── Tab 2: Responsive Comparison Table (modern-web-guidance: responsive-table) ── */
+.hh-table-wrapper {
+  overflow: auto;
+  max-inline-size: 100%;
+  container-type: inline-size;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  margin-top: 8px;
+}
+
+.hh-compare-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.hh-compare-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+}
+
+.hh-compare-table th,
+.hh-compare-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-block-end: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+
+.hh-compare-table thead th {
+  background: var(--bg-secondary);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hh-compare-table thead th.hh-col-person-a {
+  color: var(--accent-gold);
+}
+
+.hh-compare-table thead th.hh-col-person-b {
+  color: var(--accent-purple);
+}
+
+.hh-compare-table tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--bg-card);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  border-inline-end: 1px solid var(--border-subtle);
+}
+
+.hh-compare-table tbody tr:last-child th,
+.hh-compare-table tbody tr:last-child td {
+  border-block-end: none;
+}
+
+@container (width < 640px) {
+  .hh-compare-table,
+  .hh-compare-table thead,
+  .hh-compare-table tbody,
+  .hh-compare-table tr,
+  .hh-compare-table th,
+  .hh-compare-table td {
+    display: block;
+  }
+
+  .hh-compare-table thead {
+    display: none;
+  }
+
+  .hh-compare-table tr {
+    border-block-end: 2px solid var(--border-subtle);
+  }
+
+  .hh-compare-table tbody th {
+    position: sticky;
+    inset-block-start: 0;
+    background: var(--bg-secondary);
+    color: var(--accent-gold);
+    border-inline-end: none;
+  }
+
+  .hh-compare-table td:nth-child(2)::before {
+    content: var(--col-a) ": ";
+    font-weight: 700;
+    color: var(--accent-gold);
+  }
+
+  .hh-compare-table td:nth-child(3)::before {
+    content: var(--col-b) ": ";
+    font-weight: 700;
+    color: var(--accent-purple);
+  }
+}
+
+/* ── Dual LasoChart Viewer ── */
+.hh-laso-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.hh-dual-charts {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1180px) {
+  .hh-dual-charts.hh-dual-side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.hh-chart-pane {
+  min-width: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  padding: 14px;
+}
+
+.hh-chart-pane-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.hh-pane-a strong {
+  color: var(--accent-gold);
+}
+
+.hh-pane-b strong {
+  color: var(--accent-purple);
+}
+
+.hh-chart-pane-header span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.hh-laso-embed {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* ── Tab 3: Tam Hợp & Bù Trừ Tính Cách ── */
+.hh-cross-grid {
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+
+.hh-subcard {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+.hh-subcard h4 {
+  font: 600 1.12rem var(--font-serif);
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.hh-cross-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.hh-cross-head h4 {
+  margin-bottom: 0;
+}
+
+.hh-cross-badges {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hh-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.hh-badge-gold {
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.hh-badge-purple {
+  background: var(--accent-purple-dim);
+  border: 1px solid var(--accent-purple);
+  color: var(--accent-purple);
+}
+
+.hh-badge-outline {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.hh-group-bridge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.hh-bridge-node {
+  flex: 1;
+  min-width: 0;
+}
+
+.hh-bridge-node small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.hh-bridge-node strong {
+  font-size: 0.88rem;
+  color: var(--accent-gold);
+}
+
+.hh-bridge-arrow {
+  color: var(--accent-gold);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.hh-star-compare {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.hh-partner-tag {
+  display: block;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.hh-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hh-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.hh-chip-good {
+  background: var(--hh-good-bg);
+  border: 1px solid var(--hh-good-border);
+  color: var(--hh-good-fg);
+}
+
+.hh-chip-warn {
+  background: var(--hh-warn-bg);
+  border: 1px solid var(--hh-warn-border);
+  color: var(--hh-warn-fg);
+}
+
+.hh-chip-neutral {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+/* ── Yin-Yang Balance & 5 Emotional Traits ── */
+.hh-yin-yang-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.hh-yin-yang-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.hh-yang-seg {
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-bright));
+}
+
+.hh-yin-seg {
+  background: linear-gradient(90deg, var(--accent-purple), #818cf8);
+}
+
+.hh-mini-notes {
+  margin-top: 10px;
+  padding-inline-start: 18px;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 4px;
+}
+
+.hh-emotions-box {
+  margin-top: 16px;
+}
+
+.hh-emotions-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.hh-legend-a {
+  color: var(--accent-gold);
+}
+
+.hh-legend-b {
+  color: var(--accent-purple);
+}
+
+.hh-emotions-list {
+  display: grid;
+  gap: 14px;
+}
+
+.hh-emotion-row {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.hh-emotion-title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.hh-emotion-title small {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.hh-emotion-bars {
+  display: grid;
+  gap: 6px;
+}
+
+.hh-dual-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hh-meter-tag {
+  width: 18px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.hh-meter-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.hh-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s ease-out;
+}
+
+.hh-meter-a {
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-bright));
+}
+
+.hh-meter-b {
+  background: linear-gradient(90deg, var(--accent-purple), #a78bfa);
+}
+
+/* ── Tab 4: Phi Tinh Tứ Hóa 2 Chiều ── */
+.hh-insight-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 10px 0 16px;
+  border-radius: 14px;
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--accent-gold);
+}
+
+.hh-insight-icon {
+  font-size: 1.4rem;
+}
+
+.hh-insight-banner strong {
+  color: var(--accent-gold);
+  display: block;
+  font-size: 0.9rem;
+}
+
+.hh-insight-banner p {
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.hh-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hh-flights-grid {
+  margin-bottom: 0;
+}
+
+.hh-dir-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hh-dir-a {
+  color: var(--accent-gold) !important;
+}
+
+.hh-dir-b {
+  color: var(--accent-purple) !important;
+}
+
+.hh-flight-list {
+  display: grid;
+  gap: 10px;
+}
+
+.hh-flight-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid var(--accent-gold);
+}
+
+.hh-flight-card.is-auspicious {
+  border-inline-start-color: var(--hh-good-fg);
+}
+
+.hh-flight-card.is-challenging {
+  border-inline-start-color: var(--hh-rose-fg);
+}
+
+.hh-flight-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.hh-emitter-tag {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.hh-sihua-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.hh-sihua-badge.sihua-loc {
+  background: var(--hh-good-bg);
+  border: 1px solid var(--hh-good-border);
+  color: var(--hh-good-fg);
+}
+
+.hh-sihua-badge.sihua-quyen {
+  background: var(--hh-warn-bg);
+  border: 1px solid var(--hh-warn-border);
+  color: var(--hh-warn-fg);
+}
+
+.hh-sihua-badge.sihua-khoa {
+  background: var(--hh-sky-bg);
+  border: 1px solid var(--hh-sky-border);
+  color: var(--hh-sky-fg);
+}
+
+.hh-sihua-badge.sihua-ky {
+  background: var(--hh-rose-bg);
+  border: 1px solid var(--hh-rose-border);
+  color: var(--hh-rose-fg);
+}
+
+.hh-flight-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.hh-flight-meaning {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.hh-synastry-list,
+.hh-internal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.hh-synastry-item,
+.hh-internal-item {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.88rem;
+}
+
+.hh-internal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* ── Tab 5: Individual Profiles & 1–10 Year Forecast ── */
+.hh-profiles-grid {
+  margin-bottom: 0;
+}
+
+.hh-profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hh-prof-a {
+  border-top: 3px solid var(--accent-gold);
+}
+
+.hh-prof-b {
+  border-top: 3px solid var(--accent-purple);
+}
+
+.hh-profile-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hh-profile-block strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+
+.hh-prof-b .hh-profile-block strong {
+  color: var(--accent-purple);
+}
+
+.hh-profile-block p {
+  font-size: 0.89rem;
+  color: var(--text-primary);
+}
+
+.hh-profile-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hh-decades-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.hh-decade-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+}
+
+.hh-decade-range {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-inline-end: 8px;
+}
+
+.hh-decade-palace {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hh-decade-item p {
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+.hh-forecast-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.hh-forecast-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.hh-start-year-ctrl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.hh-start-year-ctrl select {
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.hh-highlight-years-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  background: var(--hh-good-bg);
+  border: 1px solid var(--hh-good-border);
+}
+
+.hh-highlight-icon {
+  font-size: 1.5rem;
+}
+
+.hh-highlight-years-banner strong {
+  color: var(--hh-good-fg);
+  display: block;
+  font-size: 0.95rem;
+}
+
+.hh-highlight-years-banner p {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.hh-timeline {
+  display: grid;
+  gap: 16px;
+}
+
+.hh-year-card {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 4px solid var(--accent-gold);
+}
+
+.hh-year-card.hh-year-hy_tin,
+.hh-year-card.is-shared-highlight {
+  border-inline-start-color: var(--hh-good-fg);
+  box-shadow: 0 0 0 1px var(--hh-good-border);
+}
+
+.hh-year-card.hh-year-thuan_loi {
+  border-inline-start-color: var(--hh-sky-fg);
+}
+
+.hh-year-card.hh-year-can_luu_y {
+  border-inline-start-color: var(--hh-warn-fg);
+}
+
+.hh-year-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hh-year-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.hh-year-title strong {
+  font: 600 1.25rem var(--font-serif);
+  color: var(--text-primary);
+}
+
+.hh-sparkle-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--hh-good-bg);
+  border: 1px solid var(--hh-good-border);
+  color: var(--hh-good-fg);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.hh-year-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hh-status-pill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.hh-status-pill.hh-year-hy_tin {
+  background: var(--hh-good-bg);
+  border-color: var(--hh-good-border);
+  color: var(--hh-good-fg);
+}
+
+.hh-status-pill.hh-year-thuan_loi {
+  background: var(--hh-sky-bg);
+  border-color: var(--hh-sky-border);
+  color: var(--hh-sky-fg);
+}
+
+.hh-status-pill.hh-year-can_luu_y {
+  background: var(--hh-warn-bg);
+  border-color: var(--hh-warn-border);
+  color: var(--hh-warn-fg);
+}
+
+.hh-year-score {
+  font-size: 1.2rem;
+  color: var(--accent-gold);
+}
+
+.hh-year-score small {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.hh-year-partners {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.hh-year-partner-box {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  display: grid;
+  gap: 6px;
+}
+
+.hh-year-partner-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.hh-mini-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+}
+
+.hh-year-palaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hh-year-palaces span {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.hh-year-advice {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-subtle);
+  font-size: 0.87rem;
+}
+
+.hh-year-advice strong {
+  color: var(--accent-gold);
+}
+
+/* ── Footer Methodology, Save Status, Gate & History ── */
+.hh-methodology-footer {
+  margin-top: 8px;
+}
+
+.hh-methodology-footer h3 {
+  margin-bottom: 10px;
+}
+
+.hh-methodology-footer p {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.hh-methodology-footer details {
+  margin-top: 12px;
+}
+
+.hh-data {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 420px;
+  overflow: auto;
+  font-size: 0.76rem;
+}
+
 .hh-save {
   display: flex;
   gap: 12px;
   align-items: center;
   margin: 18px 0;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
-/* ── Gate / Login Card ── */
 .hh-gate {
   text-align: center;
   max-width: 650px;
-  margin: 60px auto;
-  padding: 48px 32px;
+  margin: 56px auto;
+  padding: 44px 28px;
 }
 
-.hh-gate h1, .hh-gate h2 {
+.hh-gate h1,
+.hh-gate h2 {
   font: 600 2rem var(--font-serif);
   color: var(--accent-gold);
   margin-bottom: 12px;
 }
 
-/* ── History ── */
+.hh-gate p {
+  margin-bottom: 18px;
+  color: var(--text-secondary);
+}
+
 .hh-history {
   margin-top: 24px;
+}
+
+.hh-history-body {
+  margin-top: 14px;
 }
 
 .hop-hon .hh-history-row {
   display: flex;
   width: 100%;
   gap: 16px;
+  align-items: center;
   justify-content: space-between;
   text-align: left;
   margin-top: 10px;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.hop-hon .hh-history-row:hover {
-  background: var(--accent-gold-dim);
-  border-color: var(--accent-gold);
 }
 
 .hh-history-row small {
   white-space: nowrap;
+  color: var(--text-secondary);
 }
 
-/* ── Back button ── */
-.hh-back {
-  margin-bottom: 18px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  color: var(--accent-gold);
-  font-family: var(--font-sans);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.hh-back:hover {
-  background: var(--accent-gold-dim);
-  border-color: var(--accent-gold);
-}
-
-/* ── Page nav ── */
+/* ── Page Nav (preserved shared route nav) ── */
 .tuvi-page-nav {
   display: flex;
   gap: 8px;
@@ -781,67 +2197,58 @@
   background: var(--accent-gold-dim);
 }
 
-/* ── Entrance animations ── */
-@keyframes hh-fade-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.hh-hero { animation: hh-fade-up 0.6s ease-out; }
-.hh-form { animation: hh-fade-up 0.6s ease-out 0.15s both; }
-.hh-result { animation: hh-fade-up 0.6s ease-out; }
-.hh-grid .hh-card:nth-child(1) { animation: hh-fade-up 0.5s ease-out 0.1s both; }
-.hh-grid .hh-card:nth-child(2) { animation: hh-fade-up 0.5s ease-out 0.2s both; }
-.hh-grid .hh-card:nth-child(3) { animation: hh-fade-up 0.5s ease-out 0.3s both; }
-.hh-grid .hh-card:nth-child(4) { animation: hh-fade-up 0.5s ease-out 0.4s both; }
-
-/* ── Responsive ── */
-@media (max-width: 680px) {
-  .hh-grid {
+/* ── Responsive Breakpoints ── */
+@media (max-width: 820px) {
+  .hh-grid,
+  .hh-pillars-intro,
+  .hh-fuqi-quotes-grid,
+  .hh-year-partners {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
 
-  .hh-person, .hh-card {
-    padding: 22px;
+  .hh-elements-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .hh-endpoint-b {
+    border-inline-end: 1px solid var(--border-subtle);
+    border-inline-start: 3px solid var(--accent-purple);
+  }
+}
+
+@media (max-width: 600px) {
+  .hop-hon {
+    padding: 0 10px 40px;
+  }
+
+  .hh-person,
+  .hh-card {
+    padding: 18px 16px;
   }
 
   .hh-hero {
-    padding: 36px 12px 24px;
+    padding: 28px 10px 20px;
   }
 
   .hh-hero h1 {
-    font-size: 2rem;
+    font-size: 1.95rem;
   }
 
   .hh-result h2 {
-    font-size: 1.6rem;
+    font-size: 1.65rem;
   }
 
-  .hh-elements {
-    gap: 12px;
-    padding: 18px;
+  .hh-two,
+  .hh-lunar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hh-group-bridge {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .hop-hon {
-    padding: 0 10px 32px;
-  }
-
-  .hh-hero-icon {
-    width: 64px;
-    height: 64px;
-  }
-
-  .hh-hero-icon span {
-    font-size: 28px;
-  }
-
-  .hh-divider {
-    display: none;
-  }
-
-  .hh-score-wrapper {
-    margin: 24px auto;
+  .hh-bridge-arrow {
+    transform: rotate(90deg);
   }
 }

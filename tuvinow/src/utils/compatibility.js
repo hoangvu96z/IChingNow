@@ -1,5 +1,3 @@
-import { solarToLunar } from './lunarConverter.js';
-import { anLaSoTuVi } from './tuViEngine.js';
 import { buildTuViText, TOPICS } from './buildTuViPrompt.js';
 import { buildTuViEvidence } from './tuViEvidence.js';
 import {
@@ -8,157 +6,161 @@ import {
   SIHUA_IN_FUQI_GU,
   HEMING_METHODOLOGY,
 } from './tuViZiweiModule.js';
+import {
+  COMPATIBILITY_VERSION,
+  WEIGHTS,
+  ROMANCE_STARS,
+  createCompatibilityPerson,
+  buildPersonProfileFromChart,
+  evaluateCompatibility,
+  computeYearlyCompatibilityForecast,
+} from './hopHonEngine.js';
 
-export const COMPATIBILITY_VERSION = 'user-reference-1';
-export const WEIGHTS = { nguHanh: 0.3, phuThe: 0.3, tuHoa: 0.25, daoHoa: 0.15 };
-// The nine names in the supplied example, not an expanded astrological catalogue.
-export const ROMANCE_STARS = [
-  'Hồng Loan',
-  'Thái Âm',
-  'Tham Lang',
-  'Văn Khúc',
-  'Văn Xương',
-  'Hóa Lộc',
-  'Thiên Hỷ',
-  'Đào Hoa',
-  'Thiên Cơ',
-];
-const BAD_STARS = ['Quả Tú', 'Cô Thần', 'Kình Dương', 'Đà La', 'Địa Không', 'Địa Kiếp'];
-const ELEMENTS = { Kim: 'Kim', Moc: 'Mộc', Thuy: 'Thủy', Hoa: 'Hỏa', Tho: 'Thổ' };
-const SINH = { Kim: 'Thuy', Thuy: 'Moc', Moc: 'Hoa', Hoa: 'Tho', Tho: 'Kim' };
-const starName = (s) => s.replace(/\s*\([MVĐBH]\)$/, '').trim();
+export {
+  COMPATIBILITY_VERSION,
+  WEIGHTS,
+  ROMANCE_STARS,
+  createCompatibilityPerson,
+  evaluateCompatibility,
+  computeYearlyCompatibilityForecast,
+};
 
-export function createCompatibilityPerson(person) {
-  const hoTen = person.hoTen?.trim();
-  const { ngay, thang, nam, gio, gioiTinh } = person;
-  if (!hoTen || hoTen.length > 100) throw new Error('Họ tên cần từ 1 đến 100 ký tự.');
-  if (
-    ![ngay, thang, nam, gio].every(Number.isInteger) ||
-    nam < 1900 ||
-    nam > new Date().getFullYear() ||
-    thang < 1 ||
-    thang > 12 ||
-    ngay < 1 ||
-    ngay > new Date(nam, thang, 0).getDate() ||
-    gio < 0 ||
-    gio > 23 ||
-    !['Nam', 'Nữ'].includes(gioiTinh)
-  )
-    throw new Error('Kiểm tra ngày sinh dương lịch, giờ sinh (0–23) và giới tính.');
-  const inputData = {
-    ...solarToLunar(nam, thang, ngay),
-    name: hoTen,
-    isLunar: false,
-    solarInput: { day: ngay, month: thang, year: nam },
-    lunarHourIndex: Math.floor((gio + 1) / 2) % 12,
-    gender: gioiTinh === 'Nam' ? 1 : 0,
-  };
-  const result = anLaSoTuVi(inputData);
-  const phuThe = result.palates.find((p) => p.chucNang.replace(' <THÂN>', '') === 'Phu Thê');
-  const menh = Object.keys(ELEMENTS).find((key) => result.banMenhNapAm.endsWith(ELEMENTS[key]));
-  if (!menh || !phuThe) throw new Error('Lá số thiếu Nạp Âm hoặc cung Phu Thê để đối chiếu.');
-  return {
-    inputData,
-    result,
-    person: {
-      hoTen,
-      menh,
-      phuTheStars: [...phuThe.chinhTinh, ...phuThe.phuTinh].map(starName),
-      canPhuThe: phuThe.canName,
-      daoHoaStars: result.palates.flatMap((p) =>
-        [...p.chinhTinh, ...p.phuTinh]
-          .map(starName)
-          .filter((sao) => ROMANCE_STARS.includes(sao))
-          .map((sao) => ({ sao, cung: p.chucNang.replace(' <THÂN>', '') }))
-      ),
-    },
-  };
-}
-
-export function evaluateCompatibility(chong, vo) {
-  let nguHanhScore = 75;
-  let interaction = 'Bình hòa';
-  let nguHanhDetail = 'Bình hòa theo điểm mặc định của code mẫu.';
-  if (SINH[vo.menh] === chong.menh) {
-    nguHanhScore = 85;
-    interaction = `${ELEMENTS[vo.menh]} sinh ${ELEMENTS[chong.menh]}`;
-    nguHanhDetail = `${interaction}. Vợ hỗ trợ, nuôi dưỡng chồng theo quy tắc tương sinh.`;
-  } else if (SINH[chong.menh] === vo.menh) {
-    nguHanhScore = 80;
-    interaction = `${ELEMENTS[chong.menh]} sinh ${ELEMENTS[vo.menh]}`;
-    nguHanhDetail = `${interaction}. Chồng hỗ trợ, bảo bọc vợ theo quy tắc tương sinh.`;
-  } else if (chong.menh !== vo.menh) {
-    interaction = 'Chưa có quy tắc chấm điểm tương khắc';
-    nguHanhDetail =
-      'Code mẫu chưa xử lý tương khắc; đang giữ điểm mặc định 75, không phải kết luận bình hòa.';
+function enrichSideFromSaved(side, payloadPerson, defaultGender) {
+  if (!side || typeof side !== 'object') {
+    if (payloadPerson) return createCompatibilityPerson(payloadPerson);
+    return side;
   }
-  const penalty = [...chong.phuTheStars, ...vo.phuTheStars].reduce(
-    (sum, s) => sum + (BAD_STARS.includes(s) ? 5 : 0) + (s === 'Thất Sát' ? 3 : 0),
-    0
-  );
-  const phuTheScore = Math.max(30, Math.min(95, 70 - penalty));
-  const daoHoaScore = Math.min(
-    100,
-    Math.round(((chong.daoHoaStars.length + vo.daoHoaStars.length) / 16) * 100)
-  );
-  const list = (entries) => entries.map((s) => `${s.sao} (${s.cung})`).join(', ') || 'Không có';
-  const cards = {
-    nguHanh: { title: 'Ngũ hành tương hợp', score: nguHanhScore, detail: nguHanhDetail },
-    phuThe: {
-      title: 'Cung Phu Thê',
-      score: phuTheScore,
-      detail: `Chồng: ${chong.phuTheStars.join(', ')}. Vợ: ${vo.phuTheStars.join(
-        ', '
-      )}. Điểm gốc 70, trừ ${penalty} điểm theo danh sách sao trong code mẫu; giới hạn 30–95.`,
-    },
-    tuHoa: {
-      title: 'Tứ Hóa chéo',
-      score: 55,
-      detail:
-        'Điểm mặc định 55 của code mẫu. Chưa tính phi hóa chéo; chưa thể kết luận có hay không chiếu vào Mệnh/Phu Thê.',
-      provisional: true,
-    },
-    daoHoa: {
-      title: 'Đào hoa · sức hút',
-      score: daoHoaScore,
-      detail: `Chồng có ${chong.daoHoaStars.length}: ${list(chong.daoHoaStars)}. Vợ có ${
-        vo.daoHoaStars.length
-      }: ${list(vo.daoHoaStars)}.`,
-    },
+
+  const result = side.result;
+  const inputData = side.inputData || {};
+  const hoTen = side.person?.hoTen || payloadPerson?.hoTen || inputData.name || 'Ẩn danh';
+  const gioiTinh =
+    side.person?.gioiTinh ||
+    payloadPerson?.gioiTinh ||
+    (inputData.gender === 0 ? 'Nữ' : inputData.gender === 1 ? 'Nam' : defaultGender);
+
+  if (result?.palates?.length === 12) {
+    if (
+      side.person?.palaceSummary &&
+      side.person?.temperament &&
+      side.person?.individualLoveProfile
+    ) {
+      Object.defineProperty(side.person, '_chart', { value: result, enumerable: false, configurable: true });
+      Object.defineProperty(side.person, '_inputData', { value: inputData, enumerable: false, configurable: true });
+      return side;
+    }
+    const upgradedPerson = buildPersonProfileFromChart({
+      hoTen,
+      gioiTinh,
+      inputData,
+      result,
+    });
+    return {
+      ...side,
+      inputData,
+      result,
+      person: upgradedPerson,
+    };
+  }
+
+  if (payloadPerson) {
+    return createCompatibilityPerson(payloadPerson);
+  }
+  return side;
+}
+
+/**
+ * Nâng cấp an toàn hồ sơ Hợp Hôn khôi phục từ lịch sử (bao gồm bản cũ `user-reference-1`)
+ * lên đầy đủ cấu trúc dữ liệu `tuvi-hophon-v2` để UI và AI hoạt động trơn tru không lỗi.
+ */
+export function upgradeRestoredCompatibilityPair(pair) {
+  if (!pair || typeof pair !== 'object') return pair;
+
+  const isAlreadyCompleteV2 =
+    pair.assessment?.version === COMPATIBILITY_VERSION &&
+    pair.assessment?.cards?.tamHop &&
+    pair.assessment?.cards?.phiTinh &&
+    pair.assessment?.cards?.tinhCach &&
+    pair.assessment?.cards?.nguHanhDaoHoa &&
+    pair.assessment?.tamHopDetail &&
+    pair.assessment?.phiTinhDetail &&
+    pair.assessment?.tinhCachDetail &&
+    pair.individualProfiles?.chong &&
+    pair.individualProfiles?.vo &&
+    pair.initialForecast?.years?.length > 0;
+
+  if (isAlreadyCompleteV2) {
+    if (pair.chong?.person && pair.chong?.result) {
+      Object.defineProperty(pair.chong.person, '_chart', { value: pair.chong.result, enumerable: false, configurable: true });
+    }
+    if (pair.vo?.person && pair.vo?.result) {
+      Object.defineProperty(pair.vo.person, '_chart', { value: pair.vo.result, enumerable: false, configurable: true });
+    }
+    return pair;
+  }
+
+  const chong = enrichSideFromSaved(pair.chong, pair.payload?.chong, 'Nam');
+  const vo = enrichSideFromSaved(pair.vo, pair.payload?.vo, 'Nữ');
+
+  const assessment = evaluateCompatibility(chong.person, vo.person, chong.result, vo.result);
+
+  let synastry = pair.synastry || null;
+  if (!synastry && chong.result?.palates?.length === 12 && vo.result?.palates?.length === 12) {
+    try {
+      synastry = computeCrossChartSihua(chong.result, vo.result);
+    } catch {
+      synastry = null;
+    }
+  }
+
+  const individualProfiles = {
+    chong: chong.person?.individualLoveProfile || null,
+    vo: vo.person?.individualLoveProfile || null,
   };
-  const rawScore = Number(
-    Object.entries(cards)
-      .reduce((sum, [key, card]) => sum + card.score * WEIGHTS[key], 0)
-      .toFixed(2)
-  );
-  const totalScore = Math.round(rawScore);
+
+  const initialForecast =
+    pair.initialForecast?.years?.length > 0
+      ? pair.initialForecast
+      : computeYearlyCompatibilityForecast(chong, vo, { yearsCount: 5 });
+
   return {
-    version: COMPATIBILITY_VERSION,
-    totalScore,
-    rawScore,
-    ratingText: totalScore >= 70 ? 'Hợp, hài hoà' : 'Bình hòa',
-    husbandName: chong.hoTen,
-    wifeName: vo.hoTen,
-    elements: {
-      husbandElement: ELEMENTS[chong.menh],
-      wifeElement: ELEMENTS[vo.menh],
-      interaction,
+    ...pair,
+    payload: pair.payload || {},
+    chong,
+    vo,
+    assessment,
+    synastry,
+    individualProfiles,
+    initialForecast,
+    hemingKnowledge: pair.hemingKnowledge || {
+      STAR_IN_FUQI_GU,
+      SIHUA_IN_FUQI_GU,
+      HEMING_METHODOLOGY,
     },
-    cards,
   };
 }
 
-export function buildCompatibility(payload) {
+export function buildCompatibility(payload, options = {}) {
+  if (!payload?.chong || !payload?.vo) {
+    throw new Error('Vui lòng cung cấp đầy đủ thông tin hai người để đối chiếu hợp hôn.');
+  }
+
   const chong = createCompatibilityPerson(payload.chong);
   const vo = createCompatibilityPerson(payload.vo);
-  const assessment = evaluateCompatibility(chong.person, vo.person);
+  const assessment = evaluateCompatibility(chong.person, vo.person, chong.result, vo.result);
 
   let synastry = null;
   try {
     synastry = computeCrossChartSihua(chong.result, vo.result);
   } catch {
-    // Ignore error if calculation fails
+    synastry = null;
   }
+
+  const forecastYears = options.forecastYears ?? options.yearsCount ?? 5;
+  const initialForecast = computeYearlyCompatibilityForecast(chong, vo, {
+    startYear: options.startYear,
+    yearsCount: forecastYears,
+  });
 
   return {
     payload,
@@ -166,6 +168,11 @@ export function buildCompatibility(payload) {
     vo,
     assessment,
     synastry,
+    individualProfiles: {
+      chong: chong.person.individualLoveProfile,
+      vo: vo.person.individualLoveProfile,
+    },
+    initialForecast,
     hemingKnowledge: {
       STAR_IN_FUQI_GU,
       SIHUA_IN_FUQI_GU,
@@ -184,29 +191,146 @@ export function compatibilityEvidence(pair) {
   );
 }
 
-export function compatibilityText(pair) {
-  let synastryText = '';
-  if (pair.synastry?.highlights?.length > 0) {
-    synastryText =
-      '\n\nPHI HÓA TƯƠNG THAM 2 CHIỀU (CHỒNG ⇄ VỢ):\n' +
-      pair.synastry.highlights.map((h) => `- ${h.summary}`).join('\n');
-  }
+function formatPillarLines(cards = {}) {
+  return Object.values(cards)
+    .map((card) => {
+      const pct = Math.round((card.weight || 0) * 100);
+      const factorLines = (card.factors || [])
+        .map((f) => `  • [${f.delta >= 0 ? `+${f.delta}` : f.delta}] ${f.label}`)
+        .join('\n');
+      return `- ${card.title} (${pct}% trọng số): ${card.score}/100 điểm\n  Nhận định: ${card.detail}${
+        factorLines ? `\n${factorLines}` : ''
+      }`;
+    })
+    .join('\n');
+}
 
-  return `HỢP HÔN TỬ VI — ${pair.assessment.version}\nKết quả quy tắc (chưa hoàn chỉnh vì Tứ Hóa chéo đang cố định):\n${JSON.stringify(
-    pair.assessment,
-    null,
-    2
-  )}\nTrọng số: ${JSON.stringify(WEIGHTS)}. Tổng làm tròn số nguyên theo code mẫu.\n\nNGƯỜI A — CHỒNG\n${buildTuViText(
-    pair.chong.result,
-    pair.chong.inputData
-  )}\n\nNGƯỜI B — VỢ\n${buildTuViText(pair.vo.result, pair.vo.inputData)}${synastryText}`;
+function formatIndividualLoveSection(label, person) {
+  const prof = person?.individualLoveProfile;
+  if (!prof) return '';
+  const decades = (prof.activeMarriageDecades || [])
+    .map((d) => `  • ${d.range} (Cung ${d.palaceName} · ${d.chiName}): ${d.note}`)
+    .join('\n');
+  const sihua = (prof.internalSihuaNotes || []).map((n) => `  • ${n}`).join('\n');
+  return [
+    `[${label} — ${person.hoTen} (${person.canChiNam} · ${person.napAm} · ${person.cucName})]`,
+    `- Cách cục tình duyên: ${prof.archetypeTitle}`,
+    `- Hình mẫu bạn đời: ${prof.spousePortrait}`,
+    `- Cung Phu Thê: ${prof.phuTheAnalysis}`,
+    `- Cung Phúc Đức: ${prof.phucDucAnalysis}`,
+    ...(sihua ? [`- Nội tại Tứ Hóa hôn nhân:\n${sihua}`] : []),
+    ...(decades ? [`- Đại Hạn kích hoạt tình duyên – gia đạo:\n${decades}`] : []),
+  ].join('\n');
+}
+
+export function compatibilityText(rawPair) {
+  const pair = upgradeRestoredCompatibilityPair(rawPair);
+  const a = pair.assessment;
+
+  const tamHopSection = a.tamHopDetail
+    ? [
+        '1. ĐỐI CHIẾU TAM HỢP BÀN (MỆNH ⇄ PHU THÊ & PHÚC ĐỨC):',
+        `- ${a.tamHopDetail.aMenhToBPhuThe?.summary || ''}`,
+        `- ${a.tamHopDetail.bMenhToAPhuThe?.summary || ''}`,
+        `- Cung Phu Thê đôi bên: ${a.tamHopDetail.phuTheComparison?.summary || ''}`,
+        `- Nền tảng Phúc Đức: ${a.tamHopDetail.phucDucFoundation?.summary || ''}`,
+      ].join('\n')
+    : '';
+
+  const phiTinhFlights = [
+    ...(a.phiTinhDetail?.aToBFlights || []),
+    ...(a.phiTinhDetail?.bToAFlights || []),
+  ];
+  const phiTinhSection = [
+    '2. PHI TINH TỨ HÓA TƯƠNG THAM 2 CHIỀU (HÀ LẠC / BẮC PHÁI & LƯƠNG PHÁI):',
+    `- Tổng kết tương trợ: ${a.phiTinhDetail?.whoSupportsWhom || ''}`,
+    ...phiTinhFlights.map((f) => `- [${f.scoreDelta >= 0 ? `+${f.scoreDelta}` : f.scoreDelta}] ${f.summary}`),
+  ].join('\n');
+
+  const tinhCachSection = a.tinhCachDetail
+    ? [
+        '3. BÙ TRỪ TÍNH CÁCH ÂM DƯƠNG · CƯƠNG NHU (PP3 DƯƠNG DỊCH ĐỨC):',
+        `- Kiểu phối hợp: ${a.tinhCachDetail.summary}`,
+        `- Khí chất ${a.husbandName}: ${a.tinhCachDetail.personA?.label} (Dương ${a.tinhCachDetail.personA?.yangScore}% / Âm ${a.tinhCachDetail.personA?.yinScore}%)`,
+        `- Khí chất ${a.wifeName}: ${a.tinhCachDetail.personB?.label} (Dương ${a.tinhCachDetail.personB?.yangScore}% / Âm ${a.tinhCachDetail.personB?.yinScore}%)`,
+        ...(a.tinhCachDetail.frictionWarnings?.length
+          ? [`- Điểm ma sát cần lưu ý: ${a.tinhCachDetail.frictionWarnings.join(' | ')}`]
+          : []),
+        ...(a.tinhCachDetail.harmonyTips?.length
+          ? [`- Gợi ý giao tiếp: ${a.tinhCachDetail.harmonyTips.join(' | ')}`]
+          : []),
+      ].join('\n')
+    : '';
+
+  const forecast = pair.initialForecast;
+  const forecastSection = forecast?.years?.length
+    ? [
+        `4. DỰ BÁO VẬN TRÌNH TÌNH DUYÊN & HÔN NHÂN (${forecast.startYear}–${forecast.endYear}):`,
+        `- Tổng quan: ${forecast.summary}`,
+        ...forecast.years.map(
+          (y) =>
+            `- Năm ${y.year} (${y.canChiYear}): ${y.combinedScore}/100 điểm [${y.statusLabel}]${
+              y.isSharedHighlight ? ' ★ Năm Hỷ Tín Cộng Hưởng' : ''
+            } | ${a.husbandName} (${y.personA.age}t): ${y.personA.signals.join('; ') || 'Bình ổn'} | ${
+              a.wifeName
+            } (${y.personB.age}t): ${y.personB.signals.join('; ') || 'Bình ổn'}`
+        ),
+      ].join('\n')
+    : '';
+
+  return [
+    `HỢP HÔN TỬ VI CHÍNH TÔNG — ${a.version}`,
+    `Cặp đôi: ${a.husbandName} & ${a.wifeName}`,
+    `Tổng điểm hòa hợp: ${a.totalScore}/100 (Điểm chi tiết: ${a.rawScore}/100) — Xếp hạng: ${a.ratingText}`,
+    `Tóm tắt: ${a.ratingSummary}`,
+    `Tương quan Ngũ Hành Nạp Âm: ${a.elements.husbandNapAm || a.elements.husbandElement} ⇄ ${
+      a.elements.wifeNapAm || a.elements.wifeElement
+    } → ${a.elements.interaction}`,
+    `Thiên Can & Địa Chi năm sinh: ${a.elements.thienCanRelation || '—'} | ${a.elements.diaChiRelation || '—'}`,
+    `Trọng số 4 trụ cột: Tam Hợp 35% · Phi Tinh Tứ Hóa 30% · Bù Trừ Tính Cách 20% · Ngũ Hành & Hỷ Tín 15%.`,
+    '',
+    'CHI TIẾT ĐIỂM 4 TRỤ CỘT HỢP HÔN:',
+    formatPillarLines(a.cards),
+    '',
+    tamHopSection,
+    '',
+    phiTinhSection,
+    '',
+    tinhCachSection,
+    '',
+    'TÌNH DUYÊN RIÊNG TỪNG NGƯỜI:',
+    formatIndividualLoveSection('Người A', pair.chong.person),
+    '',
+    formatIndividualLoveSection('Người B', pair.vo.person),
+    '',
+    forecastSection,
+    '',
+    `NGƯỜI A — CHỒNG\n${buildTuViText(pair.chong.result, pair.chong.inputData)}`,
+    '',
+    `NGƯỜI B — VỢ\n${buildTuViText(pair.vo.result, pair.vo.inputData)}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 export function compatibilityPrompt(pair, topic, question) {
-  return `Luận giải hợp hôn của hai người bằng tiếng Việt. Chủ đề: ${
-    TOPICS[topic] || TOPICS.love
-  }. Câu hỏi: ${
+  const upgraded = upgradeRestoredCompatibilityPair(pair);
+  return `Bạn là chuyên gia Tử Vi Đẩu Số tinh thông Hợp Hôn theo cả Nam Phái (Tam Hợp · Thiên Kỷ Nghê Hải Hạ · Dương Dịch Đức) lẫn Bắc Phái / Hà Lạc / Lương Phái (Phi Tinh Tứ Hóa 2 chiều & Tự Hóa). Hãy luận giải hợp hôn cho hai người bên dưới bằng tiếng Việt sâu sắc, nhân văn và thực tế.
+Chủ đề trọng tâm: ${TOPICS[topic] || TOPICS.love}
+Câu hỏi của người dùng: ${
     question?.trim() ||
-    'Phân tích sự hòa hợp, điểm cần dung hòa và cách giao tiếp trong mối quan hệ.'
-  }\n${compatibilityText(pair)}\nYÊU CẦU: Phân tích cả hai lá số, Mệnh/Thân/Phu Thê và các cung liên quan; mỗi nhận định dẫn dữ kiện và ghi rõ thuộc người nào. Không an lại sao, không thêm dữ liệu hay tự đổi điểm. Điểm Tứ Hóa 55 là placeholder chưa tính, tuyệt đối không diễn giải như đã kiểm tra phi hóa. Nhánh tương khắc chưa có quy tắc thì nêu giới hạn, không khẳng định bình hòa. Số sao đào hoa không chứng minh ngoại tình. Điểm số không phải xác suất hôn nhân thành công. Tách tổng quan, bốn tiêu chí, vấn đề người dùng hỏi, điểm cần dung hòa và 3 hành động cụ thể. Không kết luận nên cưới/chia tay chỉ từ lá số. Trả lời câu hỏi tiếp nối theo cùng cặp hồ sơ.`;
+    'Phân tích toàn diện sự hòa hợp, nhân duyên tiền định, điểm cần dung hòa và bí quyết giữ gìn hạnh phúc lâu dài của hai người.'
+  }
+
+${compatibilityText(upgraded)}
+
+YÊU CẦU LUẬN GIẢI CHUYÊN SÂU:
+1. Bám sát dữ kiện đã tính sẵn trên cả hai lá số (Người A và Người B); mỗi nhận định phải dẫn rõ tên cung, chính/phụ tinh, độ sáng hoặc đường bay Tứ Hóa và ghi rõ thuộc về ai. Tuyệt đối không tự an lại sao, không bịa sao, không tự ý thay đổi điểm số của hệ thống.
+2. Phân tích mạch lạc theo 5 phần:
+   - Tổng quan Duyên Khởi & Mức độ Tương Hợp (${upgraded.assessment.totalScore}/100 — ${upgraded.assessment.ratingText}).
+   - Đối chiếu Tam Hợp Bàn (Mệnh ⇄ Phu Thê hai chiều, Vô Chính Diệu mượn sao nếu có, và gốc rễ cung Phúc Đức của cả hai).
+   - Luận giải Phi Tinh Tứ Hóa 2 Chiều (Can Năm Sinh, Can Cung Mệnh, Can Cung Phu Thê bay qua lại nhập Mệnh/Phu Thê/Tật Ách/Phúc Đức/Điền Trạch, xét cả Xung Chiếu và Tự Hóa / Lộc-Kỵ chuyển hóa nội tại).
+   - Bù trừ Tính Cách Âm Dương · Cương Nhu (PP3 Dương Dịch Đức), Ngũ Hành Nạp Âm (bao gồm cách cục đắc cách hay thông quan hóa giải nếu tương khắc), Can Chi năm sinh & Sao Hỷ Tín.
+   - Trả lời trực diện Câu Hỏi của người dùng, điểm rơi Lưu Niên Hỷ Tín trong 5 năm tới và 3 hành động ứng xử cụ thể giúp hai người gắn kết bền lâu.
+3. Giữ chuẩn mực đạo đức Tử Vi: số lượng sao Đào Hoa không phải bằng chứng ngoại tình; điểm số hợp hôn phản ánh mức độ thuận lợi/ma sát năng lượng chứ không phải định mệnh bất biến; không phán quyết bắt buộc cưới hay chia tay chỉ từ lá số.`;
 }
