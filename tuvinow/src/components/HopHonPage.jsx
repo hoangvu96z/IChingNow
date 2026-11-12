@@ -66,12 +66,12 @@ const TIER_META = {
 };
 
 const REPORT_TABS = [
-  { id: 'overview', icon: '📊', label: 'Tổng Quan & 4 Trụ Cột' },
-  { id: 'charts', icon: '🗺️', label: 'Hai Lá Số & Đối Chiếu Cung' },
-  { id: 'tamHop', icon: '☯️', label: 'Tam Hợp & Tính Cách' },
-  { id: 'phiTinh', icon: '✨', label: 'Phi Tinh Tứ Hóa 2 Chiều' },
-  { id: 'forecast', icon: '🌸', label: 'Tình Duyên & Vận Hạn 1–10 Năm' },
-  { id: 'all', icon: '📑', label: 'Xem Liền Mạch' },
+  { id: 'overview', icon: '📊', label: 'Tổng Quan & 4 Trụ Cột', shortLabel: 'Tổng quan' },
+  { id: 'charts', icon: '🗺️', label: 'Hai Lá Số & Đối Chiếu Cung', shortLabel: '2 Lá số' },
+  { id: 'tamHop', icon: '☯️', label: 'Tam Hợp & Tính Cách', shortLabel: 'Tam hợp' },
+  { id: 'phiTinh', icon: '✨', label: 'Phi Tinh Tứ Hóa 2 Chiều', shortLabel: 'Phi tinh' },
+  { id: 'forecast', icon: '🌸', label: 'Tình Duyên & Vận Hạn 1–10 Năm', shortLabel: 'Dự báo' },
+  { id: 'all', icon: '📑', label: 'Xem Liền Mạch', shortLabel: 'Tất cả' },
 ];
 
 const EMOTIONAL_TRAITS = [
@@ -326,10 +326,11 @@ function PersonForm({ label, value, onChange, side }) {
 
   return (
     <fieldset className={`hh-person hh-person-${side === 'A' ? 'a' : 'b'}`}>
-      <legend>
-        <span className="hh-person-icon" aria-hidden="true">{personIcon}</span>
+      <legend className="hh-sr-only">{label}</legend>
+      <div className="hh-person-heading" aria-hidden="true">
+        <span className="hh-person-icon">{personIcon}</span>
         <span>{label}</span>
-      </legend>
+      </div>
 
       <div className="hh-field">
         <label htmlFor={`${formId}-name`}>Họ và tên <span aria-hidden="true">*</span></label>
@@ -347,7 +348,7 @@ function PersonForm({ label, value, onChange, side }) {
 
       <div className="hh-calendar-bar">
         <span className="hh-calendar-label">Lịch ngày sinh:</span>
-        <div className="hh-pill-toggle" role="group" aria-label={`Hệ lịch ngày sinh ${label}`}>
+        <div className="hh-pill-toggle hh-pill-toggle-2" role="group" aria-label={`Hệ lịch ngày sinh ${label}`}>
           <button
             type="button"
             className={!isLunar ? 'is-active' : ''}
@@ -679,7 +680,12 @@ function OverviewTab({ pair, a, personAName, personBName }) {
 
 function DualChartsTab({ pair, personAName, personBName }) {
   const captionId = useId();
-  const [chartView, setChartView] = useState('side');
+  const [chartView, setChartView] = useState(() => {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(max-width: 900px)')?.matches) {
+      return 'a';
+    }
+    return 'side';
+  });
   const profileA = useMemo(() => extractChartProfile(pair?.chong), [pair]);
   const profileB = useMemo(() => extractChartProfile(pair?.vo), [pair]);
 
@@ -744,10 +750,10 @@ function DualChartsTab({ pair, personAName, personBName }) {
             <h3><span className="hh-card-icon" aria-hidden="true">🗺️</span>Bàn Số Tử Vi Đẩu Số Tương Tác</h3>
             <p className="hh-muted">Chạm vào từng cung trên lá số để xem Tam Phương Tứ Chính, Phi Tinh Tứ Hóa và Đại Hạn.</p>
           </div>
-          <div className="hh-pill-toggle" role="group" aria-label="Chế độ hiển thị hai lá số">
+          <div className="hh-pill-toggle hh-pill-toggle-charts" role="group" aria-label="Chế độ hiển thị hai lá số">
             <button
               type="button"
-              className={chartView === 'side' ? 'is-active' : ''}
+              className={`hh-only-wide${chartView === 'side' ? ' is-active' : ''}`}
               aria-pressed={chartView === 'side'}
               onClick={() => setChartView('side')}
             >
@@ -755,19 +761,11 @@ function DualChartsTab({ pair, personAName, personBName }) {
             </button>
             <button
               type="button"
-              className={chartView === 'stack' ? 'is-active' : ''}
-              aria-pressed={chartView === 'stack'}
-              onClick={() => setChartView('stack')}
-            >
-              Xếp dọc rõ nét
-            </button>
-            <button
-              type="button"
               className={chartView === 'a' ? 'is-active' : ''}
               aria-pressed={chartView === 'a'}
               onClick={() => setChartView('a')}
             >
-              Bên A ({personAName})
+              <span className="hh-btn-ellipsis">👨 {personAName}</span>
             </button>
             <button
               type="button"
@@ -775,7 +773,15 @@ function DualChartsTab({ pair, personAName, personBName }) {
               aria-pressed={chartView === 'b'}
               onClick={() => setChartView('b')}
             >
-              Bên B ({personBName})
+              <span className="hh-btn-ellipsis">👩 {personBName}</span>
+            </button>
+            <button
+              type="button"
+              className={chartView === 'stack' ? 'is-active' : ''}
+              aria-pressed={chartView === 'stack'}
+              onClick={() => setChartView('stack')}
+            >
+              Xếp dọc cả 2
             </button>
           </div>
         </div>
@@ -1133,7 +1139,7 @@ function PhiTinhTab({ pair, a, personAName, personBName }) {
           <>
             <div className="hh-filter-bar">
               <span className="hh-calendar-label">Lọc theo cung phát (Can phi hóa):</span>
-              <div className="hh-pill-toggle" role="group" aria-label="Lọc nguồn Can phi Tứ Hóa">
+              <div className="hh-pill-toggle hh-pill-toggle-grid" role="group" aria-label="Lọc nguồn Can phi Tứ Hóa">
                 {[
                   { id: 'all', label: 'Tất cả nguồn' },
                   { id: 'birth', label: 'Can Năm Sinh' },
@@ -1375,7 +1381,7 @@ function IndividualAndForecastTab({ pair, personAName, personBName }) {
                 ))}
               </select>
             </div>
-            <div className="hh-pill-toggle" role="group" aria-label="Số năm dự báo tình duyên">
+            <div className="hh-pill-toggle hh-pill-toggle-4-compact" role="group" aria-label="Số năm dự báo tình duyên">
               {[1, 3, 5, 10].map((span) => (
                 <button
                   key={span}
@@ -1482,6 +1488,8 @@ export function PairSession({ initial, onStored, initialActiveTab = 'overview' }
 
   const [activeTab, setActiveTab] = useState(initialActiveTab);
   const tabRefs = useRef({});
+  const tablistRef = useRef(null);
+  const tabsAnchorRef = useRef(null);
   const tabIdPrefix = useId();
 
   const id = useRef(initial.id);
@@ -1552,14 +1560,56 @@ export function PairSession({ initial, onStored, initialActiveTab = 'overview' }
     || (a.totalScore >= 82 ? 'thuong_dang' : a.totalScore >= 70 ? 'trung_thuong' : a.totalScore >= 55 ? 'trung_binh' : 'can_hoa_giai');
   const tierMeta = TIER_META[derivedTierKey] || TIER_META.trung_binh;
 
+  useEffect(() => {
+    const scroller = tablistRef.current;
+    if (
+      !scroller ||
+      typeof window === 'undefined' ||
+      typeof IntersectionObserver === 'undefined' ||
+      (typeof CSS !== 'undefined' && CSS.supports?.('animation-timeline', 'scroll()'))
+    ) {
+      return undefined;
+    }
+    const first = scroller.firstElementChild;
+    const last = scroller.lastElementChild;
+    if (!first || !last) return undefined;
+    // rootMargin: without it, sub-pixel widths can leave an edge child a fraction of a pixel short of fully visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const { target, intersectionRatio } of entries) {
+          scroller.classList.toggle(
+            target === first ? 'more-start' : 'more-end',
+            intersectionRatio < 1,
+          );
+        }
+      },
+      { root: scroller, threshold: 1, rootMargin: '1px' },
+    );
+    observer.observe(first);
+    observer.observe(last);
+    return () => observer.disconnect();
+  }, []);
+
   const selectTab = (nextId, focusTarget = false) => {
     setActiveTab(nextId);
     const btn = tabRefs.current[nextId];
     if (btn) {
       if (focusTarget) btn.focus();
       try {
-        btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      } catch {}
+        btn.scrollIntoView({ block: 'nearest', inline: 'nearest', container: 'nearest' });
+      } catch {
+        const list = tablistRef.current;
+        if (list) {
+          const targetLeft = btn.offsetLeft - (list.clientWidth - btn.offsetWidth) / 2;
+          list.scrollTo?.({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+        }
+      }
+    }
+    if (typeof window !== 'undefined' && tabsAnchorRef.current) {
+      const rect = tabsAnchorRef.current.getBoundingClientRect();
+      if (rect.top < 56) {
+        tabsAnchorRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
     }
   };
 
@@ -1638,93 +1688,99 @@ export function PairSession({ initial, onStored, initialActiveTab = 'overview' }
         </div>
       </section>
 
-      <div className="hh-tabs-sticky">
-        <div
-          className="hh-tablist"
-          role="tablist"
-          aria-label="Các chuyên mục luận giải Hợp Hôn"
-        >
-          {REPORT_TABS.map((tab, idx) => {
-            const selected = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                ref={(el) => { tabRefs.current[tab.id] = el; }}
-                id={`${tabIdPrefix}-tab-${tab.id}`}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                tabIndex={selected ? 0 : -1}
-                onClick={() => selectTab(tab.id, false)}
-                onKeyDown={(e) => handleTabKeyDown(e, idx)}
-              >
-                <span className="hh-tab-icon" aria-hidden="true">{tab.icon}</span>
-                <span className="hh-tab-label">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="hh-tabpanels">
-        <div
-          role="tabpanel"
-          aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'overview'}`}
-          hidden={!isTabVisible('overview')}
-        >
-          {isTabVisible('overview') && (
-            <div className="hh-tabpanel-inner">
-              <OverviewTab pair={pair} a={a} personAName={personAName} personBName={personBName} />
-            </div>
-          )}
+      <div ref={tabsAnchorRef} className="hh-tabs-anchor" />
+      <div className="hh-tabs-region">
+        <div className="hh-tabs-sticky">
+          <div
+            ref={tablistRef}
+            className="hh-tablist"
+            role="tablist"
+            aria-label="Các chuyên mục luận giải Hợp Hôn"
+          >
+            {REPORT_TABS.map((tab, idx) => {
+              const selected = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  ref={(el) => { tabRefs.current[tab.id] = el; }}
+                  id={`${tabIdPrefix}-tab-${tab.id}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-label={tab.label}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => selectTab(tab.id, false)}
+                  onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                >
+                  <span className="hh-tab-icon" aria-hidden="true">{tab.icon}</span>
+                  <span className="hh-tab-label hh-tab-label-full">{tab.label}</span>
+                  <span className="hh-tab-label hh-tab-label-short" aria-hidden="true">{tab.shortLabel}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div
-          role="tabpanel"
-          aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'charts'}`}
-          hidden={!isTabVisible('charts')}
-        >
-          {isTabVisible('charts') && (
-            <div className="hh-tabpanel-inner">
-              <DualChartsTab pair={pair} personAName={personAName} personBName={personBName} />
-            </div>
-          )}
-        </div>
+        <div className="hh-tabpanels">
+          <div
+            role="tabpanel"
+            aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'overview'}`}
+            hidden={!isTabVisible('overview')}
+          >
+            {isTabVisible('overview') && (
+              <div className="hh-tabpanel-inner">
+                <OverviewTab pair={pair} a={a} personAName={personAName} personBName={personBName} />
+              </div>
+            )}
+          </div>
 
-        <div
-          role="tabpanel"
-          aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'tamHop'}`}
-          hidden={!isTabVisible('tamHop')}
-        >
-          {isTabVisible('tamHop') && (
-            <div className="hh-tabpanel-inner">
-              <TamHopTinhCachTab pair={pair} a={a} personAName={personAName} personBName={personBName} />
-            </div>
-          )}
-        </div>
+          <div
+            role="tabpanel"
+            aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'charts'}`}
+            hidden={!isTabVisible('charts')}
+          >
+            {isTabVisible('charts') && (
+              <div className="hh-tabpanel-inner">
+                <DualChartsTab pair={pair} personAName={personAName} personBName={personBName} />
+              </div>
+            )}
+          </div>
 
-        <div
-          role="tabpanel"
-          aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'phiTinh'}`}
-          hidden={!isTabVisible('phiTinh')}
-        >
-          {isTabVisible('phiTinh') && (
-            <div className="hh-tabpanel-inner">
-              <PhiTinhTab pair={pair} a={a} personAName={personAName} personBName={personBName} />
-            </div>
-          )}
-        </div>
+          <div
+            role="tabpanel"
+            aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'tamHop'}`}
+            hidden={!isTabVisible('tamHop')}
+          >
+            {isTabVisible('tamHop') && (
+              <div className="hh-tabpanel-inner">
+                <TamHopTinhCachTab pair={pair} a={a} personAName={personAName} personBName={personBName} />
+              </div>
+            )}
+          </div>
 
-        <div
-          role="tabpanel"
-          aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'forecast'}`}
-          hidden={!isTabVisible('forecast')}
-        >
-          {isTabVisible('forecast') && (
-            <div className="hh-tabpanel-inner">
-              <IndividualAndForecastTab pair={pair} personAName={personAName} personBName={personBName} />
-            </div>
-          )}
+          <div
+            role="tabpanel"
+            aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'phiTinh'}`}
+            hidden={!isTabVisible('phiTinh')}
+          >
+            {isTabVisible('phiTinh') && (
+              <div className="hh-tabpanel-inner">
+                <PhiTinhTab pair={pair} a={a} personAName={personAName} personBName={personBName} />
+              </div>
+            )}
+          </div>
+
+          <div
+            role="tabpanel"
+            aria-labelledby={`${tabIdPrefix}-tab-${activeTab === 'all' ? 'all' : 'forecast'}`}
+            hidden={!isTabVisible('forecast')}
+          >
+            {isTabVisible('forecast') && (
+              <div className="hh-tabpanel-inner">
+                <IndividualAndForecastTab pair={pair} personAName={personAName} personBName={personBName} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
