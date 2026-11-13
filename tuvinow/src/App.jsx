@@ -19,6 +19,20 @@ import ShareCard from './components/ShareCard.jsx';
 import { useStreak } from '@shared/utils/useStreak.js';
 import CombinedReadingModal from '@shared/components/CombinedReading/CombinedReadingModal.jsx';
 import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
+import SaveToNoteNowButton from '../../shared/src/components/SaveToNoteNowButton.jsx';
+import SavedProfilesBar from './components/SavedProfilesBar.jsx';
+import { buildTuViNoteNowPayload } from './utils/tuviTimelineModel.js';
+import {
+  loadSavedProfiles,
+  getDefaultSelfProfile,
+  findMatchingProfileForInput,
+  profileToBirthFormState,
+  profileToBirthInputPayload,
+  saveProfile,
+  upsertProfileLifeEvent,
+  deleteProfileLifeEvent,
+  extractProfileDraftFromInputData,
+} from './utils/tuviProfiles.js';
 
 // Generate star particles for background
 function StarParticles() {
@@ -70,7 +84,7 @@ function ThemeToggleButton({ theme, onToggle }) {
   );
 }
 
-function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved, yunxianState, onYunxianChange }) {
+function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved, yunxianState, onYunxianChange, lifeEvents = [] }) {
   const active = useRef(false);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const savedId = useRef(reading?.id || null);
@@ -88,6 +102,7 @@ function ReadingSession({ result, inputData, reading, persistReading, ensureChar
       onSave={save}
       yunxianState={yunxianState}
       onYunxianChange={onYunxianChange}
+      lifeEvents={lifeEvents}
     />
   );
 }
@@ -129,6 +144,16 @@ export default function App() {
   const [historyActionError, setHistoryActionError] = useState('');
   const [chartResult, setChartResult] = useState(null);
   const [inputData, setInputData] = useState(null);
+  const [savedProfiles, setSavedProfiles] = useState(() => loadSavedProfiles());
+  const [formDraftData, setFormDraftData] = useState(null);
+  const [sessionLifeEvents, setSessionLifeEvents] = useState([]);
+  const [presetProfile, setPresetProfile] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash !== '#hop-hon' && !window.location.search) {
+      const def = getDefaultSelfProfile();
+      return def ? profileToBirthFormState(def) : null;
+    }
+    return null;
+  });
   const [yunxianState, setYunxianState] = useState({
     mode: 'mingpan',
     daXianChiIndex: null,
@@ -209,6 +234,7 @@ export default function App() {
     setSessionId(value => value + 1);
     setChartResult(result);
     setInputData(data);
+    setSessionLifeEvents(Array.isArray(data?.lifeEvents) ? data.lifeEvents : []);
     setYunxianState({
       mode: result?.viewYear ? 'liunian' : 'mingpan',
       daXianChiIndex: null,
@@ -228,6 +254,11 @@ export default function App() {
     setSessionId(value => value + 1);
     setChartResult(null);
     setInputData(null);
+    setSessionLifeEvents([]);
+    if (typeof window !== 'undefined' && !window.location.search) {
+      const def = getDefaultSelfProfile();
+      setPresetProfile(def ? profileToBirthFormState(def) : null);
+    }
     setYunxianState({
       mode: 'mingpan',
       daXianChiIndex: null,
@@ -314,6 +345,82 @@ export default function App() {
     setReading(null);
   }, [deleteAllReadings]);
 
+  const matchedActiveProfile = useMemo(() => {
+    if (!inputData || !savedProfiles.length) return null;
+    return findMatchingProfileForInput(inputData);
+  }, [inputData, savedProfiles]);
+
+  const activeLifeEvents = useMemo(() => {
+    if (matchedActiveProfile && Array.isArray(matchedActiveProfile.lifeEvents)) {
+      return matchedActiveProfile.lifeEvents;
+    }
+    return sessionLifeEvents;
+  }, [matchedActiveProfile, sessionLifeEvents]);
+
+  const handleProfilesChange = useCallback((nextProfiles, savedProf) => {
+    setSavedProfiles(nextProfiles);
+    if (savedProf && inputData) {
+      setInputData((prev) => (prev ? { ...prev, profileId: savedProf.id } : prev));
+    }
+  }, [inputData]);
+
+  const handleSelectSavedProfile = useCallback((profile) => {
+    if (!profile) return;
+    setPresetProfile(profileToBirthFormState(profile));
+    try {
+      const payload = profileToBirthInputPayload(profile);
+      handleSubmit(payload);
+    } catch (err) {
+      setHistoryActionError(err.message || 'Không thể mở lá số từ hồ sơ đã chọn.');
+    }
+  }, [handleSubmit]);
+
+  const handleOpenHopHonPair = useCallback(() => {
+    window.location.hash = 'hop-hon';
+    setPage('hop-hon');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleUpsertLifeEvent = useCallback((eventInput) => {
+    if (!eventInput) return;
+    if (matchedActiveProfile) {
+      const { profiles: nextList } = upsertProfileLifeEvent(matchedActiveProfile.id, eventInput);
+      setSavedProfiles(nextList);
+      return;
+    }
+    if (inputData) {
+      const existingFiltered = sessionLifeEvents.filter((ev) => ev.id !== eventInput.id);
+      const nextEvents = [...existingFiltered, eventInput];
+      setSessionLifeEvents(nextEvents);
+      const draft = extractProfileDraftFromInputData(inputData, {
+        lifeEvents: nextEvents,
+      });
+      const { profile: autoSaved, profiles: nextList } = saveProfile(draft);
+      setSavedProfiles(nextList);
+      if (autoSaved) {
+        setInputData((prev) => (prev ? { ...prev, profileId: autoSaved.id } : prev));
+      }
+    }
+  }, [matchedActiveProfile, inputData, sessionLifeEvents]);
+
+  const handleDeleteLifeEvent = useCallback((eventId) => {
+    if (!eventId) return;
+    if (matchedActiveProfile) {
+      const { profiles: nextList } = deleteProfileLifeEvent(matchedActiveProfile.id, eventId);
+      setSavedProfiles(nextList);
+    }
+    setSessionLifeEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+  }, [matchedActiveProfile]);
+
+  const buildNoteNowPayload = useCallback(() => {
+    return buildTuViNoteNowPayload({
+      result: chartResult,
+      inputData,
+      yunxianState,
+      lifeEvents: activeLifeEvents,
+    });
+  }, [chartResult, inputData, yunxianState, activeLifeEvents]);
+
   return (
     <>
       {/* Animated Background */}
@@ -369,7 +476,19 @@ export default function App() {
         {page === 'hop-hon' && <HopHonPage />}
         {page === 'la-so' && showForm && !chartResult && (
           <>
-            <BirthInputForm onSubmit={handleSubmit} />
+            <SavedProfilesBar
+              profiles={savedProfiles}
+              onProfilesChange={handleProfilesChange}
+              activeInputData={null}
+              formDraftData={formDraftData}
+              onSelectProfile={handleSelectSavedProfile}
+              onOpenHopHonPair={handleOpenHopHonPair}
+            />
+            <BirthInputForm
+              onSubmit={handleSubmit}
+              presetProfile={presetProfile}
+              onDraftChange={setFormDraftData}
+            />
             {isAuthenticated && history.length > 0 && (
               <div className="tuvi-form-history">
                 <div>
@@ -386,13 +505,27 @@ export default function App() {
 
         {page === 'la-so' && chartResult && (
           <>
+            <SavedProfilesBar
+              profiles={savedProfiles}
+              onProfilesChange={handleProfilesChange}
+              activeInputData={inputData}
+              onSelectProfile={handleSelectSavedProfile}
+              onOpenHopHonPair={handleOpenHopHonPair}
+              compact
+            />
+
             <div className="tuvi-chart-toolbar">
               {streak > 0 ? (
                 <span className="tuvi-streak-badge" title={`${streak} ngày liên tiếp lập lá số`}>
                   🔥 {streak} ngày liên tiếp
                 </span>
               ) : <span />}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="tuvi-chart-toolbar-actions">
+                <SaveToNoteNowButton
+                  buildPayload={buildNoteNowPayload}
+                  isAuthenticated={isAuthenticated}
+                  compact
+                />
                 {/* Nút kết hợp Kinh Dịch */}
                 <button
                   type="button"
@@ -402,7 +535,7 @@ export default function App() {
                   <span aria-hidden="true">🔮</span> Hỏi Kinh Dịch
                 </button>
                 {isAuthenticated && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="tuvi-chart-toolbar-history">
                     <span className="tuvi-auto-save-status" role="status">{saveStatus}</span>
                     <button className="tuvi-history-link" type="button" onClick={() => setShowHistoryModal(true)}>
                       <span aria-hidden="true">📜</span> Lịch sử ({history.length})
@@ -424,6 +557,11 @@ export default function App() {
               result={chartResult}
               inputData={inputData}
               yunxianState={yunxianState}
+              onYunxianChange={handleYunxianChange}
+              lifeEvents={activeLifeEvents}
+              onUpsertLifeEvent={handleUpsertLifeEvent}
+              onDeleteLifeEvent={handleDeleteLifeEvent}
+              isAuthenticated={isAuthenticated}
             />
             <ReadingSession
               key={`${user?.id || 'guest'}-${sessionId}`}
@@ -435,6 +573,7 @@ export default function App() {
               onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }}
               yunxianState={yunxianState}
               onYunxianChange={handleYunxianChange}
+              lifeEvents={activeLifeEvents}
             />
             </TuViEvidenceProvider>
           </>

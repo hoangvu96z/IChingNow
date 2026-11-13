@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../context/useLanguage.js';
 import { useAuth } from '../context/useAuth.js';
+import { VERIFICATION_META, getVerificationForReading } from '../logic/verification.js';
 
 export default function HistoryList({
   history = [],
@@ -225,26 +226,48 @@ export default function HistoryList({
                     alignItems: 'center',
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      color: isLucHao
-                        ? 'var(--color-vermillion)'
-                        : 'var(--color-jade)',
-                      background: isLucHao
-                        ? 'rgba(192, 57, 43, 0.08)'
-                        : 'rgba(26, 107, 74, 0.08)',
-                      padding: '1px 6px',
-                      borderRadius: 4,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    {isLucHao
-                      ? `🪙 ${t('history.luc_hao_badge', 'Lục Hào')}`
-                      : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: isLucHao
+                          ? 'var(--color-vermillion)'
+                          : 'var(--color-jade)',
+                        background: isLucHao
+                          ? 'rgba(192, 57, 43, 0.08)'
+                          : 'rgba(26, 107, 74, 0.08)',
+                        padding: '1px 6px',
+                        borderRadius: 4,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {isLucHao
+                        ? `🪙 ${t('history.luc_hao_badge', 'Lục Hào')}`
+                        : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
+                    </span>
+                    {(() => {
+                      const ver = item.verification || getVerificationForReading(item.id, item.data);
+                      if (!ver || ver.status === 'pending') return null;
+                      const meta = VERIFICATION_META[ver.status];
+                      return (
+                        <span
+                          style={{
+                            fontSize: '0.64rem',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            borderRadius: 4,
+                            background: meta.bg,
+                            color: meta.color,
+                            border: `1px solid ${meta.border}`,
+                          }}
+                        >
+                          {meta.shortVi}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <span
                     style={{
                       fontSize: '0.72rem',

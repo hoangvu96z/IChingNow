@@ -25,7 +25,12 @@ import { trackPageVisit } from '@shared/utils/analytics.js';
 import { useStreak } from '@shared/utils/useStreak.js';
 import GameShell from './game/GameShell.jsx';
 import KnowledgeFeed from './components/KnowledgeFeed.jsx';
-import { buildResult } from './logic/buildHexagram.js';
+import ManualHexagramInput from './components/ManualHexagramInput.jsx';
+import HexagramAtlasModal from './components/HexagramAtlasModal.jsx';
+import OutcomeVerificationCard from './components/OutcomeVerificationCard.jsx';
+import SaveToNoteNowButton from '../../shared/src/components/SaveToNoteNowButton.jsx';
+import { buildIChingNoteNowPayload } from './utils/noteNowPayload.js';
+import { buildResult, lineValueToLine } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
 import { useLanguage } from './context/useLanguage.js';
@@ -241,19 +246,19 @@ function MaiHoaExportCard({ result }) {
 /**
  * Render kết quả cho cả 2 loại phương pháp (coin cast + Mai Hoa)
  */
-function ResultSection({ mode, result, maiHoaResult, onChangeMethod, activeReadingId, updateReadingData }) {
+function ResultSection({ mode, result, maiHoaResult, onChangeMethod, activeReadingId, updateReadingData, onUpdateVerification, onOpenAtlas }) {
   const { user, isAuthenticated, login } = useAuth();
   const isMaiHoa = mode.startsWith('mai-hoa');
   const source = isMaiHoa ? maiHoaResult : result;
-  const { aiConversation: _conversation, ...identity } = source || {};
+  const { aiConversation: _conversation, verification: _ver, ...identity } = source || {};
   return <EvidenceProvider key={`${user?.id || 'guest'}:${JSON.stringify(identity)}`} result={source}>
     {isMaiHoa
-      ? <MaiHoaResultSection result={maiHoaResult} isAuthenticated={isAuthenticated} onLogin={login} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />
-      : <CoinCastResultSection result={result} isAuthenticated={isAuthenticated} onLogin={login} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} />}
+      ? <MaiHoaResultSection result={maiHoaResult} isAuthenticated={isAuthenticated} onLogin={login} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} onUpdateVerification={onUpdateVerification} onOpenAtlas={onOpenAtlas} />
+      : <CoinCastResultSection result={result} isAuthenticated={isAuthenticated} onLogin={login} onChangeMethod={onChangeMethod} activeReadingId={activeReadingId} updateReadingData={updateReadingData} onUpdateVerification={onUpdateVerification} onOpenAtlas={onOpenAtlas} />}
   </EvidenceProvider>;
 }
 
-function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMethod, activeReadingId, updateReadingData }) {
+function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMethod, activeReadingId, updateReadingData, onUpdateVerification, onOpenAtlas }) {
   const { t, language } = useLanguage();
   const [showCombinedModal, setShowCombinedModal] = useState(false);
   if (!result) return null;
@@ -263,45 +268,72 @@ function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMetho
     <>
       {/* Quẻ Preview */}
       <section className="card" style={{ padding: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: '10px', flexWrap: 'wrap' }}>
           <div className="section-title" style={{ margin: 0 }}>{t('result.hex_title', 'Kết quả quẻ')}</div>
-          {/* Nút kết hợp Tử Vi — nổi bật */}
-          <button
-            type="button"
-            onClick={() => setShowCombinedModal(true)}
-            style={{
-              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #b8860b 100%)',
-              border: 'none',
-              borderRadius: '24px',
-              color: '#fff',
-              padding: '9px 20px',
-              fontSize: '13px',
-              fontWeight: 700,
-              fontFamily: "'Inter', sans-serif",
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              boxShadow: '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)',
-              transition: 'all 0.2s',
-              animation: 'tuvi-btn-pulse 2.5s ease-in-out infinite',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
-              e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124,58,237,0.28), 0 8px 28px rgba(124,58,237,0.5)';
-              e.currentTarget.style.animation = 'none';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = '';
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)';
-              e.currentTarget.style.animation = 'tuvi-btn-pulse 2.5s ease-in-out infinite';
-            }}
-          >
-            <span style={{ fontSize: '15px' }}>🌟</span>
-            {t('combined.btn_label', 'Kết hợp Tử Vi')}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minInlineSize: 0 }}>
+            {onOpenAtlas && result.primaryHexagram?.id && (
+              <button
+                type="button"
+                className="btn-ghost iching-touch-control"
+                onClick={() => onOpenAtlas(result.primaryHexagram.id)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: 999,
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: '1px solid rgba(184,134,11,0.35)',
+                  background: 'rgba(184,134,11,0.08)',
+                  color: 'var(--color-ink)',
+                }}
+              >
+                <span aria-hidden="true">📖</span> Tra cứu quẻ #{result.primaryHexagram.id}
+              </button>
+            )}
+            <SaveToNoteNowButton
+              buildPayload={() => buildIChingNoteNowPayload(result)}
+              isAuthenticated={isAuthenticated}
+              language={language}
+              compact
+            />
+            {/* Nút kết hợp Tử Vi — nổi bật */}
+            <button
+              type="button"
+              className="iching-touch-control"
+              onClick={() => setShowCombinedModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #b8860b 100%)',
+                border: 'none',
+                borderRadius: '24px',
+                color: '#fff',
+                padding: '9px 18px',
+                fontSize: '13px',
+                fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                boxShadow: '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)',
+                transition: 'all 0.2s',
+                animation: 'tuvi-btn-pulse 2.5s ease-in-out infinite',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
+                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124,58,237,0.28), 0 8px 28px rgba(124,58,237,0.5)';
+                e.currentTarget.style.animation = 'none';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = '';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)';
+                e.currentTarget.style.animation = 'tuvi-btn-pulse 2.5s ease-in-out infinite';
+              }}
+            >
+              <span aria-hidden="true" style={{ fontSize: '15px' }}>🌟</span>
+              {t('combined.btn_label', 'Kết hợp Tử Vi')}
+            </button>
+          </div>
         </div>
         <div className="animate-in">
           <HexagramPreview result={result} />
@@ -371,6 +403,13 @@ function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMetho
       {/* Luận giải bằng AI (Ưu tiên đưa lên trên xuất kết quả) */}
       <AiInterpretationPanel result={result} mode="coin" plainTextResult={plainText} readingId={activeReadingId} onSaveAiConversation={updateReadingData} />
 
+      {/* Nhật Ký Nghiệm Lý (Outcome Verification) */}
+      <OutcomeVerificationCard
+        readingId={activeReadingId}
+        result={result}
+        onSaveVerification={onUpdateVerification}
+      />
+
       {/* Plaintext Export */}
       <section className="animate-in">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -382,7 +421,7 @@ function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMetho
   );
 }
 
-function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod, activeReadingId, updateReadingData }) {
+function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod, activeReadingId, updateReadingData, onUpdateVerification, onOpenAtlas }) {
   const { t, language } = useLanguage();
   const [showCombinedModal, setShowCombinedModal] = useState(false);
   if (!result) return null;
@@ -399,47 +438,74 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
   return (
     <>
       <section className="card" style={{ padding: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: '10px', flexWrap: 'wrap' }}>
           <div className="section-title" style={{ margin: 0 }}>
             {t('maihoa.result_card_title', 'Kết quả quẻ Mai Hoa')}
           </div>
-          {/* Nút kết hợp Tử Vi — Mai Hoa */}
-          <button
-            type="button"
-            onClick={() => setShowCombinedModal(true)}
-            style={{
-              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #b8860b 100%)',
-              border: 'none',
-              borderRadius: '24px',
-              color: '#fff',
-              padding: '9px 20px',
-              fontSize: '13px',
-              fontWeight: 700,
-              fontFamily: "'Inter', sans-serif",
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              boxShadow: '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)',
-              transition: 'all 0.2s',
-              animation: 'tuvi-btn-pulse 2.5s ease-in-out infinite',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
-              e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124,58,237,0.28), 0 8px 28px rgba(124,58,237,0.5)';
-              e.currentTarget.style.animation = 'none';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = '';
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)';
-              e.currentTarget.style.animation = 'tuvi-btn-pulse 2.5s ease-in-out infinite';
-            }}
-          >
-            <span style={{ fontSize: '15px' }}>🌟</span>
-            {t('combined.btn_label', 'Kết hợp Tử Vi')}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minInlineSize: 0 }}>
+            {onOpenAtlas && result.primaryHexagram?.id && (
+              <button
+                type="button"
+                className="btn-ghost iching-touch-control"
+                onClick={() => onOpenAtlas(result.primaryHexagram.id)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: 999,
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: '1px solid rgba(184,134,11,0.35)',
+                  background: 'rgba(184,134,11,0.08)',
+                  color: 'var(--color-ink)',
+                }}
+              >
+                <span aria-hidden="true">📖</span> Tra cứu quẻ #{result.primaryHexagram.id}
+              </button>
+            )}
+            <SaveToNoteNowButton
+              buildPayload={() => buildIChingNoteNowPayload(result)}
+              isAuthenticated={isAuthenticated}
+              language={language}
+              compact
+            />
+            {/* Nút kết hợp Tử Vi — Mai Hoa */}
+            <button
+              type="button"
+              className="iching-touch-control"
+              onClick={() => setShowCombinedModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #b8860b 100%)',
+                border: 'none',
+                borderRadius: '24px',
+                color: '#fff',
+                padding: '9px 18px',
+                fontSize: '13px',
+                fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                boxShadow: '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)',
+                transition: 'all 0.2s',
+                animation: 'tuvi-btn-pulse 2.5s ease-in-out infinite',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
+                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124,58,237,0.28), 0 8px 28px rgba(124,58,237,0.5)';
+                e.currentTarget.style.animation = 'none';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = '';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.35)';
+                e.currentTarget.style.animation = 'tuvi-btn-pulse 2.5s ease-in-out infinite';
+              }}
+            >
+              <span aria-hidden="true" style={{ fontSize: '15px' }}>🌟</span>
+              {t('combined.btn_label', 'Kết hợp Tử Vi')}
+            </button>
+          </div>
         </div>
         <div className="animate-in">
           <MaiHoaResultCard result={result} />
@@ -524,6 +590,13 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
       {/* Luận giải bằng AI (Ưu tiên đưa lên trên xuất kết quả) */}
       <AiInterpretationPanel result={result} mode={result.subMode} plainTextResult={plainText} readingId={activeReadingId} onSaveAiConversation={updateReadingData} />
 
+      {/* Nhật Ký Nghiệm Lý (Outcome Verification) */}
+      <OutcomeVerificationCard
+        readingId={activeReadingId}
+        result={result}
+        onSaveVerification={onUpdateVerification}
+      />
+
       {/* Xuất kết quả Mai Hoa */}
       <section className="animate-in">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -576,6 +649,9 @@ export default function App() {
   }, []);
   const [showGame, setShowGame] = useState(false);
   const [showKnowledge, setShowKnowledge] = useState(false);
+  const [showAtlas, setShowAtlas] = useState(false);
+  const [atlasInitialHexId, setAtlasInitialHexId] = useState(1);
+  const [manualSeedLineValues, setManualSeedLineValues] = useState(null);
   const [formData,         setFormData]         = useState(getDefaultForm());
   const [mode,             setMode]             = useState('quick');
   const [lines,            setLines]            = useState([]);
@@ -615,10 +691,34 @@ export default function App() {
     deleteMultipleReadings,
     clearHistory: handleClearHistory,
     updateReadingData,
+    updateVerification,
   } = useReadingsApi(isAuthenticated, user?.id);
 
-  // Track reading ID đang active (để lưu AI conversation)
+  // Track reading ID đang active (để lưu AI conversation & Nghiệm Lý)
   const [activeReadingId, setActiveReadingId] = useState(null);
+
+  const handleUpdateVerification = useCallback(
+    async (readingId, verificationObj, createdAtKey) => {
+      const normalized = await updateVerification(readingId, verificationObj, createdAtKey);
+      setResult((prev) =>
+        prev && (!createdAtKey || prev.createdAt === createdAtKey)
+          ? { ...prev, verification: normalized }
+          : prev
+      );
+      setMaiHoaResult((prev) =>
+        prev && (!createdAtKey || prev.createdAt === createdAtKey)
+          ? { ...prev, verification: normalized }
+          : prev
+      );
+      return normalized;
+    },
+    [updateVerification]
+  );
+
+  const handleOpenAtlas = useCallback((hexId = 1) => {
+    setAtlasInitialHexId(Number(hexId) || 1);
+    setShowAtlas(true);
+  }, []);
 
   // Tải lịch sử khi mount hoặc khi auth state thay đổi
   useEffect(() => {
@@ -768,7 +868,63 @@ export default function App() {
 
   // User chọn method từ MethodPicker → sang casting panel
   function handleMethodPick(newMode) {
+    if (newMode !== 'manual-input') setManualSeedLineValues(null);
     setMode(newMode);
+    setLines([]);
+    setResult(null);
+    setMaiHoaResult(null);
+    setHasPickedMethod(true);
+  }
+
+  // Hoàn tất nhập quẻ thực tế / sổ tay
+  function handleManualInputComplete(newLines, overrides = {}) {
+    const mergedForm = {
+      ...formData,
+      ...(overrides.castDate ? { castDate: overrides.castDate } : {}),
+      ...(overrides.castTime ? { castTime: overrides.castTime } : {}),
+      ...(overrides.question ? { question: overrides.question } : {}),
+    };
+    setFormData(mergedForm);
+    setActiveReadingId(null);
+    setMaiHoaResult(null);
+    setLines(newLines);
+    const r = buildResult({
+      formData: mergedForm,
+      lines: newLines,
+      mode: 'manual-input',
+    });
+    setResult(r);
+    recordActivity();
+  }
+
+  // Từ Atlas 64 quẻ: lập bàn Lục Hào ngay với quẻ tĩnh
+  function handleCastFromAtlas(detail) {
+    if (!detail?.lineValuesStatic) return;
+    const newLines = detail.lineValuesStatic.map((v, idx) => lineValueToLine(v, idx + 1));
+    const mergedForm = {
+      ...formData,
+      question: formData.question.trim() || `Tra cứu & lập bàn quẻ #${detail.id} ${detail.nameVi}`,
+    };
+    setFormData(mergedForm);
+    setMode('manual-input');
+    setHasPickedMethod(true);
+    setActiveReadingId(null);
+    setMaiHoaResult(null);
+    setLines(newLines);
+    const r = buildResult({
+      formData: mergedForm,
+      lines: newLines,
+      mode: 'manual-input',
+    });
+    setResult(r);
+    recordActivity();
+  }
+
+  // Từ Atlas 64 quẻ: mở trong Sổ Tay để chọn thêm hào động
+  function handleOpenAtlasInManual(detail) {
+    if (!detail?.lineValuesStatic) return;
+    setManualSeedLineValues([...detail.lineValuesStatic]);
+    setMode('manual-input');
     setLines([]);
     setResult(null);
     setMaiHoaResult(null);
@@ -914,6 +1070,7 @@ export default function App() {
             {/* Kiến thức */}
             <button
               type="button" id="open-knowledge"
+              className="iching-touch-control"
               onClick={() => setShowKnowledge(true)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -923,7 +1080,23 @@ export default function App() {
                 whiteSpace: 'nowrap', transition: 'all 0.2s',
               }}
             >
-              📖 {language === 'vi' ? 'Kiến thức' : 'Learn'}
+              <span aria-hidden="true">🎓</span> {language === 'vi' ? 'Kiến thức' : 'Learn'}
+            </button>
+
+            {/* Từ Điển 64 Quẻ */}
+            <button
+              type="button" id="open-hexagram-atlas"
+              className="iching-touch-control"
+              onClick={() => handleOpenAtlas(result?.primaryHexagram?.id || maiHoaResult?.primaryHexagram?.id || 1)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                background: 'rgba(192,57,43,0.09)', border: '1px solid rgba(192,57,43,0.3)',
+                fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-vermillion)',
+                whiteSpace: 'nowrap', transition: 'all 0.2s',
+              }}
+            >
+              <span aria-hidden="true">📖</span> {language === 'vi' ? 'Tra cứu 64 Quẻ' : '64-Hex Atlas'}
             </button>
 
             {/* Spacer */}
@@ -953,6 +1126,13 @@ export default function App() {
           {/* Modals */}
           {showGame && <GameShell onExit={() => setShowGame(false)} />}
           {showKnowledge && <KnowledgeFeed onExit={() => setShowKnowledge(false)} />}
+          <HexagramAtlasModal
+            isOpen={showAtlas}
+            onClose={() => setShowAtlas(false)}
+            initialHexId={atlasInitialHexId}
+            onCastHexagram={handleCastFromAtlas}
+            onOpenInManualInput={handleOpenAtlasInManual}
+          />
 
           {/* 1. Form nhập liệu (Ở TRÊN CÙNG / GIỮA) */}
           <section className="card" style={{ padding: 24 }}>
@@ -962,7 +1142,7 @@ export default function App() {
             <CastingForm
               formData={formData}
               onChange={setFormData}
-              showLucHaoOptions={hasPickedMethod && !mode.startsWith('mai-hoa')}
+              showLucHaoOptions={hasPickedMethod && !mode.startsWith('mai-hoa') && mode !== 'manual-input'}
             />
           </section>
 
@@ -970,12 +1150,27 @@ export default function App() {
           {/* ─── STATE 1: Chưa chọn phương pháp → MethodPicker ─── */}
           {!hasPickedMethod && !hasResult && (
             <section className="card" style={{ padding: 24 }}>
-              <MethodPicker onPick={handleMethodPick} questionEmpty={!canCast} />
+              <MethodPicker
+                onPick={handleMethodPick}
+                onOpenAtlas={() => handleOpenAtlas(1)}
+                questionEmpty={!canCast}
+              />
             </section>
           )}
 
-          {/* ─── STATE 2: Đã chọn phương pháp nhưng chưa gieo → Casting Panel ─── */}
-          {hasPickedMethod && !hasResult && (
+          {/* ─── STATE 2A: Nhập Quẻ Thực Tế / Sổ Tay ─── */}
+          {hasPickedMethod && !hasResult && mode === 'manual-input' && (
+            <ManualHexagramInput
+              key={manualSeedLineValues ? manualSeedLineValues.join('-') : 'default-manual'}
+              formData={formData}
+              initialLineValues={manualSeedLineValues}
+              onComplete={handleManualInputComplete}
+              onCancel={handleChangeMethod}
+            />
+          )}
+
+          {/* ─── STATE 2B: Đã chọn phương pháp gieo khác nhưng chưa gieo → Casting Panel ─── */}
+          {hasPickedMethod && !hasResult && mode !== 'manual-input' && (
             <section className="card animate-in" style={{ padding: 24 }}>
               <div
                 style={{
@@ -1079,11 +1274,13 @@ export default function App() {
               onChangeMethod={handleChangeMethod}
               activeReadingId={activeReadingId}
               updateReadingData={updateReadingData}
+              onUpdateVerification={handleUpdateVerification}
+              onOpenAtlas={handleOpenAtlas}
             />
           )}
 
           {/* Nút "Đổi phương pháp" nếu đang ở state casting trước khi có kết quả */}
-          {hasPickedMethod && !hasResult && (
+          {hasPickedMethod && !hasResult && mode !== 'manual-input' && (
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
               <button
                 type="button"
@@ -1126,6 +1323,7 @@ export default function App() {
             onSelect={handleSelectHistoryItem}
             onDeleteMultiple={deleteMultipleReadings}
             onClearAll={handleClearHistory}
+            onUpdateVerification={handleUpdateVerification}
           />
         </div>
       </main>

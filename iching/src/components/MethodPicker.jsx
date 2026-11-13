@@ -2,9 +2,9 @@ import React from 'react';
 import { useLanguage } from '../context/useLanguage.js';
 
 /**
- * Màn hình chọn phương pháp gieo quẻ — 4 lựa chọn xếp gọn trên 1 hàng ngang.
+ * Màn hình chọn phương pháp gieo quẻ — 6 lựa chọn cân đối (3×2 desktop, 2×3 tablet, 1×6 mobile).
  */
-export default function MethodPicker({ onPick, questionEmpty = false }) {
+export default function MethodPicker({ onPick, onOpenAtlas, questionEmpty = false }) {
   const { t } = useLanguage();
 
   const methods = [
@@ -49,7 +49,25 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
       border: 'rgba(26,107,74,0.25)',
       hoverBg: 'linear-gradient(135deg, rgba(26,107,74,0.20), rgba(26,107,74,0.04))',
       hoverBorder: 'var(--color-jade)',
+    },
+    {
+      mode: 'manual-input',
+      badge: t('picker.luc_hao', 'LỤC HÀO'),
+      badgeColor: 'var(--color-vermillion)',
+      badgeBg: 'rgba(192,57,43,0.12)',
+      icon: '📜',
+      title: t('method.manual_input.title', 'Nhập Quẻ Thực Tế / Sổ Tay'),
+      desc: t(
+        'method.manual_input.desc',
+        'Nhập quẻ gieo bằng xu thật ngoài đời hoặc quẻ trong sách cổ (6/7/8/9 hoặc Thượng/Hạ Quái)'
+      ),
+      meta: t('method.manual_input.meta', '6/7/8/9 · Thượng/Hạ'),
+      gradient: 'linear-gradient(135deg, rgba(184,134,11,0.12), rgba(192,57,43,0.03))',
+      border: 'rgba(184,134,11,0.35)',
+      hoverBg: 'linear-gradient(135deg, rgba(184,134,11,0.24), rgba(192,57,43,0.08))',
+      hoverBorder: 'var(--color-gold)',
       isNew: true,
+      allowWithoutQuestion: true,
     },
     {
       mode: 'mai-hoa-time',
@@ -82,45 +100,78 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Header chuẩn giống các card khác */}
-      <div>
-        <div className="section-title" style={{ marginBottom: 6 }}>
-          {t('picker.title', 'Chọn phương pháp gieo quẻ')}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minInlineSize: 0 }}>
+      {/* Header chuẩn + nút mở Từ Điển 64 Quẻ */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 10,
+        }}
+      >
+        <div style={{ minInlineSize: 0 }}>
+          <div className="section-title" style={{ marginBottom: 6 }}>
+            {t('picker.title', 'Chọn phương pháp gieo quẻ')}
+          </div>
+          <div
+            style={{
+              fontSize: '0.8125rem',
+              color: 'var(--color-ink-muted)',
+              lineHeight: 1.4,
+            }}
+          >
+            {questionEmpty
+              ? t(
+                  'picker.desc_empty',
+                  'Vui lòng nhập việc cần xem ở bên trên (hoặc chọn Nhập Quẻ Thực Tế / Sổ Tay để nghiên cứu quẻ).'
+                )
+              : t(
+                  'picker.desc_ready',
+                  'Chọn 1 trong 6 phương pháp gieo hoặc nhập quẻ dưới đây để bắt đầu.'
+                )}
+          </div>
         </div>
-        <div
-          style={{
-            fontSize: '0.8125rem',
-            color: 'var(--color-ink-muted)',
-            lineHeight: 1.4,
-          }}
-        >
-          {questionEmpty
-            ? t(
-                'picker.desc_empty',
-                'Vui lòng nhập việc cần xem ở bên trên trước khi chọn.'
-              )
-            : t(
-                'picker.desc_ready',
-                'Chọn 1 trong 5 phương pháp gieo quẻ dưới đây để bắt đầu.'
-              )}
-        </div>
+
+        {onOpenAtlas && (
+          <button
+            type="button"
+            className="btn-ghost iching-touch-control"
+            onClick={onOpenAtlas}
+            style={{
+              padding: '7px 12px',
+              borderRadius: 8,
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              border: '1px solid rgba(184,134,11,0.35)',
+              background: 'rgba(184,134,11,0.07)',
+              color: 'var(--color-ink)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+            }}
+          >
+            <span aria-hidden="true">📖</span> Tra cứu 64 Quẻ
+          </button>
+        )}
       </div>
 
-      {/* 4 Card gọn gàng nằm trên 1 hàng */}
+      {/* 6 Card gọn gàng 3×2 / 2×3 / 1×6 */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           gap: 12,
         }}
-        className="method-picker-5row"
+        className="method-picker-6grid"
       >
         {methods.map((m) => (
           <MethodCard
             key={m.mode}
             method={m}
-            disabled={questionEmpty}
+            disabled={questionEmpty && !m.allowWithoutQuestion}
             onClick={() => onPick(m.mode)}
           />
         ))}
@@ -147,18 +198,13 @@ export default function MethodPicker({ onPick, questionEmpty = false }) {
       </div>
 
       <style>{`
-        @media (max-width: 1100px) {
-          .method-picker-5row {
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-          }
-        }
-        @media (max-width: 700px) {
-          .method-picker-5row {
+        @media (max-width: 760px) {
+          .method-picker-6grid {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
         }
         @media (max-width: 480px) {
-          .method-picker-5row {
+          .method-picker-6grid {
             grid-template-columns: 1fr !important;
           }
         }
@@ -174,6 +220,7 @@ function MethodCard({ method, disabled, onClick }) {
   return (
     <button
       type="button"
+      className="iching-touch-control"
       onClick={onClick}
       disabled={disabled}
       onMouseEnter={() => !disabled && setHovered(true)}
@@ -199,7 +246,8 @@ function MethodCard({ method, disabled, onClick }) {
             : '0 1px 3px rgba(44,24,16,0.04)',
         transition: 'all 0.2s ease',
         fontFamily: "'Be Vietnam Pro', sans-serif",
-        minHeight: 130,
+        minHeight: 132,
+        minInlineSize: 0,
       }}
     >
       {/* Top badges: Type badge + NEW indicator + Icon */}
@@ -210,6 +258,7 @@ function MethodCard({ method, disabled, onClick }) {
           justifyContent: 'space-between',
           width: '100%',
           gap: 4,
+          flexWrap: 'wrap',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -227,21 +276,25 @@ function MethodCard({ method, disabled, onClick }) {
             {method.badge}
           </span>
           {method.isNew && (
-            <span style={{
-              fontSize: '0.55rem',
-              fontWeight: 800,
-              padding: '1px 5px',
-              borderRadius: 3,
-              background: 'rgba(26,107,74,0.15)',
-              color: '#1a6b4a',
-              letterSpacing: '0.08em',
-              border: '1px solid rgba(26,107,74,0.3)',
-            }}>
+            <span
+              style={{
+                fontSize: '0.55rem',
+                fontWeight: 800,
+                padding: '1px 5px',
+                borderRadius: 3,
+                background: 'rgba(26,107,74,0.15)',
+                color: '#1a6b4a',
+                letterSpacing: '0.08em',
+                border: '1px solid rgba(26,107,74,0.3)',
+              }}
+            >
               NEW
             </span>
           )}
         </div>
-        <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>{method.icon}</span>
+        <span aria-hidden="true" style={{ fontSize: '1.25rem', lineHeight: 1 }}>
+          {method.icon}
+        </span>
       </div>
 
       {/* Title */}
@@ -252,6 +305,7 @@ function MethodCard({ method, disabled, onClick }) {
           fontWeight: 700,
           color: 'var(--color-ink)',
           lineHeight: 1.25,
+          minInlineSize: 0,
         }}
       >
         {method.title}
@@ -264,6 +318,7 @@ function MethodCard({ method, disabled, onClick }) {
           color: 'var(--color-ink-muted)',
           lineHeight: 1.4,
           flex: 1,
+          minInlineSize: 0,
         }}
       >
         {method.desc}

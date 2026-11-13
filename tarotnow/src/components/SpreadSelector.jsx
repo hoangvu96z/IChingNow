@@ -13,13 +13,27 @@ const CATEGORIES = [
   { id: 'custom',       label: 'Tùy chỉnh',     labelEn: 'Custom',       icon: '🎨' },
 ];
 
-export default function SpreadSelector({ activeSpread, onSpreadChange, disabled }) {
+export default function SpreadSelector({
+  activeSpread,
+  onSpreadChange,
+  disabled,
+  customSpreadTitle = '',
+  customPositions = [],
+  customCount = 3,
+}) {
   const { language } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('all');
   const [isOpen, setIsOpen] = useState(false);
 
   const currentSpread = SPREADS.find(s => s.id === activeSpread) || SPREADS[0];
-  const summaryTitle = currentSpread.name.replace(/^\d+\s*Lá\s*—\s*/i, '');
+  const isCustomActive = currentSpread.id === 'custom';
+  const summaryTitle = isCustomActive && customSpreadTitle.trim()
+    ? customSpreadTitle.trim()
+    : currentSpread.name.replace(/^\d+\s*Lá\s*—\s*/i, '');
+  const displayCount = isCustomActive ? (customCount || currentSpread.count) : currentSpread.count;
+  const activePositionsPreview = isCustomActive
+    ? (Array.isArray(customPositions) ? customPositions.map(p => (p || '').trim()).filter(Boolean) : [])
+    : currentSpread.positions;
   const filteredSpreads = activeCategory === 'all'
     ? SPREADS
     : SPREADS.filter(s => (s.category || 'classic') === activeCategory);
@@ -121,7 +135,7 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}>
-            {currentSpread.count} {language === 'en' ? 'card(s)' : 'lá'} · {currentSpread.positions.length > 0 ? currentSpread.positions.slice(0,2).join(' · ') + (currentSpread.positions.length > 2 ? '...' : '') : (language === 'en' ? 'Custom' : 'Tự chọn')}
+            {displayCount} {language === 'en' ? 'card(s)' : 'lá'} · {activePositionsPreview.length > 0 ? activePositionsPreview.slice(0, 2).join(' · ') + (activePositionsPreview.length > 2 ? '...' : '') : (language === 'en' ? 'Custom roles' : 'Đặt tên từng vị trí')}
           </div>
         </div>
         <span style={{
@@ -267,6 +281,42 @@ export default function SpreadSelector({ activeSpread, onSpreadChange, disabled 
                   </button>
                 );
               })}
+            </div>
+
+            {/* Dedicated Custom Spread Position Designer CTA */}
+            <div style={{
+              padding: '8px 10px 10px',
+              borderTop: '1px solid rgba(229,193,88,0.16)',
+              background: 'rgba(229,193,88,0.04)',
+            }}>
+              <button
+                type="button"
+                onClick={() => handleSelect('custom')}
+                style={{
+                  width: '100%',
+                  minBlockSize: '38px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  borderRadius: '9px',
+                  border: '1px dashed rgba(229,193,88,0.45)',
+                  background: activeSpread === 'custom' ? 'rgba(229,193,88,0.16)' : 'transparent',
+                  color: 'var(--gold-color)',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                <span aria-hidden="true">🎨</span>
+                <span>
+                  {language === 'en'
+                    ? 'Design Custom Position Layout'
+                    : 'Thiết kế sơ đồ vị trí riêng'}
+                </span>
+              </button>
             </div>
           </div>
         </>

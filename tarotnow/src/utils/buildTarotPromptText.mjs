@@ -1,3 +1,10 @@
+import {
+  resolveCardElement,
+  ELEMENT_METADATA,
+  computeElementalDignities,
+  computeArchetypeClusters,
+} from './tarotLogic.js';
+
 export function buildTarotPromptText({
   language,
   promptTemplate,
@@ -12,21 +19,52 @@ export function buildTarotPromptText({
 }) {
   const isEn = language === 'en';
   const translate = typeof t === 'function' ? t : (_key, fallback) => fallback;
-  const cardsSection = drawnCards.map((card, index) => {
+  const safeCards = Array.isArray(drawnCards) ? drawnCards : [];
+  const cardsSection = safeCards.map((card, index) => {
     const orientationText = card.orientation === 'reversed'
       ? translate('modal.orientation_reversed', 'Lá ngược (Reversed)')
       : translate('modal.orientation_upright', 'Lá xuôi (Upright)');
-    const keywords = card.orientation === 'reversed' ? card.reversedKeywords : card.uprightKeywords;
+    const keywords = (card.orientation === 'reversed' ? card.reversedKeywords : card.uprightKeywords) || [];
     const position = spreadPositions?.[index];
     const localMeaning = getCardMeaning ? getCardMeaning(card, interpretationContext, card.orientation) : '';
+    const elem = resolveCardElement(card);
+    const elemLabel = elem && ELEMENT_METADATA[elem]
+      ? (isEn ? ELEMENT_METADATA[elem].en : ELEMENT_METADATA[elem].vi)
+      : '';
 
     return `${index + 1}. ${isEn ? 'Card' : 'Lá bài'}: ${card.name}\n` +
       `   - ${isEn ? 'Orientation' : 'Trạng thái'}: ${orientationText}\n` +
       `   - ${isEn ? 'Category' : 'Nhóm'}: ${card.arcana}${card.suit ? ` (${card.suit})` : ''}\n` +
+      `${elemLabel ? `   - ${isEn ? 'Element' : 'Nguyên tố'}: ${elemLabel}\n` : ''}` +
       `   - ${isEn ? 'Keywords' : 'Từ khóa chính'}: ${keywords.join(', ')}\n` +
       `${position ? `   - ${isEn ? 'Position in spread' : 'Vị trí trong trải bài'}: ${position}\n` : ''}` +
       `${localMeaning ? `   - ${isEn ? 'Preliminary meaning' : 'Giải nghĩa cơ bản sơ bộ'}: ${localMeaning}\n` : ''}`;
   }).join('\n').trimEnd();
+
+  let structuralSection = '';
+  if (safeCards.length >= 2) {
+    const perspectiveKey =
+      promptTemplate === 'love'
+        ? 'love'
+        : promptTemplate === 'career'
+          ? 'career'
+          : 'general';
+    const dignities = computeElementalDignities(safeCards, spreadPositions, {
+      language,
+      perspective: perspectiveKey,
+    });
+    const clusters = computeArchetypeClusters(safeCards, language);
+    const combinedLines = [dignities.promptDigest, clusters.promptDigest]
+      .filter(Boolean)
+      .join('\n');
+    if (combinedLines) {
+      structuralSection = `${
+        isEn
+          ? 'Elemental Dignities & Structural Synergy (weave these card-to-card interactions into your reading):'
+          : 'Tương tác Nguyên tố & Cấu trúc Trải bài (hãy kết hợp các tương tác giữa các lá bài này vào lời luận giải):'
+      }\n${combinedLines}`;
+    }
+  }
 
   let instruction;
   if (isEn) {
@@ -77,6 +115,7 @@ export function buildTarotPromptText({
       ? `${translate('result.perspective_prefix', 'Góc nhìn')}: ${interpretationContext}`
       : null,
     `${isEn ? 'Drawn Cards List' : 'Danh sách lá bài đã rút'}:\n${cardsSection}`,
+    structuralSection || null,
     interpretationSummary
       ? `${isEn ? 'General Overview' : 'Nhận xét tổng quan'}:\n${interpretationSummary}`
       : null,

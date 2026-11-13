@@ -493,6 +493,25 @@ function exportContext(result, input = {}, yunxianState = null, exportOptions = 
     }
   } catch {}
 
+  // 7. Mốc sự kiện thực tế đã ghim (hiệu chuẩn Nghiệm lý)
+  let extraLifeEvents = [];
+  if (
+    exportOptions?.includeLifeEvents !== false &&
+    Array.isArray(exportOptions?.lifeEvents) &&
+    exportOptions.lifeEvents.length > 0
+  ) {
+    extraLifeEvents = [
+      '\nMỐC SỰ KIỆN THỰC TẾ ĐÃ XÁC MINH CỦA ĐƯƠNG SỐ (DỮ LIỆU HIỆU CHUẨN NGHIỆM LÝ):',
+      ...exportOptions.lifeEvents.map((ev) => {
+        const yr = ev.year || '—';
+        const lbl = ev.label || ev.eventType || 'Sự kiện';
+        const noteStr = ev.note ? ` — Ghi chú: ${ev.note}` : '';
+        return `- Năm ${yr}: ${lbl}${noteStr}`;
+      }),
+      'Hướng dẫn hiệu chuẩn: Các cột mốc trên là sự kiện có thật đã xảy ra trong đời đương số. Hãy dùng chúng làm điểm neo nghiệm lý để đối chiếu ứng kỳ Đại Hạn / Lưu Niên và giữ mạch luận giải sát thực tế.',
+    ];
+  }
+
   return [
     ...baseLines,
     ...extraEngineSummary,
@@ -502,6 +521,7 @@ function exportContext(result, input = {}, yunxianState = null, exportOptions = 
     ...extraShierShen,
     ...extraPoem,
     ...extraYunxian,
+    ...extraLifeEvents,
   ].join('\n');
 }
 

@@ -12,7 +12,17 @@ const TUVI_ROOT = path.resolve(import.meta.dirname, '..');
 const SHARED_SHIM_PLUGIN = {
   name: 'shared-auth-shim-for-ssr',
   enforce: 'pre',
+  resolveId(source) {
+    if (source.endsWith('shared/src/components/SaveToNoteNowButton.jsx')) {
+      return path.resolve(TUVI_ROOT, 'src/components/__ssr_SaveToNoteNowButton.jsx');
+    }
+    return null;
+  },
   load(id) {
+    if (id.endsWith('__ssr_SaveToNoteNowButton.jsx')) {
+      const realPath = path.resolve(TUVI_ROOT, '../shared/src/components/SaveToNoteNowButton.jsx');
+      return fs.readFileSync(realPath, 'utf8').replaceAll("'../utils/", "'../../../shared/src/utils/");
+    }
     if (id.endsWith('/src/context/AuthContext.jsx')) {
       return `export function useAuth() { return { isAuthenticated: false, user: null, login: () => {}, logout: () => {} }; }
 export function AuthProvider({ children }) { return children; }`;
@@ -31,7 +41,7 @@ const VITE_RESOLVE = {
 };
 
 test('answer and actual palace components render evidence and legacy text', async () => {
-  const server = await createServer({ configFile: false, plugins: [react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
+  const server = await createServer({ root: TUVI_ROOT, configFile: false, resolve: VITE_RESOLVE, plugins: [SHARED_SHIM_PLUGIN, react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
   try {
     const { default: Provider } = await server.ssrLoadModule('/src/components/TuViEvidenceProvider.jsx');
     const { default: Answer } = await server.ssrLoadModule('/src/components/TuViEvidenceAnswer.jsx');
@@ -143,6 +153,7 @@ test('answer and actual palace components render evidence and legacy text', asyn
 
 test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, BirthInputForm, and TuViGlossaryModal', async () => {
   const server = await createServer({
+    root: TUVI_ROOT,
     configFile: false,
     plugins: [SHARED_SHIM_PLUGIN, react()],
     resolve: VITE_RESOLVE,
@@ -455,6 +466,7 @@ test('comprehensive SSR rendering of TuViPatternsPanel, LasoChart TimeNav, Birth
 
 test('comprehensive SSR rendering of TuViOverviewDashboard and tuViStarRating suite', async () => {
   const server = await createServer({
+    root: TUVI_ROOT,
     configFile: false,
     plugins: [SHARED_SHIM_PLUGIN, react()],
     resolve: VITE_RESOLVE,

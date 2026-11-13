@@ -18,6 +18,11 @@ function mapLoadedTarotReading(r, dataObj) {
     spread: r.type,
     title: r.title,
     cards: dataObj.cards || [],
+    ...(dataObj.spreadId ? { spreadId: dataObj.spreadId } : {}),
+    ...(dataObj.spreadName ? { spreadName: dataObj.spreadName } : {}),
+    ...(Array.isArray(dataObj.customPositions) ? { customPositions: dataObj.customPositions } : {}),
+    ...(dataObj.interpretationContext ? { interpretationContext: dataObj.interpretationContext } : {}),
+    ...(dataObj.physicalLogged ? { physicalLogged: true } : {}),
   };
 }
 

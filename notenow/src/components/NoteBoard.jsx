@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import NoteCard from './NoteCard.jsx';
 import NoteEditor from './NoteEditor.jsx';
 import NoteShareModal from './NoteShareModal.jsx';
 import NotePasswordModal from './NotePasswordModal.jsx';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
-import { notesApi, stripHtml } from '../api.js';
+import { notesApi } from '../api.js';
+import { NOTE_COLORS } from '../constants.js';
+import { collectBoardTags, collectBoardColors, filterBoardNotes } from '../utils/noteFilters.js';
+import { consumeIncomingNoteDrafts } from '../../../shared/src/utils/saveToNoteNow.mjs';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   Check, X, Info, Pin, Users, Plus,
@@ -41,6 +44,7 @@ function DraggableNoteGrid({
   onShare,
   onPin,
   onPassword,
+  onTagClick,
   unlockedNoteIds,
   onReorder,
   isShared,
@@ -118,6 +122,7 @@ function DraggableNoteGrid({
             onShare={onShare}
             onPin={onPin}
             onPassword={onPassword}
+            onTagClick={onTagClick}
             isUnlocked={Boolean(unlockedNoteIds?.[note.id])}
             isShared={isShared}
           />
@@ -141,8 +146,13 @@ export default function NoteBoard({ user }) {
   // Session-unlocked note IDs so the user doesn't have to re-type password while editing
   const [unlockedNoteIds, setUnlockedNoteIds] = useState({});
   const [search, setSearch] = useState('');
+  const [activeTag, setActiveTag] = useState('');
+  const [activeType, setActiveType] = useState('all');
+  const [activeColor, setActiveColor] = useState('');
+  const [importBanner, setImportBanner] = useState(null);
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
+  const importInFlightRef = useRef(false);
 
   const isLoggedIn = !!user;
 
@@ -180,9 +190,68 @@ export default function NoteBoard({ user }) {
     }
   }, [addToast, t]);
 
+  const importIncomingDrafts = useCallback(async () => {
+    if (importInFlightRef.current) return [];
+    importInFlightRef.current = true;
+    try {
+      const drafts = consumeIncomingNoteDrafts();
+      if (!Array.isArray(drafts) || drafts.length === 0) return [];
+
+      const createdNotes = [];
+      for (const draft of drafts) {
+        try {
+          const created = await notesApi.create({
+            title: draft.title || null,
+            content: draft.content || '',
+            bgColor: draft.bgColor || 'default',
+            bgPattern: draft.bgPattern || 'none',
+            tags: Array.isArray(draft.tags) ? draft.tags : [],
+          });
+          if (created) createdNotes.push(created);
+        } catch (err) {
+          console.warn('Failed to import SpiritNow draft:', err);
+        }
+      }
+
+      if (createdNotes.length > 0) {
+        setNotes((prev) => {
+          const createdIds = new Set(createdNotes.map((n) => n.id));
+          return [...createdNotes, ...prev.filter((n) => !createdIds.has(n.id))];
+        });
+        const bannerText = t(
+          'board.imported_spiritnow_banner',
+          'Đã lưu ghi chú mới từ hệ sinh thái SpiritNow',
+        );
+        setImportBanner(bannerText);
+        addToast(
+          t('toast.imported_spiritnow', 'Đã lưu ghi chú mới từ hệ sinh thái SpiritNow'),
+          'success',
+        );
+      }
+      return createdNotes;
+    } finally {
+      importInFlightRef.current = false;
+    }
+  }, [addToast, t]);
+
   useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
+    let cancelled = false;
+    (async () => {
+      await fetchNotes();
+      if (!cancelled) {
+        await importIncomingDrafts();
+      }
+    })();
+
+    const handleHashChange = () => {
+      importIncomingDrafts();
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [fetchNotes, importIncomingDrafts]);
 
   // Listen to search events from header
   useEffect(() => {
@@ -191,20 +260,38 @@ export default function NoteBoard({ user }) {
     return () => window.removeEventListener('nn-search', handler);
   }, []);
 
-  // Search filter (do not leak body content of locked notes when searching)
-  const filteredNotes = search
-    ? notes.filter((n) => {
-        const q = search.toLowerCase();
-        const isLocked = Boolean(n.hasPassword) && !unlockedNoteIds[n.id];
-        if (isLocked) {
-          return n.title?.toLowerCase().includes(q);
-        }
-        return (
-          n.title?.toLowerCase().includes(q) ||
-          stripHtml(n.content || '').toLowerCase().includes(q)
-        );
-      })
-    : notes;
+  const boardTags = useMemo(
+    () => collectBoardTags(notes, unlockedNoteIds),
+    [notes, unlockedNoteIds],
+  );
+  const boardColors = useMemo(() => collectBoardColors(notes), [notes]);
+  const hasActiveFilters = Boolean(
+    search || activeTag || activeType !== 'all' || activeColor,
+  );
+
+  const clearAllFilters = () => {
+    setSearch('');
+    setActiveTag('');
+    setActiveType('all');
+    setActiveColor('');
+  };
+
+  const handleTagClick = useCallback((tag) => {
+    setActiveTag((prev) => (prev === tag ? '' : tag));
+  }, []);
+
+  // Combined search + tag + type + color filter (never leaks locked note body/tags)
+  const filteredNotes = useMemo(
+    () =>
+      filterBoardNotes(notes, {
+        search,
+        tag: activeTag,
+        type: activeType,
+        color: activeColor,
+        unlockedNoteIds,
+      }),
+    [notes, search, activeTag, activeType, activeColor, unlockedNoteIds],
+  );
 
   const pinnedNotes = filteredNotes.filter((n) => n.isPinned);
   const unpinnedNotes = filteredNotes.filter((n) => !n.isPinned);
@@ -361,8 +448,28 @@ export default function NoteBoard({ user }) {
   // ─── Quick-create bar handler ──────────────────────────────────────────────
 
   const openNewNoteEditor = () => {
-    setEditingNote({ _isNew: true, title: '', content: '', bgColor: 'default', bgPattern: 'none', images: [], audios: [] });
+    setEditingNote({
+      _isNew: true,
+      title: '',
+      content: '',
+      bgColor: 'default',
+      bgPattern: 'none',
+      tags: activeTag ? [activeTag] : [],
+      images: [],
+      audios: [],
+    });
   };
+
+  const typeFilterOptions = useMemo(
+    () => [
+      { id: 'all', label: t('board.filter_all', 'Tất cả') },
+      { id: 'checklist', label: t('board.filter_checklist', '☑️ Có checklist') },
+      { id: 'image', label: t('board.filter_image', '🖼️ Có ảnh') },
+      { id: 'audio', label: t('board.filter_audio', '🎙️ Có âm thanh') },
+      { id: 'locked', label: t('board.filter_locked', '🔒 Khóa mật khẩu') },
+    ],
+    [t],
+  );
 
   // ─── Skeleton cards ───────────────────────────────────────────────────────
 
@@ -399,7 +506,7 @@ export default function NoteBoard({ user }) {
               type="button"
               aria-label={t('board.search_clear', 'Xoá tìm kiếm')}
             >
-              <X size={14} strokeWidth={2.5} />
+              <X size={14} strokeWidth={2.5} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -415,34 +522,158 @@ export default function NoteBoard({ user }) {
           id="btn-new-note"
         >
           <span className="nn-create-placeholder">
-            <Plus size={17} strokeWidth={2.5} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+            <Plus size={17} strokeWidth={2.5} style={{ verticalAlign: 'middle', marginRight: 6 }} aria-hidden="true" />
             {t('board.create_placeholder', 'Tạo ghi chú mới…')}
           </span>
         </div>
       </div>
 
+      {/* Quick Filter Bar (Type + Color dots + Dynamic #tags) */}
+      {!loading && (notes.length > 0 || hasActiveFilters) && (
+        <div className="nn-filter-bar" id="note-quick-filters">
+          <div className="nn-filter-row" role="group" aria-label="Bộ lọc nhanh ghi chú">
+            {typeFilterOptions.map((opt) => {
+              const isSelected = activeType === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  id={`filter-type-${opt.id}`}
+                  className={`nn-filter-chip${isSelected ? ' is-active' : ''}`}
+                  aria-pressed={isSelected}
+                  onClick={() =>
+                    setActiveType((prev) =>
+                      opt.id === 'all' ? 'all' : prev === opt.id ? 'all' : opt.id,
+                    )
+                  }
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+
+            {boardColors.length > 0 && (
+              <div
+                className="nn-filter-colors"
+                role="group"
+                aria-label={t('board.filter_colors_label', 'Màu')}
+              >
+                {boardColors.map((colorKey) => {
+                  const meta = NOTE_COLORS.find((c) => c.key === colorKey) || NOTE_COLORS[0];
+                  const isSelected = activeColor === colorKey;
+                  const colorLabel = t(`color.${colorKey}`, meta.label);
+                  return (
+                    <button
+                      key={colorKey}
+                      type="button"
+                      id={`filter-color-${colorKey}`}
+                      className={`nn-filter-color-dot${isSelected ? ' is-active' : ''}`}
+                      data-color={colorKey}
+                      aria-pressed={isSelected}
+                      aria-label={`${t('board.filter_colors_label', 'Màu')}: ${colorLabel}`}
+                      title={colorLabel}
+                      onClick={() =>
+                        setActiveColor((prev) => (prev === colorKey ? '' : colorKey))
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                className="nn-filter-chip nn-filter-clear"
+                id="btn-clear-filters"
+                onClick={clearAllFilters}
+              >
+                <X size={12} strokeWidth={2.5} aria-hidden="true" />
+                {t('board.filter_clear', 'Xoá bộ lọc')}
+              </button>
+            )}
+          </div>
+
+          {boardTags.length > 0 && (
+            <div
+              className="nn-filter-row nn-filter-tags-row"
+              role="group"
+              aria-label={t('board.filter_tags_label', 'Thẻ')}
+            >
+              {boardTags.map((tag) => {
+                const isSelected = activeTag === tag;
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    id={`filter-tag-${tag}`}
+                    className={`nn-filter-chip nn-filter-tag-chip${isSelected ? ' is-active' : ''}`}
+                    aria-pressed={isSelected}
+                    onClick={() => setActiveTag((prev) => (prev === tag ? '' : tag))}
+                  >
+                    #{tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Board */}
       <main className="nn-main" id="note-board">
+        {importBanner && (
+          <div className="nn-import-banner" role="status" id="spiritnow-import-banner">
+            <span className="nn-import-banner-text">
+              <Check size={15} strokeWidth={2.5} aria-hidden="true" />
+              <span>{importBanner}</span>
+            </span>
+            <button
+              type="button"
+              className="nn-import-banner-close"
+              onClick={() => setImportBanner(null)}
+              aria-label={t('editor.btn_close', 'Đóng')}
+            >
+              <X size={14} strokeWidth={2.5} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="nn-masonry">
             {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
-        ) : filteredNotes.length === 0 && sharedNotes.length === 0 ? (
+        ) : filteredNotes.length === 0 && (hasActiveFilters || sharedNotes.length === 0) ? (
           <div className="nn-empty">
             <div className="nn-empty-icon">
-              <FileText size={48} strokeWidth={1.5} />
+              <FileText size={48} strokeWidth={1.5} aria-hidden="true" />
             </div>
             <h2 className="nn-empty-title">
-              {search ? t('board.empty_search_title', 'Không tìm thấy ghi chú') : t('board.empty_title', 'Chưa có ghi chú nào')}
+              {hasActiveFilters
+                ? t('board.empty_search_title', 'Không tìm thấy ghi chú')
+                : t('board.empty_title', 'Chưa có ghi chú nào')}
             </h2>
             <p className="nn-empty-text">
               {search
                 ? t('board.empty_search_desc', `Không có ghi chú nào khớp với "${search}"`, { query: search })
+                : hasActiveFilters
+                ? t('board.empty_search_title', 'Không tìm thấy ghi chú')
                 : isLoggedIn
                 ? t('board.empty_user_cta_desc', 'Bấm nút bên dưới để tạo ghi chú đầu tiên của bạn!')
                 : t('board.empty_guest_cta_desc', 'Bấm nút bên dưới để tạo ghi chú. Không cần đăng nhập!')}
             </p>
-            {!search && (
+            {hasActiveFilters ? (
+              <button
+                className="btn btn-ghost"
+                onClick={clearAllFilters}
+                id="btn-empty-clear-filters"
+                type="button"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <X size={14} strokeWidth={2.5} aria-hidden="true" />
+                {t('board.filter_clear', 'Xoá bộ lọc')}
+              </button>
+            ) : (
               <button
                 className="btn btn-primary"
                 onClick={openNewNoteEditor}
@@ -450,7 +681,7 @@ export default function NoteBoard({ user }) {
                 type="button"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                <Plus size={15} strokeWidth={2.5} />
+                <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
                 {t('board.create_first', 'Tạo ghi chú đầu tiên')}
               </button>
             )}
@@ -461,7 +692,7 @@ export default function NoteBoard({ user }) {
             {pinnedNotes.length > 0 && (
               <div style={{ marginBottom: 8 }}>
                 <p className="nn-section-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Pin size={13} fill="currentColor" strokeWidth={1.5} />
+                  <Pin size={13} fill="currentColor" strokeWidth={1.5} aria-hidden="true" />
                   {t('board.section_pinned', 'Đã ghim')}
                 </p>
                 <DraggableNoteGrid
@@ -471,6 +702,7 @@ export default function NoteBoard({ user }) {
                   onShare={handleRequestShareNote}
                   onPin={handlePinNote}
                   onPassword={handleRequestPasswordModal}
+                  onTagClick={handleTagClick}
                   unlockedNoteIds={unlockedNoteIds}
                   onReorder={handleReorder}
                   isShared={false}
@@ -489,6 +721,7 @@ export default function NoteBoard({ user }) {
                   onShare={handleRequestShareNote}
                   onPin={handlePinNote}
                   onPassword={handleRequestPasswordModal}
+                  onTagClick={handleTagClick}
                   unlockedNoteIds={unlockedNoteIds}
                   onReorder={handleReorder}
                   isShared={false}
@@ -500,7 +733,7 @@ export default function NoteBoard({ user }) {
             {sharedNotes.length > 0 && (
               <div style={{ marginTop: 24 }}>
                 <p className="nn-section-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Users size={13} strokeWidth={2} />
+                  <Users size={13} strokeWidth={2} aria-hidden="true" />
                   {t('board.section_shared', 'Được chia sẻ với bạn')}
                 </p>
                 <DraggableNoteGrid
@@ -524,7 +757,13 @@ export default function NoteBoard({ user }) {
       {editingNote && (
         <ErrorBoundary onReset={() => setEditingNote(null)}>
           <NoteEditor
-            note={editingNote._isNew ? null : editingNote}
+            note={
+              editingNote._isNew
+                ? editingNote.tags?.length
+                  ? { tags: editingNote.tags }
+                  : null
+                : editingNote
+            }
             isNew={!!editingNote._isNew}
             userIsLoggedIn={isLoggedIn}
             onSave={handleEditorSave}

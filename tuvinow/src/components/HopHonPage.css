@@ -2547,3 +2547,37 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Saved Profiles Picker inside HopHonPage ── */
+.hh-profile-picker-field {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--accent-gold-dim);
+  border: 1px dashed var(--border-gold);
+  min-inline-size: 0;
+}
+
+.hh-profile-picker-field label {
+  color: var(--text-gold);
+  font-weight: 600;
+  font-size: 0.84rem;
+}
+
+.hh-profile-picker-select {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border-gold);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 0.88rem;
+}
+
+@media (pointer: coarse) {
+  .hh-profile-picker-select {
+    min-block-size: 44px;
+  }
+}
+

@@ -1313,14 +1313,21 @@ export const ADVICE_BANK = {
   }
 };
 
-function deriveSummarySeed(drawnCards, spreadPresetId, perspective, language, question) {
-  const seedInput = JSON.stringify({
+function deriveSummarySeed(drawnCards, spreadPresetId, perspective, language, question, customPositions = null) {
+  const cleanCustom = Array.isArray(customPositions)
+    ? customPositions.map((p) => (typeof p === 'string' ? p.trim() : '')).filter(Boolean)
+    : [];
+  const basePayload = {
     spreadPresetId,
     perspective,
     language,
     question,
-    cards: drawnCards.map(card => [card.id ?? card.name, card.orientation || "upright"])
-  });
+    cards: drawnCards.map(card => [card.id ?? card.name, card.orientation || "upright"]),
+  };
+  if (cleanCustom.length > 0) {
+    basePayload.customPositions = cleanCustom;
+  }
+  const seedInput = JSON.stringify(basePayload);
   let hash = 2166136261;
   for (let index = 0; index < seedInput.length; index += 1) {
     hash ^= seedInput.charCodeAt(index);
@@ -1330,9 +1337,904 @@ function deriveSummarySeed(drawnCards, spreadPresetId, perspective, language, qu
 }
 
 /**
+ * Classical Golden Dawn / Astrological Element Correspondences
+ * Major Arcana 0..21 + Minor Arcana Suits
+ */
+export const MAJOR_ARCANA_ELEMENTS = {
+  0: "Air",    // The Fool (Uranus / Air)
+  1: "Air",    // The Magician (Mercury)
+  2: "Water",  // The High Priestess (Moon)
+  3: "Earth",  // The Empress (Venus)
+  4: "Fire",   // The Emperor (Aries)
+  5: "Earth",  // The Hierophant (Taurus)
+  6: "Air",    // The Lovers (Gemini)
+  7: "Water",  // The Chariot (Cancer)
+  8: "Fire",   // Strength (Leo)
+  9: "Earth",  // The Hermit (Virgo)
+  10: "Fire",  // Wheel of Fortune (Jupiter)
+  11: "Air",   // Justice (Libra)
+  12: "Water", // The Hanged Man (Neptune / Water)
+  13: "Water", // Death (Scorpio)
+  14: "Fire",  // Temperance (Sagittarius)
+  15: "Earth", // The Devil (Capricorn)
+  16: "Fire",  // The Tower (Mars)
+  17: "Air",   // The Star (Aquarius)
+  18: "Water", // The Moon (Pisces)
+  19: "Fire",  // The Sun (Sun)
+  20: "Fire",  // Judgement (Pluto / Fire)
+  21: "Earth"  // The World (Saturn / Earth)
+};
+
+export const SUIT_TO_ELEMENT = {
+  wands: "Fire",
+  cups: "Water",
+  swords: "Air",
+  pentacles: "Earth",
+  coins: "Earth",
+  disks: "Earth"
+};
+
+export const ELEMENT_METADATA = {
+  Fire: {
+    key: "Fire",
+    vi: "Lửa (Hỏa)",
+    en: "Fire",
+    shortVi: "Lửa",
+    icon: "🔥",
+    domainVi: "ý chí, nhiệt huyết, hành động khởi xướng",
+    domainEn: "willpower, passion, decisive initiative"
+  },
+  Water: {
+    key: "Water",
+    vi: "Nước (Thủy)",
+    en: "Water",
+    shortVi: "Nước",
+    icon: "💧",
+    domainVi: "cảm xúc, trực giác, sự gắn kết nội tâm",
+    domainEn: "emotion, intuition, relational receptivity"
+  },
+  Air: {
+    key: "Air",
+    vi: "Khí (Phong)",
+    en: "Air",
+    shortVi: "Khí",
+    icon: "🌬️",
+    domainVi: "tư duy logic, giao tiếp, phân tích sự thật",
+    domainEn: "intellect, communication, objective clarity"
+  },
+  Earth: {
+    key: "Earth",
+    vi: "Đất (Thổ)",
+    en: "Earth",
+    shortVi: "Đất",
+    icon: "🌿",
+    domainVi: "thực thi cụ thể, nguồn lực vật chất, độ bền",
+    domainEn: "tangible execution, material resources, grounding"
+  }
+};
+
+const MAJOR_NAME_TO_NUMBER = [
+  [/\bfool\b/i, 0],
+  [/\bmagician\b/i, 1],
+  [/\bhigh priestess\b|\bpriestess\b/i, 2],
+  [/\bempress\b/i, 3],
+  [/\bemperor\b/i, 4],
+  [/\bhierophant\b/i, 5],
+  [/\blovers\b/i, 6],
+  [/\bchariot\b/i, 7],
+  [/\bstrength\b/i, 8],
+  [/\bhermit\b/i, 9],
+  [/\bwheel\b/i, 10],
+  [/\bjustice\b/i, 11],
+  [/\bhanged man\b/i, 12],
+  [/\bdeath\b/i, 13],
+  [/\btemperance\b/i, 14],
+  [/\bdevil\b/i, 15],
+  [/\btower\b/i, 16],
+  [/\bstar\b/i, 17],
+  [/\bmoon\b/i, 18],
+  [/\bsun\b/i, 19],
+  [/\bjudg(?:e)?ment\b/i, 20],
+  [/\bworld\b/i, 21]
+];
+
+/**
+ * Resolve classical Golden Dawn element ('Fire' | 'Water' | 'Air' | 'Earth' | null) for any Tarot card.
+ */
+export function resolveCardElement(card) {
+  if (!card || typeof card !== "object") return null;
+
+  if (typeof card.suit === "string" && card.suit.trim()) {
+    const bySuit = SUIT_TO_ELEMENT[card.suit.trim().toLowerCase()];
+    if (bySuit) return bySuit;
+  }
+
+  const idStr = typeof card.id === "string" ? card.id.trim().toLowerCase() : "";
+  if (idStr) {
+    const majorIdMatch = idStr.match(/^major-(\d{1,2})$/);
+    if (majorIdMatch) {
+      const num = Number(majorIdMatch[1]);
+      if (num in MAJOR_ARCANA_ELEMENTS) return MAJOR_ARCANA_ELEMENTS[num];
+    }
+    for (const [suitKey, elem] of Object.entries(SUIT_TO_ELEMENT)) {
+      if (idStr.startsWith(`${suitKey}-`)) return elem;
+    }
+  }
+
+  const isMajor =
+    card.arcana === "Major" ||
+    (typeof card.arcana === "string" && card.arcana.toLowerCase() === "major") ||
+    idStr.startsWith("major-");
+
+  if (isMajor) {
+    const candidateNum = Number.isInteger(card.number)
+      ? card.number
+      : Number.isInteger(card.rank)
+        ? card.rank
+        : null;
+    if (candidateNum !== null && candidateNum in MAJOR_ARCANA_ELEMENTS) {
+      return MAJOR_ARCANA_ELEMENTS[candidateNum];
+    }
+  }
+
+  const nameStr = typeof card.name === "string" ? card.name.trim() : "";
+  if (nameStr) {
+    const suitNameMatch = nameStr.match(/\bof\s+(wands|cups|swords|pentacles|coins|disks)\b/i);
+    if (suitNameMatch) {
+      return SUIT_TO_ELEMENT[suitNameMatch[1].toLowerCase()] || null;
+    }
+    for (const [pattern, majorNum] of MAJOR_NAME_TO_NUMBER) {
+      if (pattern.test(nameStr)) {
+        return MAJOR_ARCANA_ELEMENTS[majorNum];
+      }
+    }
+  }
+
+  if (!card.suit && Number.isInteger(card.number) && card.number in MAJOR_ARCANA_ELEMENTS) {
+    return MAJOR_ARCANA_ELEMENTS[card.number];
+  }
+
+  return null;
+}
+
+/**
+ * Classify pairwise Elemental Dignity between two elements.
+ */
+export function classifyElementalDignity(elemA, elemB, language = "vi") {
+  if (!elemA || !elemB || !ELEMENT_METADATA[elemA] || !ELEMENT_METADATA[elemB]) {
+    return null;
+  }
+  const isEn = language === "en";
+  const pairKey = [elemA, elemB].sort().join("+");
+
+  if (elemA === elemB) {
+    const cautionsVi = {
+      Fire: "Lưu ý tiết chế để tránh nóng vội, bốc đồng hoặc kiệt sức.",
+      Water: "Lưu ý giữ ranh giới để tránh ngập trong cảm xúc hoặc nhạy cảm quá mức.",
+      Air: "Lưu ý tránh suy nghĩ quá tải (overthinking) hoặc lời nói sắc lạnh.",
+      Earth: "Lưu ý linh hoạt để tránh bảo thủ, trì trệ hoặc quá nặng tính vật chất."
+    };
+    const cautionsEn = {
+      Fire: "Pace yourself to avoid impulsivity, friction, or burnout.",
+      Water: "Keep healthy boundaries to avoid emotional overwhelm or escapism.",
+      Air: "Guard against overthinking, analysis paralysis, or overly sharp critique.",
+      Earth: "Stay adaptable so stability does not harden into rigidity or stagnation."
+    };
+    const meta = ELEMENT_METADATA[elemA];
+    return {
+      type: "identical",
+      score: 2,
+      badge: isEn
+        ? "Identical Resonance (Amplified)"
+        : "Cộng hưởng thuần nhất (Amplified)",
+      description: isEn
+        ? `Pure ${meta.en} amplification (${meta.domainEn}). ${cautionsEn[elemA]}`
+        : `Khuếch đại mạnh năng lượng ${meta.shortVi} (${meta.domainVi}). ${cautionsVi[elemA]}`,
+      caution: isEn ? cautionsEn[elemA] : cautionsVi[elemA]
+    };
+  }
+
+  if (pairKey === "Air+Fire") {
+    return {
+      type: "friendly",
+      score: 1,
+      badge: isEn
+        ? "Mutually Strengthening (Friendly)"
+        : "Tương trợ đắc lực (Mutually Strengthening)",
+      description: isEn
+        ? "Fire + Air actively reinforce each other: clear strategy fans decisive action and momentum."
+        : "Lửa gặp Khí tương trợ mạnh mẽ: tư duy sáng rõ tiếp oxy cho hành động quyết đoán và tốc độ bứt phá.",
+      caution: null
+    };
+  }
+
+  if (pairKey === "Earth+Water") {
+    return {
+      type: "friendly",
+      score: 1,
+      badge: isEn
+        ? "Mutually Strengthening (Friendly)"
+        : "Tương trợ đắc lực (Mutually Strengthening)",
+      description: isEn
+        ? "Water + Earth nourish each other: emotional sincerity grounds into fertile, lasting stability."
+        : "Nước tưới Đất sinh trưởng bền vững: cảm xúc chân thành được nuôi dưỡng thành kết quả thực tế vững chắc.",
+      caution: null
+    };
+  }
+
+  if (pairKey === "Fire+Water") {
+    return {
+      type: "contrary",
+      score: -1,
+      badge: isEn
+        ? "Contrary / Ill-Dignified (Weakening)"
+        : "Xung khắc / Kiềm tỏa (Contrary / Ill-Dignified)",
+      description: isEn
+        ? "Fire + Water clash creates steam and hesitation: raw impulse collides with sensitive emotion, requiring conscious pacing."
+        : "Lửa gặp Nước tạo hơi mù giằng co: nhiệt huyết muốn tiến nhanh va chạm với cảm xúc nhạy cảm, dễ gây do dự hoặc hụt hơi.",
+      caution: isEn
+        ? "Align emotional readiness before forcing rapid action."
+        : "Cần thống nhất cảm xúc bên trong trước khi ép bản thân hành động gấp."
+    };
+  }
+
+  if (pairKey === "Air+Earth") {
+    return {
+      type: "contrary",
+      score: -1,
+      badge: isEn
+        ? "Contrary / Ill-Dignified (Weakening)"
+        : "Xung khắc / Kiềm tỏa (Contrary / Ill-Dignified)",
+      description: isEn
+        ? "Air + Earth tension pits abstract ideas and ideals against rigid material constraints and practical limits."
+        : "Khí gặp Đất đối nghịch giữa lý thuyết/kế hoạch trên giấy và giới hạn thực tế cứng nhắc, đòi hỏi cầu nối thực thi.",
+      caution: isEn
+        ? "Translate abstract plans into small, verifiable milestones."
+        : "Hãy chuyển hóa ý tưởng thành từng bước kiểm chứng thực tế nhỏ."
+    };
+  }
+
+  // Neutral / Mediated: Fire+Earth or Air+Water
+  const isFireEarth = pairKey === "Earth+Fire";
+  return {
+    type: "neutral",
+    score: 0,
+    badge: isEn
+      ? "Neutral / Mediated (Balanced)"
+      : "Trung tính / Bổ khuyết (Neutral)",
+    description: isEn
+      ? isFireEarth
+        ? "Fire + Earth coexist steadily: ambition channels into structured endurance without canceling out."
+        : "Water + Air coexist neutrally: intuition and reason stand side-by-side, inviting mindful integration."
+      : isFireEarth
+        ? "Lửa đi cùng Đất trung tính ổn định: nhiệt huyết được đặt vào khuôn khổ thực tế mà không triệt tiêu nhau."
+        : "Nước đi cùng Khí trung tính bổ khuyết: trực giác và lý trí song hành, mời gọi sự kết hợp tỉnh táo.",
+    caution: null
+  };
+}
+
+function buildMissingElementInsights(missingElements, totalCards, perspective, language) {
+  if (totalCards < 2 || missingElements.length === 0) return [];
+  const isEn = language === "en";
+  const insights = [];
+
+  for (const elem of missingElements) {
+    const meta = ELEMENT_METADATA[elem];
+    let message = "";
+    if (elem === "Earth") {
+      if (perspective === "career" || perspective === "money") {
+        message = isEn
+          ? "0 Earth in a career/finance reading: plenty of drive or ideas, but lacking a concrete execution plan, budget, or grounded timeline."
+          : "Vắng nguyên tố Đất trong trải bài công việc/tài chính: không thiếu ý tưởng hoặc cảm xúc nhưng đang thiếu kế hoạch thực thi cụ thể, ngân sách rõ ràng và mốc đo lường thực tế.";
+      } else {
+        message = isEn
+          ? "Missing Earth: anchor insights into tangible daily habits and practical commitments."
+          : "Vắng nguyên tố Đất: cần neo các suy nghĩ/cảm xúc xuống hành động thực tế và cam kết cụ thể hàng ngày.";
+      }
+    } else if (elem === "Water") {
+      if (perspective === "love" || perspective === "family" || perspective === "feelings") {
+        message = isEn
+          ? "0 Water in a relationship/emotional reading: energy leans overly rational or guarded—leave room for vulnerability and empathy."
+          : "Vắng nguyên tố Nước trong trải bài tình cảm/gia đình: góc nhìn đang thiên về lý trí hoặc phòng vệ, cần mở lòng lắng nghe sự tổn thương và thấu cảm sâu hơn.";
+      } else {
+        message = isEn
+          ? "Missing Water: remember to check intuition and emotional sustainable well-being alongside external goals."
+          : "Vắng nguyên tố Nước: đừng quên lắng nghe trực giác và sự thoải mái tinh thần bên cạnh mục tiêu bề nổi.";
+      }
+    } else if (elem === "Air") {
+      message = isEn
+        ? "Missing Air: step back for objective perspective, clear boundaries, and direct communication."
+        : "Vắng nguyên tố Khí: cần lùi lại một bước để nhìn nhận khách quan, đặt ranh giới rõ ràng và trao đổi thẳng thắn.";
+    } else if (elem === "Fire") {
+      message = isEn
+        ? "Missing Fire: passive or reflective energy dominates—you will need a deliberate spark of initiative to move things forward."
+        : "Vắng nguyên tố Lửa: năng lượng đang nghiêng về quan sát/chờ đợi, cần chủ động tạo cú hích khởi xướng để phá vỡ quán tính.";
+    }
+
+    insights.push({
+      element: elem,
+      elementLabel: isEn ? meta.en : meta.shortVi,
+      icon: meta.icon,
+      message
+    });
+  }
+
+  return insights;
+}
+
+/**
+ * Compute Pairwise & Golden Dawn Triad Elemental Dignities + Elemental Balance & Missing Elements.
+ */
+export function computeElementalDignities(cards, positions = [], options = {}) {
+  const safeCards = Array.isArray(cards) ? cards.filter(Boolean) : [];
+  const opts = typeof options === "string" ? { language: options } : (options || {});
+  const language = opts.language === "en" ? "en" : "vi";
+  const perspective = opts.perspective || "general";
+  const isEn = language === "en";
+
+  const counts = { Fire: 0, Water: 0, Air: 0, Earth: 0 };
+  const percentages = { Fire: 0, Water: 0, Air: 0, Earth: 0 };
+
+  if (safeCards.length === 0) {
+    return {
+      cardElements: [],
+      pairs: [],
+      triads: [],
+      counts,
+      percentages,
+      dominantElement: null,
+      missingElements: ["Fire", "Water", "Air", "Earth"],
+      missingInsights: [],
+      harmonyScore: 0,
+      overallHarmony: "balanced",
+      summaryText: "",
+      promptDigest: ""
+    };
+  }
+
+  const cardElements = safeCards.map((card, index) => {
+    const element = resolveCardElement(card);
+    if (element && element in counts) {
+      counts[element] += 1;
+    }
+    const fallbackPos = isEn ? `Position ${index + 1}` : `Vị trí ${index + 1}`;
+    const rawPos = Array.isArray(positions) ? positions[index] : null;
+    const position = (typeof rawPos === "string" && rawPos.trim()) ? rawPos.trim() : fallbackPos;
+    const meta = element ? ELEMENT_METADATA[element] : null;
+    return {
+      index,
+      card,
+      position,
+      element,
+      elementLabel: meta ? (isEn ? meta.en : meta.shortVi) : (isEn ? "Unknown" : "Chưa rõ"),
+      icon: meta ? meta.icon : "✨"
+    };
+  });
+
+  const totalResolved = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  if (totalResolved > 0) {
+    for (const key of ["Fire", "Water", "Air", "Earth"]) {
+      percentages[key] = Math.round((counts[key] / totalResolved) * 100);
+    }
+  }
+
+  const maxElemCount = Math.max(...Object.values(counts));
+  const dominantElement = maxElemCount > 0
+    ? ["Fire", "Water", "Air", "Earth"].find((k) => counts[k] === maxElemCount) || null
+    : null;
+
+  const missingElements = ["Fire", "Water", "Air", "Earth"].filter((k) => counts[k] === 0);
+  const missingInsights = buildMissingElementInsights(missingElements, safeCards.length, perspective, language);
+
+  // Pairwise adjacent dignities
+  const pairs = [];
+  let harmonyScore = 0;
+
+  for (let i = 0; i < cardElements.length - 1; i += 1) {
+    const left = cardElements[i];
+    const right = cardElements[i + 1];
+    if (!left.element || !right.element) continue;
+
+    const relation = classifyElementalDignity(left.element, right.element, language);
+    if (!relation) continue;
+    harmonyScore += relation.score;
+
+    pairs.push({
+      fromIndex: i,
+      toIndex: i + 1,
+      leftCard: left.card,
+      rightCard: right.card,
+      leftPosition: left.position,
+      rightPosition: right.position,
+      leftElement: left.element,
+      rightElement: right.element,
+      leftIcon: left.icon,
+      rightIcon: right.icon,
+      ...relation
+    });
+  }
+
+  // Golden Dawn 3-Card Flanking Triads (flanking cards modify the center card)
+  const triads = [];
+  for (let i = 1; i < cardElements.length - 1; i += 1) {
+    const left = cardElements[i - 1];
+    const center = cardElements[i];
+    const right = cardElements[i + 1];
+    if (!left.element || !center.element || !right.element) continue;
+
+    const relLeft = classifyElementalDignity(left.element, center.element, language);
+    const relRight = classifyElementalDignity(center.element, right.element, language);
+    const flankRel = classifyElementalDignity(left.element, right.element, language);
+
+    const leftSupport = relLeft.type === "identical" || relLeft.type === "friendly";
+    const rightSupport = relRight.type === "identical" || relRight.type === "friendly";
+    const leftContrary = relLeft.type === "contrary";
+    const rightContrary = relRight.type === "contrary";
+
+    let status = "mixed-dignified";
+    let label = "";
+    let description = "";
+
+    if (leftSupport && rightSupport) {
+      status = "strongly-dignified";
+      label = isEn ? "Well-Dignified Triad (Strongly Supported)" : "Tam hợp nâng đỡ mạnh (Well-Dignified)";
+      description = isEn
+        ? `${center.card.name} (${center.position}) is flanked by supportive ${left.element} & ${right.element}, allowing its core potential to express fully and constructively.`
+        : `Lá trung tâm ${center.card.name} (${center.position}) được cả ${left.card.name} (${left.elementLabel}) lẫn ${right.card.name} (${right.elementLabel}) tiếp sức, giúp năng lượng cốt lõi phát huy trọn vẹn và thuận lợi.`;
+    } else if (leftContrary && rightContrary) {
+      status = "ill-dignified";
+      label = isEn ? "Ill-Dignified Triad (Double Constraint)" : "Tam cung kiềm tỏa kép (Ill-Dignified)";
+      description = isEn
+        ? `${center.card.name} (${center.position}) is boxed in by contrary ${left.element} & ${right.element}, meaning its energy feels blocked or internalized unless consciously mediated.`
+        : `Lá trung tâm ${center.card.name} (${center.position}) bị hai nguyên tố đối nghịch (${left.elementLabel} & ${right.elementLabel}) kẹp hai bên, khiến năng lượng dễ bị nén lại hoặc cản trở nếu không tháo gỡ chủ động.`;
+    } else if (flankRel?.type === "contrary") {
+      status = "flanks-neutralized";
+      label = isEn ? "Flanking Forces Neutralized" : "Hai cánh đối kháng tự cân bằng";
+      description = isEn
+        ? `Flanking cards ${left.card.name} (${left.element}) and ${right.card.name} (${right.element}) are contrary to each other and cancel out, leaving ${center.card.name} (${center.position}) as the decisive pivot.`
+        : `Hai lá kề bên (${left.card.name} - ${left.elementLabel} & ${right.card.name} - ${right.elementLabel}) xung khắc tự triệt tiêu lực kéo của nhau, đặt toàn bộ quyền quyết định vào lá trục giữa ${center.card.name} (${center.position}).`;
+    } else {
+      status = "mixed-dignified";
+      label = isEn ? "Moderately Dignified Triad" : "Tam cung đan xen trợ lực & thử thách";
+      description = isEn
+        ? `${center.card.name} (${center.position}) receives mixed elemental input from ${left.element} and ${right.element}, blending partial momentum with practical adjustment.`
+        : `Lá trung tâm ${center.card.name} (${center.position}) vừa nhận trợ lực vừa gặp lực điều chỉnh từ ${left.elementLabel} và ${right.elementLabel}, cần khéo léo dung hòa nhịp độ.`;
+    }
+
+    triads.push({
+      indices: [i - 1, i, i + 1],
+      centerIndex: i,
+      centerCard: center.card,
+      centerPosition: center.position,
+      centerElement: center.element,
+      flankElements: [left.element, right.element],
+      status,
+      label,
+      description
+    });
+  }
+
+  const overallHarmony = harmonyScore >= 1
+    ? "harmonious"
+    : harmonyScore <= -1
+      ? "tense"
+      : "balanced";
+
+  const summaryParts = [];
+  if (dominantElement) {
+    const domMeta = ELEMENT_METADATA[dominantElement];
+    summaryParts.push(
+      isEn
+        ? `Dominant element: ${domMeta.icon} ${domMeta.en} (${percentages[dominantElement]}% — ${domMeta.domainEn}).`
+        : `Nguyên tố chủ đạo: ${domMeta.icon} ${domMeta.shortVi} (${percentages[dominantElement]}% — ${domMeta.domainVi}).`
+    );
+  }
+  if (pairs.length > 0) {
+    const friendlyCount = pairs.filter((p) => p.type === "friendly" || p.type === "identical").length;
+    const contraryCount = pairs.filter((p) => p.type === "contrary").length;
+    if (contraryCount > 0 && friendlyCount > 0) {
+      summaryParts.push(
+        isEn
+          ? `Flow blends ${friendlyCount} reinforcing link(s) with ${contraryCount} contrary friction point(s).`
+          : `Dòng chảy kết hợp ${friendlyCount} cặp tương trợ/cộng hưởng và ${contraryCount} điểm xung khắc cần hóa giải.`
+      );
+    } else if (contraryCount > 0) {
+      summaryParts.push(
+        isEn
+          ? `${contraryCount} contrary elemental clash(es) signal internal friction that requires conscious mediation.`
+          : `Xuất hiện ${contraryCount} cặp nguyên tố xung khắc báo hiệu sự giằng co nội tại cần chủ động điều tiết.`
+      );
+    } else if (friendlyCount > 0) {
+      summaryParts.push(
+        isEn
+          ? `Adjacent cards flow harmoniously (${friendlyCount} supportive elemental link(s)).`
+          : `Các lá bài liền kề nâng đỡ nhau thuận chiều (${friendlyCount} cặp tương trợ/cộng hưởng).`
+      );
+    }
+  }
+  if (missingInsights.length > 0 && safeCards.length >= 3) {
+    summaryParts.push(missingInsights[0].message);
+  }
+
+  const summaryText = summaryParts.join(" ");
+
+  const digestLines = [
+    isEn
+      ? `- Elemental Balance: Fire ${counts.Fire}, Water ${counts.Water}, Air ${counts.Air}, Earth ${counts.Earth}${missingElements.length > 0 && safeCards.length >= 3 ? ` (Missing: ${missingElements.join(", ")})` : ""}`
+      : `- Cân bằng Nguyên tố: Lửa ${counts.Fire}, Nước ${counts.Water}, Khí ${counts.Air}, Đất ${counts.Earth}${missingElements.length > 0 && safeCards.length >= 3 ? ` (Vắng: ${missingElements.map((e) => ELEMENT_METADATA[e].shortVi).join(", ")})` : ""}`
+  ];
+  pairs.forEach((p) => {
+    digestLines.push(
+      `- [${p.leftPosition}: ${p.leftCard.name} (${p.leftElement})] ↔ [${p.rightPosition}: ${p.rightCard.name} (${p.rightElement})]: ${p.badge} — ${p.description}`
+    );
+  });
+  triads.forEach((tr) => {
+    digestLines.push(`- Triad (${tr.centerPosition}): ${tr.label} — ${tr.description}`);
+  });
+  if (missingInsights.length > 0 && safeCards.length >= 3) {
+    digestLines.push(`- ${missingInsights[0].message}`);
+  }
+
+  return {
+    cardElements,
+    pairs,
+    triads,
+    counts,
+    percentages,
+    dominantElement,
+    missingElements,
+    missingInsights,
+    harmonyScore,
+    overallHarmony,
+    summaryText,
+    promptDigest: digestLines.join("\n")
+  };
+}
+
+const PIP_RANK_TO_NUMBER = {
+  ace: 1,
+  "1": 1,
+  one: 1,
+  two: 2,
+  "2": 2,
+  three: 3,
+  "3": 3,
+  four: 4,
+  "4": 4,
+  five: 5,
+  "5": 5,
+  six: 6,
+  "6": 6,
+  seven: 7,
+  "7": 7,
+  eight: 8,
+  "8": 8,
+  nine: 9,
+  "9": 9,
+  ten: 10,
+  "10": 10
+};
+
+const PIP_ARCHETYPE_MEANINGS = {
+  1: {
+    rankLabel: "Ace (1)",
+    vi: "Mầm mống khởi đầu mới, cơ hội nguyên sơ & tiềm năng thuần khiết",
+    en: "Seeds, raw new beginnings, and pure untapped potential"
+  },
+  2: {
+    rankLabel: "2 (Two)",
+    vi: "Tính nhị nguyên, đứng trước lựa chọn cân bằng hoặc sự kết nối đôi",
+    en: "Duality, weighing a pivotal choice, and partnership balance"
+  },
+  3: {
+    rankLabel: "3 (Three)",
+    vi: "Tăng trưởng bước đầu, sự phối hợp nhóm & biểu đạt sáng tạo",
+    en: "Initial growth, collaboration, and creative expression"
+  },
+  4: {
+    rankLabel: "4 (Four)",
+    vi: "Xây nền tảng vững chắc, khuôn khổ bảo toàn hoặc nguy cơ trì trệ",
+    en: "Structure, consolidation, stability, or risk of stagnation"
+  },
+  5: {
+    rankLabel: "5 (Five)",
+    vi: "Biến động, va chạm thử thách & lời nhắc linh hoạt thay đổi",
+    en: "Disruption, friction/conflict, and necessary adaptation"
+  },
+  6: {
+    rankLabel: "6 (Six)",
+    vi: "Hài hòa trở lại, sự hồi phục, chữa lành & trao nhận cân xứng",
+    en: "Harmony restored, recovery, healing, and reciprocity"
+  },
+  7: {
+    rankLabel: "7 (Seven)",
+    vi: "Đánh giá lại chiến lược, thử thách đức tin & chiều sâu nội tâm",
+    en: "Strategic assessment, testing faith, and inner discernment"
+  },
+  8: {
+    rankLabel: "8 (Eight)",
+    vi: "Chuyển động tăng tốc, rèn giũa làm chủ kỹ năng & kỷ luật",
+    en: "Rapid movement, dedicated mastery, and focused execution"
+  },
+  9: {
+    rankLabel: "9 (Nine)",
+    vi: "Độ chín muồi, tự lực viên mãn hoặc ngưỡng thử thách cuối cùng",
+    en: "Culmination, personal fruition, and resilience near the finish line"
+  },
+  10: {
+    rankLabel: "10 (Ten)",
+    vi: "Hoàn tất một chu kỳ lớn, di sản trọn vẹn hoặc gánh nặng quá tải",
+    en: "Cycle completion, full realization, or carrying excess overload"
+  }
+};
+
+const COURT_RANK_THEMES = {
+  Page: {
+    vi: "Thông điệp mới, tinh thần học hỏi và sự tò mò khởi phát",
+    en: "Fresh messages, curiosity, and a student mindset"
+  },
+  Knight: {
+    vi: "Chuyển động mạnh, hành động theo đuổi mục tiêu và thay đổi nhanh",
+    en: "Active pursuit, swift movement, and catalytic change"
+  },
+  Queen: {
+    vi: "Làm chủ nội tâm, sự thấu cảm sâu sắc và sức ảnh hưởng tinh tế",
+    en: "Inner mastery, emotional depth, and receptive influence"
+  },
+  King: {
+    vi: "Quyền quyết định, năng lực dẫn dắt và trách nhiệm điều phối",
+    en: "Mature authority, strategic leadership, and decisive structure"
+  }
+};
+
+function detectCourtRank(card) {
+  if (!card || typeof card !== "object") return null;
+  const rawRank = typeof card.rank === "string" ? card.rank.trim().toLowerCase() : "";
+  if (rawRank === "page") return "Page";
+  if (rawRank === "knight") return "Knight";
+  if (rawRank === "queen") return "Queen";
+  if (rawRank === "king") return "King";
+
+  const idStr = typeof card.id === "string" ? card.id.trim().toLowerCase() : "";
+  const idMatch = idStr.match(/-(page|knight|queen|king)$/);
+  if (idMatch) return capitalize(idMatch[1]);
+
+  const nameStr = typeof card.name === "string" ? card.name.trim() : "";
+  const nameMatch = nameStr.match(/^(Page|Knight|Queen|King)\s+of\b/i);
+  if (nameMatch) return capitalize(nameMatch[1].toLowerCase());
+
+  return null;
+}
+
+function detectIsMajorCard(card) {
+  if (!card || typeof card !== "object") return false;
+  if (card.arcana === "Major" || (typeof card.arcana === "string" && card.arcana.toLowerCase() === "major")) {
+    return true;
+  }
+  if (typeof card.id === "string" && card.id.trim().toLowerCase().startsWith("major-")) {
+    return true;
+  }
+  if (!card.suit && typeof card.name === "string") {
+    return MAJOR_NAME_TO_NUMBER.some(([pattern]) => pattern.test(card.name));
+  }
+  return false;
+}
+
+function resolvePipNumber(card) {
+  if (!card || typeof card !== "object") return null;
+  if (detectIsMajorCard(card) || detectCourtRank(card)) return null;
+
+  if (typeof card.rank === "string") {
+    const mapped = PIP_RANK_TO_NUMBER[card.rank.trim().toLowerCase()];
+    if (mapped) return mapped;
+  } else if (Number.isInteger(card.rank) && card.rank >= 1 && card.rank <= 10) {
+    return card.rank;
+  }
+
+  if (Number.isInteger(card.number) && card.number >= 1 && card.number <= 10) {
+    return card.number;
+  }
+
+  const idStr = typeof card.id === "string" ? card.id.trim().toLowerCase() : "";
+  const idParts = idStr.split("-");
+  if (idParts.length === 2 && PIP_RANK_TO_NUMBER[idParts[1]]) {
+    return PIP_RANK_TO_NUMBER[idParts[1]];
+  }
+
+  const nameStr = typeof card.name === "string" ? card.name.trim() : "";
+  const nameMatch = nameStr.match(/^(Ace|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d{1,2})\s+of\b/i);
+  if (nameMatch) {
+    return PIP_RANK_TO_NUMBER[nameMatch[1].toLowerCase()] || null;
+  }
+
+  return null;
+}
+
+/**
+ * Compute Numerological Pip Clusters, Number Progression, Court Card Density & Major Arcana Ratio.
+ */
+export function computeArchetypeClusters(cards, language = "vi") {
+  const safeCards = Array.isArray(cards) ? cards.filter(Boolean) : [];
+  const isEn = language === "en";
+  const total = safeCards.length;
+
+  if (total === 0) {
+    return {
+      repeatedRanks: [],
+      progression: { direction: "none", sequence: [], description: "" },
+      courtCards: { count: 0, ratio: 0, isCluster: false, byRank: {}, cards: [], interpretation: "" },
+      majorArcana: { count: 0, total: 0, ratio: 0, isMajorHeavy: false, isKarmicTurningPoint: false, interpretation: "" },
+      highlights: [],
+      promptDigest: ""
+    };
+  }
+
+  // 1. Repeated Pip Numbers (Ace..10)
+  const pipBuckets = new Map();
+  const pipSequence = [];
+
+  safeCards.forEach((card, index) => {
+    const pip = resolvePipNumber(card);
+    if (pip !== null) {
+      pipSequence.push({ index, number: pip, card });
+      if (!pipBuckets.has(pip)) pipBuckets.set(pip, []);
+      pipBuckets.get(pip).push(card);
+    }
+  });
+
+  const repeatedRanks = [];
+  for (const [pipNum, groupCards] of pipBuckets.entries()) {
+    if (groupCards.length >= 2) {
+      const meta = PIP_ARCHETYPE_MEANINGS[pipNum];
+      repeatedRanks.push({
+        number: pipNum,
+        rankLabel: meta.rankLabel,
+        count: groupCards.length,
+        cards: groupCards,
+        meaning: isEn ? meta.en : meta.vi,
+        summary: isEn
+          ? `${groupCards.length}x Rank ${meta.rankLabel} (${groupCards.map((c) => c.name).join(", ")}): ${meta.en}.`
+          : `Lặp ${groupCards.length} lá số ${meta.rankLabel} (${groupCards.map((c) => c.name).join(", ")}): ${meta.vi}.`
+      });
+    }
+  }
+  repeatedRanks.sort((a, b) => b.count - a.count || a.number - b.number);
+
+  // 2. Number Progression across positions (Pip numbers first if >= 3, else Major/all numeric >= 3)
+  let seqItems = pipSequence;
+  if (seqItems.length < 3) {
+    seqItems = safeCards
+      .map((card, index) => {
+        const pip = resolvePipNumber(card);
+        if (pip !== null) return { index, number: pip, card };
+        if (detectIsMajorCard(card) && Number.isInteger(card.number)) {
+          return { index, number: card.number, card };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  let progression = { direction: "none", sequence: seqItems.map((s) => s.number), description: "" };
+  if (seqItems.length >= 3) {
+    const nums = seqItems.map((s) => s.number);
+    let nonDecreasing = true;
+    let nonIncreasing = true;
+    let strictUpSteps = 0;
+    let strictDownSteps = 0;
+
+    for (let i = 0; i < nums.length - 1; i += 1) {
+      if (nums[i + 1] > nums[i]) {
+        nonIncreasing = false;
+        strictUpSteps += 1;
+      } else if (nums[i + 1] < nums[i]) {
+        nonDecreasing = false;
+        strictDownSteps += 1;
+      }
+    }
+
+    if (nonDecreasing && strictUpSteps >= 2) {
+      progression = {
+        direction: "ascending",
+        sequence: nums,
+        description: isEn
+          ? `Ascending number progression (${nums.join(" → ")}): evolving momentum—energy is building step-by-step toward expansion.`
+          : `Chuỗi số tăng tiến (${nums.join(" → ")}): đà năng lượng đang phát triển mở rộng từng bước từ khởi điểm lên cao trào.`
+      };
+    } else if (nonIncreasing && strictDownSteps >= 2) {
+      progression = {
+        direction: "descending",
+        sequence: nums,
+        description: isEn
+          ? `Descending number progression (${nums.join(" → ")}): winding down complexity to release pressure and return to core basics.`
+          : `Chuỗi số giảm dần (${nums.join(" → ")}): xu hướng thu gọn áp lực, khép lại sự phức tạp để quay về giá trị cốt lõi ban đầu.`
+      };
+    }
+  }
+
+  // 3. Court Card Density
+  const foundCourts = [];
+  const courtByRank = { Page: 0, Knight: 0, Queen: 0, King: 0 };
+  safeCards.forEach((card) => {
+    const cRank = detectCourtRank(card);
+    if (cRank) {
+      foundCourts.push({ card, courtRank: cRank });
+      courtByRank[cRank] = (courtByRank[cRank] || 0) + 1;
+    }
+  });
+
+  const isCourtCluster = foundCourts.length >= 2;
+  let courtInterpretation = "";
+  if (isCourtCluster) {
+    const dominantCourtRank = Object.entries(courtByRank)
+      .filter(([, cnt]) => cnt > 0)
+      .sort((a, b) => b[1] - a[1])[0]?.[0];
+    const rankHint = dominantCourtRank
+      ? (isEn ? COURT_RANK_THEMES[dominantCourtRank].en : COURT_RANK_THEMES[dominantCourtRank].vi)
+      : "";
+    courtInterpretation = isEn
+      ? `High Court Card density (${foundCourts.length} cards: ${foundCourts.map((f) => f.card.name).join(", ")}): external people/stakeholders or distinct inner persona facets are actively shaping this situation. ${rankHint}.`
+      : `Mật độ lá Hoàng gia cao (${foundCourts.length} lá: ${foundCourts.map((f) => f.card.name).join(", ")}): có sự can dự rõ nét của những nhân vật xung quanh hoặc các mặt tính cách nội tâm đang trực tiếp chi phối cục diện (${rankHint.toLowerCase()}).`;
+  }
+
+  // 4. Major Arcana Ratio
+  const majorCards = safeCards.filter(detectIsMajorCard);
+  const majorCount = majorCards.length;
+  const majorRatio = majorCount / total;
+  const isKarmicTurningPoint = total >= 3 && majorRatio >= 0.5;
+  let majorInterpretation = "";
+  if (isKarmicTurningPoint) {
+    majorInterpretation = isEn
+      ? `High Major Arcana ratio (${majorCount}/${total} — ${Math.round(majorRatio * 100)}%): marks a structural or karmic life-chapter turning point rather than a minor day-to-day fluctuation.`
+      : `Tỷ lệ Ẩn Chính áp đảo (${majorCount}/${total} lá — ${Math.round(majorRatio * 100)}%): báo hiệu một bước ngoặt mang tính cấu trúc lớn hoặc bài học chuyển giao chương đời quan trọng, không chỉ là biến động vụn vặt thường ngày.`;
+  } else if (total >= 3 && majorCount === 0) {
+    majorInterpretation = isEn
+      ? `100% Minor Arcana (${total} cards): outcomes rest largely in your practical day-to-day choices and immediate habits.`
+      : `100% Ẩn Phụ (${total} lá): cục diện nằm trọn trong tầm kiểm soát và thói quen ứng xử thực tế hàng ngày của bạn.`;
+  }
+
+  const highlights = [];
+  if (majorInterpretation) highlights.push(majorInterpretation);
+  repeatedRanks.forEach((r) => highlights.push(r.summary));
+  if (progression.direction !== "none") highlights.push(progression.description);
+  if (courtInterpretation) highlights.push(courtInterpretation);
+
+  return {
+    repeatedRanks,
+    progression,
+    courtCards: {
+      count: foundCourts.length,
+      ratio: foundCourts.length / total,
+      isCluster: isCourtCluster,
+      byRank: courtByRank,
+      cards: foundCourts.map((f) => f.card),
+      interpretation: courtInterpretation
+    },
+    majorArcana: {
+      count: majorCount,
+      total,
+      ratio: majorRatio,
+      isMajorHeavy: isKarmicTurningPoint,
+      isKarmicTurningPoint,
+      interpretation: majorInterpretation
+    },
+    highlights,
+    promptDigest: highlights.map((h) => `- ${h}`).join("\n")
+  };
+}
+
+/**
  * Generate a multi-dimensional, deep reading summary analysis object
  */
-export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "general", language = "vi", question = "", seed) {
+export function composeSpreadSummary(
+  drawnCards,
+  spreadPresetId,
+  perspective = "general",
+  language = "vi",
+  question = "",
+  seed,
+  customPositions = null
+) {
   if (!Array.isArray(drawnCards) || drawnCards.length === 0) return null;
   
   const normalizedSpreadId = normalizeSpreadId(spreadPresetId);
@@ -1344,7 +2246,7 @@ export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "
   
   const summarySeed = Number.isFinite(seed)
     ? seed
-    : deriveSummarySeed(drawnCards, normalizedSpreadId, activePerspective, language, question);
+    : deriveSummarySeed(drawnCards, normalizedSpreadId, activePerspective, language, question, customPositions);
   const rng = createSeededRandom(summarySeed + 2);
   const introBankPerspective = INTRO_BANK[activePerspective] || INTRO_BANK.general;
   const introText = pickTemplate(introBankPerspective[language] || introBankPerspective.vi, rng);
@@ -1358,7 +2260,10 @@ export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "
     for (let i = 0; i < 20; i++) {
       fallbackList.push(isEn ? `Position ${i + 1}` : `Vị trí ${i + 1}`);
     }
-    const position = (Array.isArray(positions) ? positions[index] : positions) || fallbackList[index];
+    const customLabel = Array.isArray(customPositions) && typeof customPositions[index] === "string"
+      ? customPositions[index].trim()
+      : "";
+    const position = customLabel || (Array.isArray(positions) ? positions[index] : positions) || fallbackList[index];
     
     // get basic meaning
     const orientation = card?.orientation || "upright";
@@ -1374,6 +2279,13 @@ export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "
       impact
     };
   });
+
+  const resolvedPosLabels = interpretedCards.map((item) => item.position);
+  const dignities = computeElementalDignities(drawnCards, resolvedPosLabels, {
+    language,
+    perspective: activePerspective
+  });
+  const clusters = computeArchetypeClusters(drawnCards, language);
   
   return {
     context: activePerspective,
@@ -1382,7 +2294,9 @@ export function composeSpreadSummary(drawnCards, spreadPresetId, perspective = "
     coreMessage: language === "en"
       ? `The overall story of these cards is: ${tension}`
       : `Câu chuyện chung của các lá bài này là: ${tension}`,
-    advice: adviceText
+    advice: adviceText,
+    dignities,
+    clusters
   };
 }
 

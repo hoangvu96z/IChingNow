@@ -3,7 +3,13 @@ import { stripHtml } from '../api.js';
 import ImageViewer from './ImageViewer.jsx';
 import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
 import { useNoteAudioSources } from '../hooks/useNoteAudioSources.js';
-import { contentWithProtectedImageSources, getInlineNoteImages, sanitizeNoteContent } from '../safeNoteContent.js';
+import {
+  contentWithProtectedImageSources,
+  extractChecklistProgress,
+  getInlineNoteImages,
+  sanitizeNoteContent,
+} from '../safeNoteContent.js';
+import { normalizeNoteTags } from '../../../shared/src/utils/saveToNoteNow.mjs';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import {
   GripVertical, Pin,
@@ -20,6 +26,7 @@ export default function NoteCard({
   onShare,
   onPin,
   onPassword,
+  onTagClick,
   isUnlocked = false,
   isShared,
 }) {
@@ -33,6 +40,14 @@ export default function NoteCard({
   const sanitizedContent = useMemo(
     () => (isPasswordLocked ? '' : sanitizeNoteContent(note.content)),
     [note.content, isPasswordLocked],
+  );
+  const checklistProgress = useMemo(
+    () => (isPasswordLocked ? { total: 0, completed: 0 } : extractChecklistProgress(sanitizedContent)),
+    [sanitizedContent, isPasswordLocked],
+  );
+  const noteTags = useMemo(
+    () => (isPasswordLocked ? [] : normalizeNoteTags(note.tags || [])),
+    [note.tags, isPasswordLocked],
   );
   const inlineImages = useMemo(() => getInlineNoteImages(sanitizedContent), [sanitizedContent]);
   const imageRefs = useMemo(() => [...attachmentImages, ...inlineImages], [attachmentImages, inlineImages]);
@@ -80,13 +95,13 @@ export default function NoteCard({
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-          <GripVertical size={14} />
+          <GripVertical size={14} aria-hidden="true" />
         </div>
       )}
 
       {note.isPinned && (
         <span className="nn-pin-icon" aria-label={t('board.section_pinned', 'Đã ghim')} title={t('board.section_pinned', 'Đã ghim')}>
-          <Pin size={13} fill="currentColor" strokeWidth={1.5} />
+          <Pin size={13} fill="currentColor" strokeWidth={1.5} aria-hidden="true" />
         </span>
       )}
 
@@ -152,16 +167,45 @@ export default function NoteCard({
             marginTop: note.title ? 6 : 0,
           }}
         >
-          <Lock size={14} strokeWidth={2.2} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <Lock size={14} strokeWidth={2.2} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
           <span>{t('card.locked_preview', 'Đã khoá bằng mật khẩu — Bấm để mở khoá')}</span>
         </div>
       ) : (
-        (contentPreview || inlineImages.length > 0) && (
+        (contentPreview || inlineImages.length > 0 || checklistProgress.total > 0) && (
           <div
             className="nn-card-content"
             dangerouslySetInnerHTML={{ __html: contentPreviewHtml }}
           />
         )
+      )}
+
+      {/* Tags (hidden when password-locked) */}
+      {noteTags.length > 0 && (
+        <div
+          className="nn-card-tags"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {noteTags.map((tag) => (
+            onTagClick ? (
+              <button
+                key={tag}
+                type="button"
+                className="nn-tag-chip nn-card-tag-chip"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTagClick(tag);
+                }}
+                aria-label={`#${tag}`}
+              >
+                #{tag}
+              </button>
+            ) : (
+              <span key={tag} className="nn-tag-chip nn-card-tag-chip">
+                #{tag}
+              </span>
+            )
+          ))}
+        </div>
       )}
 
       {/* Audios (hidden when password-locked) */}
@@ -175,7 +219,7 @@ export default function NoteCard({
           {attachmentAudios.map((audio, idx) => (
             <div key={idx} className="nn-card-audio-item">
               <div className="nn-card-audio-name" title={audio.originalName || audio.filename}>
-                <Music size={13} style={{ flexShrink: 0 }} />
+                <Music size={13} style={{ flexShrink: 0 }} aria-hidden="true" />
                 <span>{audio.originalName || audio.filename || `Âm thanh ${idx + 1}`}</span>
               </div>
               {audioSources[idx] ? (
@@ -199,14 +243,22 @@ export default function NoteCard({
       {/* Footer */}
       <div className="nn-card-footer">
         <div className="nn-card-badges">
+          {checklistProgress.total > 0 && (
+            <span
+              className={`nn-badge nn-badge-checklist${checklistProgress.completed === checklistProgress.total ? ' is-complete' : ''}`}
+              title={`Checklist: ${checklistProgress.completed}/${checklistProgress.total}`}
+            >
+              ✓ {checklistProgress.completed}/{checklistProgress.total}
+            </span>
+          )}
           {isShared && (
             <span className="nn-badge nn-badge-shared" title={t('board.section_shared', 'Được chia sẻ với bạn')}>
-              <Users size={11} strokeWidth={2} /> {t('card.badge_shared', 'Được share')}
+              <Users size={11} strokeWidth={2} aria-hidden="true" /> {t('card.badge_shared', 'Được share')}
             </span>
           )}
           {!isShared && note.isGuest && (
             <span className="nn-badge nn-badge-guest" title={t('board.empty_guest_desc', 'Ghi chú không đăng nhập')}>
-              <User size={11} strokeWidth={2} /> {t('card.badge_guest', 'Khách')}
+              <User size={11} strokeWidth={2} aria-hidden="true" /> {t('card.badge_guest', 'Khách')}
             </span>
           )}
           {note.hasPassword && (
@@ -223,13 +275,13 @@ export default function NoteCard({
                 border: '1px solid var(--accent-border)',
               }}
             >
-              {isUnlocked ? <Unlock size={11} strokeWidth={2.2} /> : <Lock size={11} strokeWidth={2.2} />}
+              {isUnlocked ? <Unlock size={11} strokeWidth={2.2} aria-hidden="true" /> : <Lock size={11} strokeWidth={2.2} aria-hidden="true" />}
               {isUnlocked ? t('card.badge_unlocked', 'Đã mở') : t('card.badge_locked', 'Đã khoá')}
             </span>
           )}
           {note.shareMode !== 'none' && (
             <span className="nn-badge nn-badge-shared" title={t('share.link_section', 'Đang chia sẻ liên kết')}>
-              <Link2 size={11} strokeWidth={2} />
+              <Link2 size={11} strokeWidth={2} aria-hidden="true" />
             </span>
           )}
         </div>
@@ -245,7 +297,7 @@ export default function NoteCard({
               type="button"
               id={`btn-pin-${note.id}`}
             >
-              <Pin size={14} fill={note.isPinned ? 'currentColor' : 'none'} strokeWidth={2} />
+              <Pin size={14} fill={note.isPinned ? 'currentColor' : 'none'} strokeWidth={2} aria-hidden="true" />
             </button>
 
             {/* Direct Note Password Lock */}
@@ -265,7 +317,7 @@ export default function NoteCard({
               type="button"
               id={`btn-password-${note.id}`}
             >
-              <Lock size={14} strokeWidth={2} />
+              <Lock size={14} strokeWidth={2} aria-hidden="true" />
             </button>
 
             {/* Share */}
@@ -277,7 +329,7 @@ export default function NoteCard({
               type="button"
               id={`btn-share-${note.id}`}
             >
-              <Link2 size={14} strokeWidth={2} />
+              <Link2 size={14} strokeWidth={2} aria-hidden="true" />
             </button>
 
             {/* Edit */}
@@ -289,7 +341,7 @@ export default function NoteCard({
               type="button"
               id={`btn-edit-${note.id}`}
             >
-              <Pencil size={14} strokeWidth={2} />
+              <Pencil size={14} strokeWidth={2} aria-hidden="true" />
             </button>
 
             {/* Delete */}
@@ -301,7 +353,7 @@ export default function NoteCard({
               type="button"
               id={`btn-delete-${note.id}`}
             >
-              <Trash2 size={14} strokeWidth={2} />
+              <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
         )}

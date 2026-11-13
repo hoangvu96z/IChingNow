@@ -1007,3 +1007,305 @@ select.form-input,
   background: linear-gradient(135deg, rgba(40, 29, 22, 0.92) 0%, rgba(28, 20, 15, 0.88) 100%);
   border-color: rgba(226, 181, 68, 0.32);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MODERN WEB GUIDANCE: TOUCH TARGETS, NATIVE <dialog>, & 64-HEXAGRAM ATLAS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.iching-touch-control {
+  min-block-size: 36px;
+}
+
+@media (pointer: coarse) {
+  .iching-touch-control {
+    min-block-size: 44px;
+  }
+}
+
+/* Prevent scroll chaining without locking html/body overflow */
+dialog:modal {
+  overscroll-behavior: contain;
+  max-block-size: 90dvh;
+  max-inline-size: min(1080px, calc(100vw - 16px));
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(15, 10, 6, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+dialog.iching-native-dialog {
+  padding: 0;
+  border: 1.5px solid var(--color-gold, #8a6104);
+  border-radius: 16px;
+  background: var(--color-paper-card, #fdfbf7);
+  color: var(--color-ink);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  inline-size: min(1060px, calc(100vw - 16px));
+  margin: auto;
+}
+
+/* Scope display strictly to dialog[open] so closed <dialog> stays hidden */
+dialog.iching-native-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.iching-atlas-shell {
+  display: flex;
+  flex-direction: column;
+  max-block-size: 90dvh;
+  inline-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.iching-atlas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #1a0a06 0%, #3d1a10 100%);
+  color: #f5d78e;
+  border-block-end: 1px solid rgba(212, 160, 23, 0.3);
+}
+
+.iching-atlas-title {
+  margin: 0;
+  font-family: 'Noto Serif', serif;
+  font-size: clamp(1rem, 3.8vw, 1.2rem);
+  font-weight: 700;
+  color: #f5d78e;
+}
+
+.iching-atlas-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  color: rgba(245, 215, 142, 0.85);
+}
+
+.iching-dialog-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 36px;
+  block-size: 36px;
+  min-inline-size: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 215, 142, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  color: #f5d78e;
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.iching-dialog-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.iching-atlas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-block-end: 1px solid rgba(184, 134, 11, 0.2);
+  background: var(--color-paper);
+}
+
+.iching-atlas-body {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  flex: 1;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.iching-atlas-nav-pane {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  border-inline-end: 1px solid rgba(184, 134, 11, 0.2);
+  background: var(--color-paper-dark);
+  min-inline-size: 0;
+}
+
+.iching-atlas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.iching-atlas-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  inline-size: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-inline-size: 0;
+}
+
+.iching-atlas-glyph {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--color-vermillion);
+}
+
+.iching-atlas-matrix-scroll {
+  overflow: auto;
+  max-inline-size: 100%;
+  border: 1px solid rgba(184, 134, 11, 0.28);
+  border-radius: 8px;
+  background: var(--color-paper);
+}
+
+.iching-atlas-matrix-scroll:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.iching-atlas-matrix-table {
+  border-collapse: collapse;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  font-size: 0.74rem;
+}
+
+.iching-atlas-matrix-table th,
+.iching-atlas-matrix-table td {
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  padding: 2px;
+  text-align: center;
+}
+
+.iching-atlas-matrix-table thead th {
+  position: sticky;
+  inset-block-start: 0;
+  background: var(--color-paper-dark);
+  z-index: 2;
+  padding: 6px 5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.iching-atlas-matrix-table tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  background: var(--color-paper-dark);
+  z-index: 1;
+  padding: 6px 7px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: start;
+}
+
+.iching-atlas-matrix-table .iching-matrix-corner {
+  inset-inline-start: 0;
+  z-index: 3;
+}
+
+.iching-matrix-cell-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  min-inline-size: 42px;
+  padding: 4px 5px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.iching-atlas-detail-pane {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-inline-size: 0;
+  background: var(--color-paper-card);
+}
+
+.iching-atlas-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block-end: 12px;
+  border-block-end: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+.iching-relation-pill {
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(184, 134, 11, 0.35);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.iching-relation-pill:hover {
+  border-color: var(--color-gold);
+  background: rgba(184, 134, 11, 0.14);
+}
+
+.iching-atlas-section {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(184, 134, 11, 0.04);
+  border: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+.iching-atlas-sec-title {
+  margin: 0 0 8px;
+  font-family: 'Noto Serif', serif;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--color-vermillion);
+}
+
+@media (max-width: 820px) {
+  .iching-atlas-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .iching-atlas-nav-pane {
+    overflow-y: visible;
+    max-block-size: 38dvh;
+    overflow: auto;
+    border-inline-end: none;
+    border-block-end: 1px solid rgba(184, 134, 11, 0.25);
+  }
+  .iching-atlas-detail-pane {
+    overflow-y: visible;
+    padding: 14px 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  dialog.iching-native-dialog {
+    inline-size: calc(100vw - 8px);
+    border-radius: 12px;
+  }
+  .iching-atlas-header,
+  .iching-atlas-toolbar {
+    padding: 10px 12px;
+  }
+}

@@ -427,3 +427,160 @@ export function buildLucHaoResult({ formData, lines, mode }) {
 export function buildResult({ formData, lines, mode }) {
   return buildLucHaoResult({ formData, lines, mode });
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// Helpers cho Nhập Quẻ Thực Tế / Sổ Tay (6/7/8/9 ↔ Thượng/Hạ Quái)
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Chuyển giá trị số hào cổ điển (6 | 7 | 8 | 9) thành đối tượng hào chuẩn của hệ thống.
+ *   6 = Lão Âm (âm động → dương)
+ *   7 = Thiếu Dương (dương tĩnh)
+ *   8 = Thiếu Âm (âm tĩnh)
+ *   9 = Lão Dương (dương động → âm)
+ */
+export function lineValueToLine(val, index) {
+  const num = Number(val);
+  switch (num) {
+    case 6:
+      return {
+        index,
+        sum: 6,
+        coins: [false, false, false],
+        type: 'old_yin',
+        yinYang: 'yin',
+        moving: true,
+        label: 'Lão Âm (━ ━ ✕)',
+      };
+    case 7:
+      return {
+        index,
+        sum: 7,
+        coins: [false, false, true],
+        type: 'young_yang',
+        yinYang: 'yang',
+        moving: false,
+        label: 'Thiếu Dương (━━━)',
+      };
+    case 8:
+      return {
+        index,
+        sum: 8,
+        coins: [false, true, true],
+        type: 'young_yin',
+        yinYang: 'yin',
+        moving: false,
+        label: 'Thiếu Âm (━ ━)',
+      };
+    case 9:
+      return {
+        index,
+        sum: 9,
+        coins: [true, true, true],
+        type: 'old_yang',
+        yinYang: 'yang',
+        moving: true,
+        label: 'Lão Dương (━━━ ○)',
+      };
+    default:
+      throw new Error(`Invalid line value at index ${index}: expected 6, 7, 8, or 9, got ${val}`);
+  }
+}
+
+/**
+ * Chuyển Thượng Quái (3 bit) + Hạ Quái (3 bit) + danh sách hào động [1..6] thành mảng 6 số [6|7|8|9].
+ */
+export function trigramsToLineValues(upperBits = '111', lowerBits = '111', movingIndices = []) {
+  const bits = `${lowerBits}${upperBits}`;
+  if (bits.length !== 6 || !/^[01]{6}$/.test(bits)) {
+    throw new Error(`Invalid trigram bits: lower=${lowerBits}, upper=${upperBits}`);
+  }
+  const movingSet = new Set((movingIndices || []).map(Number));
+  return bits.split('').map((bit, idx) => {
+    const lineNo = idx + 1;
+    const isYang = bit === '1';
+    const isMoving = movingSet.has(lineNo);
+    if (isYang) return isMoving ? 9 : 7;
+    return isMoving ? 6 : 8;
+  });
+}
+
+/**
+ * Chuyển mảng 6 giá trị hào [6|7|8|9] (Hào 1 → Hào 6) sang { lowerBits, upperBits, movingIndices }.
+ */
+export function lineValuesToTrigrams(lineValues = []) {
+  if (!Array.isArray(lineValues) || lineValues.length !== 6) {
+    return { lowerBits: '111', upperBits: '111', movingIndices: [] };
+  }
+  const parsed = lineValues.map((v, i) => lineValueToLine(v, i + 1));
+  const bits = parsed.map((l) => (l.yinYang === 'yang' ? '1' : '0'));
+  const movingIndices = parsed.filter((l) => l.moving).map((l) => l.index);
+  return {
+    lowerBits: bits.slice(0, 3).join(''),
+    upperBits: bits.slice(3, 6).join(''),
+    movingIndices,
+  };
+}
+
+function getDefaultVietnamDateTime() {
+  const now = new Date();
+  const vnTime = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + 7 * 3600000);
+  const y = vnTime.getFullYear();
+  const m = String(vnTime.getMonth() + 1).padStart(2, '0');
+  const d = String(vnTime.getDate()).padStart(2, '0');
+  const hh = String(vnTime.getHours()).padStart(2, '0');
+  const mm = String(vnTime.getMinutes()).padStart(2, '0');
+  return { castDate: `${y}-${m}-${d}`, castTime: `${hh}:${mm}` };
+}
+
+/**
+ * Lập bàn Lục Hào từ 6 giá trị hào thủ công (6/7/8/9 hoặc đối tượng hào) và ngày giờ tùy chọn.
+ *
+ * @param {Array<number|Object>} lineValues - Mảng 6 phần tử từ Hào 1 (dưới) lên Hào 6 (trên)
+ * @param {Object|string|Date} [customDateOrFormData] - Ngày lập hoặc formData đầy đủ
+ * @param {string} [mode='manual-input']
+ */
+export function buildHexagram(lineValues, customDateOrFormData = {}, mode = 'manual-input') {
+  if (!Array.isArray(lineValues) || lineValues.length < 6) return null;
+
+  const lines = lineValues.slice(0, 6).map((item, idx) => {
+    if (typeof item === 'number' || typeof item === 'string') {
+      return lineValueToLine(Number(item), idx + 1);
+    }
+    return {
+      ...item,
+      index: item.index || idx + 1,
+      yinYang: item.yinYang === 'yin' ? 'yin' : 'yang',
+      moving: Boolean(item.moving),
+    };
+  });
+
+  const defaults = getDefaultVietnamDateTime();
+  let formData = { ...defaults, question: '', caster: '' };
+
+  if (customDateOrFormData instanceof Date && !Number.isNaN(customDateOrFormData.getTime())) {
+    const y = customDateOrFormData.getFullYear();
+    const m = String(customDateOrFormData.getMonth() + 1).padStart(2, '0');
+    const d = String(customDateOrFormData.getDate()).padStart(2, '0');
+    const hh = String(customDateOrFormData.getHours()).padStart(2, '0');
+    const mm = String(customDateOrFormData.getMinutes()).padStart(2, '0');
+    formData = { ...formData, castDate: `${y}-${m}-${d}`, castTime: `${hh}:${mm}` };
+  } else if (typeof customDateOrFormData === 'string' && customDateOrFormData.trim()) {
+    const str = customDateOrFormData.trim();
+    const [datePart, timePart] = str.split(/[T\s]+/);
+    formData = {
+      ...formData,
+      castDate: datePart || defaults.castDate,
+      castTime: timePart ? timePart.slice(0, 5) : '12:00',
+    };
+  } else if (customDateOrFormData && typeof customDateOrFormData === 'object') {
+    formData = {
+      ...formData,
+      ...customDateOrFormData,
+      castDate: customDateOrFormData.castDate || defaults.castDate,
+      castTime: customDateOrFormData.castTime || defaults.castTime,
+    };
+  }
+
+  return buildLucHaoResult({ formData, lines, mode });
+}

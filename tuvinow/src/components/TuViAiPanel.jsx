@@ -50,6 +50,7 @@ export default function TuViAiPanel({
   readingContext,
   yunxianState: externalYunxianState,
   onYunxianChange,
+  lifeEvents: externalLifeEvents,
 }) {
   const { isAuthenticated, login } = useAuth();
   const {
@@ -78,6 +79,7 @@ export default function TuViAiPanel({
   const [showSettings, setShowSettings] = useState(false);
   const [exportTab, setExportTab] = useState('prompt');
   const [includeZiweiEngine, setIncludeZiweiEngine] = useState(true);
+  const [includeLifeEvents, setIncludeLifeEvents] = useState(true);
   const [promptStyle, setPromptStyle] = useState('concise');
   const [elapsed, setElapsed] = useState(0);
   const controller = useRef(null);
@@ -180,9 +182,21 @@ export default function TuViAiPanel({
     return 'Bản Mệnh';
   }, [effectiveYunxianState, result?.viewYear]);
 
+  const effectiveLifeEvents = useMemo(() => {
+    if (Array.isArray(externalLifeEvents) && externalLifeEvents.length > 0) {
+      return externalLifeEvents;
+    }
+    return Array.isArray(inputData?.lifeEvents) ? inputData.lifeEvents : [];
+  }, [externalLifeEvents, inputData?.lifeEvents]);
+
   const exportOptions = useMemo(
-    () => ({ includeZiweiEngine, promptStyle }),
-    [includeZiweiEngine, promptStyle],
+    () => ({
+      includeZiweiEngine,
+      promptStyle,
+      includeLifeEvents,
+      lifeEvents: includeLifeEvents ? effectiveLifeEvents : [],
+    }),
+    [includeZiweiEngine, promptStyle, includeLifeEvents, effectiveLifeEvents],
   );
 
   const makePrompt = readingContext?.buildPrompt || ((topic, question, structured) => buildTuViPrompt(result, inputData, topic, question, structured, effectiveYunxianState, exportOptions));
@@ -480,6 +494,19 @@ export default function TuViAiPanel({
               </span>
             )}
           </div>
+          {!readingContext && effectiveLifeEvents.length > 0 && (
+            <label className="tv-life-events-ai-toggle">
+              <input
+                type="checkbox"
+                checked={includeLifeEvents}
+                disabled={busy}
+                onChange={(e) => setIncludeLifeEvents(e.target.checked)}
+              />
+              <span>
+                📌 Đưa <strong>{effectiveLifeEvents.length}</strong> mốc sự kiện thực tế đã ghim vào ngữ cảnh hiệu chuẩn cho AI
+              </span>
+            </label>
+          )}
           <div className="tv-topic-label">Bạn muốn tìm hiểu điều gì?</div>
           <div className="tv-topics" role="group" aria-label="Chủ đề luận giải">
             {Object.entries(TOPICS).map(([key, label]) => (

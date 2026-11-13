@@ -18,6 +18,12 @@ import TarotFollowUpSection from './TarotFollowUpSection.jsx';
 import TarotSettingsPanel from './TarotSettingsPanel.jsx';
 import TarotPromptTemplateSelector from './TarotPromptTemplateSelector.jsx';
 import TarotAiAnimations from './TarotAiAnimations.jsx';
+import {
+  resolveCardElement,
+  ELEMENT_METADATA,
+  computeElementalDignities,
+  computeArchetypeClusters,
+} from '../utils/tarotLogic.js';
 
 const PREDEFINED_MODELS = PREDEFINED_AI_MODELS;
 
@@ -150,17 +156,40 @@ export default function AiInterpretationPanel({
       const orientationText = c.orientation === 'reversed' 
         ? t('modal.orientation_reversed', 'Lá ngược (Reversed)') 
         : t('modal.orientation_upright', 'Lá xuôi (Upright)');
-      const kws = c.orientation === 'reversed' ? c.reversedKeywords : c.uprightKeywords;
-      const posText = spreadPositions && spreadPositions[idx] ? ` - ${isEn ? 'Position meaning' : 'Ý nghĩa vị trí'}: ${spreadPositions[idx]}` : '';
+      const kws = (c.orientation === 'reversed' ? c.reversedKeywords : c.uprightKeywords) || [];
+      const posLabel = spreadPositions && spreadPositions[idx] ? spreadPositions[idx] : '';
+      const posText = posLabel ? `${posLabel}` : '';
       const localMeaning = getCardMeaning ? getCardMeaning(c, interpretationContext, c.orientation) : '';
+      const elem = resolveCardElement(c);
+      const elemLabel = elem && ELEMENT_METADATA[elem]
+        ? (isEn ? ELEMENT_METADATA[elem].en : ELEMENT_METADATA[elem].vi)
+        : '';
       
       return `${idx + 1}. ${isEn ? 'Card' : 'Lá bài'}: ${c.name}\n` +
              `   - ${isEn ? 'Orientation' : 'Trạng thái'}: ${orientationText}\n` +
              `   - ${isEn ? 'Category' : 'Nhóm'}: ${c.arcana}${c.suit ? ` (${c.suit})` : ''}\n` +
+             `${elemLabel ? `   - ${isEn ? 'Element' : 'Nguyên tố'}: ${elemLabel}\n` : ''}` +
              `   - ${isEn ? 'Keywords' : 'Từ khóa chính'}: ${kws.join(', ')}\n` +
              `${posText ? `   - ${isEn ? 'Position in spread' : 'Vị trí trong trải bài'}: ${posText}\n` : ''}` +
              `${localMeaning ? `   - ${isEn ? 'Preliminary meaning' : 'Giải nghĩa cơ bản sơ bộ'}: ${localMeaning}\n` : ''}`;
     }).join('\n');
+
+    let structuralSynergyBlock = '';
+    if (drawnCards.length >= 2) {
+      const perspectiveHint =
+        promptTemplate === 'love' ? 'love' : promptTemplate === 'career' ? 'career' : 'general';
+      const dignities = computeElementalDignities(drawnCards, spreadPositions, {
+        language,
+        perspective: perspectiveHint,
+      });
+      const clusters = computeArchetypeClusters(drawnCards, language);
+      const digest = [dignities.promptDigest, clusters.promptDigest].filter(Boolean).join('\n');
+      if (digest) {
+        structuralSynergyBlock = isEn
+          ? `\nELEMENTAL DIGNITIES & ARCHETYPE CLUSTERS (integrate these card-to-card dynamics directly into your synthesis):\n${digest}\n`
+          : `\nTƯƠNG TÁC NGUYÊN TỐ & CẤU TRÚC TRẢI BÀI (hãy đan cài trực tiếp sự tương trợ/xung khắc giữa các lá bài và cụm số học này vào bài luận giải):\n${digest}\n`;
+      }
+    }
 
     let instruction = '';
     if (isEn) {
@@ -201,7 +230,7 @@ export default function AiInterpretationPanel({
       ? '- Use English, fluently, deeply and objectively.\n- Use clear section headers.\n- Conclude with actionable guidance.\n- AT THE VERY END OF YOUR RESPONSE, output exact delimiter line "---SUGGESTED_QUESTIONS---" followed by 3 concise follow-up questions:\n---SUGGESTED_QUESTIONS---\n1. [Question 1]\n2. [Question 2]\n3. [Question 3]'
       : '- Sử dụng tiếng Việt, viết trôi chảy, sâu sắc và khách quan.\n- Có tiêu đề rõ ràng cho từng phần.\n- Kết luận bằng một thông điệp đúc kết hoặc hành động cụ thể tôi nên làm.\n- Ở CUỐI BÀI VIẾT, hãy xuất đúng dòng phân cách "---SUGGESTED_QUESTIONS---" theo sau là 3 câu hỏi đào sâu ngắn gọn dành riêng cho bài này:\n---SUGGESTED_QUESTIONS---\n1. [Câu hỏi 1]\n2. [Câu hỏi 2]\n3. [Câu hỏi 3]';
 
-    return `${sysRole}\n\n${qLabel}\n"${question}"\n\n${dLabel}\n${cardsSection}\n${interpretationSummary ? `\n${sLabel}\n${interpretationSummary}\n` : ''}\n${gLabel}\n${instruction}\n\n${rLabel}\n${rBullets}`;
+    return `${sysRole}\n\n${qLabel}\n"${question}"\n\n${isEn ? 'SPREAD:' : 'SƠ ĐỒ TRẢI BÀI:'} ${spreadName || 'Custom'}\n\n${dLabel}\n${cardsSection}\n${structuralSynergyBlock}${interpretationSummary ? `\n${sLabel}\n${interpretationSummary}\n` : ''}\n${gLabel}\n${instruction}\n\n${rLabel}\n${rBullets}`;
   };
 
   // ─── HÀM GỌI AI CHỐNG MẤT KẾT NỐI VÀ TỰ ĐỘNG RETRY ───
@@ -320,7 +349,9 @@ export default function AiInterpretationPanel({
     if (!drawnCards || drawnCards.length === 0) return '';
     const cardsText = drawnCards.map((c, idx) => {
       const ori = c.orientation === 'reversed' ? 'Ngược' : 'Xuôi';
-      return `${idx + 1}. ${c.name} — ${ori}`;
+      const posLabel = spreadPositions && spreadPositions[idx] ? `[${spreadPositions[idx]}] ` : '';
+      const elem = resolveCardElement(c);
+      return `${idx + 1}. ${posLabel}${c.name} — ${ori}${elem ? ` (${elem})` : ''}`;
     }).join('\n');
     return `Câu hỏi: "${question || 'Không có'}"\nTrải bài: ${spreadName || 'Custom'}\nCác lá bài:\n${cardsText}`;
   };

@@ -20,6 +20,7 @@ import {
   SCHOOL_OPTIONS,
   FAMOUS_CHARTS,
 } from '../utils/tuViZiweiModule.js';
+import BirthHourRectifierModal from './BirthHourRectifierModal.jsx';
 
 export function buildBirthInputPayload({
   name,
@@ -138,17 +139,25 @@ export function buildBirthInputPayload({
   };
 }
 
-export default function BirthInputForm({ onSubmit, initialShowTrueSolar = false, initialShowSchoolConfig = false }) {
-  const [name, setName] = useState('');
+export default function BirthInputForm({
+  onSubmit,
+  initialShowTrueSolar = false,
+  initialShowSchoolConfig = false,
+  presetProfile = null,
+  onDraftChange,
+}) {
+  const [name, setName] = useState(() => presetProfile?.name || '');
   const [nameError, setNameError] = useState('');
-  const [day, setDay] = useState(15);
-  const [month, setMonth] = useState(1);
-  const [year, setYear] = useState(1990);
-  const [hourIndex, setHourIndex] = useState(0);
-  const [gender, setGender] = useState(1); // 1 = Nam, 0 = Nữ
-  const [isLunar, setIsLunar] = useState(false);
+  const [day, setDay] = useState(() => presetProfile?.day || 15);
+  const [month, setMonth] = useState(() => presetProfile?.month || 1);
+  const [year, setYear] = useState(() => presetProfile?.year || 1990);
+  const [hourIndex, setHourIndex] = useState(() => presetProfile?.hourValue ?? presetProfile?.hourIndex ?? 0);
+  const [gender, setGender] = useState(() => (presetProfile?.gender === 0 ? 0 : 1)); // 1 = Nam, 0 = Nữ
+  const [isLunar, setIsLunar] = useState(() => presetProfile?.calendarType === 'lunar' || Boolean(presetProfile?.isLunar));
   const [viewYear, setViewYear] = useState('');
   const [formError, setFormError] = useState('');
+  const [showRectifierModal, setShowRectifierModal] = useState(false);
+  const [rectifiedEvents, setRectifiedEvents] = useState(() => presetProfile?.lifeEvents || []);
 
   // ☀️ Chân Thái Dương Thời State
   const [showTrueSolar, setShowTrueSolar] = useState(initialShowTrueSolar);
@@ -186,6 +195,78 @@ export default function BirthInputForm({ onSubmit, initialShowTrueSolar = false,
     const lastValidDay = dayOptions.at(-1)?.value;
     if (lastValidDay) setDay(lastValidDay);
   }, [day, dayOptions, isLunar, month, year]);
+
+  useEffect(() => {
+    if (!presetProfile) return;
+    setName(presetProfile.name || '');
+    setNameError('');
+    setDay(presetProfile.day || 15);
+    setMonth(presetProfile.month || 1);
+    setYear(presetProfile.year || 1990);
+    setHourIndex(presetProfile.hourValue ?? presetProfile.hourIndex ?? 0);
+    setGender(presetProfile.gender === 0 ? 0 : 1);
+    setIsLunar(presetProfile.calendarType === 'lunar' || Boolean(presetProfile.isLunar));
+    setRectifiedEvents(Array.isArray(presetProfile.lifeEvents) ? presetProfile.lifeEvents : []);
+    setFormError('');
+  }, [presetProfile]);
+
+  useEffect(() => {
+    if (!onDraftChange) return;
+    onDraftChange({
+      profileId: presetProfile?.id || undefined,
+      name: name.trim() || 'Đương số',
+      day,
+      month,
+      year,
+      lunarDay: day,
+      lunarMonth: month,
+      lunarYear: year,
+      solarInput: isLunar ? null : { day, month, year },
+      lunarHourIndex: hourIndex,
+      hourIndex,
+      gender,
+      isLunar,
+      lifeEvents: rectifiedEvents,
+    });
+  }, [name, day, month, year, hourIndex, gender, isLunar, rectifiedEvents, presetProfile?.id, onDraftChange]);
+
+  const handleApplyRectifiedCandidate = (candidate, pastEvents = []) => {
+    if (!candidate?.formPatch) return;
+    const effectiveName = name.trim() || candidate.formPatch.name || 'Đương số';
+    setName(effectiveName);
+    setNameError('');
+    setDay(candidate.formPatch.day);
+    setMonth(candidate.formPatch.month);
+    setYear(candidate.formPatch.year);
+    setHourIndex(candidate.formPatch.hourIndex);
+    setGender(candidate.formPatch.gender);
+    setIsLunar(candidate.formPatch.isLunar);
+    setApplyTrueSolar(false);
+    setRectifiedEvents(pastEvents);
+    setShowRectifierModal(false);
+    setFormError('');
+
+    try {
+      const payload = buildBirthInputPayload({
+        name: effectiveName,
+        day: candidate.formPatch.day,
+        month: candidate.formPatch.month,
+        year: candidate.formPatch.year,
+        hourIndex: candidate.formPatch.hourIndex,
+        gender: candidate.formPatch.gender,
+        isLunar: candidate.formPatch.isLunar,
+        viewYear,
+        schoolConfig,
+      });
+      onSubmit({
+        ...payload,
+        ...(presetProfile?.id ? { profileId: presetProfile.id } : {}),
+        ...(Array.isArray(pastEvents) && pastEvents.length > 0 ? { lifeEvents: pastEvents } : {}),
+      });
+    } catch (err) {
+      setFormError(err.message || 'Không thể lập lá số từ giờ sinh đã chọn.');
+    }
+  };
 
   const handleNameChange = (e) => {
     const val = e.target.value;
@@ -288,7 +369,11 @@ export default function BirthInputForm({ onSubmit, initialShowTrueSolar = false,
         locationName: showTrueSolar ? locationName : undefined,
         applyTrueSolar: showTrueSolar ? applyTrueSolar : false,
       });
-      onSubmit(payload);
+      onSubmit({
+        ...payload,
+        ...(presetProfile?.id ? { profileId: presetProfile.id } : {}),
+        ...(rectifiedEvents.length > 0 ? { lifeEvents: rectifiedEvents } : {}),
+      });
     } catch (error) {
       setFormError(error.message || 'Không thể lập lá số từ thông tin này.');
     }
@@ -424,14 +509,25 @@ export default function BirthInputForm({ onSubmit, initialShowTrueSolar = false,
 
         {/* Giờ Sinh */}
         <div className="form-group">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <label className="form-label" style={{ margin: 0 }}>Giờ sinh (12 Canh Giờ)</label>
-            {applyTrueSolar && solarCalculation && (
+          <div className="birth-hour-label-row">
+            <label className="form-label" htmlFor="select-hour" style={{ margin: 0 }}>
+              Giờ sinh (12 Canh Giờ)
+            </label>
+            <button
+              type="button"
+              className="btn-open-rectifier"
+              onClick={() => setShowRectifierModal(true)}
+            >
+              <span aria-hidden="true">🧭</span> Không chắc giờ sinh? Khảo &amp; Định giờ chuẩn
+            </button>
+          </div>
+          {applyTrueSolar && solarCalculation && (
+            <div style={{ marginBottom: 6 }}>
               <span className="solar-applied-pill">
                 ☀️ Đang áp dụng Chân Thái Dương: Canh {solarCalculation.branchName}
               </span>
-            )}
-          </div>
+            </div>
+          )}
           <select
             className="form-select"
             value={hourIndex}
@@ -743,6 +839,23 @@ export default function BirthInputForm({ onSubmit, initialShowTrueSolar = false,
           </p>
         )}
       </form>
+
+      <BirthHourRectifierModal
+        isOpen={showRectifierModal}
+        onClose={() => setShowRectifierModal(false)}
+        baseInput={{
+          name: name.trim() || 'Đương số',
+          day,
+          month,
+          year,
+          hourIndex,
+          gender,
+          isLunar,
+          schoolConfig,
+        }}
+        initialEvents={rectifiedEvents}
+        onApplyCandidate={handleApplyRectifiedCandidate}
+      />
     </div>
   );
 }

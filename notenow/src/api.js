@@ -9,6 +9,7 @@ import {
   clearSsoBearerToken,
 } from '../../shared/src/utils/ssoConfig.mjs';
 import { getNoteImageEndpoint, getNoteAudioEndpoint } from './noteImages.mjs';
+import { normalizeNoteTags } from '../../shared/src/utils/saveToNoteNow.mjs';
 // NoteNow API utility
 
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
@@ -124,6 +125,7 @@ export function pushLocalNoteHistory(noteId, snapshot) {
       content: snapshot.content || '',
       bgColor: snapshot.bgColor || 'default',
       bgPattern: snapshot.bgPattern || 'none',
+      tags: normalizeNoteTags(snapshot.tags || []),
       savedAt: snapshot.savedAt || new Date().toISOString(),
     };
     const next = [entry, ...existing].slice(0, MAX_LOCAL_HISTORY);
@@ -168,6 +170,7 @@ function applyLocalLockMetadata(note) {
   const hasLocalPw = Boolean(localMap[note.id] || note.notePassword);
   return {
     ...note,
+    tags: normalizeNoteTags(note.tags || []),
     hasPassword: Boolean(note.hasPassword || hasLocalPw),
   };
 }
@@ -237,15 +240,20 @@ export const notesApi = {
   },
 
   create: async (dto) => {
+    const normalizedPayload = {
+      ...dto,
+      ...(dto.tags !== undefined ? { tags: normalizeNoteTags(dto.tags) } : {}),
+    };
     try {
-      return await apiFetch('/notes', { method: 'POST', body: JSON.stringify(dto) });
+      return await apiFetch('/notes', { method: 'POST', body: JSON.stringify(normalizedPayload) });
     } catch {
       const newNote = {
-        id: 'local-' + Date.now(),
-        title: dto.title || null,
-        content: dto.content || '',
-        bgColor: dto.bgColor || 'default',
-        bgPattern: dto.bgPattern || 'none',
+        id: 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        title: normalizedPayload.title || null,
+        content: normalizedPayload.content || '',
+        bgColor: normalizedPayload.bgColor || 'default',
+        bgPattern: normalizedPayload.bgPattern || 'none',
+        tags: normalizeNoteTags(normalizedPayload.tags || []),
         images: [],
         audios: [],
         isPinned: false,
@@ -261,23 +269,41 @@ export const notesApi = {
   },
 
   update: async (id, dto) => {
+    const normalizedPayload = {
+      ...dto,
+      ...(dto.tags !== undefined ? { tags: normalizeNoteTags(dto.tags) } : {}),
+    };
     if (String(id).startsWith('local-')) {
       const notes = getLocalNotes();
       const idx = notes.findIndex((n) => n.id === id);
       if (idx !== -1) {
-        notes[idx] = { ...notes[idx], ...dto, updatedAt: new Date().toISOString() };
+        notes[idx] = {
+          ...notes[idx],
+          ...normalizedPayload,
+          tags: normalizeNoteTags(
+            normalizedPayload.tags !== undefined ? normalizedPayload.tags : (notes[idx].tags || []),
+          ),
+          updatedAt: new Date().toISOString(),
+        };
         saveLocalNotes(notes);
         return notes[idx];
       }
       throw new Error('Ghi chú không tồn tại');
     }
     try {
-      return await apiFetch(`/notes/${id}`, { method: 'PATCH', body: JSON.stringify(dto) });
+      return await apiFetch(`/notes/${id}`, { method: 'PATCH', body: JSON.stringify(normalizedPayload) });
     } catch {
       const notes = getLocalNotes();
       const idx = notes.findIndex((n) => n.id === id);
       if (idx !== -1) {
-        notes[idx] = { ...notes[idx], ...dto, updatedAt: new Date().toISOString() };
+        notes[idx] = {
+          ...notes[idx],
+          ...normalizedPayload,
+          tags: normalizeNoteTags(
+            normalizedPayload.tags !== undefined ? normalizedPayload.tags : (notes[idx].tags || []),
+          ),
+          updatedAt: new Date().toISOString(),
+        };
         saveLocalNotes(notes);
         return notes[idx];
       }
@@ -286,16 +312,27 @@ export const notesApi = {
   },
 
   updateByShareToken: async (shareToken, dto) => {
+    const normalizedPayload = {
+      ...dto,
+      ...(dto.tags !== undefined ? { tags: normalizeNoteTags(dto.tags) } : {}),
+    };
     try {
       return await apiFetch(`/notes/share/${shareToken}`, {
         method: 'PATCH',
-        body: JSON.stringify(dto),
+        body: JSON.stringify(normalizedPayload),
       });
     } catch {
       const notes = getLocalNotes();
       const idx = notes.findIndex((n) => n.shareToken === shareToken);
       if (idx !== -1) {
-        notes[idx] = { ...notes[idx], ...dto, updatedAt: new Date().toISOString() };
+        notes[idx] = {
+          ...notes[idx],
+          ...normalizedPayload,
+          tags: normalizeNoteTags(
+            normalizedPayload.tags !== undefined ? normalizedPayload.tags : (notes[idx].tags || []),
+          ),
+          updatedAt: new Date().toISOString(),
+        };
         saveLocalNotes(notes);
         return { ...notes[idx], canEdit: true };
       }
@@ -515,6 +552,7 @@ export const notesApi = {
               content: local.content,
               bgColor: local.bgColor,
               bgPattern: local.bgPattern,
+              tags: normalizeNoteTags(local.tags || []),
             }),
           });
         } catch {}

@@ -12,6 +12,11 @@ import {
   WEIGHTS,
 } from '../utils/compatibility';
 import { getMonthsInYear, getYearCanChi, getYearOptions } from '../utils/lunarConverter';
+import {
+  loadSavedProfiles,
+  profileToHopHonPerson,
+  consumeHopHonProfilesHandoff,
+} from '../utils/tuviProfiles';
 import LasoChart from './LasoChart';
 import TuViAiPanel from './TuViAiPanel';
 import TuViEvidenceProvider from './TuViEvidenceProvider';
@@ -266,11 +271,37 @@ function ProgressBar({ value, max = 100, tone = 'gold', label }) {
   );
 }
 
-function PersonForm({ label, value, onChange, side }) {
+function PersonForm({ label, value, onChange, side, savedProfiles = [] }) {
   const formId = useId();
   const isLunar = Boolean(value.isLunar);
   const isLeap = Boolean(value.isLeap);
   const currentYear = new Date().getFullYear();
+
+  const matchedProfileId = useMemo(() => {
+    if (!savedProfiles.length || !value.hoTen) return '';
+    const match = savedProfiles.find((p) => {
+      const mapped = profileToHopHonPerson(p);
+      return (
+        mapped.hoTen === value.hoTen &&
+        Number(mapped.ngay) === Number(value.ngay) &&
+        Number(mapped.thang) === Number(value.thang) &&
+        Number(mapped.nam) === Number(value.nam) &&
+        Number(mapped.gio) === Number(value.gio) &&
+        mapped.gioiTinh === value.gioiTinh &&
+        Boolean(mapped.isLunar) === Boolean(value.isLunar)
+      );
+    });
+    return match ? match.id : '';
+  }, [savedProfiles, value]);
+
+  const handleSelectSavedProfile = (e) => {
+    const profileId = e.target.value;
+    if (!profileId) return;
+    const found = savedProfiles.find((p) => p.id === profileId);
+    if (found) {
+      onChange(profileToHopHonPerson(found));
+    }
+  };
 
   const set = (key, data) => onChange({ ...value, [key]: data });
 
@@ -331,6 +362,27 @@ function PersonForm({ label, value, onChange, side }) {
         <span className="hh-person-icon">{personIcon}</span>
         <span>{label}</span>
       </div>
+
+      {savedProfiles.length > 0 && (
+        <div className="hh-field hh-profile-picker-field">
+          <label htmlFor={`${formId}-saved-profile`}>📒 Chọn từ Danh bạ Đương số</label>
+          <select
+            id={`${formId}-saved-profile`}
+            className="hh-profile-picker-select"
+            value={matchedProfileId}
+            onChange={handleSelectSavedProfile}
+          >
+            <option value="">— Chọn nhanh hồ sơ đã lưu ({savedProfiles.length}) —</option>
+            {savedProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.isDefaultSelf ? '⭐ ' : ''}
+                {p.name} ({p.gender === 0 ? 'Nữ' : 'Nam'} · {p.day}/{p.month}/{p.year}{' '}
+                {p.calendarType === 'lunar' ? 'ÂL' : 'DL'} · Giờ {p.hourBranch})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="hh-field">
         <label htmlFor={`${formId}-name`}>Họ và tên <span aria-hidden="true">*</span></label>
@@ -1831,7 +1883,14 @@ function AuthenticatedPage({ userId }) {
   const [access, setAccess] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [payload, setPayload] = useState({ chong: emptyPerson('Nam'), vo: emptyPerson('Nữ') });
+  const [savedProfiles, setSavedProfiles] = useState(() => loadSavedProfiles());
+  const [payload, setPayload] = useState(() => {
+    const handoff = consumeHopHonProfilesHandoff();
+    if (handoff?.chong && handoff?.vo) {
+      return { chong: handoff.chong, vo: handoff.vo };
+    }
+    return { chong: emptyPerson('Nam'), vo: emptyPerson('Nữ') };
+  });
   const [session, setSession] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyError, setHistoryError] = useState('');
@@ -1872,9 +1931,21 @@ function AuthenticatedPage({ userId }) {
     active.current = true;
     checkAccess();
     loadHistory();
+    const syncProfilesAndHandoff = () => {
+      setSavedProfiles(loadSavedProfiles());
+      const handoff = consumeHopHonProfilesHandoff();
+      if (handoff?.chong && handoff?.vo) {
+        setSession(null);
+        setPayload({ chong: handoff.chong, vo: handoff.vo });
+      }
+    };
+    window.addEventListener('focus', syncProfilesAndHandoff);
+    window.addEventListener('hashchange', syncProfilesAndHandoff);
     return () => {
       active.current = false;
       sequence.current++;
+      window.removeEventListener('focus', syncProfilesAndHandoff);
+      window.removeEventListener('hashchange', syncProfilesAndHandoff);
     };
   }, []);
 
@@ -1976,12 +2047,14 @@ function AuthenticatedPage({ userId }) {
               side="A"
               value={payload.chong}
               onChange={(chong) => setPayload((p) => ({ ...p, chong }))}
+              savedProfiles={savedProfiles}
             />
             <PersonForm
               label="Bên B · Vợ / Nữ"
               side="B"
               value={payload.vo}
               onChange={(vo) => setPayload((p) => ({ ...p, vo }))}
+              savedProfiles={savedProfiles}
             />
           </div>
 

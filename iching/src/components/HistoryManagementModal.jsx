@@ -1,6 +1,8 @@
 import { evidencePlainText } from '../logic/interpretationEvidence';
 import React, { useState, useCallback, useMemo } from 'react';
 import { useLanguage } from '../context/useLanguage.js';
+import OutcomeVerificationCard from './OutcomeVerificationCard.jsx';
+import { VERIFICATION_META, getVerificationForReading } from '../logic/verification.js';
 
 export default function HistoryManagementModal({
   isOpen,
@@ -9,6 +11,7 @@ export default function HistoryManagementModal({
   onSelect,
   onDeleteMultiple,
   onClearAll,
+  onUpdateVerification,
 }) {
   const { t, language } = useLanguage();
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -183,6 +186,14 @@ export default function HistoryManagementModal({
                   <strong>Phương pháp:</strong> {item.type === 'luc-hao' ? 'Lục Hào' : 'Mai Hoa'}<br />
                   {item.data?.caster && <><strong>Người lập:</strong> {item.data.caster}<br /></>}
                 </div>
+                {!item._decryptionError && onUpdateVerification && (
+                  <OutcomeVerificationCard
+                    compact
+                    readingId={item.id}
+                    result={item.data}
+                    onSaveVerification={onUpdateVerification}
+                  />
+                )}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -328,6 +339,16 @@ export default function HistoryManagementModal({
                               💬 AI {followUpCount > 0 ? `+${followUpCount}` : ''}
                             </span>
                           )}
+                          {(() => {
+                            const ver = item.verification || getVerificationForReading(item.id, item.data);
+                            if (!ver || ver.status === 'pending') return null;
+                            const meta = VERIFICATION_META[ver.status];
+                            return (
+                              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: meta.color, background: meta.bg, border: `1px solid ${meta.border}`, padding: '2px 6px', borderRadius: 4 }}>
+                                {meta.shortVi}{ver.actualDate ? ` (${ver.actualDate})` : ''}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace' }}>{formatTime(item.timestamp)}</span>
                       </div>

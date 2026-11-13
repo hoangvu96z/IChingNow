@@ -10,6 +10,7 @@ import {
 import NoteColorPicker from './NoteColorPicker.jsx';
 import ImageViewer from './ImageViewer.jsx';
 import NotePasswordModal from './NotePasswordModal.jsx';
+import VoiceRecorderButton from './VoiceRecorderButton.jsx';
 import { useNoteImageSources } from '../hooks/useNoteImageSources.js';
 import { useNoteAudioSources } from '../hooks/useNoteAudioSources.js';
 import {
@@ -24,16 +25,20 @@ import {
   hasInlineImagePlaceholder,
   sanitizeNoteContent,
 } from '../safeNoteContent.js';
+import { downloadNoteExport } from '../utils/noteExport.js';
+import { SUGGESTED_NOTE_TAGS, extractInlineHashtags } from '../utils/noteFilters.js';
+import { normalizeNoteTag, normalizeNoteTags } from '../../../shared/src/utils/saveToNoteNow.mjs';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
 // Lucide React icons
 import {
   Bold, Italic, Underline, Strikethrough,
-  Highlighter, List, ListOrdered,
+  Highlighter, List, ListOrdered, ListTodo,
   AlignLeft, AlignCenter, AlignRight,
   Image as ImageIcon, Palette, X, Check,
   Loader2, AlertCircle, Eye, Pencil, Plus,
   History, RotateCcw, Lock, Unlock, Music,
+  Download, Tag,
 } from 'lucide-react';
 
 // TipTap
@@ -44,6 +49,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Placeholder } from '@tiptap/extensions';
 import NoteInlineImagePlaceholder from '../extensions/NoteInlineImagePlaceholder.js';
+import { NoteTaskList, NoteTaskItem } from '../extensions/NoteTaskList.js';
 
 function ToolbarButton({ onClick, title, isActive, children, id }) {
   return (
@@ -99,6 +105,12 @@ export default function NoteEditor({
     audiosRef.current = audios;
   }, [audios]);
 
+  const [tags, setTags] = useState(() => normalizeNoteTags(note?.tags || []));
+  const tagsRef = useRef(normalizeNoteTags(note?.tags || []));
+  const [tagInput, setTagInput] = useState('');
+  const removedTagsRef = useRef(new Set());
+  const [showExportPanel, setShowExportPanel] = useState(false);
+
   const [hasPassword, setHasPassword] = useState(Boolean(note?.hasPassword));
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
@@ -114,6 +126,7 @@ export default function NoteEditor({
     content: note?.content || '',
     bgColor: note?.bgColor || 'default',
     bgPattern: note?.bgPattern || 'none',
+    tags: normalizeNoteTags(note?.tags || []),
     savedAt: note?.updatedAt || new Date().toISOString(),
   });
 
@@ -192,6 +205,8 @@ export default function NoteEditor({
       TextStyle,
       Placeholder.configure({ placeholder: t('editor.content_placeholder', 'Viết ghi chú của bạn ở đây…') }),
       NoteInlineImagePlaceholder,
+      NoteTaskList,
+      NoteTaskItem,
     ],
     content: editorContent,
     editable: !isReadOnly,
@@ -215,6 +230,48 @@ export default function NoteEditor({
   const hasUnsupportedImagePlaceholder = (content) => unsupportedImageIndices
     .some((index) => hasInlineImagePlaceholder(content, index));
 
+  const updateTagsState = (nextRawTags, shouldSave = true) => {
+    const normalized = normalizeNoteTags(nextRawTags);
+    tagsRef.current = normalized;
+    setTags(normalized);
+    if (shouldSave && !isReadOnly) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = setTimeout(() => {
+        handleSave(true, false, { tags: normalized });
+      }, 350);
+    }
+  };
+
+  const commitTagInput = (rawValue) => {
+    const pieces = String(rawValue || '')
+      .split(/[,\s]+/)
+      .map((piece) => normalizeNoteTag(piece))
+      .filter(Boolean);
+    if (!pieces.length) {
+      setTagInput('');
+      return;
+    }
+    pieces.forEach((piece) => removedTagsRef.current.delete(piece));
+    const merged = normalizeNoteTags([...tagsRef.current, ...pieces]);
+    setTagInput('');
+    updateTagsState(merged, true);
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    removedTagsRef.current.add(tagToRemove);
+    const next = tagsRef.current.filter((item) => item !== tagToRemove);
+    updateTagsState(next, true);
+  };
+
+  const handleToggleSuggestedTag = (suggested) => {
+    if (tagsRef.current.includes(suggested)) {
+      handleRemoveTag(suggested);
+    } else {
+      removedTagsRef.current.delete(suggested);
+      updateTagsState([...tagsRef.current, suggested], true);
+    }
+  };
+
   const handleSave = async (silent = false, closeAfter = false, overrides = {}) => {
     if (overLimit) return;
     clearTimeout(autoSaveTimer.current);
@@ -225,12 +282,24 @@ export default function NoteEditor({
     const currentTitle = overrides.title !== undefined ? overrides.title : titleRef.current;
     const finalBgColor = overrides.bgColor !== undefined ? overrides.bgColor : bgColorRef.current;
     const finalBgPattern = overrides.bgPattern !== undefined ? overrides.bgPattern : bgPatternRef.current;
+    const baseTags = overrides.tags !== undefined ? overrides.tags : tagsRef.current;
 
     const currentTargetId = activeNoteIdRef.current;
 
     // For a brand-new note during silent auto-save, skip if both title and content are still empty
     const plainText = stripHtml(contentToSave);
-    if (silent && !currentTargetId && !shareToken && !currentTitle.trim() && !plainText && !imagesRef.current.length && !audiosRef.current.length) {
+    const hasTaskItems = contentToSave.includes('data-type="taskItem"');
+    if (
+      silent &&
+      !currentTargetId &&
+      !shareToken &&
+      !currentTitle.trim() &&
+      !plainText &&
+      !hasTaskItems &&
+      !imagesRef.current.length &&
+      !audiosRef.current.length &&
+      !baseTags.length
+    ) {
       return;
     }
 
@@ -257,11 +326,30 @@ export default function NoteEditor({
 
     try {
       const preservedContent = contentWithPreservedInlineImages(contentToSave, inlineImages);
+      const pendingTag = !silent && tagInput.trim() ? normalizeNoteTag(tagInput) : '';
+      if (pendingTag) {
+        removedTagsRef.current.delete(pendingTag);
+        setTagInput('');
+      }
+      const inlineTags = extractInlineHashtags(preservedContent).filter(
+        (ht) => !removedTagsRef.current.has(ht),
+      );
+      const finalTags = normalizeNoteTags([
+        ...baseTags,
+        ...(pendingTag ? [pendingTag] : []),
+        ...inlineTags,
+      ]);
+      if (finalTags.join(',') !== tagsRef.current.join(',')) {
+        tagsRef.current = finalTags;
+        setTags(finalTags);
+      }
+
       const dto = {
         title: currentTitle.trim() || null,
         content: preservedContent,
         bgColor: finalBgColor,
         bgPattern: finalBgPattern,
+        tags: finalTags,
       };
 
       const prevSnap = lastSavedSnapshotRef.current;
@@ -298,6 +386,7 @@ export default function NoteEditor({
         content: dto.content,
         bgColor: dto.bgColor,
         bgPattern: dto.bgPattern,
+        tags: dto.tags,
         savedAt: result?.updatedAt || new Date().toISOString(),
       };
 
@@ -329,6 +418,9 @@ export default function NoteEditor({
     const nextContent = revision.content || '';
     const nextBgColor = revision.bgColor || bgColorRef.current;
     const nextBgPattern = revision.bgPattern || bgPatternRef.current;
+    const nextTags = Array.isArray(revision.tags)
+      ? normalizeNoteTags(revision.tags)
+      : tagsRef.current;
 
     setTitle(nextTitle);
     titleRef.current = nextTitle;
@@ -336,6 +428,8 @@ export default function NoteEditor({
     bgColorRef.current = nextBgColor;
     setBgPattern(nextBgPattern);
     bgPatternRef.current = nextBgPattern;
+    setTags(nextTags);
+    tagsRef.current = nextTags;
 
     if (editor) {
       const placeholderProcessed = contentWithInlineImagePlaceholders(sanitizeNoteContent(nextContent));
@@ -356,6 +450,7 @@ export default function NoteEditor({
       content: nextContent,
       bgColor: nextBgColor,
       bgPattern: nextBgPattern,
+      tags: nextTags,
       skipHistoryPush: !userIsLoggedIn,
     });
   };
@@ -389,6 +484,7 @@ export default function NoteEditor({
           content: contentWithPreservedInlineImages(contentToSave, inlineImages),
           bgColor: bgColorRef.current,
           bgPattern: bgPatternRef.current,
+          tags: tagsRef.current,
         };
         const saved = await onSave(dto, null, { silent: true });
         if (saved?.id) {
@@ -453,6 +549,7 @@ export default function NoteEditor({
           content: contentWithPreservedInlineImages(contentToSave, inlineImages),
           bgColor: bgColorRef.current,
           bgPattern: bgPatternRef.current,
+          tags: tagsRef.current,
         };
         const saved = await onSave(dto, null, { silent: true });
         if (saved?.id) {
@@ -637,7 +734,7 @@ export default function NoteEditor({
               type="button"
               id="btn-editor-top-close"
             >
-              <X size={16} strokeWidth={2.5} />
+              <X size={16} strokeWidth={2.5} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -660,6 +757,82 @@ export default function NoteEditor({
             id="note-editor-title"
             aria-label={t('editor.title_placeholder', 'Tiêu đề ghi chú')}
           />
+
+          {/* Tags bar & suggested chips */}
+          {(!isReadOnly || tags.length > 0) && (
+            <div
+              className="nn-editor-tags-section"
+              aria-label={t('editor.tags_label', 'Thẻ phân loại ghi chú')}
+            >
+              <div className="nn-editor-tags-bar">
+                <Tag size={13} strokeWidth={2} className="nn-editor-tags-icon" aria-hidden="true" />
+                {tags.map((tag) => (
+                  <span key={tag} className="nn-tag-chip">
+                    #{tag}
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        className="nn-tag-remove"
+                        onClick={() => handleRemoveTag(tag)}
+                        aria-label={t('editor.tag_remove', `Xoá thẻ #${tag}`, { tag })}
+                        title={t('editor.tag_remove', `Xoá thẻ #${tag}`, { tag })}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
+                ))}
+                {!isReadOnly && tags.length < 12 && (
+                  <input
+                    id="note-tag-input"
+                    type="text"
+                    className="nn-tag-input"
+                    value={tagInput}
+                    maxLength={34}
+                    placeholder={t('editor.tags_placeholder', 'Thêm #thẻ (Enter hoặc dấu phẩy)…')}
+                    aria-label={t('editor.tags_placeholder', 'Thêm #thẻ (Enter hoặc dấu phẩy)…')}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val.includes(',')) {
+                        commitTagInput(val);
+                      } else {
+                        setTagInput(val);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        commitTagInput(tagInput);
+                      } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+                        handleRemoveTag(tags[tags.length - 1]);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (tagInput.trim()) commitTagInput(tagInput);
+                    }}
+                  />
+                )}
+              </div>
+              {!isReadOnly && (
+                <div className="nn-tag-suggestions">
+                  {SUGGESTED_NOTE_TAGS.map((sug) => {
+                    const active = tags.includes(sug);
+                    return (
+                      <button
+                        key={sug}
+                        type="button"
+                        className={`nn-tag-suggestion${active ? ' is-active' : ''}`}
+                        onClick={() => handleToggleSuggestedTag(sug)}
+                        aria-pressed={active}
+                      >
+                        #{sug}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Images */}
           {images.length > 0 && (
@@ -793,7 +966,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive('bold')}
                 onClick={() => editor?.chain().focus().toggleBold().run()}
               >
-                <Bold size={iconSize} strokeWidth={2.5} />
+                <Bold size={iconSize} strokeWidth={2.5} aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-italic"
@@ -801,7 +974,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive('italic')}
                 onClick={() => editor?.chain().focus().toggleItalic().run()}
               >
-                <Italic size={iconSize} strokeWidth={2} />
+                <Italic size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-underline"
@@ -809,7 +982,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive('underline')}
                 onClick={() => editor?.chain().focus().toggleUnderline().run()}
               >
-                <Underline size={iconSize} strokeWidth={2} />
+                <Underline size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-strike"
@@ -817,7 +990,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive('strike')}
                 onClick={() => editor?.chain().focus().toggleStrike().run()}
               >
-                <Strikethrough size={iconSize} strokeWidth={2} />
+                <Strikethrough size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
 
               <div className="nn-toolbar-sep" />
@@ -828,7 +1001,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive('highlight')}
                 onClick={() => editor?.chain().focus().toggleHighlight().run()}
               >
-                <Highlighter size={iconSize} strokeWidth={2} />
+                <Highlighter size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
 
               <div className="nn-toolbar-sep" />
@@ -839,7 +1012,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive('bulletList')}
                 onClick={() => editor?.chain().focus().toggleBulletList().run()}
               >
-                <List size={iconSize} strokeWidth={2} />
+                <List size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-ol"
@@ -847,7 +1020,15 @@ export default function NoteEditor({
                 isActive={editor?.isActive('orderedList')}
                 onClick={() => editor?.chain().focus().toggleOrderedList().run()}
               >
-                <ListOrdered size={iconSize} strokeWidth={2} />
+                <ListOrdered size={iconSize} strokeWidth={2} aria-hidden="true" />
+              </ToolbarButton>
+              <ToolbarButton
+                id="tb-checklist"
+                title={t('editor.tb_checklist', '☑️ Danh sách việc')}
+                isActive={editor?.isActive('taskList')}
+                onClick={() => editor?.chain().focus().toggleTaskList().run()}
+              >
+                <ListTodo size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
 
               <div className="nn-toolbar-sep" />
@@ -858,7 +1039,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive({ textAlign: 'left' })}
                 onClick={() => editor?.chain().focus().setTextAlign('left').run()}
               >
-                <AlignLeft size={iconSize} strokeWidth={2} />
+                <AlignLeft size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-align-center"
@@ -866,7 +1047,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive({ textAlign: 'center' })}
                 onClick={() => editor?.chain().focus().setTextAlign('center').run()}
               >
-                <AlignCenter size={iconSize} strokeWidth={2} />
+                <AlignCenter size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 id="tb-align-right"
@@ -874,7 +1055,7 @@ export default function NoteEditor({
                 isActive={editor?.isActive({ textAlign: 'right' })}
                 onClick={() => editor?.chain().focus().setTextAlign('right').run()}
               >
-                <AlignRight size={iconSize} strokeWidth={2} />
+                <AlignRight size={iconSize} strokeWidth={2} aria-hidden="true" />
               </ToolbarButton>
             </div>
           )}
@@ -911,7 +1092,7 @@ export default function NoteEditor({
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <History size={14} strokeWidth={2.2} style={{ color: 'var(--accent)' }} />
+                  <History size={14} strokeWidth={2.2} style={{ color: 'var(--accent)' }} aria-hidden="true" />
                   {userIsLoggedIn
                     ? t('editor.history_title_user', 'Lịch sử chỉnh sửa (Server lưu tối đa 5 lần hoàn tác)')
                     : t('editor.history_title_guest', 'Lịch sử chỉnh sửa (Lưu trên trình duyệt thiết bị)')}
@@ -924,7 +1105,7 @@ export default function NoteEditor({
                     id="btn-history-undo-latest"
                     style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
-                    <RotateCcw size={12} strokeWidth={2.2} />
+                    <RotateCcw size={12} strokeWidth={2.2} aria-hidden="true" />
                     {t('editor.history_back_once', 'Lùi 1 bước')}
                   </button>
                 )}
@@ -976,7 +1157,7 @@ export default function NoteEditor({
                           id={`btn-restore-history-${idx}`}
                           style={{ padding: '4px 10px', fontSize: '0.74rem', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         >
-                          <RotateCcw size={12} strokeWidth={2} />
+                          <RotateCcw size={12} strokeWidth={2} aria-hidden="true" />
                           {t('editor.history_restore', 'Khôi phục')}
                         </button>
                       </div>
@@ -987,10 +1168,46 @@ export default function NoteEditor({
             </div>
           )}
 
+          {/* Export (.md / .txt) inline panel */}
+          {showExportPanel && (
+            <div className="nn-export-panel" id="note-export-panel">
+              <span className="nn-export-panel-label">
+                <Download size={14} strokeWidth={2} aria-hidden="true" />
+                {t('editor.export_title', 'Tải xuống ghi chú')}
+              </span>
+              <div className="nn-export-panel-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost nn-export-btn"
+                  id="btn-export-md"
+                  onClick={() => {
+                    const html = contentWithPreservedInlineImages(editor?.getHTML() || currentContent, inlineImages);
+                    downloadNoteExport({ title: titleRef.current, content: html, tags: tagsRef.current }, 'md');
+                    setShowExportPanel(false);
+                  }}
+                >
+                  {t('editor.export_md', '⬇️ Xuất .md')}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost nn-export-btn"
+                  id="btn-export-txt"
+                  onClick={() => {
+                    const html = contentWithPreservedInlineImages(editor?.getHTML() || currentContent, inlineImages);
+                    downloadNoteExport({ title: titleRef.current, content: html, tags: tagsRef.current }, 'txt');
+                    setShowExportPanel(false);
+                  }}
+                >
+                  {t('editor.export_txt', '⬇️ Xuất .txt')}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Error */}
           {(error || imageLoadFailedCount > 0 || audioLoadFailedCount > 0) && (
             <div role="alert" style={{ padding: '0 20px 8px', fontSize: '0.8rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <AlertCircle size={13} strokeWidth={2} />
+              <AlertCircle size={13} strokeWidth={2} aria-hidden="true" />
               {error || (imageLoadFailedCount > 0 ? `Không tải được ${imageLoadFailedCount} ảnh đính kèm.` : `Không tải được ${audioLoadFailedCount} tệp âm thanh đính kèm.`)}
             </div>
           )}
@@ -1023,14 +1240,14 @@ export default function NoteEditor({
                         id="btn-upload-image"
                       >
                         {uploading
-                          ? <Loader2 size={16} strokeWidth={2} className="nn-spin" />
-                          : <ImageIcon size={16} strokeWidth={2} />
+                          ? <Loader2 size={16} strokeWidth={2} className="nn-spin" aria-hidden="true" />
+                          : <ImageIcon size={16} strokeWidth={2} aria-hidden="true" />
                         }
                       </button>
                     </>
                   )}
 
-                  {/* Audio upload */}
+                  {/* Audio upload + Direct Microphone Voice Recording */}
                   {audios.length < MAX_AUDIOS_PER_NOTE && (
                     <>
                       <input
@@ -1053,10 +1270,15 @@ export default function NoteEditor({
                         id="btn-upload-audio"
                       >
                         {uploadingAudio
-                          ? <Loader2 size={16} strokeWidth={2} className="nn-spin" />
-                          : <Music size={16} strokeWidth={2} />
+                          ? <Loader2 size={16} strokeWidth={2} className="nn-spin" aria-hidden="true" />
+                          : <Music size={16} strokeWidth={2} aria-hidden="true" />
                         }
                       </button>
+                      <VoiceRecorderButton
+                        disabled={uploadingAudio}
+                        onRecordingComplete={(files) => uploadAudioFiles(files)}
+                        onError={(msg) => setError(msg)}
+                      />
                     </>
                   )}
 
@@ -1070,7 +1292,7 @@ export default function NoteEditor({
                     onClick={() => setShowColorPicker((v) => !v)}
                     id="btn-color-picker"
                   >
-                    <Palette size={16} strokeWidth={2} />
+                    <Palette size={16} strokeWidth={2} aria-hidden="true" />
                   </button>
 
                   {/* Direct Note Password Lock button (only on user's board, not share link view) */}
@@ -1091,7 +1313,10 @@ export default function NoteEditor({
                       onClick={handleOpenPasswordSettings}
                       id="btn-editor-password"
                     >
-                      {hasPassword ? <Lock size={16} strokeWidth={2.2} /> : <Unlock size={16} strokeWidth={2} />}
+                      {hasPassword
+                        ? <Lock size={16} strokeWidth={2.2} aria-hidden="true" />
+                        : <Unlock size={16} strokeWidth={2} aria-hidden="true" />
+                      }
                     </button>
                   )}
 
@@ -1106,7 +1331,7 @@ export default function NoteEditor({
                     id="btn-editor-history"
                     style={{ position: 'relative' }}
                   >
-                    <History size={16} strokeWidth={2} />
+                    <History size={16} strokeWidth={2} aria-hidden="true" />
                     {effectiveHistory.length > 0 && (
                       <span
                         style={{
@@ -1132,6 +1357,19 @@ export default function NoteEditor({
                   </button>
                 </>
               )}
+
+              {/* Export (.md / .txt) toggle — available in both editable and read-only view */}
+              <button
+                className={`btn btn-ghost btn-icon${showExportPanel ? ' text-accent' : ''}`}
+                title={t('editor.export_btn', 'Xuất ghi chú (.md / .txt)')}
+                aria-label={t('editor.export_btn', 'Xuất ghi chú (.md / .txt)')}
+                aria-expanded={showExportPanel}
+                type="button"
+                onClick={() => setShowExportPanel((v) => !v)}
+                id="btn-export-note"
+              >
+                <Download size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

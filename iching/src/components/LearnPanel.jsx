@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { analyzeLucHao } from '../logic/lucHaoAnalysis.js';
-import { TOPICS } from '../data/lucHaoRules.js';
+import { TOPICS, inferTopicFromQuestion } from '../data/lucHaoRules.js';
 import { GLOSSARY } from '../data/glossary.js';
+import UngKyCard from './UngKyCard.jsx';
 
 const VERDICT_LABEL = { cat: 'Cát', binh: 'Bình', hung: 'Hung' };
 const VERDICT_COLOR = { cat: 'var(--color-jade)', binh: 'var(--color-gold, #b8860b)', hung: 'var(--color-vermillion)' };
@@ -10,23 +11,35 @@ const btn = (active) => ({
   background: active ? 'var(--color-gold, #8a6104)' : 'rgba(184,134,11,0.09)',
   color: active ? 'var(--color-on-gold, #fff)' : 'var(--color-ink, #2c2621)',
   border: '1px solid ' + (active ? 'var(--color-gold, #8a6104)' : 'rgba(184,134,11,0.3)'),
-  padding: '7px 14px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+  padding: '8px 14px',
+  borderRadius: 8,
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  cursor: 'pointer',
 });
 
 /**
- * Chế độ Học: stepper phân tích Lục Hào từng bước + "Đọc thử trước".
+ * Chế độ Học: stepper phân tích Lục Hào từng bước + "Đọc thử trước" + Tăng San Bốc Dịch v2 & Ứng Kỳ.
  * Props: result, onHighlight(indices[]), onLearn(termKey)
  */
 export default function LearnPanel({ result, onHighlight, onLearn }) {
-  const [topic, setTopic] = useState('general');
+  const [topic, setTopic] = useState(() => inferTopicFromQuestion(result?.question || ''));
   const [stepIdx, setStepIdx] = useState(0);
   const [guess, setGuess] = useState(null); // null = chưa đoán
   const [started, setStarted] = useState(false);
 
+  useEffect(() => {
+    setTopic(inferTopicFromQuestion(result?.question || ''));
+  }, [result?.createdAt, result?.question]);
+
   const analysis = useMemo(() => analyzeLucHao(result, topic), [result, topic]);
 
   // Reset khi đổi quẻ / chủ đề
-  useEffect(() => { setStepIdx(0); setGuess(null); setStarted(false); }, [result, topic]);
+  useEffect(() => {
+    setStepIdx(0);
+    setGuess(null);
+    setStarted(false);
+  }, [result, topic]);
 
   const step = analysis?.steps[stepIdx];
   useEffect(() => {
@@ -39,13 +52,14 @@ export default function LearnPanel({ result, onHighlight, onLearn }) {
   const last = stepIdx === analysis.steps.length - 1;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minInlineSize: 0 }}>
       <div>
         <label htmlFor="learn-topic" style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)', display: 'block', marginBottom: 4 }}>
           Bạn hỏi về chủ đề gì?
         </label>
         <select
           id="learn-topic"
+          className="form-input iching-touch-control"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(184,134,11,0.35)', fontSize: '0.9rem' }}
@@ -62,12 +76,12 @@ export default function LearnPanel({ result, onHighlight, onLearn }) {
           <div style={{ fontWeight: 700, marginBottom: 8 }}>🎯 Đọc thử trước: theo bạn quẻ này Cát hay Hung?</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {Object.entries(VERDICT_LABEL).map(([k, label]) => (
-              <button key={k} type="button" id={`learn-guess-${k}`} style={btn(false)} onClick={() => { setGuess(k); setStarted(true); }}>
+              <button key={k} type="button" id={`learn-guess-${k}`} className="iching-touch-control" style={btn(false)} onClick={() => { setGuess(k); setStarted(true); }}>
                 {label}
               </button>
             ))}
-            <button type="button" id="learn-skip-guess" style={{ ...btn(false), fontWeight: 500 }} onClick={() => { setGuess('skip'); setStarted(true); }}>
-              Bỏ qua, xem giải thích
+            <button type="button" id="learn-skip-guess" className="iching-touch-control" style={{ ...btn(false), fontWeight: 500 }} onClick={() => { setGuess('skip'); setStarted(true); }}>
+              Bỏ qua, xem giải thích &amp; Ứng Kỳ
             </button>
           </div>
         </div>
@@ -82,7 +96,7 @@ export default function LearnPanel({ result, onHighlight, onLearn }) {
 
           {step.id === 'ket-luan' ? (
             <>
-              <p style={{ margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 800, color: VERDICT_COLOR[analysis.verdict] }}>
+              <p style={{ margin: '0 0 8px', fontSize: '1.02rem', fontWeight: 800, color: VERDICT_COLOR[analysis.verdict] }}>
                 {step.finding}
               </p>
               {guess && guess !== 'skip' && (
@@ -102,8 +116,11 @@ export default function LearnPanel({ result, onHighlight, onLearn }) {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               {step.glossary.filter((k) => GLOSSARY[k]).map((k) => (
                 <button
-                  key={k} type="button" onClick={() => onLearn?.(k)}
-                  style={{ ...btn(false), padding: '3px 10px', fontSize: '0.75rem', fontWeight: 600 }}
+                  key={k}
+                  type="button"
+                  className="iching-touch-control"
+                  onClick={() => onLearn?.(k)}
+                  style={{ ...btn(false), padding: '5px 10px', fontSize: '0.75rem', fontWeight: 600 }}
                 >
                   📖 {GLOSSARY[k].title}
                 </button>
@@ -111,16 +128,16 @@ export default function LearnPanel({ result, onHighlight, onLearn }) {
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <button type="button" id="learn-prev" style={{ ...btn(false), opacity: stepIdx === 0 ? 0.4 : 1 }} disabled={stepIdx === 0} onClick={() => setStepIdx((i) => i - 1)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" id="learn-prev" className="iching-touch-control" style={{ ...btn(false), opacity: stepIdx === 0 ? 0.4 : 1 }} disabled={stepIdx === 0} onClick={() => setStepIdx((i) => i - 1)}>
               ← Trước
             </button>
             {!last ? (
-              <button type="button" id="learn-next" style={btn(true)} onClick={() => setStepIdx((i) => i + 1)}>
+              <button type="button" id="learn-next" className="iching-touch-control" style={btn(true)} onClick={() => setStepIdx((i) => i + 1)}>
                 Tiếp →
               </button>
             ) : (
-              <button type="button" id="learn-restart" style={btn(false)} onClick={() => { setStepIdx(0); setGuess(null); setStarted(false); }}>
+              <button type="button" id="learn-restart" className="iching-touch-control" style={btn(false)} onClick={() => { setStepIdx(0); setGuess(null); setStarted(false); }}>
                 ↺ Học lại
               </button>
             )}
@@ -128,8 +145,16 @@ export default function LearnPanel({ result, onHighlight, onLearn }) {
         </div>
       )}
 
+      {/* Bảng tổng hợp Tăng San Bốc Dịch v2 & Dự Báo Ứng Kỳ */}
+      <UngKyCard
+        analysis={analysis}
+        showDiagnostics={started}
+        onLearn={onLearn}
+        idPrefix="learn-ung-ky"
+      />
+
       <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>
-        Đây là cách phân tích đơn giản để học. Thầy xem quẻ còn xét thêm nhiều yếu tố khác.
+        Phân tích dựa theo cổ pháp Tăng San Bốc Dịch (Dã Hạc Lão Nhân); khi luận thực tế cần kết hợp thêm bối cảnh cụ thể của người hỏi.
       </p>
     </div>
   );

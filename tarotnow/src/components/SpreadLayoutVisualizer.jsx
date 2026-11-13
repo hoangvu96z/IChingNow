@@ -319,10 +319,14 @@ function YesNoLayout({ cards, positions, onCardClick, baseUrl }) {
 }
 
 /* ─── Main Visualizer ──────────────────────────────────────────────── */
-export default function SpreadLayoutVisualizer({ cards = [], spread, onCardClick }) {
+export default function SpreadLayoutVisualizer({ cards = [], spread, positionsOverride, onCardClick }) {
   const baseUrl = import.meta.env.BASE_URL;
   const layout = spread?.layout || 'row';
-  const positions = spread?.positions || cards.map((_, i) => `Vị trí ${i + 1}`);
+  const positions = Array.isArray(positionsOverride) && positionsOverride.length > 0
+    ? positionsOverride
+    : Array.isArray(spread?.positions) && spread.positions.length > 0
+      ? spread.positions
+      : cards.map((_, i) => `Vị trí ${i + 1}`);
 
   const renderLayout = () => {
     switch (layout) {

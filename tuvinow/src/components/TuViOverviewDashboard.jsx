@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import TuViSelfGuidePanel from './TuViSelfGuidePanel.jsx';
 import TuViLocalReport from './TuViLocalReport.jsx';
 import SummaryPanel from './SummaryPanel.jsx';
 import TuViPatternsPanel from './TuViPatternsPanel.jsx';
+import TuViTimelineAndDailyPanel from './TuViTimelineAndDailyPanel.jsx';
+import SaveToNoteNowButton from '../../../shared/src/components/SaveToNoteNowButton.jsx';
 import { buildChartStarEvaluation } from '../utils/tuViStarRating.js';
+import { buildTuViNoteNowPayload } from '../utils/tuviTimelineModel.js';
 
 function RadarChart({ aspects = [], natalAspects = null, isDynamic = false }) {
   const size = 340;
@@ -174,6 +177,11 @@ export default function TuViOverviewDashboard({
   result,
   inputData,
   yunxianState,
+  onYunxianChange,
+  lifeEvents = [],
+  onUpsertLifeEvent,
+  onDeleteLifeEvent,
+  isAuthenticated = false,
   initialTab = 'overview',
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -182,6 +190,17 @@ export default function TuViOverviewDashboard({
   const evaluation = useMemo(() => {
     return buildChartStarEvaluation(result, inputData, yunxianState);
   }, [result, inputData, yunxianState]);
+
+  const buildNotePayload = useCallback(
+    () =>
+      buildTuViNoteNowPayload({
+        result,
+        inputData,
+        yunxianState,
+        lifeEvents,
+      }),
+    [result, inputData, yunxianState, lifeEvents],
+  );
 
   if (!result || !evaluation) {
     return null;
@@ -244,6 +263,38 @@ export default function TuViOverviewDashboard({
           <span className="tuvi-tab-icon" aria-hidden="true">✦</span>
           <span>Phân Tích Chuyên Sâu & Cổ Thư</span>
         </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-timeline"
+          aria-selected={activeTab === 'timeline'}
+          aria-controls="panel-timeline"
+          className={`tuvi-hub-tab ${activeTab === 'timeline' ? 'is-active' : ''}`}
+          onClick={() => setActiveTab('timeline')}
+        >
+          <span className="tuvi-tab-icon" aria-hidden="true">📅</span>
+          <span>Vận Hạn 10 Năm & Lịch Lưu Nhật</span>
+        </button>
+      </div>
+
+      {/* Thanh hành động nhanh: Lưu NoteNow & Mở Quỹ Đạo 10 Năm / Lịch 30 Ngày */}
+      <div className="tuvi-hub-quick-actions">
+        <SaveToNoteNowButton
+          buildPayload={buildNotePayload}
+          isAuthenticated={isAuthenticated}
+          compact
+        />
+        {activeTab !== 'timeline' && (
+          <button
+            type="button"
+            className="tuvi-jump-timeline-btn"
+            onClick={() => setActiveTab('timeline')}
+          >
+            <span aria-hidden="true">📈</span>
+            <span>Xem Quỹ đạo 10 năm &amp; Lịch 30 ngày Lưu Nhật →</span>
+          </button>
+        )}
       </div>
 
       {/* ===== TAB CONTENT PANELS ===== */}
@@ -520,6 +571,21 @@ export default function TuViOverviewDashboard({
       {activeTab === 'deep' && (
         <div id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" className="tuvi-tab-content">
           <TuViPatternsPanel result={result} inputData={inputData} />
+        </div>
+      )}
+
+      {/* TAB 5: VẬN HẠN 10 NĂM & LỊCH LƯU NHẬT / LƯU THỜI */}
+      {activeTab === 'timeline' && (
+        <div id="panel-timeline" role="tabpanel" aria-labelledby="tab-timeline" className="tuvi-tab-content">
+          <TuViTimelineAndDailyPanel
+            result={result}
+            inputData={inputData}
+            yunxianState={yunxianState}
+            onYunxianChange={onYunxianChange}
+            lifeEvents={lifeEvents}
+            onUpsertLifeEvent={onUpsertLifeEvent}
+            onDeleteLifeEvent={onDeleteLifeEvent}
+          />
         </div>
       )}
     </section>

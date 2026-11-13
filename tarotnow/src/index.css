@@ -3772,3 +3772,1465 @@ input:checked + .toggle-slider:before {
   background: rgba(242, 235, 220, 0.5);
   border-color: rgba(164, 120, 18, 0.25);
 }
+
+
+/* =========================================================================
+   ELEMENTAL DIGNITIES, PHYSICAL DECK LOGGER, CUSTOM SPREADS & INSIGHTS
+   ========================================================================= */
+
+/* ── Native <dialog> Modals (Zero unconditional display, overscroll contained) ── */
+dialog:modal {
+  overscroll-behavior: contain;
+  max-block-size: 90dvh;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(6, 4, 15, 0.74);
+  backdrop-filter: blur(5px);
+}
+
+dialog.tarot-native-dialog {
+  padding: 0;
+  margin: auto;
+  border: 1px solid rgba(229, 193, 88, 0.35);
+  border-radius: 18px;
+  background: rgba(16, 12, 32, 0.98);
+  color: var(--text-primary);
+  inline-size: min(94%, 780px);
+  max-inline-size: calc(100% - 16px);
+  max-block-size: 90dvh;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.78);
+}
+
+dialog.tarot-native-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.tarot-dialog-inner {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  max-block-size: 90dvh;
+  overflow: hidden;
+}
+
+.tarot-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid rgba(229, 193, 88, 0.16);
+  flex-shrink: 0;
+}
+
+.tarot-dialog-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--gold-color);
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+
+.tarot-dialog-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.tarot-dialog-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 38px;
+  min-block-size: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(229, 193, 88, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.tarot-dialog-close-btn:hover {
+  background: rgba(229, 193, 88, 0.14);
+  border-color: var(--gold-color);
+}
+
+/* ── 3-Tab Mode Switcher (Random / Manual / Physical) ── */
+.mode-switcher.mode-switcher--3tabs {
+  max-inline-size: 680px;
+  inline-size: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-inline-size: 0;
+}
+
+.mode-switcher.mode-switcher--3tabs .mode-switcher-btn {
+  flex: 1 1 150px;
+  min-inline-size: 0;
+  min-block-size: 40px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* ── Reading Result Action Bar & History Header Buttons ── */
+.reading-result-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(229, 193, 88, 0.14);
+  min-inline-size: 0;
+}
+
+.tarot-secondary-pill-btn,
+.history-insights-trigger-btn,
+.history-manage-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-block-size: 36px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(229, 193, 88, 0.36);
+  background: rgba(229, 193, 88, 0.1);
+  color: var(--gold-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.history-manage-trigger-btn {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.tarot-secondary-pill-btn:hover,
+.history-insights-trigger-btn:hover {
+  background: rgba(229, 193, 88, 0.2);
+  border-color: var(--gold-color);
+}
+
+.history-manage-trigger-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Elemental Dignities & Archetype Clusters (<details> Disclosure) ── */
+.dignities-disclosure {
+  border-radius: 16px;
+  border: 1px solid rgba(229, 193, 88, 0.26);
+  background: rgba(18, 13, 36, 0.76);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+  min-inline-size: 0;
+}
+
+summary.dignities-summary-trigger {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-block-size: 46px;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(229, 193, 88, 0.06);
+  min-inline-size: 0;
+}
+
+summary.dignities-summary-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.dignities-summary-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--gold-color);
+  min-inline-size: 0;
+  overflow-wrap: break-word;
+}
+
+.dignities-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(229, 193, 88, 0.16);
+  border: 1px solid rgba(229, 193, 88, 0.35);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.dignities-body {
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-inline-size: 0;
+}
+
+.dignities-lead-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: rgba(229, 193, 88, 0.08);
+  border-inline-start: 3px solid var(--gold-color);
+}
+
+.dignities-element-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.dignities-element-chip {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-inline-size: 0;
+}
+
+.dignities-element-chip.is-missing {
+  opacity: 0.62;
+  border-style: dashed;
+}
+
+.dignities-element-chip-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+}
+
+.dignities-element-pct {
+  margin-inline-start: auto;
+  font-weight: 700;
+  color: var(--gold-color);
+}
+
+.dignities-element-bar {
+  inline-size: 100%;
+  block-size: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.dignities-element-bar-fill {
+  block-size: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e5c158, #f2d98d);
+}
+
+.elem-fire .dignities-element-bar-fill {
+  background: linear-gradient(90deg, #f97316, #facc15);
+}
+
+.elem-water .dignities-element-bar-fill {
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+}
+
+.elem-air .dignities-element-bar-fill {
+  background: linear-gradient(90deg, #a78bfa, #e2e8f0);
+}
+
+.elem-earth .dignities-element-bar-fill {
+  background: linear-gradient(90deg, #34d399, #eab308);
+}
+
+.dignities-element-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.dignities-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.dignities-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--gold-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dignities-pair-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.dignities-pair-card,
+.dignities-triad-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  min-inline-size: 0;
+}
+
+.dignities-pair-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.84rem;
+  min-inline-size: 0;
+}
+
+.dignities-pair-cards {
+  min-inline-size: 0;
+  overflow-wrap: break-word;
+}
+
+.dignities-pos-tag {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.dignities-relation-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  border: 1px solid rgba(229, 193, 88, 0.35);
+  background: rgba(229, 193, 88, 0.12);
+  color: var(--gold-color);
+  max-inline-size: 100%;
+}
+
+.dignities-relation-badge.badge-friendly,
+.dignities-relation-badge.triad-badge-strongly-dignified,
+.dignities-relation-badge.triad-badge-supported {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #6ee7b7;
+}
+
+.dignities-relation-badge.badge-contrary,
+.dignities-relation-badge.triad-badge-ill-dignified,
+.dignities-relation-badge.triad-badge-strained {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+}
+
+.dignities-relation-badge.badge-identical {
+  background: rgba(250, 204, 21, 0.16);
+  border-color: rgba(250, 204, 21, 0.42);
+  color: #fde047;
+}
+
+.dignities-pair-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+}
+
+.dignities-cluster-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dignities-cluster-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  min-inline-size: 0;
+  overflow-wrap: break-word;
+}
+
+.dignities-cluster-item.is-missing-note {
+  border-color: rgba(229, 193, 88, 0.26);
+  background: rgba(229, 193, 88, 0.06);
+}
+
+/* ── Custom Spread Position Builder ── */
+.custom-spread-builder {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(229, 193, 88, 0.26);
+  background: rgba(229, 193, 88, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-inline-size: 0;
+}
+
+.custom-spread-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.custom-spread-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.custom-spread-heading {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  color: var(--gold-color);
+}
+
+.custom-spread-count-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-spread-count-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.custom-spread-count-select {
+  inline-size: auto;
+  min-inline-size: 92px;
+  min-block-size: 36px;
+  padding: 6px 10px;
+}
+
+.custom-spread-presets-block {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-inline-size: 0;
+}
+
+.custom-spread-sublabel {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.custom-spread-preset-pills,
+.custom-saved-templates-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.custom-preset-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 36px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(229, 193, 88, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.custom-preset-pill-btn:hover:not(:disabled) {
+  background: rgba(229, 193, 88, 0.14);
+  border-color: var(--gold-color);
+}
+
+.custom-saved-template-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 999px;
+  border: 1px solid rgba(229, 193, 88, 0.36);
+  background: rgba(229, 193, 88, 0.1);
+  overflow: hidden;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.custom-saved-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 36px;
+  padding: 5px 11px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-inline-size: 0;
+  overflow-wrap: break-word;
+}
+
+.custom-saved-count-tag {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--gold-color);
+}
+
+.custom-saved-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 36px;
+  min-block-size: 36px;
+  border: none;
+  border-inline-start: 1px solid rgba(229, 193, 88, 0.25);
+  background: transparent;
+  color: #fca5a5;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.custom-saved-delete-btn:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.2);
+}
+
+.custom-positions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.custom-position-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-inline-size: 0;
+}
+
+.custom-position-badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.custom-position-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 20px;
+  block-size: 20px;
+  border-radius: 50%;
+  background: rgba(229, 193, 88, 0.22);
+  color: var(--gold-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.custom-position-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(229, 193, 88, 0.24);
+  background: rgba(12, 9, 26, 0.75);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+.custom-position-input:focus {
+  outline: none;
+  border-color: var(--gold-color);
+  box-shadow: 0 0 0 2px rgba(229, 193, 88, 0.16);
+}
+
+.custom-save-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-inline-size: 0;
+}
+
+.custom-template-name-input {
+  flex: 1 1 200px;
+}
+
+.custom-save-template-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-block-size: 40px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(229, 193, 88, 0.45);
+  background: rgba(229, 193, 88, 0.16);
+  color: var(--gold-color);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.custom-save-template-btn:hover:not(:disabled) {
+  background: rgba(229, 193, 88, 0.26);
+}
+
+.custom-spread-feedback {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.custom-spread-feedback.is-ok {
+  color: #6ee7b7;
+}
+
+.custom-spread-feedback.is-error {
+  color: #fca5a5;
+}
+
+/* ── Physical Deck Spread Logger ── */
+.physical-spread-panel {
+  min-inline-size: 0;
+}
+
+.physical-header-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+.physical-clear-all-btn {
+  min-block-size: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.physical-slots-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 10px;
+}
+
+.physical-slots-progress {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gold-color);
+}
+
+.physical-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+.physical-slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(229, 193, 88, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+  min-inline-size: 0;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.physical-slot-card.is-filled {
+  border-style: solid;
+  border-color: rgba(229, 193, 88, 0.42);
+  background: rgba(229, 193, 88, 0.06);
+}
+
+.physical-slot-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.physical-slot-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: 50%;
+  background: rgba(229, 193, 88, 0.2);
+  color: var(--gold-color);
+  font-size: 0.74rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.physical-slot-pos-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.physical-slot-pick-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-block-size: 96px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.physical-slot-pick-trigger:hover {
+  background: rgba(229, 193, 88, 0.08);
+  border-color: var(--gold-color);
+  color: var(--text-primary);
+}
+
+.physical-slot-plus {
+  font-size: 1.25rem;
+  color: var(--gold-color);
+}
+
+.physical-slot-filled-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.physical-slot-card-preview-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  min-inline-size: 0;
+}
+
+.physical-slot-thumb {
+  inline-size: 44px;
+  block-size: 72px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid rgba(229, 193, 88, 0.3);
+  flex-shrink: 0;
+}
+
+.physical-slot-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-inline-size: 0;
+}
+
+.physical-slot-card-name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow-wrap: break-word;
+}
+
+.physical-slot-card-vi {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+}
+
+.physical-slot-elem-tag {
+  font-size: 0.72rem;
+  color: var(--gold-color);
+  font-weight: 600;
+}
+
+.physical-slot-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-inline-size: 0;
+}
+
+.physical-ori-toggle-btn {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-block-size: 36px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  background: rgba(52, 211, 153, 0.12);
+  color: #6ee7b7;
+}
+
+.physical-ori-toggle-btn.is-reversed {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
+}
+
+.physical-slot-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 36px;
+  min-block-size: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.physical-slot-icon-btn.is-danger {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* ── Card Picker Dialog Controls & 78-Card Grid ── */
+.picker-slot-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 20px 0;
+  flex-shrink: 0;
+}
+
+.picker-slot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-block-size: 36px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.picker-slot-pill.filled {
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #6ee7b7;
+}
+
+.picker-slot-pill.active {
+  border-color: var(--gold-color);
+  background: rgba(229, 193, 88, 0.18);
+  color: var(--gold-color);
+}
+
+.picker-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px 8px;
+  align-items: center;
+  flex-shrink: 0;
+  min-inline-size: 0;
+}
+
+.picker-search-input {
+  flex: 1 1 220px;
+}
+
+.picker-orientation-segmented {
+  display: inline-flex;
+  border-radius: 10px;
+  border: 1px solid rgba(229, 193, 88, 0.28);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.picker-ori-seg-btn {
+  min-block-size: 38px;
+  padding: 6px 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.picker-ori-seg-btn.active.is-upright {
+  background: rgba(52, 211, 153, 0.2);
+  color: #6ee7b7;
+}
+
+.picker-ori-seg-btn.active.is-reversed {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
+}
+
+.picker-filter-pills,
+.insights-window-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 20px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+  min-inline-size: 0;
+}
+
+.picker-filter-pill {
+  min-block-size: 36px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.picker-filter-pill.active {
+  border-color: var(--gold-color);
+  background: rgba(229, 193, 88, 0.18);
+  color: var(--gold-color);
+}
+
+.picker-cards-scroll,
+.insights-scroll-body {
+  padding: 14px 20px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-block-size: 0;
+  flex: 1 1 auto;
+}
+
+.picker-empty-msg {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  padding: 28px 12px;
+}
+
+.picker-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.picker-card-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: center;
+  min-inline-size: 0;
+  transition: transform 0.15s, border-color 0.2s, background 0.2s;
+}
+
+.picker-card-tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--gold-color);
+  background: rgba(229, 193, 88, 0.1);
+}
+
+.picker-card-tile.is-current {
+  border-color: var(--gold-color);
+  background: rgba(229, 193, 88, 0.14);
+}
+
+.picker-card-tile.is-taken {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.picker-card-img-wrap {
+  position: relative;
+  inline-size: 64px;
+  block-size: 104px;
+}
+
+.picker-card-img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(229, 193, 88, 0.26);
+}
+
+.picker-taken-badge,
+.picker-current-badge {
+  position: absolute;
+  inset-inline: 2px;
+  bottom: 4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(15, 10, 30, 0.92);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+}
+
+.picker-current-badge {
+  color: var(--gold-color);
+  border-color: var(--gold-color);
+}
+
+.picker-card-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+
+.picker-card-subtitle {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+/* ── Personal Tarot Reading Analytics Modal ── */
+.insights-sections-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-inline-size: 0;
+}
+
+.insights-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.insights-kpi-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 193, 88, 0.22);
+  background: rgba(229, 193, 88, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.insights-kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.insights-kpi-value {
+  font-size: 1rem;
+  color: var(--gold-color);
+  overflow-wrap: break-word;
+}
+
+.insights-kpi-value small {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.insights-panel-box {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+.insights-section-heading {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  color: var(--gold-color);
+}
+
+.stalker-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.stalker-card-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+  min-inline-size: 0;
+}
+
+.stalker-card-thumb {
+  inline-size: 42px;
+  block-size: 70px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid rgba(229, 193, 88, 0.3);
+  flex-shrink: 0;
+}
+
+.stalker-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(229, 193, 88, 0.1);
+  font-size: 1.2rem;
+}
+
+.stalker-card-info {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stalker-card-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  min-inline-size: 0;
+}
+
+.stalker-count-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(229, 193, 88, 0.2);
+  color: var(--gold-color);
+}
+
+.stalker-ori-breakdown,
+.stalker-elem-pill {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.stalker-reflection-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.48;
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+}
+
+.insights-topic-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.insights-topic-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(229, 193, 88, 0.25);
+  background: rgba(229, 193, 88, 0.08);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.insights-empty-state {
+  text-align: center;
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.insights-empty-icon {
+  font-size: 2.2rem;
+}
+
+.insights-empty-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  color: var(--gold-color);
+}
+
+.insights-empty-desc {
+  margin: 0;
+  max-inline-size: 460px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* ── Light Theme Overrides ([data-theme="light"]) ── */
+[data-theme="light"] dialog.tarot-native-dialog {
+  background: #fdfbf7;
+  border-color: rgba(164, 120, 18, 0.34);
+  color: var(--text-primary);
+  box-shadow: 0 24px 60px rgba(42, 31, 61, 0.22);
+}
+
+[data-theme="light"] .tarot-dialog-close-btn,
+[data-theme="light"] .history-manage-trigger-btn,
+[data-theme="light"] .custom-preset-pill-btn,
+[data-theme="light"] .physical-slot-icon-btn,
+[data-theme="light"] .picker-filter-pill:not(.active),
+[data-theme="light"] .picker-slot-pill:not(.active),
+[data-theme="light"] .picker-ori-seg-btn:not(.active) {
+  background: #ffffff;
+  border-color: rgba(164, 120, 18, 0.26);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .dignities-disclosure {
+  background: rgba(255, 253, 248, 0.95);
+  border-color: rgba(164, 120, 18, 0.3);
+}
+
+[data-theme="light"] summary.dignities-summary-trigger {
+  background: rgba(164, 120, 18, 0.08);
+}
+
+[data-theme="light"] .dignities-element-chip,
+[data-theme="light"] .dignities-pair-card,
+[data-theme="light"] .dignities-triad-card,
+[data-theme="light"] .dignities-cluster-item,
+[data-theme="light"] .insights-panel-box,
+[data-theme="light"] .stalker-card-row,
+[data-theme="light"] .physical-slot-card,
+[data-theme="light"] .physical-slot-card-preview-btn,
+[data-theme="light"] .picker-card-tile {
+  background: #ffffff;
+  border-color: rgba(164, 120, 18, 0.22);
+}
+
+[data-theme="light"] .custom-position-input {
+  background: #ffffff;
+  border-color: rgba(164, 120, 18, 0.32);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .dignities-relation-badge.badge-friendly,
+[data-theme="light"] .dignities-relation-badge.triad-badge-strongly-dignified,
+[data-theme="light"] .dignities-relation-badge.triad-badge-supported,
+[data-theme="light"] .physical-ori-toggle-btn:not(.is-reversed) {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(5, 150, 105, 0.38);
+}
+
+[data-theme="light"] .dignities-relation-badge.badge-contrary,
+[data-theme="light"] .dignities-relation-badge.triad-badge-ill-dignified,
+[data-theme="light"] .dignities-relation-badge.triad-badge-strained,
+[data-theme="light"] .physical-ori-toggle-btn.is-reversed,
+[data-theme="light"] .custom-saved-delete-btn,
+[data-theme="light"] .physical-slot-icon-btn.is-danger {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(185, 28, 28, 0.32);
+}
+
+[data-theme="light"] .dignities-relation-badge.badge-identical {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(180, 83, 9, 0.36);
+}
+
+/* ── Coarse Pointer Touch Targets (>= 44px) ── */
+@media (pointer: coarse) {
+  .mode-switcher.mode-switcher--3tabs .mode-switcher-btn,
+  .tarot-dialog-close-btn,
+  .tarot-secondary-pill-btn,
+  .history-insights-trigger-btn,
+  .history-manage-trigger-btn,
+  .custom-preset-pill-btn,
+  .custom-saved-load-btn,
+  .custom-saved-delete-btn,
+  .custom-position-input,
+  .custom-save-template-btn,
+  .physical-ori-toggle-btn,
+  .physical-slot-icon-btn,
+  .picker-slot-pill,
+  .picker-ori-seg-btn,
+  .picker-filter-pill {
+    min-block-size: 44px;
+  }
+
+  .tarot-dialog-close-btn,
+  .custom-saved-delete-btn,
+  .physical-slot-icon-btn {
+    min-inline-size: 44px;
+  }
+}
+
+/* ── Narrow Viewports down to 320px (Zero Horizontal Overflow) ── */
+@media (max-width: 640px) {
+  .dignities-element-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .custom-positions-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .insights-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .physical-slots-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tarot-dialog-header,
+  .picker-controls-bar,
+  .picker-filter-pills,
+  .insights-window-bar,
+  .picker-cards-scroll,
+  .insights-scroll-body,
+  .picker-slot-stepper {
+    padding-inline: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mode-switcher.mode-switcher--3tabs .mode-switcher-btn {
+    flex: 1 1 100%;
+  }
+
+  .picker-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stalker-card-row {
+    flex-direction: column;
+  }
+
+  .custom-save-template-btn {
+    inline-size: 100%;
+  }
+}

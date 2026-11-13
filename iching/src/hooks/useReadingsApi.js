@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { getSsoApiBase } from '../../../shared/src/utils/ssoConfig.mjs';
 import { decryptData } from '../utils/cryptoUtils';
 import {
@@ -5,6 +6,11 @@ import {
   createReadingsApiRequest,
 } from '../../../shared/src/utils/readingsApi.mjs';
 import { useReadingsHistory } from '../../../shared/src/hooks/useReadingsHistory.js';
+import {
+  normalizeVerification,
+  loadLocalVerifications,
+  saveLocalVerification,
+} from '../logic/verification.js';
 
 const SSO_BASE = getSsoApiBase({ DEV: import.meta.env.DEV, VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 const APP = 'iching';
@@ -14,10 +20,18 @@ const readingsApi = createReadingsApi({
 });
 
 function mapLoadedIChingReading(r, dataObj) {
+  const localMap = loadLocalVerifications();
+  const verification =
+    dataObj?.verification ||
+    localMap[String(r.id)] ||
+    (dataObj?.createdAt ? localMap[dataObj.createdAt] : null) ||
+    null;
+
   return {
     type: r.type,
     title: r.title,
     mode: dataObj.mode || r.type,
+    ...(verification ? { verification: normalizeVerification(verification) } : {}),
   };
 }
 
@@ -37,6 +51,7 @@ function buildIChingSaveReading(newResult, type) {
     type,
     title,
     mode: newResult.mode || (type === 'mai-hoa' ? `mai-hoa-${newResult.subMode}` : 'quick'),
+    ...(newResult.verification ? { verification: normalizeVerification(newResult.verification) } : {}),
     data: newResult,
   };
 
@@ -55,11 +70,10 @@ function buildIChingSaveReading(newResult, type) {
 }
 
 /**
- * Hook quản lý lịch sử gieo quẻ. Các bản ghi mới được mã hóa lưu trữ ở phía máy chủ;
- * decryptData chỉ giữ tương thích với các bản ghi enc_v1 cũ.
+ * Hook quản lý lịch sử gieo quẻ & Nghiệm Lý (Outcome Verification).
  */
 export function useReadingsApi(isAuthenticated, userId) {
-  return useReadingsHistory(isAuthenticated, userId, {
+  const base = useReadingsHistory(isAuthenticated, userId, {
     readingsApi,
     decryptData,
     encryptedQuestionFallback: '(Lần lập quẻ)',
@@ -67,4 +81,44 @@ export function useReadingsApi(isAuthenticated, userId) {
     mapLoadedReading: mapLoadedIChingReading,
     buildSaveReading: buildIChingSaveReading,
   });
+
+  const { setHistory, updateReadingData } = base;
+
+  const updateVerification = useCallback(
+    async (readingId, verificationObj, createdAtKey = null) => {
+      const normalized = normalizeVerification(verificationObj);
+
+      // Luôn lưu dự phòng vào localStorage để hoạt động mượt cả khi khách / chưa đồng bộ
+      if (readingId) saveLocalVerification(String(readingId), normalized);
+      if (createdAtKey) saveLocalVerification(String(createdAtKey), normalized);
+
+      // Cập nhật ngay trong state lịch sử trên giao diện
+      setHistory((prev) =>
+        prev.map((item) => {
+          const matchesId = readingId && String(item.id) === String(readingId);
+          const matchesCreatedAt =
+            createdAtKey && item.data?.createdAt && item.data.createdAt === createdAtKey;
+          if (!matchesId && !matchesCreatedAt) return item;
+          return {
+            ...item,
+            verification: normalized,
+            data: item.data ? { ...item.data, verification: normalized } : item.data,
+          };
+        })
+      );
+
+      // Đồng bộ lên backend qua readingsApi.update nếu đã đăng nhập & có readingId
+      if (isAuthenticated && readingId) {
+        await updateReadingData(readingId, { verification: normalized });
+      }
+
+      return normalized;
+    },
+    [isAuthenticated, setHistory, updateReadingData]
+  );
+
+  return {
+    ...base,
+    updateVerification,
+  };
 }

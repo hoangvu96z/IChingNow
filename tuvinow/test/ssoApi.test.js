@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { createServer } from 'vite';
 
+const TUVI_ROOT = path.resolve(import.meta.dirname, '..');
+
 test('SSO AI errors preserve their status, make one request, and never fall back to a provider', async () => {
-  const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const server = await createServer({ root: TUVI_ROOT, configFile: false, optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const originalFetch = globalThis.fetch;
   const storage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: () => null } });

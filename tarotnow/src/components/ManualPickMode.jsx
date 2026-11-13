@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getCardMeaning } from '../utils/tarotLogic';
+import { getCardMeaning, computeElementalDignities } from '../utils/tarotLogic';
 import { createManualReadingEntry } from '../utils/manualReading.mjs';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,8 @@ import Manual3DTray from './manual/Manual3DTray';
 import ManualDeckStage from './manual/ManualDeckStage';
 import WeightSettingsModal from './manual/WeightSettingsModal';
 import TarotLearnModal from './TarotLearnModal';
+import ElementalDignitiesPanel from './ElementalDignitiesPanel.jsx';
+import SaveToNoteNowButton from '../../../shared/src/components/SaveToNoteNowButton.jsx';
 
 const CONTEXTS_MANUAL = [
   { id: 'general', labelVi: '🌟 Tổng quát', labelEn: '🌟 General' },
@@ -297,6 +299,46 @@ export default function ManualPickMode({
             <p className="results-question-text" style={{ margin: 0 }}>
               {language === 'en' ? 'Question' : 'Câu hỏi'}: "{question}"
             </p>
+            {drawnCards.length > 0 && (
+              <div className="reading-result-action-bar" style={{ marginTop: 14 }}>
+                <SaveToNoteNowButton
+                  isAuthenticated={isAuthenticated}
+                  language={language}
+                  buildPayload={() => {
+                    const isEn = language === 'en';
+                    const positions = drawnCards.map((_, i) => (isEn ? `Card ${i + 1}` : `Lá ${i + 1}`));
+                    const dignities = computeElementalDignities(drawnCards, positions, {
+                      language,
+                      perspective: activeCtx,
+                    });
+                    return {
+                      title: `TarotNow — ${isEn ? 'Manual Pick' : 'Tự rút bài'} (${drawnCards.length}): ${question}`,
+                      sourceAppLabel: 'TarotNow',
+                      question,
+                      summaryLines: [
+                        ...drawnCards.map((c, idx) => {
+                          const ori = c.orientation === 'reversed'
+                            ? (isEn ? 'Reversed ↓' : 'Ngược ↓')
+                            : (isEn ? 'Upright ↑' : 'Xuôi ↑');
+                          const m = getCardMeaning(c, activeCtx, c.orientation);
+                          return `#${idx + 1} [${positions[idx]}] ${c.name} (${ori})${m ? ` — ${m}` : ''}`;
+                        }),
+                        dignities.summaryText
+                          ? `${isEn ? 'Elemental Dignities' : 'Tương tác Nguyên tố'}: ${dignities.summaryText}`
+                          : '',
+                      ].filter(Boolean),
+                      checklistItems: [
+                        dignities.missingInsights?.[0]?.message || '',
+                        isEn
+                          ? 'Write down 1 concrete step to test this reading within 48 hours.'
+                          : 'Ghi lại 1 hành động nhỏ cụ thể để kiểm chứng trải bài trong 48 giờ tới.',
+                      ].filter(Boolean),
+                      tags: ['tarotnow', 'manual', activeCtx],
+                    };
+                  }}
+                />
+              </div>
+            )}
             {isSavingReading && (
               <p role="status" style={{ margin: '8px 0 0', fontSize: '0.8rem' }}>
                 {language === 'en' ? 'Saving this reading…' : 'Đang lưu trải bài…'}
@@ -308,6 +350,17 @@ export default function ManualPickMode({
               </p>
             )}
           </div>
+
+          {drawnCards.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <ElementalDignitiesPanel
+                cards={drawnCards}
+                positions={drawnCards.map((_, i) => (language === 'en' ? `Card ${i + 1}` : `Lá ${i + 1}`))}
+                perspective={activeCtx}
+                language={language}
+              />
+            </div>
+          )}
 
           {/* 4-Tab Interpretations */}
           <div className="glass-panel manual-interp-panel">

@@ -247,6 +247,48 @@ export const GLOSSARY = {
     detail: 'Dần-Ngọ-Tuất đào tại Mão; Thân-Tý-Thìn đào tại Dậu; Tỵ-Dậu-Sửu đào tại Ngọ; Hợi-Mão-Mùi đào tại Tý.',
     tip: 'Hỏi tình cảm, nghệ thuật, ngoại giao gặp Đào Hoa là có sức hút và nhân duyên.',
   },
+  'amDong': {
+    title: 'Ám Động',
+    short: 'Hào tĩnh đang Vượng/Tướng gặp Nhật thần xung kích → ngầm phát động.',
+    detail: 'Theo Tăng San Bốc Dịch: Hào tĩnh có khí lực (Vượng, Tướng hoặc được sinh trợ) khi bị Địa Chi ngày xung thì không vỡ mà bật dậy như hào động, báo hiệu sự việc chuyển biến rất nhanh.',
+    tip: 'Dụng Thần hoặc Nguyên Thần Ám Động là cơ hội đến bất ngờ, ứng nghiệm gần.',
+  },
+  'nhatPha': {
+    title: 'Nhật Phá / Xung Tán',
+    short: 'Hào suy yếu (Hưu, Tù, Tử) bị Nhật thần xung → tan rã, mất lực.',
+    detail: 'Khác với Ám Động, khi hào đã thất lệnh trong tháng (Hưu, Tù, Tử) lại bị Nhật xung thì bị đánh tan (Nhật Phá nếu tĩnh, Xung Tán nếu đang động).',
+    tip: 'Dụng Thần bị Nhật Phá khó thành việc nếu không có hào động sinh cứu hoặc đợi ngày Điền thực / Hợp phá.',
+  },
+  'thamSinhVongKhac': {
+    title: 'Tham Sinh Vong Khắc (Liên Hoàn Tương Sinh)',
+    short: 'Kỵ Thần và Nguyên Thần cùng động: Kỵ quay sang sinh Nguyên, Nguyên sinh Dụng.',
+    detail: 'Quy tắc vàng của Tăng San Bốc Dịch: Khi Kỵ Thần động (vốn khắc Dụng Thần) nhưng Nguyên Thần cũng động hữu lực, Kỵ Thần sẽ dồn lực sinh cho Nguyên Thần để Nguyên Thần tiếp tục sinh Dụng Thần — chuyển hung hóa đại cát.',
+    tip: 'Thấy cả Kỵ Thần lẫn Nguyên Thần cùng động và không bị Phá/Tuyệt thì chớ vội sợ Kỵ Thần!',
+  },
+  'tamHopCuc': {
+    title: 'Tam Hợp Cục',
+    short: 'Ba Địa Chi hợp thành một Ngũ Hành cục cực mạnh.',
+    detail: 'Gồm 4 cục: Thân–Tý–Thìn hóa Thủy, Dần–Ngọ–Tuất hóa Hỏa, Hợi–Mão–Mùi hóa Mộc, Tỵ–Dậu–Sửu hóa Kim. Tam Hợp thành lập khi 3 hào cùng động, 2 hào động kết hợp Nhật/Nguyệt, hoặc hào 1–3 / 4–6 động biến hóa hợp cục.',
+    tip: 'Tam Hợp Cục sinh hoặc trợ Dụng Thần thì cát lực bền lâu; khắc Dụng Thần thì áp lực rất lớn.',
+  },
+  'hopTru': {
+    title: 'Hợp Trụ (Tham Hợp Vong Xung)',
+    short: 'Hào động gặp Nhật hoặc Nguyệt lục hợp nên bị níu giữ, trói chân.',
+    detail: 'Các cặp Tý–Sửu, Dần–Hợi, Mão–Tuất, Thìn–Dậu, Tỵ–Thân, Ngọ–Mùi. Hào động gặp Hợp gọi là Hợp Trụ: Dụng Thần bị Hợp Trụ thì việc trì hoãn (đợi ngày Xung Hợp mới thành); Kỵ Thần bị Hợp Trụ thì tạm thời không gây hại được.',
+    tip: 'Hợp đãi Xung: gặp ngày xung mở mối hợp thì sự việc lập tức chuyển biến.',
+  },
+  'nhapMo': {
+    title: 'Nhập Mộ (Tam Mộ)',
+    short: 'Hào đi vào kho mộ: Kim mộ Sửu, Mộc mộ Mùi, Hỏa mộ Tuất, Thủy/Thổ mộ Thìn.',
+    detail: 'Tăng San Bốc Dịch chia 3 loại Mộ: Nhập Nhật Mộ (gặp ngày Mộ), Động Hóa Mộ (hào động biến ra chi Mộ), và Nhập Động Mộ (bị hào động khác thu vào Mộ). Hào Nhập Mộ ví như người bị kẹt trong phòng tối, tài năng chưa thi triển được.',
+    tip: 'Nhập Mộ đãi Xung: phải chờ ngày xung phá Mộ khố thì Dụng Thần mới thoát ra.',
+  },
+  'ungKy': {
+    title: 'Ứng Kỳ (Thời Điểm Ứng Nghiệm)',
+    short: 'Phép suy đoán ngày/tháng sự việc xảy ra dựa trên bệnh và dược của Dụng Thần.',
+    detail: 'Tuần Không đợi Xuất Không/Xung Không; Hợp Trụ đợi Xung Hợp; Nhập Mộ đợi Xung Mộ; Phục Tàng đợi Trị Nhật hoặc Xung Phi; Vượng Tĩnh đợi Xung Động; Hào Động đợi Phùng Hợp hoặc Trị Nhật; Suy Nhược đợi Sinh Vượng.',
+    tip: 'Nếu quẻ Cát thì Ứng Kỳ là ngày thành tựu; nếu quẻ Đại Hung thì Ứng Kỳ là ngày cần đề phòng rủi ro!',
+  },
 };
 
 export function getGlossary(key) {

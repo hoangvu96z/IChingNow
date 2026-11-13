@@ -103,6 +103,9 @@ async function createAppHookServer(appDir) {
         '@shared': path.resolve(repoRoot, 'shared/src'),
       },
     },
+    ssr: {
+      noExternal: ['react'],
+    },
     optimizeDeps: { noDiscovery: true, include: [] },
     server: {
       middlewareMode: true,
@@ -156,6 +159,7 @@ test('IChing and Tarot useReadingsApi preserve public contracts, decrypt fallbac
       'saveReading',
       'setHistory',
       'updateReadingData',
+      'updateVerification',
     ]);
     assert.deepEqual(guestIChing.current.history, []);
     assert.equal(guestIChing.current.historyLoaded, false);
