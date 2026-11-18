@@ -409,7 +409,6 @@ export async function syncBearerFromSiblingTabs({
     timer = setTimeout(() => {
       finish(readSsoBearerToken(storage));
     }, waitMs);
-    timer?.unref?.();
 
     try {
       channel.postMessage({ type: 'request-bearer', requestId });
