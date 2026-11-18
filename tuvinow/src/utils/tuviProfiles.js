@@ -8,11 +8,65 @@
  * - Chuyển đổi trực tiếp sang `BirthInputForm`, `anLaSoTuVi` và cặp hồ sơ `HopHonPage`
  */
 
+import { LunarMonth } from 'lunar-javascript';
 import { DIA_CHI } from './tuViEngine.js';
-import { solarToLunar, validateLunarDate, validateSolarDate } from './lunarConverter.js';
+import { getYearCanChi, solarToLunar, validateLunarDate, validateSolarDate } from './lunarConverter.js';
 
 export const TUVI_PROFILES_STORAGE_KEY = 'tuvinow_saved_profiles_v1';
 export const TUVI_HOP_HON_HANDOFF_KEY = 'tuvinow_hop_hon_profiles_handoff_v1';
+
+export function resolveProfilesStorageKey(scopeKey = '') {
+  if (scopeKey && typeof scopeKey === 'object') {
+    const nested = scopeKey.scopeKey ?? scopeKey.userId ?? '';
+    return resolveProfilesStorageKey(nested);
+  }
+  const clean = scopeKey !== undefined && scopeKey !== null ? String(scopeKey).trim() : '';
+  return clean ? `${TUVI_PROFILES_STORAGE_KEY}:${clean}` : TUVI_PROFILES_STORAGE_KEY;
+}
+
+function resolveStorageAndScope(storageOrOptions = globalThis.localStorage, maybeScope = '') {
+  if (typeof storageOrOptions === 'string' || typeof storageOrOptions === 'number') {
+    return {
+      storage: globalThis.localStorage,
+      storageKey: resolveProfilesStorageKey(storageOrOptions),
+    };
+  }
+  if (
+    storageOrOptions &&
+    typeof storageOrOptions === 'object' &&
+    typeof storageOrOptions.getItem !== 'function'
+  ) {
+    const resolvedStorage =
+      storageOrOptions.storage !== undefined ? storageOrOptions.storage : globalThis.localStorage;
+    const scope = storageOrOptions.scopeKey ?? storageOrOptions.userId ?? maybeScope;
+    return {
+      storage: resolvedStorage,
+      storageKey: resolveProfilesStorageKey(scope),
+    };
+  }
+  return {
+    storage: storageOrOptions,
+    storageKey: resolveProfilesStorageKey(maybeScope),
+  };
+}
+
+export function isValidLunarDateWithLeap(year, month, day, isLeapMonth = false) {
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) return false;
+  if (!Number.isInteger(month) || month < 1 || month > 12) return false;
+  if (!Number.isInteger(day) || day < 1 || day > 30) return false;
+
+  if (isLeapMonth) {
+    try {
+      const leapMonthObj = LunarMonth.fromYm(year, -Math.abs(month));
+      if (leapMonthObj && typeof leapMonthObj.getDayCount === 'function') {
+        return day <= leapMonthObj.getDayCount();
+      }
+    } catch {
+      // Fallback to standard lunar month check if year does not contain this leap month
+    }
+  }
+  return validateLunarDate(year, month, day);
+}
 
 export const PROFILE_RELATIONS = [
   { id: 'self', label: 'Bản thân', icon: '⭐' },
@@ -95,10 +149,11 @@ function enforceSingleDefaultSelf(profiles) {
   });
 }
 
-export function loadSavedProfiles(storage = globalThis.localStorage) {
-  if (!storage) return [];
+export function loadSavedProfiles(storage = globalThis.localStorage, scopeKey = '') {
+  const { storage: resolvedStorage, storageKey } = resolveStorageAndScope(storage, scopeKey);
+  if (!resolvedStorage) return [];
   try {
-    const raw = storage.getItem(TUVI_PROFILES_STORAGE_KEY);
+    const raw = resolvedStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -108,11 +163,12 @@ export function loadSavedProfiles(storage = globalThis.localStorage) {
   }
 }
 
-function persistProfiles(profiles, storage = globalThis.localStorage) {
-  const clean = enforceSingleDefaultSelf(profiles);
-  if (storage) {
+function persistProfiles(profiles, storage = globalThis.localStorage, scopeKey = '') {
+  const { storage: resolvedStorage, storageKey } = resolveStorageAndScope(storage, scopeKey);
+  const clean = enforceSingleDefaultSelf((Array.isArray(profiles) ? profiles : []).map(normalizeProfile));
+  if (resolvedStorage) {
     try {
-      storage.setItem(TUVI_PROFILES_STORAGE_KEY, JSON.stringify(clean));
+      resolvedStorage.setItem(storageKey, JSON.stringify(clean));
     } catch {
       // Ignore storage quota errors cleanly
     }
@@ -120,11 +176,15 @@ function persistProfiles(profiles, storage = globalThis.localStorage) {
   return clean;
 }
 
+export function replaceSavedProfiles(profiles = [], storage = globalThis.localStorage, scopeKey = '') {
+  return persistProfiles(profiles, storage, scopeKey);
+}
+
 /**
  * Tạo mới hoặc cập nhật hồ sơ đương số, đảm bảo chỉ có tối đa 1 hồ sơ `isDefaultSelf: true`.
  */
-export function saveProfile(profileInput, storage = globalThis.localStorage) {
-  const existing = loadSavedProfiles(storage);
+export function saveProfile(profileInput, storage = globalThis.localStorage, scopeKey = '') {
+  const existing = loadSavedProfiles(storage, scopeKey);
   const incomingId = profileInput?.id ? String(profileInput.id) : null;
   const currentMatch = incomingId ? existing.find((p) => p.id === incomingId) : null;
 
@@ -153,19 +213,24 @@ export function saveProfile(profileInput, storage = globalThis.localStorage) {
     nextList = [normalized, ...cleared];
   }
 
-  const savedList = persistProfiles(nextList, storage);
+  const savedList = persistProfiles(nextList, storage, scopeKey);
   const savedProfile = savedList.find((p) => p.id === normalized.id) || normalized;
   return { profile: savedProfile, profiles: savedList };
 }
 
-export function deleteProfile(profileId, storage = globalThis.localStorage) {
-  const existing = loadSavedProfiles(storage);
+export function deleteProfile(profileId, storage = globalThis.localStorage, scopeKey = '') {
+  const existing = loadSavedProfiles(storage, scopeKey);
   const nextList = existing.filter((p) => p.id !== profileId);
-  return persistProfiles(nextList, storage);
+  return persistProfiles(nextList, storage, scopeKey);
 }
 
-export function setDefaultSelfProfile(profileId, isDefault = true, storage = globalThis.localStorage) {
-  const existing = loadSavedProfiles(storage);
+export function setDefaultSelfProfile(
+  profileId,
+  isDefault = true,
+  storage = globalThis.localStorage,
+  scopeKey = '',
+) {
+  const existing = loadSavedProfiles(storage, scopeKey);
   const nextList = existing.map((p) => {
     if (p.id === profileId) {
       return {
@@ -180,19 +245,24 @@ export function setDefaultSelfProfile(profileId, isDefault = true, storage = glo
     }
     return p;
   });
-  return persistProfiles(nextList, storage);
+  return persistProfiles(nextList, storage, scopeKey);
 }
 
-export function getDefaultSelfProfile(storage = globalThis.localStorage) {
-  const profiles = loadSavedProfiles(storage);
+export function getDefaultSelfProfile(storage = globalThis.localStorage, scopeKey = '') {
+  const profiles = loadSavedProfiles(storage, scopeKey);
   return profiles.find((p) => p.isDefaultSelf) || null;
 }
 
 /**
  * Thêm hoặc sửa mốc sự kiện thực tế (`lifeEvents`) trong hồ sơ
  */
-export function upsertProfileLifeEvent(profileId, eventInput, storage = globalThis.localStorage) {
-  const existing = loadSavedProfiles(storage);
+export function upsertProfileLifeEvent(
+  profileId,
+  eventInput,
+  storage = globalThis.localStorage,
+  scopeKey = '',
+) {
+  const existing = loadSavedProfiles(storage, scopeKey);
   const target = existing.find((p) => p.id === profileId);
   if (!target) return { profile: null, profiles: existing };
 
@@ -208,11 +278,17 @@ export function upsertProfileLifeEvent(profileId, eventInput, storage = globalTh
       lifeEvents: nextEvents,
     },
     storage,
+    scopeKey,
   );
 }
 
-export function deleteProfileLifeEvent(profileId, eventId, storage = globalThis.localStorage) {
-  const existing = loadSavedProfiles(storage);
+export function deleteProfileLifeEvent(
+  profileId,
+  eventId,
+  storage = globalThis.localStorage,
+  scopeKey = '',
+) {
+  const existing = loadSavedProfiles(storage, scopeKey);
   const target = existing.find((p) => p.id === profileId);
   if (!target) return { profile: null, profiles: existing };
 
@@ -222,6 +298,7 @@ export function deleteProfileLifeEvent(profileId, eventId, storage = globalThis.
       lifeEvents: target.lifeEvents.filter((ev) => ev.id !== eventId),
     },
     storage,
+    scopeKey,
   );
 }
 
@@ -229,16 +306,29 @@ export function deleteProfileLifeEvent(profileId, eventId, storage = globalThis.
  * Trích xuất thông tin hồ sơ từ `inputData` hiện hành của lá số
  */
 export function extractProfileDraftFromInputData(inputData = {}, extra = {}) {
-  const isLunar = Boolean(inputData.isLunar);
+  const hasSolarCoords = Boolean(
+    (inputData.solarInput &&
+      inputData.solarInput.year &&
+      inputData.solarInput.month &&
+      inputData.solarInput.day) ||
+      (inputData.year && inputData.month && inputData.day),
+  );
+  const hasLunarCoords = Boolean(
+    inputData.lunarYear && inputData.lunarMonth && inputData.lunarDay,
+  );
+  const explicitLunar = inputData.calendarType
+    ? inputData.calendarType === 'lunar'
+    : Boolean(inputData.isLunar);
+  const isLunar = explicitLunar || (!hasSolarCoords && hasLunarCoords);
   const day = isLunar
-    ? Number(inputData.lunarDay || 15)
-    : Number(inputData.solarInput?.day || inputData.day || 15);
+    ? Number(inputData.lunarDay ?? inputData.day ?? 15)
+    : Number(inputData.solarInput?.day ?? inputData.day ?? 15);
   const month = isLunar
-    ? Number(inputData.lunarMonth || 1)
-    : Number(inputData.solarInput?.month || inputData.month || 1);
+    ? Number(inputData.lunarMonth ?? inputData.month ?? 1)
+    : Number(inputData.solarInput?.month ?? inputData.month ?? 1);
   const year = isLunar
-    ? Number(inputData.lunarYear || 1990)
-    : Number(inputData.solarInput?.year || inputData.year || 1990);
+    ? Number(inputData.lunarYear ?? inputData.year ?? 1990)
+    : Number(inputData.solarInput?.year ?? inputData.year ?? 1990);
 
   return normalizeProfile({
     name: inputData.name || 'Đương số',
@@ -247,35 +337,133 @@ export function extractProfileDraftFromInputData(inputData = {}, extra = {}) {
     day,
     month,
     year,
-    isLeapMonth: Boolean(inputData.isLeap || inputData.isLeapMonth),
+    isLeapMonth: isLunar ? Boolean(inputData.isLeap || inputData.isLeapMonth) : false,
     hourValue: Number(inputData.lunarHourIndex ?? inputData.hourIndex ?? 0),
     ...extra,
   });
 }
 
-export function findMatchingProfileForInput(inputData, storage = globalThis.localStorage) {
+function doesProfileMatchDraft(profile, draft) {
+  if (!profile || !draft) return false;
+  return (
+    profile.name.toLowerCase() === draft.name.toLowerCase() &&
+    (profile.calendarType || 'solar') === (draft.calendarType || 'solar') &&
+    Boolean(profile.isLeapMonth) === Boolean(draft.isLeapMonth) &&
+    profile.day === draft.day &&
+    profile.month === draft.month &&
+    profile.year === draft.year &&
+    profile.hourValue === draft.hourValue &&
+    profile.gender === draft.gender
+  );
+}
+
+export function findMatchingProfileForInput(
+  inputData,
+  storage = globalThis.localStorage,
+  scopeKey = '',
+) {
   if (!inputData) return null;
-  const profiles = loadSavedProfiles(storage);
+  const profiles = loadSavedProfiles(storage, scopeKey);
   if (!profiles.length) return null;
+
+  const draft = extractProfileDraftFromInputData(inputData);
 
   if (inputData.profileId) {
     const byId = profiles.find((p) => p.id === inputData.profileId);
-    if (byId) return byId;
+    if (
+      byId &&
+      (byId.calendarType || 'solar') === (draft.calendarType || 'solar') &&
+      Boolean(byId.isLeapMonth) === Boolean(draft.isLeapMonth)
+    ) {
+      return byId;
+    }
   }
 
-  const draft = extractProfileDraftFromInputData(inputData);
-  return (
-    profiles.find(
-      (p) =>
-        p.name.toLowerCase() === draft.name.toLowerCase() &&
-        p.calendarType === draft.calendarType &&
-        p.day === draft.day &&
-        p.month === draft.month &&
-        p.year === draft.year &&
-        p.hourValue === draft.hourValue &&
-        p.gender === draft.gender,
-    ) || null
-  );
+  return profiles.find((p) => doesProfileMatchDraft(p, draft)) || null;
+}
+
+/**
+ * Hợp nhất các mốc `lifeEvents` từ danh sách `readings` lưu trên máy chủ (`tuvi-laso`)
+ * vào danh bạ hồ sơ đương số trên thiết bị (không tạo trùng lặp và không ghi đè mốc mới hơn ở local).
+ */
+export function reconcileProfilesFromReadings(existingProfiles = [], serverReadings = []) {
+  const nextList = (Array.isArray(existingProfiles) ? existingProfiles : []).map(normalizeProfile);
+  if (!Array.isArray(serverReadings) || serverReadings.length === 0) {
+    return enforceSingleDefaultSelf(nextList);
+  }
+
+  const sortedReadings = [...serverReadings].sort((a, b) => {
+    const tsA = Date.parse(a?.updatedAt || a?.createdAt || '') || 0;
+    const tsB = Date.parse(b?.updatedAt || b?.createdAt || '') || 0;
+    return tsB - tsA;
+  });
+
+  for (const reading of sortedReadings) {
+    if (!reading || reading._decryptionError) continue;
+    if (reading.type && reading.type !== 'tuvi-laso') continue;
+
+    const rInput = reading?.data?.inputData ?? reading?.inputData;
+    if (!rInput || typeof rInput !== 'object') continue;
+
+    const rawEvents = Array.isArray(rInput.lifeEvents) ? rInput.lifeEvents : [];
+    if (rawEvents.length === 0) continue;
+
+    const incomingEvents = rawEvents.map(normalizeLifeEvent);
+    const draft = extractProfileDraftFromInputData(
+      rInput,
+      rInput.profileId ? { id: String(rInput.profileId) } : {},
+    );
+
+    let matchIdx = -1;
+    if (rInput.profileId) {
+      matchIdx = nextList.findIndex(
+        (p) =>
+          p.id === String(rInput.profileId) &&
+          (p.calendarType || 'solar') === (draft.calendarType || 'solar') &&
+          Boolean(p.isLeapMonth) === Boolean(draft.isLeapMonth),
+      );
+    }
+    if (matchIdx === -1) {
+      matchIdx = nextList.findIndex((p) => doesProfileMatchDraft(p, draft));
+    }
+
+    if (matchIdx >= 0) {
+      const target = nextList[matchIdx];
+      const mergedEvents = [...target.lifeEvents];
+      let changed = false;
+
+      for (const ev of incomingEvents) {
+        const isDuplicate = mergedEvents.some(
+          (loc) =>
+            loc.id === ev.id ||
+            (loc.year === ev.year &&
+              loc.eventType === ev.eventType &&
+              (loc.note || '').trim().toLowerCase() === (ev.note || '').trim().toLowerCase()),
+        );
+        if (!isDuplicate) {
+          mergedEvents.push(ev);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        mergedEvents.sort((a, b) => a.year - b.year);
+        nextList[matchIdx] = {
+          ...target,
+          lifeEvents: mergedEvents,
+        };
+      }
+    } else {
+      const hydrated = normalizeProfile({
+        ...draft,
+        ...(rInput.profileId ? { id: String(rInput.profileId) } : {}),
+        lifeEvents: incomingEvents,
+      });
+      nextList.push(hydrated);
+    }
+  }
+
+  return enforceSingleDefaultSelf(nextList);
 }
 
 /**
@@ -283,6 +471,8 @@ export function findMatchingProfileForInput(inputData, storage = globalThis.loca
  */
 export function profileToBirthFormState(profile) {
   const norm = normalizeProfile(profile);
+  const isLunar = norm.calendarType === 'lunar';
+  const isLeap = isLunar ? Boolean(norm.isLeapMonth) : false;
   return {
     id: norm.id,
     profileId: norm.id,
@@ -292,8 +482,10 @@ export function profileToBirthFormState(profile) {
     year: norm.year,
     hourIndex: norm.hourValue,
     gender: norm.gender,
-    isLunar: norm.calendarType === 'lunar',
-    isLeapMonth: norm.isLeapMonth,
+    calendarType: norm.calendarType,
+    isLunar,
+    isLeap,
+    isLeapMonth: isLeap,
     lifeEvents: norm.lifeEvents,
   };
 }
@@ -304,23 +496,30 @@ export function profileToBirthFormState(profile) {
 export function profileToBirthInputPayload(profile, viewYear = undefined) {
   const norm = normalizeProfile(profile);
   const isLunar = norm.calendarType === 'lunar';
+  const isLeap = isLunar ? Boolean(norm.isLeapMonth) : false;
 
   let lunarData;
   if (isLunar) {
-    if (!validateLunarDate(norm.year, norm.month, norm.day)) {
+    if (!isValidLunarDateWithLeap(norm.year, norm.month, norm.day, isLeap)) {
       throw new Error('Ngày âm lịch trong hồ sơ không hợp lệ.');
     }
     const yearCanIndex = ((norm.year - 4) % 10 + 10) % 10;
     const yearChiIndex = ((norm.year - 4) % 12 + 12) % 12;
+    const [yearCanName, yearChiName] = getYearCanChi(norm.year).split(' ');
     lunarData = {
       lunarYear: norm.year,
       lunarMonth: norm.month,
       lunarDay: norm.day,
       yearCanIndex,
       yearChiIndex,
-      isLeap: Boolean(norm.isLeapMonth),
+      yearCanName,
+      yearChiName,
+      isLeap,
+      isLeapMonth: isLeap,
       solarDateStr: '(Nhập âm lịch)',
-      lunarDateStr: `${norm.month}/${norm.day}/${norm.year} (Âm lịch)`,
+      lunarDateStr: isLeap
+        ? `${norm.month}/${norm.day}/${norm.year} (Âm lịch - Nhuận)`
+        : `${norm.month}/${norm.day}/${norm.year} (Âm lịch)`,
     };
   } else {
     if (!validateSolarDate(norm.year, norm.month, norm.day)) {
@@ -340,7 +539,9 @@ export function profileToBirthInputPayload(profile, viewYear = undefined) {
     ...lunarData,
     lunarHourIndex: norm.hourValue,
     gender: norm.gender,
+    calendarType: norm.calendarType,
     isLunar,
+    isLeapMonth: isLunar ? isLeap : false,
     solarInput: isLunar ? null : { day: norm.day, month: norm.month, year: norm.year },
     lifeEvents: norm.lifeEvents,
     ...(vYear && Number.isInteger(vYear) && vYear >= lunarData.lunarYear

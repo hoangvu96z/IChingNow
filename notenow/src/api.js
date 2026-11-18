@@ -655,19 +655,33 @@ export const notesApi = {
   },
 
   uploadAudio: async (noteId, file) => {
-    try {
-      const guestToken = getOrCreateGuestToken();
-      const formData = new FormData();
-      formData.append('audio', file);
-      const headers = { 'x-guest-token': guestToken };
-      const res = await ssoFetch(`${SSO_BASE}/notes/${noteId}/audios`, {
-        method: 'POST',
-        credentials: 'include',
-        headers,
-        body: formData,
-      });
-      if (res.ok) return await res.json();
-    } catch {}
+    if (!String(noteId || '').startsWith('local-')) {
+      try {
+        const guestToken = getOrCreateGuestToken();
+        const formData = new FormData();
+        formData.append('audio', file);
+        const headers = { 'x-guest-token': guestToken };
+        const res = await ssoFetch(`${SSO_BASE}/notes/${noteId}/audios`, {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+          body: formData,
+        });
+        if (res.ok) return await res.json();
+        if (res.status >= 400 && res.status < 500) {
+          let msg = `Không thể tải lên tệp âm thanh (HTTP ${res.status})`;
+          try {
+            const json = await res.json();
+            msg = json.message || msg;
+          } catch {}
+          throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+        }
+      } catch (err) {
+        if (err instanceof Error && !/fetch|network|load failed/i.test(err.message)) {
+          throw err;
+        }
+      }
+    }
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -717,7 +731,19 @@ export const notesApi = {
         body: formData,
       });
       if (res.ok) return await res.json();
-    } catch {}
+      if (res.status >= 400 && res.status < 500) {
+        let msg = `Không thể tải lên tệp âm thanh (HTTP ${res.status})`;
+        try {
+          const json = await res.json();
+          msg = json.message || msg;
+        } catch {}
+        throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+      }
+    } catch (err) {
+      if (err instanceof Error && !/fetch|network|load failed/i.test(err.message)) {
+        throw err;
+      }
+    }
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {

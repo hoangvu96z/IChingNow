@@ -3,6 +3,7 @@
  */
 import { inferTopicFromQuestion } from '../data/lucHaoRules.js';
 import { analyzeLucHao } from '../logic/lucHaoAnalysis.js';
+import { VERIFICATION_META } from '../logic/verification.js';
 
 export function buildIChingNoteNowPayload(result) {
   if (!result) return null;
@@ -21,6 +22,32 @@ export function buildIChingNoteNowPayload(result) {
         lh.khongVong?.length ? ` (Tuần Không: ${lh.khongVong.join(', ')})` : ''
       }`
     );
+  }
+
+  const ver = result.verification || lh?.verification;
+  if (ver && typeof ver === 'object') {
+    const rawStatus = String(ver.status || '').trim();
+    const hasStatus = rawStatus.length > 0 && rawStatus !== 'pending';
+    const hasDate = Boolean(ver.actualDate && String(ver.actualDate).trim());
+    const hasNote = Boolean(ver.note && String(ver.note).trim());
+
+    if (hasStatus || hasDate || hasNote) {
+      let statusLabel = 'Chờ ứng nghiệm';
+      if (rawStatus === 'accurate') statusLabel = 'Ứng nghiệm chuẩn';
+      else if (rawStatus === 'partial') statusLabel = 'Ứng một phần';
+      else if (rawStatus === 'different' || rawStatus === 'inaccurate') statusLabel = 'Khác dự đoán';
+      else if (VERIFICATION_META[rawStatus]?.labelVi) {
+        statusLabel = VERIFICATION_META[rawStatus].labelVi.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+      }
+
+      summaryLines.push(`Nghiệm lý: ${statusLabel}`);
+      if (hasDate) {
+        summaryLines.push(`Ngày ứng nghiệm thực tế: ${String(ver.actualDate).trim()}`);
+      }
+      if (hasNote) {
+        summaryLines.push(`Ghi chú nghiệm lý: ${String(ver.note).trim()}`);
+      }
+    }
   }
 
   const checklistItems = [];
@@ -69,6 +96,7 @@ export function buildIChingNoteNowPayload(result) {
     question,
     summaryLines,
     checklistItems,
+    bgColor: 'amber',
     tags: [
       'iching',
       result.method === 'mai-hoa' ? 'mai-hoa' : 'luc-hao',

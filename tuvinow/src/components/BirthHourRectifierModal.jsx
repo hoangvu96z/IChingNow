@@ -61,14 +61,21 @@ export default function BirthHourRectifierModal({
     }
   }, [isOpen]);
 
-  // Sync preset when user opens modal with hourIndex === 0
+  // Sync preset & initial events when modal opens or when initialEvents updates while closed
+  const wasOpenRef = useRef(Boolean(isOpen));
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
       const h = Number(baseInput?.hourIndex) || 0;
       setPreset(h === 0 ? 'zi_boundary' : 'adjacent');
       setCustomHours([((h + 11) % 12), h, ((h + 1) % 12)]);
+      setPastEvents(Array.isArray(initialEvents) ? initialEvents.slice(0, 5) : []);
+      setSelectedTraitIds([]);
+      setEventError('');
+    } else if (!isOpen) {
+      setPastEvents(Array.isArray(initialEvents) ? initialEvents.slice(0, 5) : []);
     }
-  }, [isOpen, baseInput?.hourIndex]);
+    wasOpenRef.current = Boolean(isOpen);
+  }, [isOpen, baseInput?.hourIndex, initialEvents]);
 
   const handleNativeClose = () => {
     if (dialogRef.current) {

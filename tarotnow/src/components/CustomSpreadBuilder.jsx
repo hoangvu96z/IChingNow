@@ -43,6 +43,12 @@ export default function CustomSpreadBuilder({
     setSavedTemplates(loadCustomSpreadTemplates());
   }, []);
 
+  useEffect(() => {
+    if (typeof customSpreadTitle === 'string' && customSpreadTitle.trim()) {
+      setTemplateNameInput(customSpreadTitle);
+    }
+  }, [customSpreadTitle]);
+
   const safePositions = resizeCustomPositions(customPositions, drawCount);
 
   const handleCountSelect = (nextCountRaw) => {

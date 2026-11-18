@@ -964,6 +964,7 @@ export default function LasoChart({
                   <span className="label">Âm lịch:</span>
                   <span className="value">
                     {inputData?.lunarDay}/{inputData?.lunarMonth}/{inputData?.lunarYear}
+                    {inputData?.isLeap ? ' (nhuận)' : ''}
                   </span>
                 </div>
 

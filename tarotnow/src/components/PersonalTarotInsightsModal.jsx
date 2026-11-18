@@ -274,6 +274,65 @@ export default function PersonalTarotInsightsModal({
                   </div>
                 </section>
               )}
+
+              {/* Nhật ký Đối chứng & Nghiệm lý gần đây */}
+              <section className="insights-panel-box">
+                <h4 className="insights-section-heading">
+                  <span aria-hidden="true">📝</span>
+                  <span>
+                    {isEn
+                      ? 'Recent Outcome Verifications & Reflections'
+                      : 'Nhật ký Đối chứng & Nghiệm lý gần đây'}
+                  </span>
+                </h4>
+
+                {insights.reflectionStats?.reflectedCount > 0 ? (
+                  <div className="insights-reflection-block">
+                    <div className="insights-reflection-badges">
+                      <span className="reflection-badge badge-accurate">
+                        ✨ {isEn ? 'Accurate' : 'Ứng nghiệm'}: {insights.reflectionStats.accurateCount}
+                      </span>
+                      <span className="reflection-badge badge-partial">
+                        🌗 {isEn ? 'Partial' : 'Một phần'}: {insights.reflectionStats.partialCount}
+                      </span>
+                      <span className="reflection-badge badge-diverged">
+                        🔄 {isEn ? 'Diverged' : 'Khác dự đoán'}: {insights.reflectionStats.divergedCount}
+                      </span>
+                    </div>
+
+                    <div className="insights-reflection-list">
+                      {insights.reflectionStats.recentReflections.map((rf) => (
+                        <div key={rf.id} className="insights-reflection-item">
+                          <div className="insights-reflection-header">
+                            <span className={`reflection-status-tag tag-${rf.status}`}>
+                              {rf.status === 'accurate'
+                                ? isEn ? '✨ Accurate' : '✨ Ứng nghiệm'
+                                : rf.status === 'partial'
+                                ? isEn ? '🌗 Partial' : '🌗 Đúng một phần'
+                                : rf.status === 'diverged'
+                                ? isEn ? '🔄 Diverged' : '🔄 Khác dự đoán'
+                                : isEn ? '⏳ Pending' : '⏳ Đang chờ'}
+                            </span>
+                            <span className="insights-reflection-time">{rf.timestamp}</span>
+                          </div>
+                          {rf.question && (
+                            <div className="insights-reflection-q">"{rf.question}"</div>
+                          )}
+                          {rf.noteSnippet && (
+                            <p className="insights-reflection-note">👉 {rf.noteSnippet}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="insights-reflection-hint">
+                    {isEn
+                      ? "💡 You haven't recorded outcome reflections yet. Revisit past spreads after 7–14 days to compare real-life events!"
+                      : '💡 Bạn chưa có ghi chú đối chứng nào. Hãy mở lại các trải bài sau 7–14 ngày để ghi lại diễn biến thực tế và nghiệm lý!'}
+                  </p>
+                )}
+              </section>
             </div>
           )}
         </div>

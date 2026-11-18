@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   getInlineImageOrphanIndices,
   getLocalNoteImageSource,
@@ -218,4 +221,24 @@ test('extractClipboardMediaFiles returns empty arrays for text-only clipboard da
 
   assert.deepEqual(imageFiles, []);
   assert.deepEqual(audioFiles, []);
+});
+
+test('NoteNow production .htaccess CSP explicitly allows media-src self, data:, and blob: for audio playback', () => {
+  const htaccessPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../public/.htaccess',
+  );
+  const htaccess = fs.readFileSync(htaccessPath, 'utf8');
+  assert.match(htaccess, /media-src\s+'self'\s+data:\s+blob:/);
+});
+
+test('getLocalNoteAudioSource accepts audio, container video/webm, and application/ogg data URLs', () => {
+  assert.equal(
+    getLocalNoteAudioSource({ url: 'data:video/webm;base64,AAAA' }),
+    'data:video/webm;base64,AAAA',
+  );
+  assert.equal(
+    getLocalNoteAudioSource({ url: 'data:application/ogg;base64,BBBB' }),
+    'data:application/ogg;base64,BBBB',
+  );
 });

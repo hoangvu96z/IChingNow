@@ -18,7 +18,7 @@
 import { Solar } from 'lunar-javascript';
 import { HEXAGRAMS } from '../data/hexagrams.js';
 import { getHexagramDescription } from '../data/hexagramDescriptions.js';
-import { buildResult } from './buildHexagram.js';
+import { buildResult, formatUniqueCreatedAt } from './buildHexagram.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // I. BÁT QUÁI — dữ liệu quái đơn
@@ -486,9 +486,7 @@ export function buildMaiHoaResult({ subMode, dateStr, timeStr, serial, question 
     method:    'mai-hoa',
     subMode,
     question,
-    createdAt: subMode === 'time' && dateStr && timeStr
-      ? new Date(`${dateStr}T${timeStr}:00+07:00`).toISOString()
-      : new Date().toISOString(),
+    createdAt: formatUniqueCreatedAt(actualDateStr, actualTimeStr),
 
     // Inputs (dùng cho export / bảng tóm tắt)
     inputs: {

@@ -3246,7 +3246,7 @@ button.nn-card-tag-chip:hover {
   inset: -6px;
 }
 
-.nn-filter-color-dot[data-color="default"] { background: var(--note-default); }
+.nn-filter-color-dot[data-color="default"] { background: var(--note-default); border-color: rgba(100, 116, 139, 0.45); }
 .nn-filter-color-dot[data-color="emerald"] { background: var(--note-emerald); border-color: #059669; }
 .nn-filter-color-dot[data-color="teal"]    { background: var(--note-teal);    border-color: #0d9488; }
 .nn-filter-color-dot[data-color="blue"]    { background: var(--note-blue);    border-color: #3b82f6; }

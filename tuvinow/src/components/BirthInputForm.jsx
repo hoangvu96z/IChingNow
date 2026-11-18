@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { LunarMonth, LunarYear } from 'lunar-javascript';
 import {
   solarToLunar,
-  validateLunarDate,
   validateSolarDate,
   getYearCanChi,
   GIO_SINH_OPTIONS,
@@ -20,6 +20,7 @@ import {
   SCHOOL_OPTIONS,
   FAMOUS_CHARTS,
 } from '../utils/tuViZiweiModule.js';
+import { isValidLunarDateWithLeap } from '../utils/tuviProfiles.js';
 import BirthHourRectifierModal from './BirthHourRectifierModal.jsx';
 
 export function buildBirthInputPayload({
@@ -30,6 +31,9 @@ export function buildBirthInputPayload({
   hourIndex = 0,
   gender = 1,
   isLunar = false,
+  calendarType,
+  isLeapMonth = false,
+  isLeap = false,
   viewYear = '',
   schoolConfig,
   clockHour,
@@ -43,6 +47,15 @@ export function buildBirthInputPayload({
     throw new Error('Vui lòng nhập họ tên trước khi lập lá số!');
   }
 
+  const resolvedCalendarType =
+    calendarType === 'lunar' || calendarType === 'solar'
+      ? calendarType
+      : isLunar
+      ? 'lunar'
+      : 'solar';
+  const effectiveIsLunar = resolvedCalendarType === 'lunar';
+  const effectiveIsLeap = effectiveIsLunar ? Boolean(isLeapMonth || isLeap) : false;
+
   let effectiveHourIndex = hourIndex;
   let effectiveDay = day;
   let effectiveMonth = month;
@@ -50,7 +63,7 @@ export function buildBirthInputPayload({
 
   if (
     applyTrueSolar &&
-    !isLunar &&
+    !effectiveIsLunar &&
     clockHour !== undefined &&
     clockMinute !== undefined &&
     clockHour !== '' &&
@@ -81,8 +94,8 @@ export function buildBirthInputPayload({
   }
 
   let lunarData;
-  if (isLunar) {
-    if (!validateLunarDate(effectiveYear, effectiveMonth, effectiveDay)) {
+  if (effectiveIsLunar) {
+    if (!isValidLunarDateWithLeap(effectiveYear, effectiveMonth, effectiveDay, effectiveIsLeap)) {
       throw new Error('Ngày âm lịch không tồn tại trong tháng đã chọn.');
     }
     const yearCanIndex = ((effectiveYear - 4) % 10 + 10) % 10;
@@ -96,9 +109,12 @@ export function buildBirthInputPayload({
       yearChiIndex,
       yearCanName,
       yearChiName,
-      isLeap: false,
+      isLeap: effectiveIsLeap,
+      isLeapMonth: effectiveIsLeap,
       solarDateStr: '(Nhập âm lịch)',
-      lunarDateStr: `${effectiveMonth}/${effectiveDay}/${effectiveYear} (Âm lịch)`,
+      lunarDateStr: effectiveIsLeap
+        ? `${effectiveMonth}/${effectiveDay}/${effectiveYear} (Âm lịch - Nhuận)`
+        : `${effectiveMonth}/${effectiveDay}/${effectiveYear} (Âm lịch)`,
     };
   } else {
     if (!validateSolarDate(effectiveYear, effectiveMonth, effectiveDay)) {
@@ -128,8 +144,11 @@ export function buildBirthInputPayload({
     ...lunarData,
     lunarHourIndex: effectiveHourIndex,
     gender,
-    isLunar,
-    solarInput: isLunar ? null : { day: effectiveDay, month: effectiveMonth, year: effectiveYear },
+    calendarType: resolvedCalendarType,
+    isLunar: effectiveIsLunar,
+    isLeap: effectiveIsLunar ? effectiveIsLeap : Boolean(lunarData.isLeap),
+    isLeapMonth: effectiveIsLunar ? effectiveIsLeap : false,
+    solarInput: effectiveIsLunar ? null : { day: effectiveDay, month: effectiveMonth, year: effectiveYear },
     ...(annualYear === undefined ? {} : {
       viewYear: annualYear,
       viewYearCanIndex: ((annualYear - 4) % 10 + 10) % 10,
@@ -139,25 +158,63 @@ export function buildBirthInputPayload({
   };
 }
 
+function resolveSeedFormValues(seed) {
+  if (!seed) return null;
+  const isLunar = seed.calendarType
+    ? seed.calendarType === 'lunar'
+    : Boolean(seed.isLunar);
+  const day = isLunar
+    ? Number(seed.day ?? seed.lunarDay ?? 15)
+    : Number(seed.day ?? seed.solarInput?.day ?? 15);
+  const month = isLunar
+    ? Number(seed.month ?? seed.lunarMonth ?? 1)
+    : Number(seed.month ?? seed.solarInput?.month ?? 1);
+  const year = isLunar
+    ? Number(seed.year ?? seed.lunarYear ?? 1990)
+    : Number(seed.year ?? seed.solarInput?.year ?? 1990);
+  const hourIndex = Number(seed.hourValue ?? seed.hourIndex ?? seed.lunarHourIndex ?? 0);
+  const gender = seed.gender === 0 ? 0 : 1;
+  const isLeapMonth = isLunar ? Boolean(seed.isLeap || seed.isLeapMonth) : false;
+  return {
+    id: seed.id || seed.profileId || undefined,
+    name: seed.name || '',
+    day,
+    month,
+    year,
+    hourIndex,
+    gender,
+    isLunar,
+    isLeapMonth,
+    lifeEvents: Array.isArray(seed.lifeEvents) ? seed.lifeEvents : [],
+  };
+}
+
 export default function BirthInputForm({
   onSubmit,
   initialShowTrueSolar = false,
   initialShowSchoolConfig = false,
   presetProfile = null,
+  initialValues = null,
   onDraftChange,
 }) {
-  const [name, setName] = useState(() => presetProfile?.name || '');
+  const seedValues = useMemo(
+    () => resolveSeedFormValues(initialValues || presetProfile),
+    [initialValues, presetProfile],
+  );
+
+  const [name, setName] = useState(() => seedValues?.name || '');
   const [nameError, setNameError] = useState('');
-  const [day, setDay] = useState(() => presetProfile?.day || 15);
-  const [month, setMonth] = useState(() => presetProfile?.month || 1);
-  const [year, setYear] = useState(() => presetProfile?.year || 1990);
-  const [hourIndex, setHourIndex] = useState(() => presetProfile?.hourValue ?? presetProfile?.hourIndex ?? 0);
-  const [gender, setGender] = useState(() => (presetProfile?.gender === 0 ? 0 : 1)); // 1 = Nam, 0 = Nữ
-  const [isLunar, setIsLunar] = useState(() => presetProfile?.calendarType === 'lunar' || Boolean(presetProfile?.isLunar));
+  const [day, setDay] = useState(() => seedValues?.day || 15);
+  const [month, setMonth] = useState(() => seedValues?.month || 1);
+  const [year, setYear] = useState(() => seedValues?.year || 1990);
+  const [hourIndex, setHourIndex] = useState(() => seedValues?.hourIndex ?? 0);
+  const [gender, setGender] = useState(() => (seedValues?.gender === 0 ? 0 : 1)); // 1 = Nam, 0 = Nữ
+  const [isLunar, setIsLunar] = useState(() => Boolean(seedValues?.isLunar));
+  const [isLeapMonth, setIsLeapMonth] = useState(() => Boolean(seedValues?.isLeapMonth));
   const [viewYear, setViewYear] = useState('');
   const [formError, setFormError] = useState('');
   const [showRectifierModal, setShowRectifierModal] = useState(false);
-  const [rectifiedEvents, setRectifiedEvents] = useState(() => presetProfile?.lifeEvents || []);
+  const [rectifiedEvents, setRectifiedEvents] = useState(() => seedValues?.lifeEvents || []);
 
   // ☀️ Chân Thái Dương Thời State
   const [showTrueSolar, setShowTrueSolar] = useState(initialShowTrueSolar);
@@ -172,11 +229,38 @@ export default function BirthInputForm({
   const [showSchoolConfig, setShowSchoolConfig] = useState(initialShowSchoolConfig);
   const [schoolConfig, setSchoolConfig] = useState({ ...DEFAULT_SCHOOL_CONFIG });
 
+  const calendarType = isLunar ? 'lunar' : 'solar';
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const yearOptions = useMemo(() => getYearOptions(), []);
   const viewYearOptions = useMemo(() => getViewYearOptions(1920, 30), []);
   const monthOptions = useMemo(() => getMonthsInYear(), []);
-  const dayOptions = useMemo(() => getDaysInMonth(isLunar, year, month), [isLunar, year, month]);
+
+  const yearLeapMonthNumber = useMemo(() => {
+    if (!isLunar || !Number.isInteger(year)) return 0;
+    try {
+      return Number(LunarYear.fromYear(year)?.getLeapMonth?.() || 0);
+    } catch {
+      return 0;
+    }
+  }, [isLunar, year]);
+
+  const dayOptions = useMemo(() => {
+    if (isLunar && isLeapMonth && Number.isInteger(year) && Number.isInteger(month)) {
+      try {
+        const leapObj = LunarMonth.fromYm(year, -Math.abs(month));
+        if (leapObj && typeof leapObj.getDayCount === 'function') {
+          const count = leapObj.getDayCount();
+          return Array.from({ length: count }, (_, idx) => ({
+            value: idx + 1,
+            label: `${idx + 1}`,
+          }));
+        }
+      } catch {
+        // Fallback to standard getDaysInMonth below
+      }
+    }
+    return getDaysInMonth(isLunar, year, month);
+  }, [isLunar, isLeapMonth, year, month]);
 
   // Group locations by region
   const locationsByRegion = useMemo(() => {
@@ -190,30 +274,48 @@ export default function BirthInputForm({
   }, []);
 
   useEffect(() => {
-    const isValid = isLunar ? validateLunarDate(year, month, day) : validateSolarDate(year, month, day);
+    const isValid = isLunar
+      ? isValidLunarDateWithLeap(year, month, day, isLeapMonth)
+      : validateSolarDate(year, month, day);
     if (isValid) return;
     const lastValidDay = dayOptions.at(-1)?.value;
     if (lastValidDay) setDay(lastValidDay);
-  }, [day, dayOptions, isLunar, month, year]);
+  }, [day, dayOptions, isLunar, isLeapMonth, month, year]);
 
   useEffect(() => {
-    if (!presetProfile) return;
-    setName(presetProfile.name || '');
+    if (!seedValues) return;
+    setName(seedValues.name || '');
     setNameError('');
-    setDay(presetProfile.day || 15);
-    setMonth(presetProfile.month || 1);
-    setYear(presetProfile.year || 1990);
-    setHourIndex(presetProfile.hourValue ?? presetProfile.hourIndex ?? 0);
-    setGender(presetProfile.gender === 0 ? 0 : 1);
-    setIsLunar(presetProfile.calendarType === 'lunar' || Boolean(presetProfile.isLunar));
-    setRectifiedEvents(Array.isArray(presetProfile.lifeEvents) ? presetProfile.lifeEvents : []);
+    setDay(seedValues.day || 15);
+    setMonth(seedValues.month || 1);
+    setYear(seedValues.year || 1990);
+    setHourIndex(seedValues.hourIndex ?? 0);
+    setGender(seedValues.gender === 0 ? 0 : 1);
+    setIsLunar(Boolean(seedValues.isLunar));
+    setIsLeapMonth(Boolean(seedValues.isLeapMonth));
+    setRectifiedEvents(Array.isArray(seedValues.lifeEvents) ? seedValues.lifeEvents : []);
     setFormError('');
-  }, [presetProfile]);
+  }, [seedValues]);
+
+  const matchedSeedProfileId = useMemo(() => {
+    if (!seedValues?.id) return undefined;
+    const sameIdentity =
+      (name.trim() || 'Đương số').toLowerCase() === (seedValues.name.trim() || 'Đương số').toLowerCase() &&
+      Boolean(isLunar) === Boolean(seedValues.isLunar) &&
+      (isLunar ? Boolean(isLeapMonth) : false) === (seedValues.isLunar ? Boolean(seedValues.isLeapMonth) : false) &&
+      day === seedValues.day &&
+      month === seedValues.month &&
+      year === seedValues.year &&
+      hourIndex === seedValues.hourIndex &&
+      gender === seedValues.gender;
+    return sameIdentity ? seedValues.id : undefined;
+  }, [seedValues, name, isLunar, isLeapMonth, day, month, year, hourIndex, gender]);
 
   useEffect(() => {
     if (!onDraftChange) return;
+    const effectiveLeap = calendarType === 'lunar' ? Boolean(isLeapMonth) : false;
     onDraftChange({
-      profileId: presetProfile?.id || undefined,
+      profileId: matchedSeedProfileId,
       name: name.trim() || 'Đương số',
       day,
       month,
@@ -225,14 +327,33 @@ export default function BirthInputForm({
       lunarHourIndex: hourIndex,
       hourIndex,
       gender,
+      calendarType,
       isLunar,
+      isLeap: effectiveLeap,
+      isLeapMonth: effectiveLeap,
       lifeEvents: rectifiedEvents,
     });
-  }, [name, day, month, year, hourIndex, gender, isLunar, rectifiedEvents, presetProfile?.id, onDraftChange]);
+  }, [
+    name,
+    day,
+    month,
+    year,
+    hourIndex,
+    gender,
+    calendarType,
+    isLunar,
+    isLeapMonth,
+    rectifiedEvents,
+    matchedSeedProfileId,
+    onDraftChange,
+  ]);
 
   const handleApplyRectifiedCandidate = (candidate, pastEvents = []) => {
     if (!candidate?.formPatch) return;
     const effectiveName = name.trim() || candidate.formPatch.name || 'Đương số';
+    const nextIsLunar = Boolean(candidate.formPatch.isLunar);
+    const nextIsLeap = nextIsLunar ? Boolean(candidate.formPatch.isLeapMonth || candidate.formPatch.isLeap) : false;
+
     setName(effectiveName);
     setNameError('');
     setDay(candidate.formPatch.day);
@@ -240,7 +361,8 @@ export default function BirthInputForm({
     setYear(candidate.formPatch.year);
     setHourIndex(candidate.formPatch.hourIndex);
     setGender(candidate.formPatch.gender);
-    setIsLunar(candidate.formPatch.isLunar);
+    setIsLunar(nextIsLunar);
+    setIsLeapMonth(nextIsLeap);
     setApplyTrueSolar(false);
     setRectifiedEvents(pastEvents);
     setShowRectifierModal(false);
@@ -254,13 +376,15 @@ export default function BirthInputForm({
         year: candidate.formPatch.year,
         hourIndex: candidate.formPatch.hourIndex,
         gender: candidate.formPatch.gender,
-        isLunar: candidate.formPatch.isLunar,
+        calendarType: nextIsLunar ? 'lunar' : 'solar',
+        isLunar: nextIsLunar,
+        isLeap: nextIsLeap,
+        isLeapMonth: nextIsLeap,
         viewYear,
         schoolConfig,
       });
       onSubmit({
         ...payload,
-        ...(presetProfile?.id ? { profileId: presetProfile.id } : {}),
         ...(Array.isArray(pastEvents) && pastEvents.length > 0 ? { lifeEvents: pastEvents } : {}),
       });
     } catch (err) {
@@ -281,6 +405,7 @@ export default function BirthInputForm({
     setName(chart.name);
     setNameError('');
     setIsLunar(false);
+    setIsLeapMonth(false);
     setYear(chart.solarYear);
     setMonth(chart.solarMonth);
     setDay(chart.solarDay);
@@ -353,6 +478,7 @@ export default function BirthInputForm({
 
     setFormError('');
     try {
+      const effectiveLeap = calendarType === 'lunar' ? Boolean(isLeapMonth) : false;
       const payload = buildBirthInputPayload({
         name: trimmedName,
         day,
@@ -360,7 +486,10 @@ export default function BirthInputForm({
         year,
         hourIndex,
         gender,
+        calendarType,
         isLunar,
+        isLeap: effectiveLeap,
+        isLeapMonth: effectiveLeap,
         viewYear,
         schoolConfig,
         clockHour: showTrueSolar ? clockHour : undefined,
@@ -371,7 +500,7 @@ export default function BirthInputForm({
       });
       onSubmit({
         ...payload,
-        ...(presetProfile?.id ? { profileId: presetProfile.id } : {}),
+        ...(matchedSeedProfileId ? { profileId: matchedSeedProfileId } : {}),
         ...(rectifiedEvents.length > 0 ? { lifeEvents: rectifiedEvents } : {}),
       });
     } catch (error) {
@@ -505,6 +634,28 @@ export default function BirthInputForm({
               ))}
             </select>
           </div>
+
+          {calendarType === 'lunar' && (
+            <div className="tv-leap-month-toggle-row">
+              <label
+                htmlFor="input-leap-month"
+                className={`tv-leap-month-label ${isLeapMonth ? 'is-checked' : ''}`}
+              >
+                <input
+                  id="input-leap-month"
+                  type="checkbox"
+                  checked={isLeapMonth}
+                  onChange={(e) => setIsLeapMonth(e.target.checked)}
+                />
+                <span>Tháng nhuận (Âm lịch)</span>
+              </label>
+              {yearLeapMonthNumber > 0 && (
+                <span className="tv-leap-month-hint">
+                  Năm {year} nhuận Tháng {yearLeapMonthNumber}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Giờ Sinh */}
@@ -850,7 +1001,10 @@ export default function BirthInputForm({
           year,
           hourIndex,
           gender,
+          calendarType,
           isLunar,
+          isLeap: calendarType === 'lunar' ? Boolean(isLeapMonth) : false,
+          isLeapMonth: calendarType === 'lunar' ? Boolean(isLeapMonth) : false,
           schoolConfig,
         }}
         initialEvents={rectifiedEvents}

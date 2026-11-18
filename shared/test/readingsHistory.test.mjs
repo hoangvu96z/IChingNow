@@ -43,12 +43,38 @@ function createReactHookHarness() {
       instance.callbacks[index] = { fn, deps };
       return fn;
     },
+    useRef(initialValue) {
+      const instance = activeInstance;
+      const index = instance.cursor++;
+      if (!(index in instance.refs)) {
+        instance.refs[index] = { current: initialValue };
+      }
+      return instance.refs[index];
+    },
+    useEffect(fn, deps) {
+      const instance = activeInstance;
+      const index = instance.cursor++;
+      const prev = instance.effects[index];
+      const changed =
+        !prev ||
+        !Array.isArray(deps) ||
+        !Array.isArray(prev.deps) ||
+        deps.length !== prev.deps.length ||
+        deps.some((dep, i) => !Object.is(dep, prev.deps[i]));
+      if (changed) {
+        if (typeof prev?.cleanup === 'function') prev.cleanup();
+        const cleanup = fn();
+        instance.effects[index] = { deps, cleanup };
+      }
+    },
   };
 
   return function mountHook(renderFn, initialProps) {
     const instance = {
       states: [],
       callbacks: [],
+      refs: [],
+      effects: [],
       cursor: 0,
       props: initialProps,
       current: null,
@@ -91,6 +117,12 @@ async function createAppHookServer(appDir) {
               }
               export function useCallback(fn, deps) {
                 return globalThis.__TEST_REACT_HOOKS__.useCallback(fn, deps);
+              }
+              export function useRef(initialValue) {
+                return globalThis.__TEST_REACT_HOOKS__.useRef(initialValue);
+              }
+              export function useEffect(fn, deps) {
+                return globalThis.__TEST_REACT_HOOKS__.useEffect(fn, deps);
               }
             `;
           }
@@ -376,6 +408,7 @@ test('IChing and Tarot useReadingsApi preserve public contracts, decrypt fallbac
     assert.deepEqual(tarot.current.history[0], {
       id: 'tr-1',
       timestamp: '2026-10-23T09:00:00.000Z',
+      createdAt: '2026-10-23T09:00:00.000Z',
       question: '(Trải bài Tarot)',
       spread: 'celtic-cross',
       title: '',
@@ -390,6 +423,7 @@ test('IChing and Tarot useReadingsApi preserve public contracts, decrypt fallbac
     assert.deepEqual(tarot.current.history[1], {
       id: 'tr-2',
       timestamp: '2026-10-23T11:00:00.000Z',
+      createdAt: '2026-10-23T11:00:00.000Z',
       question: '',
       spread: 'three-card',
       title: 'Quá khứ - Hiện tại - Tương lai',

@@ -124,9 +124,24 @@ test('Nghiệm Lý (normalizeVerification) & SaveToNoteNow payload (buildIChingN
   );
   const notePayload = buildIChingNoteNowPayload(chart);
   assert.equal(notePayload.sourceAppLabel, 'IChingNow');
+  assert.equal(notePayload.bgColor, 'amber');
   assert.ok(notePayload.title.includes(chart.primaryHexagram.nameVi));
   assert.ok(notePayload.summaryLines.some((s) => s.includes('Chẩn đoán Lục Hào v2')));
   assert.ok(notePayload.checklistItems.length >= 2);
+
+  const verifiedChart = {
+    ...chart,
+    verification: {
+      status: 'accurate',
+      actualDate: '2026-04-02',
+      note: 'Nhận được offer đúng ngày Thìn',
+    },
+  };
+  const verifiedPayload = buildIChingNoteNowPayload(verifiedChart);
+  assert.equal(verifiedPayload.bgColor, 'amber');
+  assert.ok(verifiedPayload.summaryLines.some((s) => s.includes('Nghiệm lý: Ứng nghiệm chuẩn')));
+  assert.ok(verifiedPayload.summaryLines.some((s) => s.includes('2026-04-02')));
+  assert.ok(verifiedPayload.summaryLines.some((s) => s.includes('Nhận được offer đúng ngày Thìn')));
 });
 
 test('SSR kiểm tra chuẩn Native <dialog closedby="any"> của HexagramAtlasModal, ManualHexagramInput & OutcomeVerificationCard', async () => {

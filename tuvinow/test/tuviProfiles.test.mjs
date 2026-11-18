@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   TUVI_PROFILES_STORAGE_KEY,
+  resolveProfilesStorageKey,
   loadSavedProfiles,
   saveProfile,
   deleteProfile,
@@ -9,6 +10,7 @@ import {
   getDefaultSelfProfile,
   upsertProfileLifeEvent,
   deleteProfileLifeEvent,
+  reconcileProfilesFromReadings,
   profileToBirthFormState,
   profileToBirthInputPayload,
   profileToHopHonPerson,
@@ -183,4 +185,184 @@ test('tuviProfiles: Hợp Hôn 2-profile conversion and sessionStorage handoff',
 
   // Sau khi consume 1 lần, kho trung chuyển phải tự dọn sạch
   assert.equal(consumeHopHonProfilesHandoff(sessionStore), null);
+});
+
+test('tuviProfiles: user-scoped localStorage keys isolate Guest and different SSO users', () => {
+  const storage = createMemoryStorage();
+  assert.equal(resolveProfilesStorageKey(), TUVI_PROFILES_STORAGE_KEY);
+  assert.equal(resolveProfilesStorageKey('user_101'), `${TUVI_PROFILES_STORAGE_KEY}:user_101`);
+
+  saveProfile(
+    { name: 'Khách Vãng Lai', calendarType: 'solar', day: 1, month: 1, year: 1990, hourValue: 0 },
+    storage,
+  );
+  saveProfile(
+    { name: 'Tài Khoản A', calendarType: 'solar', day: 2, month: 2, year: 1991, hourValue: 1 },
+    storage,
+    'user_a',
+  );
+  saveProfile(
+    { name: 'Tài Khoản B', calendarType: 'lunar', day: 15, month: 6, year: 2017, isLeapMonth: true, hourValue: 3 },
+    { storage, userId: 'user_b' },
+  );
+
+  const guestList = loadSavedProfiles(storage);
+  const userAList = loadSavedProfiles(storage, 'user_a');
+  const userBList = loadSavedProfiles({ storage, userId: 'user_b' });
+
+  assert.equal(guestList.length, 1);
+  assert.equal(guestList[0].name, 'Khách Vãng Lai');
+  assert.equal(userAList.length, 1);
+  assert.equal(userAList[0].name, 'Tài Khoản A');
+  assert.equal(userBList.length, 1);
+  assert.equal(userBList[0].name, 'Tài Khoản B');
+  assert.equal(userBList[0].isLeapMonth, true);
+});
+
+test('tuviProfiles: reconcileProfilesFromReadings merges server lifeEvents without clobbering newer local edits', () => {
+  const existing = [
+    {
+      id: 'prof_local_1',
+      name: 'Nguyễn Minh Khoa',
+      gender: 1,
+      calendarType: 'solar',
+      day: 14,
+      month: 8,
+      year: 1992,
+      hourValue: 4,
+      isDefaultSelf: true,
+      lifeEvents: [
+        { id: 'ev_shared', year: 2020, eventType: 'career_up', label: 'Thăng tiến', note: 'Ghi chú local mới hơn' },
+      ],
+    },
+  ];
+
+  const serverReadings = [
+    {
+      id: 'rd_1',
+      type: 'tuvi-laso',
+      updatedAt: '2026-11-10T10:00:00Z',
+      data: {
+        inputData: {
+          name: 'Nguyễn Minh Khoa',
+          gender: 1,
+          calendarType: 'solar',
+          isLunar: false,
+          solarInput: { day: 14, month: 8, year: 1992 },
+          lunarHourIndex: 4,
+          lifeEvents: [
+            { id: 'ev_shared', year: 2020, eventType: 'career_up', label: 'Thăng tiến', note: 'Ghi chú cũ trên server' },
+            { id: 'ev_server_only', year: 2023, eventType: 'marriage', label: 'Lập gia đình', note: 'Đồng bộ từ máy chủ' },
+          ],
+        },
+      },
+    },
+    {
+      id: 'rd_2_fresh_device',
+      type: 'tuvi-laso',
+      updatedAt: '2026-11-12T08:00:00Z',
+      data: {
+        inputData: {
+          name: 'Trần Bảo Ngọc',
+          gender: 0,
+          calendarType: 'lunar',
+          isLunar: true,
+          isLeap: true,
+          isLeapMonth: true,
+          lunarDay: 30,
+          lunarMonth: 6,
+          lunarYear: 2017,
+          lunarHourIndex: 6,
+          lifeEvents: [
+            { id: 'ev_ngoc_1', year: 2024, eventType: 'relocation_travel', label: 'Chuyển trường', note: 'Sang cơ sở mới' },
+          ],
+        },
+      },
+    },
+    {
+      id: 'rd_ignored',
+      type: 'tuvi-hop-hon',
+      data: { inputData: { name: 'Không hợp nhất', lifeEvents: [{ id: 'x', year: 2022 }] } },
+    },
+  ];
+
+  const merged = reconcileProfilesFromReadings(existing, serverReadings);
+  assert.equal(merged.length, 2);
+
+  const khoa = merged.find((p) => p.name === 'Nguyễn Minh Khoa');
+  assert.ok(khoa);
+  assert.equal(khoa.lifeEvents.length, 2);
+  assert.equal(
+    khoa.lifeEvents.find((ev) => ev.id === 'ev_shared')?.note,
+    'Ghi chú local mới hơn',
+  );
+  assert.equal(
+    khoa.lifeEvents.find((ev) => ev.id === 'ev_server_only')?.note,
+    'Đồng bộ từ máy chủ',
+  );
+
+  const ngoc = merged.find((p) => p.name === 'Trần Bảo Ngọc');
+  assert.ok(ngoc);
+  assert.equal(ngoc.calendarType, 'lunar');
+  assert.equal(ngoc.isLeapMonth, true);
+  assert.equal(ngoc.day, 30);
+  assert.equal(ngoc.lifeEvents.length, 1);
+  assert.equal(ngoc.lifeEvents[0].id, 'ev_ngoc_1');
+});
+
+test('tuviProfiles: Bug 4.1 & 4.4 — lunar leap month profile payload and strict calendarType + isLeapMonth matching', () => {
+  const storage = createMemoryStorage();
+  const regularLunar = saveProfile(
+    {
+      name: 'Phạm Hải Đăng',
+      gender: 1,
+      calendarType: 'lunar',
+      day: 20,
+      month: 6,
+      year: 2017,
+      isLeapMonth: false,
+      hourValue: 4,
+    },
+    storage,
+  ).profile;
+
+  const leapLunar = saveProfile(
+    {
+      name: 'Phạm Hải Đăng',
+      gender: 1,
+      calendarType: 'lunar',
+      day: 20,
+      month: 6,
+      year: 2017,
+      isLeapMonth: true,
+      hourValue: 4,
+    },
+    storage,
+  ).profile;
+
+  assert.notEqual(regularLunar.id, leapLunar.id);
+
+  const leapPayload = profileToBirthInputPayload(leapLunar);
+  assert.equal(leapPayload.calendarType, 'lunar');
+  assert.equal(leapPayload.isLunar, true);
+  assert.equal(leapPayload.isLeap, true);
+  assert.equal(leapPayload.isLeapMonth, true);
+
+  const regularPayload = profileToBirthInputPayload(regularLunar);
+  assert.equal(regularPayload.isLeap, false);
+  assert.equal(regularPayload.isLeapMonth, false);
+
+  assert.equal(findMatchingProfileForInput(leapPayload, storage)?.id, leapLunar.id);
+  assert.equal(findMatchingProfileForInput(regularPayload, storage)?.id, regularLunar.id);
+
+  // Solar input with same numbers must NOT match lunar profiles
+  const solarSameNumbers = {
+    name: 'Phạm Hải Đăng',
+    gender: 1,
+    calendarType: 'solar',
+    isLunar: false,
+    solarInput: { day: 20, month: 6, year: 2017 },
+    lunarHourIndex: 4,
+  };
+  assert.equal(findMatchingProfileForInput(solarSameNumbers, storage), null);
 });

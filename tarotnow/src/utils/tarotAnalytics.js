@@ -10,29 +10,114 @@ const TOPIC_LABELS = {
   general: { vi: 'Tổng quan & Định hướng', en: 'General Guidance', icon: '✨' },
 };
 
+export function formatReadingTimestamp(rawTimestamp, language = 'vi') {
+  if (!rawTimestamp && rawTimestamp !== 0) return '';
+
+  if (typeof rawTimestamp === 'string') {
+    const trimmed = rawTimestamp.trim();
+    if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+      const d = new Date(trimmed);
+      if (!Number.isNaN(d.getTime())) {
+        if (language === 'vi') {
+          const pad = (n) => String(n).padStart(2, '0');
+          const hours = pad(d.getHours());
+          const mins = pad(d.getMinutes());
+          const day = pad(d.getDate());
+          const month = pad(d.getMonth() + 1);
+          const year = d.getFullYear();
+          return `${hours}:${mins} ${day}/${month}/${year}`;
+        }
+        return d.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'numeric',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+      }
+    }
+    return trimmed;
+  }
+
+  if (typeof rawTimestamp === 'number' && Number.isFinite(rawTimestamp)) {
+    const d = new Date(rawTimestamp);
+    if (!Number.isNaN(d.getTime())) {
+      if (language === 'vi') {
+        const pad = (n) => String(n).padStart(2, '0');
+        const hours = pad(d.getHours());
+        const mins = pad(d.getMinutes());
+        const day = pad(d.getDate());
+        const month = pad(d.getMonth() + 1);
+        const year = d.getFullYear();
+        return `${hours}:${mins} ${day}/${month}/${year}`;
+      }
+      return d.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+    }
+  }
+
+  return String(rawTimestamp || '');
+}
+
 export function parseReadingTimestampMs(item) {
   if (!item || typeof item !== 'object') return null;
 
-  const isoCandidates = [item.createdAt, item.updatedAt, item.data?.createdAt, item.timestamp];
-  for (const raw of isoCandidates) {
+  // Check reading?.createdAt first; then other candidate fields
+  const candidates = [
+    item.createdAt,
+    item.data?.createdAt,
+    item.updatedAt,
+    item.data?.updatedAt,
+    item.timestamp,
+    item.data?.timestamp,
+  ];
+
+  for (const raw of candidates) {
     if (typeof raw === 'number' && Number.isFinite(raw) && raw > 946684800000) {
       return raw;
     }
     if (typeof raw === 'string' && raw.trim()) {
-      const directMs = Date.parse(raw.trim());
-      if (!Number.isNaN(directMs)) return directMs;
+      const trimmed = raw.trim();
 
-      // Match "HH:mm - DD/MM/YYYY" (vi-VN) or "HH:mm AM/PM - MM/DD/YYYY"
-      const viMatch = raw.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*-\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      // ONLY pass unambiguous ISO-8601 strings to Date.parse
+      if (/^\d{4}-\d{2}-\d{2}(?:T|\s\d{2}:)/.test(trimmed)) {
+        const directMs = Date.parse(trimmed);
+        if (!Number.isNaN(directMs)) return directMs;
+      }
+
+      // Explicit parser for DD/MM/YYYY localized strings: "HH:mm - DD/MM/YYYY" or "HH:mm DD/MM/YYYY"
+      const viMatch = trimmed.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(?:-|,)?\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       if (viMatch) {
         const hour = Number(viMatch[1]);
         const minute = Number(viMatch[2]);
-        const day = Number(viMatch[3]);
-        const month = Number(viMatch[4]) - 1;
-        const year = Number(viMatch[5]);
+        const second = viMatch[3] ? Number(viMatch[3]) : 0;
+        const day = Number(viMatch[4]);
+        const month = Number(viMatch[5]) - 1;
+        const year = Number(viMatch[6]);
+        const constructed = new Date(year, month, day, hour, minute, second).getTime();
+        if (!Number.isNaN(constructed)) return constructed;
+      }
+
+      // DD/MM/YYYY date-first strings
+      const dateFirstMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s*[, -]?\s*(\d{1,2}):(\d{2}))?/);
+      if (dateFirstMatch) {
+        const day = Number(dateFirstMatch[1]);
+        const month = Number(dateFirstMatch[2]) - 1;
+        const year = Number(dateFirstMatch[3]);
+        const hour = dateFirstMatch[4] ? Number(dateFirstMatch[4]) : 0;
+        const minute = dateFirstMatch[5] ? Number(dateFirstMatch[5]) : 0;
         const constructed = new Date(year, month, day, hour, minute).getTime();
         if (!Number.isNaN(constructed)) return constructed;
       }
+
+      // Fallback for en-US formatted date strings (e.g. "11/14/2026, 2:30 PM")
+      const fallbackMs = Date.parse(trimmed);
+      if (!Number.isNaN(fallbackMs)) return fallbackMs;
     }
   }
 
@@ -139,7 +224,9 @@ export function computeTarotReadingInsights(
   { windowDays = null, deck = [], now = new Date(), language = 'vi' } = {}
 ) {
   const isEn = language === 'en';
-  const safeHistory = Array.isArray(history) ? history.filter((item) => item && !item._decryptionError) : [];
+  const safeHistory = Array.isArray(history)
+    ? history.filter((item) => item && !item._decryptionError && !item.data?._decryptionError)
+    : [];
   const deckById = new Map();
   const deckByName = new Map();
 
@@ -183,6 +270,53 @@ export function computeTarotReadingInsights(
     leastElement: null,
   };
 
+  // Compute outcome reflection stats & recent reflections
+  let accurateCount = 0;
+  let partialCount = 0;
+  let divergedCount = 0;
+  const reflectedItems = [];
+
+  filteredReadings.forEach((reading) => {
+    const rawNote = typeof reading.reflectionNote === 'string'
+      ? reading.reflectionNote.trim()
+      : typeof reading.data?.reflectionNote === 'string'
+        ? reading.data.reflectionNote.trim()
+        : '';
+    const status = typeof reading.verificationStatus === 'string'
+      ? reading.verificationStatus.trim()
+      : typeof reading.data?.verificationStatus === 'string'
+        ? reading.data.verificationStatus.trim()
+        : '';
+
+    if (status === 'accurate') accurateCount += 1;
+    else if (status === 'partial') partialCount += 1;
+    else if (status === 'diverged') divergedCount += 1;
+
+    if (rawNote.length > 0 || (status && status !== 'pending')) {
+      reflectedItems.push({
+        id: reading.id,
+        question: reading.question || reading.data?.question || '',
+        timestamp: formatReadingTimestamp(reading.createdAt || reading.timestamp || reading.data?.createdAt, language),
+        status: status || 'pending',
+        noteSnippet: rawNote.length > 100 ? rawNote.slice(0, 100) + '...' : rawNote,
+        _sortMs: parseReadingTimestampMs(reading) || 0,
+      });
+    }
+  });
+
+  const recentReflections = reflectedItems
+    .sort((a, b) => b._sortMs - a._sortMs)
+    .slice(0, 5)
+    .map(({ _sortMs, ...item }) => item);
+
+  const reflectionStats = {
+    reflectedCount: reflectedItems.length,
+    accurateCount,
+    partialCount,
+    divergedCount,
+    recentReflections,
+  };
+
   if (totalReadings < 2) {
     const singleCardCount = filteredReadings.reduce((acc, r) => {
       const list = r.data?.drawnCards || r.drawnCards || r.cards || [];
@@ -204,6 +338,7 @@ export function computeTarotReadingInsights(
       reversedCount: 0,
       reversalRatePercent: 0,
       topicBreakdown: [],
+      reflectionStats,
     };
   }
 
@@ -336,5 +471,9 @@ export function computeTarotReadingInsights(
     reversedCount,
     reversalRatePercent: totalCardsDrawn > 0 ? Math.round((reversedCount / totalCardsDrawn) * 100) : 0,
     topicBreakdown,
+    reflectionStats,
   };
 }
+
+export const computeTarotInsights = computeTarotReadingInsights;
+

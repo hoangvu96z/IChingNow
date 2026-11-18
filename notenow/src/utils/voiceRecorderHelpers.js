@@ -28,10 +28,16 @@ export function selectSupportedAudioMimeType(Recorder = globalThis.MediaRecorder
 
 export function resolveRecordedFileFormat(mimeType) {
   const base = String(mimeType || '').split(';')[0].trim().toLowerCase();
-  if (base === 'audio/mp4' || base === 'audio/x-m4a' || base === 'audio/m4a') {
+  if (
+    base === 'audio/mp4' ||
+    base === 'video/mp4' ||
+    base === 'audio/x-m4a' ||
+    base === 'audio/m4a' ||
+    base === 'audio/aac'
+  ) {
     return { ext: 'm4a', type: 'audio/mp4' };
   }
-  if (base === 'audio/ogg' || base === 'application/ogg') {
+  if (base === 'audio/ogg' || base === 'application/ogg' || base === 'audio/opus') {
     return { ext: 'ogg', type: 'audio/ogg' };
   }
   return { ext: 'webm', type: 'audio/webm' };

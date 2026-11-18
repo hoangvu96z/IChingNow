@@ -437,6 +437,92 @@ body {
   border-color: #c4b5fd;
 }
 
+.tuvi-rectify-hour-btn {
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.14), rgba(212, 165, 116, 0.12));
+  border: 1.5px solid rgba(180, 83, 9, 0.45);
+  border-radius: 20px;
+  color: #92400e;
+  padding: 6px 13px;
+  min-height: 36px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  max-inline-size: 100%;
+  transition: all 0.2s ease;
+}
+.tuvi-rectify-hour-btn:hover {
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.22), rgba(212, 165, 116, 0.2));
+  border-color: #b45309;
+}
+[data-theme="dark"] .tuvi-rectify-hour-btn {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.2), rgba(245, 158, 11, 0.12));
+  border-color: rgba(251, 191, 36, 0.48);
+  color: #fde68a;
+}
+[data-theme="dark"] .tuvi-rectify-hour-btn:hover {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.3), rgba(245, 158, 11, 0.2));
+  border-color: #fbbf24;
+}
+
+.tv-leap-month-toggle-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.tv-leap-month-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.tv-leap-month-label:hover {
+  border-color: var(--border-gold);
+}
+
+.tv-leap-month-label.is-checked {
+  background: var(--accent-gold-dim);
+  border-color: var(--border-gold);
+  color: var(--text-gold);
+}
+
+.tv-leap-month-label input[type="checkbox"] {
+  inline-size: 16px;
+  block-size: 16px;
+  margin: 0;
+  accent-color: var(--text-gold);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.tv-leap-month-hint {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  min-inline-size: 0;
+}
+
 .tuvi-tap-to-learn-banner {
   margin: 0 0 10px;
   padding: 9px 14px;
@@ -7134,6 +7220,8 @@ dialog.tv-native-dialog::backdrop {
   .tv-btn-primary,
   .tv-btn-secondary,
   .btn-open-rectifier,
+  .tuvi-rectify-hour-btn,
+  .tv-leap-month-label,
   .tv-rect-preset-btn,
   .tv-rect-shichen-chip,
   .tv-rect-event-field input,
@@ -7195,6 +7283,12 @@ dialog.tv-native-dialog::backdrop {
     min-width: 120px;
     padding: 8px 10px;
     font-size: 0.8rem;
+  }
+
+  .tuvi-rectify-hour-btn,
+  .tuvi-ask-iching-btn {
+    white-space: normal;
+    text-align: left;
   }
 }
 

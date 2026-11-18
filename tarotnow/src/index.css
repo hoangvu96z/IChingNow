@@ -5234,3 +5234,317 @@ summary.dignities-summary-trigger::-webkit-details-marker {
     inline-size: 100%;
   }
 }
+
+/* ─── Tarot Reflection Card ("Chiêm Nghiệm & Đối Chứng Trải Bài") ─── */
+.tarot-reflection-card {
+  border: 1px solid rgba(229, 193, 88, 0.28);
+  border-radius: 14px;
+  background: rgba(18, 14, 34, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 16px 18px;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  overflow: hidden;
+}
+
+.tarot-reflection-card.compact {
+  padding: 12px 14px;
+  margin-top: 14px;
+  background: rgba(229, 193, 88, 0.04);
+  border-radius: 10px;
+}
+
+.reflection-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reflection-card-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.96rem;
+  color: var(--gold-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+
+.reflection-card-updated {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.reflection-status-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reflection-status-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.reflection-status-btn:hover {
+  background: rgba(229, 193, 88, 0.1);
+  border-color: rgba(229, 193, 88, 0.35);
+  color: var(--text-primary);
+}
+
+.reflection-status-btn.active {
+  font-weight: 700;
+}
+
+.reflection-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 80px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(229, 193, 88, 0.25);
+  background: rgba(8, 6, 18, 0.6);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.reflection-textarea:focus {
+  border-color: var(--gold-color);
+}
+
+.reflection-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reflection-char-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.reflection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reflection-save-btn {
+  background: linear-gradient(135deg, rgba(229, 193, 88, 0.25) 0%, rgba(184, 134, 11, 0.4) 100%);
+  border: 1px solid var(--gold-color);
+  color: var(--gold-color);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reflection-save-btn:hover:not(:disabled) {
+  background: var(--gold-color);
+  color: #120e22;
+}
+
+.reflection-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reflection-saved-badge {
+  font-size: 0.75rem;
+  color: #5bc0be;
+  font-weight: 600;
+}
+
+.reflection-error-badge {
+  font-size: 0.75rem;
+  color: var(--accent-red);
+  font-weight: 600;
+}
+
+/* ─── Insights Reflections Section ─── */
+.insights-reflection-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insights-reflection-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reflection-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.reflection-badge.badge-accurate {
+  background: rgba(229, 193, 88, 0.15);
+  color: var(--gold-color);
+  border: 1px solid rgba(229, 193, 88, 0.35);
+}
+
+.reflection-badge.badge-partial {
+  background: rgba(91, 192, 190, 0.15);
+  color: #5bc0be;
+  border: 1px solid rgba(91, 192, 190, 0.35);
+}
+
+.reflection-badge.badge-diverged {
+  background: rgba(235, 94, 85, 0.15);
+  color: var(--accent-red);
+  border: 1px solid rgba(235, 94, 85, 0.35);
+}
+
+.insights-reflection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insights-reflection-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(229, 193, 88, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insights-reflection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.74rem;
+}
+
+.reflection-status-tag {
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.reflection-status-tag.tag-accurate {
+  color: var(--gold-color);
+  background: rgba(229, 193, 88, 0.12);
+}
+
+.reflection-status-tag.tag-partial {
+  color: #5bc0be;
+  background: rgba(91, 192, 190, 0.12);
+}
+
+.reflection-status-tag.tag-diverged {
+  color: var(--accent-red);
+  background: rgba(235, 94, 85, 0.12);
+}
+
+.reflection-status-tag.tag-pending {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.insights-reflection-time {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.insights-reflection-q {
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.insights-reflection-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--gold-color);
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+.insights-reflection-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* Light Theme Overrides */
+[data-theme="light"] .tarot-reflection-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(184, 134, 11, 0.3);
+}
+
+[data-theme="light"] .reflection-textarea {
+  background: #ffffff;
+  color: #211c1d;
+  border-color: rgba(184, 134, 11, 0.3);
+}
+
+[data-theme="light"] .reflection-status-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #4b4453;
+}
+
+[data-theme="light"] .insights-reflection-item {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(184, 134, 11, 0.2);
+}
+
+@media (max-width: 360px) {
+  .tarot-reflection-card {
+    padding: 10px 12px;
+  }
+
+  .reflection-status-btn {
+    font-size: 0.74rem;
+    padding: 4px 8px;
+    inline-size: 100%;
+  }
+
+  .reflection-save-btn {
+    inline-size: 100%;
+    justify-content: center;
+  }
+}
+

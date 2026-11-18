@@ -19,7 +19,11 @@ export function useNoteAudioSources(audios, noteId, shareToken, guestOwned = fal
 
       try {
         const blob = await notesApi.fetchAudio({ noteId, shareToken, audio, guestOwned });
-        const objectUrl = URL.createObjectURL(blob);
+        const normalizedBlob =
+          (!blob.type || blob.type === 'application/octet-stream') && audio?.mimeType
+            ? new Blob([blob], { type: audio.mimeType })
+            : blob;
+        const objectUrl = URL.createObjectURL(normalizedBlob);
         objectUrls.push(objectUrl);
         return objectUrl;
       } catch {

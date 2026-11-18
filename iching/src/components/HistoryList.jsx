@@ -34,7 +34,9 @@ export default function HistoryList({
 
   const formatTime = (isoString) => {
     try {
-      const d = new Date(isoString);
+      const safeStr = typeof isoString === 'string' ? isoString.replace(' ', 'T') : isoString;
+      const d = new Date(safeStr);
+      if (isNaN(d.getTime())) return '';
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const hours = String(d.getHours()).padStart(2, '0');

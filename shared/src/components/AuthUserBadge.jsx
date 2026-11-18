@@ -14,7 +14,12 @@ const SSO_BASE = getSsoWebBase({ VITE_SSO_URL: import.meta.env.VITE_SSO_URL });
 export default function AuthUserBadge({ useAuthHook, accentColor }) {
   const { user, isLoading, isAuthenticated, login, logout } = useAuthHook();
   const [open, setOpen] = useState(false);
+  const [imgBroken, setImgBroken] = useState(false);
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    setImgBroken(false);
+  }, [user?.avatarUrl]);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -100,15 +105,16 @@ export default function AuthUserBadge({ useAuthHook, accentColor }) {
           fontSize: '0.75rem', fontWeight: 700, color: '#ffffff',
           overflow: 'hidden', flexShrink: 0,
         }}>
-          {user.avatarUrl
-            ? <img
-                src={user.avatarUrl}
-                alt={initials}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={e => { e.currentTarget.style.display = 'none'; }}
-              />
-            : initials
-          }
+          {user.avatarUrl && !imgBroken ? (
+            <img
+              src={user.avatarUrl}
+              alt={initials}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={() => setImgBroken(true)}
+            />
+          ) : (
+            initials
+          )}
         </div>
 
         {/* ── Name ── */}
@@ -155,10 +161,16 @@ export default function AuthUserBadge({ useAuthHook, accentColor }) {
               fontSize: '0.875rem', fontWeight: 700, color: '#fff',
               overflow: 'hidden',
             }}>
-              {user.avatarUrl
-                ? <img src={user.avatarUrl} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : initials
-              }
+              {user.avatarUrl && !imgBroken ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={initials}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={() => setImgBroken(true)}
+                />
+              ) : (
+                initials
+              )}
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{

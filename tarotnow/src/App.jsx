@@ -31,6 +31,9 @@ import ElementalDignitiesPanel from './components/ElementalDignitiesPanel.jsx';
 import CustomSpreadBuilder from './components/CustomSpreadBuilder.jsx';
 import PhysicalSpreadInput from './components/PhysicalSpreadInput.jsx';
 import PersonalTarotInsightsModal from './components/PersonalTarotInsightsModal.jsx';
+import TarotReflectionCard from './components/TarotReflectionCard.jsx';
+import { formatReadingTimestamp } from './utils/tarotAnalytics.js';
+import { buildTarotNoteNowPayload } from './utils/noteNowPayload.js';
 import SaveToNoteNowButton from '../../shared/src/components/SaveToNoteNowButton.jsx';
 import {
   resolveCustomSpreadPositions,
@@ -107,6 +110,7 @@ export default function App() {
   const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const resultsAnchorRef = useRef(null);
+  const inFlightSaveRef = useRef(null);
 
   // ─── Auth + Readings API ──────────────────────────────────────────────────
   const { isAuthenticated, user, login } = useAuth();
@@ -119,11 +123,17 @@ export default function App() {
     deleteMultipleReadings,
     clearHistory,
     updateReadingData,
-  } = useReadingsApi(isAuthenticated, user?.id);
+    updateReadingReflection,
+  } = useReadingsApi(isAuthenticated, user?.id, { inFlightSaveRef });
 
   // Track active reading ID for AI conversation persistence
   const [activeReadingId, setActiveReadingId] = useState(null);
   const [savedConversation, setSavedConversation] = useState(null);
+
+  // Active reflection state for the currently displayed reading
+  const [activeReflectionNote, setActiveReflectionNote] = useState('');
+  const [activeVerificationStatus, setActiveVerificationStatus] = useState('pending');
+  const [activeReflectionUpdatedAt, setActiveReflectionUpdatedAt] = useState(null);
 
   const handleSelectHistoryItem = useCallback((item) => {
     if (!item) return;
@@ -181,6 +191,11 @@ export default function App() {
     setActiveReadingId(targetId);
     setSavedConversation(item.data?.aiConversation || null);
 
+    // Populate active reflection notes and verification status
+    setActiveReflectionNote(item.reflectionNote || item.data?.reflectionNote || '');
+    setActiveVerificationStatus(item.verificationStatus || item.data?.verificationStatus || 'pending');
+    setActiveReflectionUpdatedAt(item.reflectionUpdatedAt || item.data?.reflectionUpdatedAt || null);
+
     if (targetId) {
       const url = new URL(window.location.href);
       url.searchParams.set('id', targetId);
@@ -199,6 +214,25 @@ export default function App() {
       window.scrollTo({ top: 380, behavior: 'smooth' });
     }, 100);
   }, [tarotCards]);
+
+  const handleSaveReflection = useCallback(async (id, payload) => {
+    let resolvedId = id || activeReadingId;
+    if (inFlightSaveRef.current) {
+      try {
+        const saved = await inFlightSaveRef.current;
+        if (saved?.id) {
+          resolvedId = saved.id;
+          setActiveReadingId(saved.id);
+        }
+      } catch (err) {
+        console.warn('In-flight save reading failed:', err);
+      }
+    }
+    await updateReadingReflection(resolvedId, payload);
+    setActiveReflectionNote(payload.reflectionNote);
+    setActiveVerificationStatus(payload.verificationStatus);
+    setActiveReflectionUpdatedAt(payload.reflectionUpdatedAt);
+  }, [activeReadingId, updateReadingReflection]);
 
   // Tải lịch sử khi mount hoặc khi auth state thay đổi
   useEffect(() => {
@@ -392,14 +426,24 @@ export default function App() {
           }))
         };
         setSavedConversation(null);
-        saveReading(newHistoryItem).then(saved => {
-          if (saved?.id) {
-            setActiveReadingId(saved.id);
-            const url = new URL(window.location.href);
-            url.searchParams.set('id', saved.id);
-            window.history.pushState({ id: saved.id }, '', url.toString());
-          }
-        }).catch((err) => setValidationError(err.message || 'Không thể lưu trải bài.'));
+        setActiveReflectionNote('');
+        setActiveVerificationStatus('pending');
+        setActiveReflectionUpdatedAt(null);
+        const savePromise = saveReading(newHistoryItem)
+          .then((saved) => {
+            if (saved?.id) {
+              setActiveReadingId(saved.id);
+              const url = new URL(window.location.href);
+              url.searchParams.set('id', saved.id);
+              window.history.pushState({ id: saved.id }, '', url.toString());
+            }
+            return saved;
+          })
+          .catch((err) => {
+            setValidationError(err.message || 'Không thể lưu trải bài.');
+            throw err;
+          });
+        inFlightSaveRef.current = savePromise;
       }, 500);
 
     } catch (err) {
@@ -431,6 +475,9 @@ export default function App() {
     setCurrentDrawnQuestion(question);
     setDrawnCards(physicalCards);
     setSavedConversation(null);
+    setActiveReflectionNote('');
+    setActiveVerificationStatus('pending');
+    setActiveReflectionUpdatedAt(null);
 
     const locale = language === 'en' ? 'en-US' : 'vi-VN';
     const resolvedCustomPos = activeSpread === 'custom'
@@ -460,7 +507,7 @@ export default function App() {
       })),
     };
 
-    saveReading(newHistoryItem)
+    const savePromise = saveReading(newHistoryItem)
       .then((saved) => {
         if (saved?.id) {
           setActiveReadingId(saved.id);
@@ -468,8 +515,13 @@ export default function App() {
           url.searchParams.set('id', saved.id);
           window.history.pushState({ id: saved.id }, '', url.toString());
         }
+        return saved;
       })
-      .catch((err) => setValidationError(err.message || 'Không thể lưu trải bài.'));
+      .catch((err) => {
+        setValidationError(err.message || 'Không thể lưu trải bài.');
+        throw err;
+      });
+    inFlightSaveRef.current = savePromise;
 
     setTimeout(() => {
       resultsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -583,16 +635,25 @@ export default function App() {
         : 'Mở lại ghi chú này sau 7 ngày để nghiệm lý diễn biến thực tế so với thông điệp các lá bài.',
     ].filter(Boolean);
 
-    return {
-      title: `TarotNow — ${resolvedSpreadDisplayName}${activeQuestion ? `: ${activeQuestion}` : ''}`,
-      sourceAppLabel: 'TarotNow',
+    return buildTarotNoteNowPayload({
+      cards: drawnCards,
+      drawnCards,
+      activeSpread,
+      spreadPositions,
+      interpretationContext,
+      language,
       question: activeQuestion,
       summaryLines,
       checklistItems,
+      resolvedSpreadDisplayName,
+      reflectionNote: activeReflectionNote,
+      verificationStatus: activeVerificationStatus,
       tags: ['tarotnow', activeSpread, interpretationContext],
-    };
+    });
   }, [
+    activeReflectionNote,
     activeSpread,
+    activeVerificationStatus,
     currentDrawnQuestion,
     drawnCards,
     interpretationContext,
@@ -1134,6 +1195,17 @@ ${summaryObj.advice}${dignitySummaryAppend}
                 interpretationSummary={formattedSummaryText}
                 getCardMeaning={getCardMeaning}
               />
+              <TarotReflectionCard
+                readingId={activeReadingId}
+                reading={{
+                  id: activeReadingId,
+                  reflectionNote: activeReflectionNote,
+                  verificationStatus: activeVerificationStatus,
+                  reflectionUpdatedAt: activeReflectionUpdatedAt,
+                }}
+                onSaveReflection={handleSaveReflection}
+                language={language}
+              />
             </>
           )}
 
@@ -1243,7 +1315,7 @@ ${summaryObj.advice}${dignitySummaryAppend}
                           {isPhys ? '🃏 ' : ''}
                           {histSpreadName}
                         </span>
-                        <span>{item.timestamp}</span>
+                        <span>{formatReadingTimestamp(item.timestamp || item.createdAt, language)}</span>
                       </div>
                       <p className="history-question">"{item.question}"</p>
                       <div className="history-cards-line">
@@ -1297,6 +1369,7 @@ ${summaryObj.advice}${dignitySummaryAppend}
             onSelect={handleSelectHistoryItem}
             onDeleteMultiple={deleteMultipleReadings}
             onClearAll={clearHistory}
+            onUpdateReflection={handleSaveReflection}
           />
 
           {/* Personal Tarot Reading Analytics Modal (Native <dialog>) */}

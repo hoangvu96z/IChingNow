@@ -21,7 +21,9 @@ export function buildPlainTextResult(result, language = 'vi') {
   };
 
   // === Metadata ===
-  const createdAt = result.createdAt ? new Date(result.createdAt) : new Date();
+  const createdAt = result.createdAt
+    ? new Date(typeof result.createdAt === 'string' ? result.createdAt.replace(' ', 'T') : result.createdAt)
+    : new Date();
   lines.push(`${t('meta.cast_date', 'Ngày lập quẻ')} : ${formatDateTime(createdAt, language)}`);
 
   if (result.canChi && !result.canChi.isFallback) {
@@ -346,7 +348,9 @@ export function buildMaiHoaPlainText(result, language = 'vi') {
 
   const SEP = '─'.repeat(62);
   const lines = [];
-  const createdAt = result.createdAt ? new Date(result.createdAt) : new Date();
+  const createdAt = result.createdAt
+    ? new Date(typeof result.createdAt === 'string' ? result.createdAt.replace(' ', 'T') : result.createdAt)
+    : new Date();
 
   // Header
   if (language === 'en') {

@@ -1,6 +1,9 @@
 export const DEFAULT_SSO_URL = 'https://sso.vunph.click';
 export const SSO_BEARER_STORAGE_KEY = 'vInfiSSO.sessionBearer';
 export const SSO_ROTATION_HEADER = 'x-sso-session-token';
+export const SSO_TAB_SYNC_CHANNEL = 'vInfiSSO.tabSessionSync';
+
+const CHANNEL_NAME = SSO_TAB_SYNC_CHANNEL;
 
 // Retire the old URL/localStorage token transport before app code starts.
 try {
@@ -9,16 +12,190 @@ try {
 
 function browserSessionStorage() {
   try {
+    if (typeof window !== 'undefined' && window?.sessionStorage) {
+      return window.sessionStorage;
+    }
     return globalThis.sessionStorage || null;
   } catch {
     return null;
   }
 }
 
+function isValidBearerToken(token) {
+  return (
+    typeof token === 'string' &&
+    token.trim().length > 0 &&
+    token.length <= 4096 &&
+    !/\s/.test(token)
+  );
+}
+
+function readRawTokenFromStorage(storage) {
+  try {
+    const raw = storage?.getItem?.(SSO_BEARER_STORAGE_KEY) ?? null;
+    return isValidBearerToken(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+let activeTabSync = null;
+let defaultAuthInternal = null;
+
+/**
+ * Attach a BroadcastChannel listener for same-origin cross-tab sessionStorage sync.
+ * Never persists bearer tokens to localStorage.
+ */
+export function attachSsoTabSync({
+  storage,
+  BroadcastChannelImpl = globalThis.BroadcastChannel,
+  onSyncToken,
+  onClearToken,
+} = {}) {
+  if (typeof BroadcastChannelImpl !== 'function') {
+    return { channel: null, postMessage: () => {}, close: () => {} };
+  }
+
+  let channel = null;
+  try {
+    channel = new BroadcastChannelImpl(CHANNEL_NAME);
+    channel.unref?.();
+  } catch {
+    return { channel: null, postMessage: () => {}, close: () => {} };
+  }
+
+  const getTargetStorage = () =>
+    storage !== undefined ? storage : browserSessionStorage();
+
+  const handleMessage = (event) => {
+    const msg = event?.data;
+    if (!msg || typeof msg !== 'object') return;
+
+    const targetStorage = getTargetStorage();
+
+    if (msg.type === 'request-bearer') {
+      const token =
+        storage !== undefined
+          ? readRawTokenFromStorage(targetStorage)
+          : defaultAuthInternal?.getToken?.() ?? readRawTokenFromStorage(targetStorage);
+      if (isValidBearerToken(token)) {
+        try {
+          channel.postMessage({
+            type: 'provide-bearer',
+            requestId: msg.requestId ?? null,
+            token,
+          });
+        } catch {}
+      }
+      return;
+    }
+
+    if (msg.type === 'provide-bearer' || msg.type === 'sync-bearer') {
+      if (!isValidBearerToken(msg.token)) return;
+      const current =
+        storage !== undefined
+          ? readRawTokenFromStorage(targetStorage)
+          : defaultAuthInternal?.getToken?.() ?? readRawTokenFromStorage(targetStorage);
+      if (current === msg.token) return;
+      if (typeof onSyncToken === 'function') {
+        onSyncToken(msg.token);
+      } else {
+        try {
+          targetStorage?.setItem?.(SSO_BEARER_STORAGE_KEY, msg.token);
+        } catch {}
+      }
+      return;
+    }
+
+    if (msg.type === 'clear-bearer') {
+      if (typeof onClearToken === 'function') {
+        onClearToken();
+      } else {
+        try {
+          targetStorage?.removeItem?.(SSO_BEARER_STORAGE_KEY);
+        } catch {}
+      }
+    }
+  };
+
+  if (typeof channel.addEventListener === 'function') {
+    channel.addEventListener('message', handleMessage);
+  } else {
+    channel.onmessage = handleMessage;
+  }
+
+  return {
+    channel,
+    postMessage(payload) {
+      try {
+        channel?.postMessage?.(payload);
+      } catch {}
+    },
+    close() {
+      try {
+        if (typeof channel?.removeEventListener === 'function') {
+          channel.removeEventListener('message', handleMessage);
+        } else if (channel) {
+          channel.onmessage = null;
+        }
+        channel?.close?.();
+      } catch {}
+      channel = null;
+    },
+  };
+}
+
+export function closeSsoTabSyncListener() {
+  if (activeTabSync) {
+    activeTabSync.close();
+    activeTabSync = null;
+  }
+}
+
+function ensureTabSyncListener() {
+  if (typeof window === 'undefined' || typeof BroadcastChannel !== 'function') {
+    if (activeTabSync) closeSsoTabSyncListener();
+    return null;
+  }
+
+  const currentStorage = browserSessionStorage();
+  if (
+    activeTabSync &&
+    activeTabSync.windowRef === window &&
+    activeTabSync.storageRef === currentStorage &&
+    activeTabSync.channelCtor === BroadcastChannel
+  ) {
+    return activeTabSync;
+  }
+
+  if (activeTabSync) {
+    closeSsoTabSyncListener();
+  }
+
+  const bridge = attachSsoTabSync({
+    BroadcastChannelImpl: BroadcastChannel,
+    onSyncToken: (token) => {
+      defaultAuthInternal?.setTokenSilent?.(token);
+    },
+    onClearToken: () => {
+      defaultAuthInternal?.clearTokenSilent?.();
+    },
+  });
+
+  activeTabSync = {
+    ...bridge,
+    windowRef: window,
+    storageRef: currentStorage,
+    channelCtor: BroadcastChannel,
+  };
+  return activeTabSync;
+}
+
 /** Create an authenticated transport with a per-tab bearer and rotation support. */
 export function createSsoAuthFetch(
   fetchImpl = (...args) => globalThis.fetch(...args),
   getStorage = browserSessionStorage,
+  { broadcastDefaultStorage = false } = {},
 ) {
   let volatileToken = null;
 
@@ -26,32 +203,57 @@ export function createSsoAuthFetch(
     try {
       const storage = getStorage();
       if (storage) {
-        volatileToken = storage.getItem(SSO_BEARER_STORAGE_KEY) || volatileToken;
+        const stored = readRawTokenFromStorage(storage);
+        if (stored) return stored;
         return volatileToken;
       }
     } catch {}
     return volatileToken;
   };
 
-  const setToken = (token) => {
-    if (typeof token !== 'string' || !token.trim() || token.length > 4096) {
+  const writeToken = (token, { broadcast = broadcastDefaultStorage } = {}) => {
+    if (!isValidBearerToken(token)) {
       return false;
     }
-    volatileToken = token;
+    let persisted = false;
+    let storage = null;
     try {
-      getStorage()?.setItem(SSO_BEARER_STORAGE_KEY, token);
+      storage = getStorage();
+      if (storage) {
+        storage.setItem(SSO_BEARER_STORAGE_KEY, token);
+        persisted = true;
+      }
     } catch {}
+    volatileToken = persisted ? null : token;
+
+    if (broadcast && persisted && storage === browserSessionStorage()) {
+      const listener = ensureTabSyncListener();
+      listener?.postMessage({ type: 'sync-bearer', token });
+    }
     return true;
   };
 
-  const clearToken = () => {
+  const removeToken = ({ broadcast = broadcastDefaultStorage } = {}) => {
     volatileToken = null;
+    let storage = null;
     try {
-      getStorage()?.removeItem(SSO_BEARER_STORAGE_KEY);
+      storage = getStorage();
+      storage?.removeItem(SSO_BEARER_STORAGE_KEY);
     } catch {}
+
+    if (broadcast && storage && storage === browserSessionStorage()) {
+      const listener = ensureTabSyncListener();
+      listener?.postMessage({ type: 'clear-bearer' });
+    }
   };
 
+  const setToken = (token) => writeToken(token, { broadcast: broadcastDefaultStorage });
+  const clearToken = () => removeToken({ broadcast: broadcastDefaultStorage });
+
   const request = async (input, init = {}) => {
+    if (broadcastDefaultStorage) {
+      ensureTabSyncListener();
+    }
     const headers = new Headers(init.headers || {});
     const token = getToken();
     if (token && !headers.has('authorization')) {
@@ -66,14 +268,156 @@ export function createSsoAuthFetch(
     return response;
   };
 
-  return { fetch: request, getToken, setToken, clearToken };
+  return {
+    fetch: request,
+    getToken,
+    setToken,
+    clearToken,
+    setTokenSilent: (token) => writeToken(token, { broadcast: false }),
+    clearTokenSilent: () => removeToken({ broadcast: false }),
+  };
 }
 
-const ssoAuth = createSsoAuthFetch();
+const ssoAuth = createSsoAuthFetch(
+  (...args) => globalThis.fetch(...args),
+  browserSessionStorage,
+  { broadcastDefaultStorage: true },
+);
+defaultAuthInternal = ssoAuth;
+
+export function readSsoBearerToken(storage) {
+  const defaultStorage = browserSessionStorage();
+  if (storage !== undefined && storage !== defaultStorage) {
+    return readRawTokenFromStorage(storage);
+  }
+  ensureTabSyncListener();
+  return ssoAuth.getToken();
+}
+
+export function storeSsoBearerToken(token, storage) {
+  if (!isValidBearerToken(token)) return false;
+  const defaultStorage = browserSessionStorage();
+  if (storage !== undefined && storage !== defaultStorage) {
+    try {
+      storage?.setItem?.(SSO_BEARER_STORAGE_KEY, token);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  ensureTabSyncListener();
+  return ssoAuth.setToken(token);
+}
+
+export function clearSsoBearerToken(storage) {
+  const defaultStorage = browserSessionStorage();
+  if (storage !== undefined && storage !== defaultStorage) {
+    try {
+      storage?.removeItem?.(SSO_BEARER_STORAGE_KEY);
+    } catch {}
+    return;
+  }
+  ensureTabSyncListener();
+  ssoAuth.clearToken();
+}
 
 export const ssoFetch = (input, init) => ssoAuth.fetch(input, init);
-export const setSsoBearerToken = (token) => ssoAuth.setToken(token);
-export const clearSsoBearerToken = () => ssoAuth.clearToken();
+export const setSsoBearerToken = (token, storage) => storeSsoBearerToken(token, storage);
+
+/**
+ * Request an active session bearer from sibling same-origin tabs via BroadcastChannel
+ * when this tab's sessionStorage starts empty (e.g. target="_blank" rel="noopener").
+ */
+export async function syncBearerFromSiblingTabs({
+  timeoutMs = 80,
+  storage,
+  enableBroadcastSync = false,
+} = {}) {
+  const existing = readSsoBearerToken(storage);
+  if (existing) return existing;
+
+  if (typeof window === 'undefined' || typeof BroadcastChannel !== 'function') {
+    return null;
+  }
+
+  const defaultStorage = browserSessionStorage();
+  const isCustomStorage = storage !== undefined && storage !== defaultStorage;
+  if (isCustomStorage && !enableBroadcastSync) {
+    return null;
+  }
+
+  const targetStorage = isCustomStorage ? storage : defaultStorage;
+  if (!isCustomStorage) {
+    ensureTabSyncListener();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let channel = null;
+    let timer = null;
+    const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+    const finish = (token) => {
+      if (settled) return;
+      settled = true;
+      if (timer !== null) clearTimeout(timer);
+      try {
+        if (typeof channel?.removeEventListener === 'function') {
+          channel.removeEventListener('message', handleMessage);
+        } else if (channel) {
+          channel.onmessage = null;
+        }
+        channel?.close?.();
+      } catch {}
+      resolve(token || null);
+    };
+
+    const handleMessage = (event) => {
+      const msg = event?.data;
+      if (!msg || typeof msg !== 'object') return;
+      if (msg.type !== 'provide-bearer' && msg.type !== 'sync-bearer') return;
+      if (msg.type === 'provide-bearer' && msg.requestId && msg.requestId !== requestId) {
+        return;
+      }
+      if (!isValidBearerToken(msg.token)) return;
+
+      if (!isCustomStorage) {
+        ssoAuth.setTokenSilent(msg.token);
+      } else {
+        try {
+          targetStorage?.setItem?.(SSO_BEARER_STORAGE_KEY, msg.token);
+        } catch {}
+      }
+      finish(msg.token);
+    };
+
+    try {
+      channel = new BroadcastChannel(CHANNEL_NAME);
+      channel.unref?.();
+    } catch {
+      finish(null);
+      return;
+    }
+
+    if (typeof channel.addEventListener === 'function') {
+      channel.addEventListener('message', handleMessage);
+    } else {
+      channel.onmessage = handleMessage;
+    }
+
+    const waitMs = Number.isFinite(timeoutMs) && timeoutMs >= 0 ? timeoutMs : 80;
+    timer = setTimeout(() => {
+      finish(readSsoBearerToken(storage));
+    }, waitMs);
+    timer?.unref?.();
+
+    try {
+      channel.postMessage({ type: 'request-bearer', requestId });
+    } catch {
+      finish(null);
+    }
+  });
+}
 
 // API requests use the local Vite proxy; browser navigation uses the SSO origin.
 export function getSsoWebBase(env = {}) {
@@ -177,7 +521,18 @@ export function createSsoCodeExchangeCoordinator(exchange = exchangeSsoCode) {
   };
 }
 
-export async function fetchSsoSession(base, fetchImpl = ssoFetch) {
+export async function fetchSsoSession(base, fetchImpl = ssoFetch, options = {}) {
+  const isStorageArg =
+    options &&
+    typeof options === 'object' &&
+    typeof options.getItem === 'function';
+  const storage = isStorageArg ? options : options?.storage;
+  const timeoutMs = isStorageArg ? 80 : options?.timeoutMs ?? 80;
+  const enableBroadcastSync = isStorageArg ? false : options?.enableBroadcastSync;
+
+  if (!readSsoBearerToken(storage)) {
+    await syncBearerFromSiblingTabs({ timeoutMs, storage, enableBroadcastSync });
+  }
   const response = await fetchImpl(`${base}/sso/me`, {
     credentials: 'include',
   });

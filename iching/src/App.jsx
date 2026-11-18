@@ -30,7 +30,7 @@ import HexagramAtlasModal from './components/HexagramAtlasModal.jsx';
 import OutcomeVerificationCard from './components/OutcomeVerificationCard.jsx';
 import SaveToNoteNowButton from '../../shared/src/components/SaveToNoteNowButton.jsx';
 import { buildIChingNoteNowPayload } from './utils/noteNowPayload.js';
-import { buildResult, lineValueToLine } from './logic/buildHexagram.js';
+import { buildResult, lineValueToLine, formatUniqueCreatedAt } from './logic/buildHexagram.js';
 import { buildMaiHoaPlainText, buildPlainTextResult } from './logic/buildPlainText.js';
 import { copyToClipboard, downloadTxt, downloadJson } from './logic/clipboard.js';
 import { useLanguage } from './context/useLanguage.js';
@@ -553,7 +553,11 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
               {t('meta.cast_time', 'Thời gian lập')}
             </span>
             <span style={{ fontSize: '0.875rem', fontFamily: "'Noto Serif', serif" }}>
-              {language === 'en' ? new Date(result.createdAt).toLocaleString('en-US') : new Date(result.createdAt).toLocaleString('vi-VN')}
+              {(() => {
+                const safeStr = typeof result.createdAt === 'string' ? result.createdAt.replace(' ', 'T') : result.createdAt;
+                const d = new Date(safeStr);
+                return isNaN(d.getTime()) ? result.createdAt : (language === 'en' ? d.toLocaleString('en-US') : d.toLocaleString('vi-VN'));
+              })()}
             </span>
           </div>
         </div>
@@ -700,6 +704,17 @@ export default function App() {
   const handleUpdateVerification = useCallback(
     async (readingId, verificationObj, createdAtKey) => {
       const normalized = await updateVerification(readingId, verificationObj, createdAtKey);
+      if (!activeReadingId) {
+        const found = history.find(
+          (h) =>
+            (readingId && String(h.id) === String(readingId)) ||
+            (createdAtKey &&
+              (h.data?.createdAt === createdAtKey || h.timestamp === createdAtKey))
+        );
+        if (found?.id && !String(found.id).startsWith('local')) {
+          setActiveReadingId(found.id);
+        }
+      }
       setResult((prev) =>
         prev && (!createdAtKey || prev.createdAt === createdAtKey)
           ? { ...prev, verification: normalized }
@@ -712,7 +727,7 @@ export default function App() {
       );
       return normalized;
     },
-    [updateVerification]
+    [updateVerification, activeReadingId, history]
   );
 
   const handleOpenAtlas = useCallback((hexId = 1) => {
@@ -786,19 +801,20 @@ export default function App() {
 
     // Phục hồi lại dữ liệu form
     if (item.data) {
-      const dt = new Date(item.data.createdAt);
+      const safeStr = typeof item.data.createdAt === 'string' ? item.data.createdAt.replace(' ', 'T') : item.data.createdAt;
+      const dt = new Date(safeStr);
       const pad = n => String(n).padStart(2, '0');
-      setFormData({
+      setFormData((prev) => ({
         question:      item.data.question || '',
         caster:        item.data.caster || '',
-        castDate:      `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`,
-        castTime:      `${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
+        castDate:      isNaN(dt.getTime()) ? (item.data.castDate || prev.castDate) : `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`,
+        castTime:      isNaN(dt.getTime()) ? (item.data.castTime || prev.castTime) : `${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
         useSolarTerm:  item.data.useSolarTerm || false,
         solarTermId:   item.data.solarTermId || '',
         solarTerm:     item.data.solarTerm || null,
         movingMindDate: item.data.movingMindDate || '',
         movingMindTime: item.data.movingMindTime || { enabled: false, hourBranch: '' },
-      });
+      }));
     }
 
     setTimeout(() => {
@@ -829,9 +845,9 @@ export default function App() {
   // Mỗi khi lines thay đổi đủ 6, build result
   function computeResult(newLines, currentMode) {
     if (newLines.length < 6) { setResult(null); return; }
-    const dt = new Date(`${formData.castDate}T${formData.castTime}`);
+    const createdAt = formatUniqueCreatedAt(formData.castDate, formData.castTime);
     const r = buildResult({
-      formData: { ...formData, createdAt: dt.toISOString() },
+      formData: { ...formData, createdAt },
       lines: newLines,
       mode: currentMode,
     });
@@ -888,8 +904,9 @@ export default function App() {
     setActiveReadingId(null);
     setMaiHoaResult(null);
     setLines(newLines);
+    const createdAt = formatUniqueCreatedAt(mergedForm.castDate, mergedForm.castTime);
     const r = buildResult({
-      formData: mergedForm,
+      formData: { ...mergedForm, createdAt },
       lines: newLines,
       mode: 'manual-input',
     });
@@ -911,8 +928,9 @@ export default function App() {
     setActiveReadingId(null);
     setMaiHoaResult(null);
     setLines(newLines);
+    const createdAt = formatUniqueCreatedAt(mergedForm.castDate, mergedForm.castTime);
     const r = buildResult({
-      formData: mergedForm,
+      formData: { ...mergedForm, createdAt },
       lines: newLines,
       mode: 'manual-input',
     });

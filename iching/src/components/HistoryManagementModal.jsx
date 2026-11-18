@@ -4,6 +4,152 @@ import { useLanguage } from '../context/useLanguage.js';
 import OutcomeVerificationCard from './OutcomeVerificationCard.jsx';
 import { VERIFICATION_META, getVerificationForReading } from '../logic/verification.js';
 
+// ─── Detail Overlay Component (Module Scope to prevent remounting) ───────────
+function DetailView({
+  item,
+  onClose,
+  previewTab,
+  setPreviewTab,
+  formatHistoryTitle,
+  formatTime,
+  formatTimeShort,
+  handleSelectItem,
+  onUpdateVerification,
+}) {
+  const conv = item?.data?.aiConversation;
+  const hasAI = !!(conv?.initialInterpretation || (conv?.followUps && conv.followUps.length > 0));
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: 'var(--color-paper-card, #fdfbf7)', border: '1px solid var(--color-gold, #b8860b)', borderRadius: 16, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ padding: '14px 20px', background: 'linear-gradient(135deg, #1a0a06 0%, #3d1a10 100%)', color: '#f5d78e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div>
+            <div style={{ fontFamily: "'Noto Serif', serif", fontWeight: 700, fontSize: '1.05rem' }}>{formatHistoryTitle(item)}</div>
+            <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: 2 }}>
+              {item.type === 'luc-hao' ? '🪙 Lục Hào' : '🌸 Mai Hoa'} · {formatTime(item.timestamp)}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 30, height: 30, color: '#f5d78e', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        </div>
+
+        {item._decryptionError && (
+          <div role="alert" style={{ padding: '10px 20px', color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', borderBottom: '1px solid rgba(192,57,43,0.25)', fontSize: '0.82rem' }}>
+            Không giải mã được dữ liệu mã hóa cũ. Bản ghi chỉ đọc để bảo vệ nội dung gốc; bạn vẫn có thể xóa bản ghi.
+          </div>
+        )}
+
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,134,11,0.15)', background: 'rgba(184,134,11,0.04)' }}>
+          {[
+            { key: 'info', label: '📋 Thông tin quẻ' },
+            { key: 'ai', label: hasAI ? `💬 Hội thoại AI (${conv.followUps?.length || 0} câu hỏi)` : '💬 Hội thoại AI' },
+          ].map(tab => (
+            <button key={tab.key} onClick={() => setPreviewTab(tab.key)} style={{ flex: 1, padding: '10px 16px', border: 'none', background: previewTab === tab.key ? 'rgba(184,134,11,0.1)' : 'transparent', borderBottom: previewTab === tab.key ? '2px solid var(--color-gold, #b8860b)' : '2px solid transparent', color: previewTab === tab.key ? 'var(--color-gold, #b8860b)' : 'var(--color-ink-muted)', fontSize: '0.85rem', fontWeight: previewTab === tab.key ? 700 : 500, cursor: 'pointer', transition: 'all 0.15s' }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+          {previewTab === 'info' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {item.question && (
+                <div style={{ background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-gold)', marginBottom: 4, textTransform: 'uppercase' }}>Việc cần xem</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-ink)' }}>{item.question === '(Không có câu hỏi)' ? '(Không có câu hỏi)' : item.question}</div>
+                </div>
+              )}
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-ink-muted)', lineHeight: 1.8 }}>
+                <strong>Thời gian:</strong> {formatTime(item.timestamp)}<br />
+                <strong>Phương pháp:</strong> {item.type === 'luc-hao' ? 'Lục Hào' : 'Mai Hoa'}<br />
+                {item.data?.caster && <><strong>Người lập:</strong> {item.data.caster}<br /></>}
+              </div>
+              {!item._decryptionError && onUpdateVerification && (
+                <OutcomeVerificationCard
+                  compact
+                  readingId={item.id}
+                  result={item.data || item}
+                  onSaveVerification={onUpdateVerification}
+                />
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {!hasAI ? (
+                <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--color-ink-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                  🤖 Chưa có hội thoại AI nào được lưu cho quẻ này.<br />
+                  <span style={{ fontSize: '0.8rem', marginTop: 4, display: 'block' }}>Hãy mở lại quẻ và yêu cầu AI luận giải để lưu hội thoại.</span>
+                </div>
+              ) : (
+                <>
+                  {conv.initialInterpretation && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-gold)' }}>
+                        <span>🤖 Luận giải ban đầu của AI</span>
+                        {conv.initialTimestamp && (
+                          <span style={{ fontFamily: 'monospace', fontWeight: 400, color: 'var(--color-ink-muted)', marginLeft: 'auto' }}>
+                            🕐 {formatTimeShort(conv.initialTimestamp)}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.15)', borderRadius: 8, padding: '10px 14px', fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.65, maxHeight: 200, overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
+                        {evidencePlainText(conv.initialInterpretation).slice(0, 800)}{evidencePlainText(conv.initialInterpretation).length > 800 ? '...' : ''}
+                      </div>
+                    </div>
+                  )}
+                  {conv.followUps && conv.followUps.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        💬 Câu hỏi thêm ({conv.followUps.length})
+                      </div>
+                      {conv.followUps.map((fu, idx) => (
+                        <div key={fu.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: 6, borderLeft: '3px solid rgba(184,134,11,0.3)', paddingLeft: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-vermillion)', minWidth: 22 }}>Q{idx + 1}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.83rem', color: 'var(--color-ink)', fontWeight: 600 }}>{fu.question}</div>
+                              {fu.questionTimestamp && (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>🕐 {formatTimeShort(fu.questionTimestamp)}</div>
+                              )}
+                            </div>
+                          </div>
+                          {fu.answer && (
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, paddingLeft: 22 }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-jade)', minWidth: 22 }}>AI</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
+                                  {evidencePlainText(fu.answer).slice(0, 600)}{evidencePlainText(fu.answer).length > 600 ? '...' : ''}
+                                </div>
+                                {fu.answerTimestamp && (
+                                  <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>🕐 {formatTimeShort(fu.answerTimestamp)}</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(184,134,11,0.15)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid rgba(184,134,11,0.3)', background: 'transparent', color: 'var(--color-ink)', fontSize: '0.85rem', cursor: 'pointer' }}>Đóng</button>
+          <button disabled={item._decryptionError} onClick={() => handleSelectItem(item)} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg, #b8860b, #d4a017)', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: item._decryptionError ? 'not-allowed' : 'pointer', opacity: item._decryptionError ? 0.55 : 1 }}>🔍 Mở lại quẻ này ➔</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HistoryManagementModal({
   isOpen,
   onClose,
@@ -40,7 +186,9 @@ export default function HistoryManagementModal({
 
   const formatTime = (isoString) => {
     try {
-      const d = new Date(isoString);
+      const safeStr = typeof isoString === 'string' ? isoString.replace(' ', 'T') : isoString;
+      const d = new Date(safeStr);
+      if (isNaN(d.getTime())) return isoString || '';
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
@@ -52,7 +200,9 @@ export default function HistoryManagementModal({
 
   const formatTimeShort = (isoString) => {
     try {
-      const d = new Date(isoString);
+      const safeStr = typeof isoString === 'string' ? isoString.replace(' ', 'T') : isoString;
+      const d = new Date(safeStr);
+      if (isNaN(d.getTime())) return '';
       const hours = String(d.getHours()).padStart(2, '0');
       const minutes = String(d.getMinutes()).padStart(2, '0');
       const seconds = String(d.getSeconds()).padStart(2, '0');
@@ -69,6 +219,45 @@ export default function HistoryManagementModal({
       return title.includes(term) || question.includes(term);
     });
   }, [history, searchTerm, formatHistoryTitle]);
+
+  const activePreviewItem = useMemo(() => {
+    if (!previewItem) return null;
+    const found = history.find(
+      (h) =>
+        (previewItem.id && String(h.id) === String(previewItem.id)) ||
+        (previewItem.data?.createdAt &&
+          (h.data?.createdAt === previewItem.data.createdAt ||
+            h.timestamp === previewItem.data.createdAt)) ||
+        (previewItem.timestamp &&
+          (h.timestamp === previewItem.timestamp ||
+            h.data?.createdAt === previewItem.timestamp))
+    );
+    return found || previewItem;
+  }, [history, previewItem]);
+
+  const handleModalSaveVerification = useCallback(
+    async (readingId, verificationObj, createdAtKey) => {
+      if (!onUpdateVerification) return null;
+      const normalized = await onUpdateVerification(readingId, verificationObj, createdAtKey);
+      setPreviewItem((prev) => {
+        if (!prev) return null;
+        const matchesId = readingId && String(prev.id) === String(readingId);
+        const matchesCreatedAt =
+          createdAtKey &&
+          (prev.data?.createdAt === createdAtKey ||
+            prev.timestamp === createdAtKey ||
+            prev.createdAt === createdAtKey);
+        if (!matchesId && !matchesCreatedAt) return prev;
+        return {
+          ...prev,
+          verification: normalized,
+          data: prev.data ? { ...prev.data, verification: normalized } : prev.data,
+        };
+      });
+      return normalized;
+    },
+    [onUpdateVerification]
+  );
 
   if (!isOpen) return null;
 
@@ -131,145 +320,21 @@ export default function HistoryManagementModal({
   };
   const handlePreviewItem = (item, e) => { e.stopPropagation(); setPreviewItem(item); setPreviewTab('info'); };
 
-  // ─── Detail Overlay ────────────────────────────────────────────────────────
-  const DetailView = ({ item }) => {
-    const conv = item?.data?.aiConversation;
-    const hasAI = !!(conv?.initialInterpretation || (conv?.followUps && conv.followUps.length > 0));
-
-    return (
-      <div
-        style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-        onClick={() => setPreviewItem(null)}
-      >
-        <div
-          style={{ background: 'var(--color-paper-card, #fdfbf7)', border: '1px solid var(--color-gold, #b8860b)', borderRadius: 16, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden', fontFamily: "'Be Vietnam Pro', sans-serif" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{ padding: '14px 20px', background: 'linear-gradient(135deg, #1a0a06 0%, #3d1a10 100%)', color: '#f5d78e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <div>
-              <div style={{ fontFamily: "'Noto Serif', serif", fontWeight: 700, fontSize: '1.05rem' }}>{formatHistoryTitle(item)}</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: 2 }}>
-                {item.type === 'luc-hao' ? '🪙 Lục Hào' : '🌸 Mai Hoa'} · {formatTime(item.timestamp)}
-              </div>
-            </div>
-            <button onClick={() => setPreviewItem(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 30, height: 30, color: '#f5d78e', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-          </div>
-
-          {item._decryptionError && (
-            <div role="alert" style={{ padding: '10px 20px', color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', borderBottom: '1px solid rgba(192,57,43,0.25)', fontSize: '0.82rem' }}>
-              Không giải mã được dữ liệu mã hóa cũ. Bản ghi chỉ đọc để bảo vệ nội dung gốc; bạn vẫn có thể xóa bản ghi.
-            </div>
-          )}
-
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,134,11,0.15)', background: 'rgba(184,134,11,0.04)' }}>
-            {[
-              { key: 'info', label: '📋 Thông tin quẻ' },
-              { key: 'ai', label: hasAI ? `💬 Hội thoại AI (${conv.followUps?.length || 0} câu hỏi)` : '💬 Hội thoại AI' },
-            ].map(tab => (
-              <button key={tab.key} onClick={() => setPreviewTab(tab.key)} style={{ flex: 1, padding: '10px 16px', border: 'none', background: previewTab === tab.key ? 'rgba(184,134,11,0.1)' : 'transparent', borderBottom: previewTab === tab.key ? '2px solid var(--color-gold, #b8860b)' : '2px solid transparent', color: previewTab === tab.key ? 'var(--color-gold, #b8860b)' : 'var(--color-ink-muted)', fontSize: '0.85rem', fontWeight: previewTab === tab.key ? 700 : 500, cursor: 'pointer', transition: 'all 0.15s' }}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-            {previewTab === 'info' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {item.question && (
-                  <div style={{ background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 8, padding: '10px 14px' }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-gold)', marginBottom: 4, textTransform: 'uppercase' }}>Việc cần xem</div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--color-ink)' }}>{item.question === '(Không có câu hỏi)' ? '(Không có câu hỏi)' : item.question}</div>
-                  </div>
-                )}
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-ink-muted)', lineHeight: 1.8 }}>
-                  <strong>Thời gian:</strong> {formatTime(item.timestamp)}<br />
-                  <strong>Phương pháp:</strong> {item.type === 'luc-hao' ? 'Lục Hào' : 'Mai Hoa'}<br />
-                  {item.data?.caster && <><strong>Người lập:</strong> {item.data.caster}<br /></>}
-                </div>
-                {!item._decryptionError && onUpdateVerification && (
-                  <OutcomeVerificationCard
-                    compact
-                    readingId={item.id}
-                    result={item.data}
-                    onSaveVerification={onUpdateVerification}
-                  />
-                )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {!hasAI ? (
-                  <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--color-ink-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>
-                    🤖 Chưa có hội thoại AI nào được lưu cho quẻ này.<br />
-                    <span style={{ fontSize: '0.8rem', marginTop: 4, display: 'block' }}>Hãy mở lại quẻ và yêu cầu AI luận giải để lưu hội thoại.</span>
-                  </div>
-                ) : (
-                  <>
-                    {conv.initialInterpretation && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-gold)' }}>
-                          <span>🤖 Luận giải ban đầu của AI</span>
-                          {conv.initialTimestamp && (
-                            <span style={{ fontFamily: 'monospace', fontWeight: 400, color: 'var(--color-ink-muted)', marginLeft: 'auto' }}>
-                              🕐 {formatTimeShort(conv.initialTimestamp)}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.15)', borderRadius: 8, padding: '10px 14px', fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.65, maxHeight: 200, overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
-                          {evidencePlainText(conv.initialInterpretation).slice(0, 800)}{evidencePlainText(conv.initialInterpretation).length > 800 ? '...' : ''}
-                        </div>
-                      </div>
-                    )}
-                    {conv.followUps && conv.followUps.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          💬 Câu hỏi thêm ({conv.followUps.length})
-                        </div>
-                        {conv.followUps.map((fu, idx) => (
-                          <div key={fu.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: 6, borderLeft: '3px solid rgba(184,134,11,0.3)', paddingLeft: 12 }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-vermillion)', minWidth: 22 }}>Q{idx + 1}</span>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.83rem', color: 'var(--color-ink)', fontWeight: 600 }}>{fu.question}</div>
-                                {fu.questionTimestamp && (
-                                  <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>🕐 {formatTimeShort(fu.questionTimestamp)}</div>
-                                )}
-                              </div>
-                            </div>
-                            {fu.answer && (
-                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, paddingLeft: 22 }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-jade)', minWidth: 22 }}>AI</span>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
-                                    {evidencePlainText(fu.answer).slice(0, 600)}{evidencePlainText(fu.answer).length > 600 ? '...' : ''}
-                                  </div>
-                                  {fu.answerTimestamp && (
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>🕐 {formatTimeShort(fu.answerTimestamp)}</div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(184,134,11,0.15)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button onClick={() => setPreviewItem(null)} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid rgba(184,134,11,0.3)', background: 'transparent', color: 'var(--color-ink)', fontSize: '0.85rem', cursor: 'pointer' }}>Đóng</button>
-            <button disabled={item._decryptionError} onClick={() => handleSelectItem(item)} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg, #b8860b, #d4a017)', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: item._decryptionError ? 'not-allowed' : 'pointer', opacity: item._decryptionError ? 0.55 : 1 }}>🔍 Mở lại quẻ này ➔</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
-      {previewItem && <DetailView item={previewItem} />}
+      {activePreviewItem && (
+        <DetailView
+          item={activePreviewItem}
+          onClose={() => setPreviewItem(null)}
+          previewTab={previewTab}
+          setPreviewTab={setPreviewTab}
+          formatHistoryTitle={formatHistoryTitle}
+          formatTime={formatTime}
+          formatTimeShort={formatTimeShort}
+          handleSelectItem={handleSelectItem}
+          onUpdateVerification={handleModalSaveVerification}
+        />
+      )}
 
       <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
         <div style={{ background: 'var(--color-paper-card, #fdfbf7)', border: '1px solid var(--color-gold, #b8860b)', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', overflow: 'hidden', fontFamily: "'Be Vietnam Pro', sans-serif" }} onClick={(e) => e.stopPropagation()}>

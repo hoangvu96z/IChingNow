@@ -9,7 +9,9 @@ export default function ResultMetadata({ result }) {
 
   if (!result) return null;
 
-  const createdAt = result.createdAt ? new Date(result.createdAt) : null;
+  const createdAt = result.createdAt
+    ? new Date(typeof result.createdAt === 'string' ? result.createdAt.replace(' ', 'T') : result.createdAt)
+    : null;
 
   const getMovingLinesText = () => {
     if (!result.movingLines || result.movingLines.length === 0) {

@@ -77,6 +77,11 @@ export default function VoiceRecorderButton({
     const activeRecorder = recorderRef.current;
     if (activeRecorder && activeRecorder.state !== 'inactive') {
       try {
+        if (!cancel && typeof activeRecorder.requestData === 'function') {
+          try {
+            activeRecorder.requestData();
+          } catch {}
+        }
         activeRecorder.stop();
         return;
       } catch {}
@@ -89,7 +94,16 @@ export default function VoiceRecorderButton({
   }, [cleanupRecordingResources]);
 
   const startRecording = async () => {
-    if (disabled || isRecording || !supported) return;
+    if (disabled || isRecording) return;
+    if (!supported) {
+      onError?.(
+        t(
+          'editor.voice_unsupported',
+          'Trình duyệt hiện tại chưa hỗ trợ ghi âm trực tiếp từ micro. Vui lòng dùng nút đính kèm tệp âm thanh bên cạnh.',
+        ),
+      );
+      return;
+    }
     cancelledRef.current = false;
     chunksRef.current = [];
     totalBytesRef.current = 0;
@@ -142,17 +156,34 @@ export default function VoiceRecorderButton({
         setIsRecording(false);
         setElapsedSeconds(0);
 
-        if (wasCancelled || recordedChunks.length === 0) return;
+        if (wasCancelled) return;
+        if (recordedChunks.length === 0) {
+          onError?.(
+            t(
+              'editor.voice_empty_error',
+              'Bản ghi âm quá ngắn hoặc chưa thu được tín hiệu âm thanh. Hãy thử lại.',
+            ),
+          );
+          return;
+        }
 
         const { ext, type } = resolveRecordedFileFormat(finalMime);
         const blob = new Blob(recordedChunks, { type });
-        if (blob.size === 0) return;
+        if (blob.size === 0) {
+          onError?.(
+            t(
+              'editor.voice_empty_error',
+              'Bản ghi âm quá ngắn hoặc chưa thu được tín hiệu âm thanh. Hãy thử lại.',
+            ),
+          );
+          return;
+        }
         const filename = formatVoiceRecordingFilename(ext, new Date());
         const file = new File([blob], filename, { type });
         onRecordingComplete?.([file]);
       };
 
-      recorder.start(1000);
+      recorder.start(500);
       setIsRecording(true);
       setElapsedSeconds(0);
 
@@ -184,8 +215,6 @@ export default function VoiceRecorderButton({
       }
     }
   };
-
-  if (!supported) return null;
 
   if (isRecording) {
     return (

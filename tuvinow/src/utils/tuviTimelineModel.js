@@ -602,6 +602,7 @@ export function buildTuViNoteNowPayload({
   return {
     title: `Tử Vi Nghiệm Lý — ${name} (${result.canChiNam} · ${result.cucName})`,
     sourceAppLabel: 'TuViNow',
+    bgColor: 'indigo',
     question: evalData?.overall?.contextLabel
       ? `Hồ sơ & Lộ trình Vận hạn (${evalData.overall.contextLabel})`
       : 'Tổng hợp Lá số Tử Vi & Checklist Nghiệm lý',

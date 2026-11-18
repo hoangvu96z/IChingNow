@@ -18,7 +18,10 @@ export default function SavedProfilesBar({
   onSelectProfile,
   onOpenHopHonPair,
   compact = false,
+  userId = '',
+  scopeKey = '',
 }) {
+  const resolvedScope = scopeKey || userId || '';
   const [relationFilter, setRelationFilter] = useState('all');
   const [statusToast, setStatusToast] = useState('');
 
@@ -74,15 +77,30 @@ export default function SavedProfilesBar({
 
   const matchedActiveProfile = useMemo(() => {
     if (!sourceData || !profiles.length) return null;
+    const inputCalendarType = sourceData.calendarType || (sourceData.isLunar ? 'lunar' : 'solar');
+    const inputIsLeap =
+      inputCalendarType === 'lunar'
+        ? Boolean(sourceData.isLeap || sourceData.isLeapMonth)
+        : false;
+    const draft = extractProfileDraftFromInputData(sourceData);
+
     if (sourceData.profileId) {
       const byId = profiles.find((p) => p.id === sourceData.profileId);
-      if (byId) return byId;
+      if (
+        byId &&
+        (byId.calendarType || 'solar') === inputCalendarType &&
+        Boolean(byId.isLeapMonth) === inputIsLeap
+      ) {
+        return byId;
+      }
     }
-    const draft = extractProfileDraftFromInputData(sourceData);
+
     return (
       profiles.find(
         (p) =>
           p.name.toLowerCase() === draft.name.toLowerCase() &&
+          (p.calendarType || 'solar') === inputCalendarType &&
+          Boolean(p.isLeapMonth) === inputIsLeap &&
           p.day === draft.day &&
           p.month === draft.month &&
           p.year === draft.year &&
@@ -132,14 +150,18 @@ export default function SavedProfilesBar({
     const draft = extractProfileDraftFromInputData(sourceData);
     const cleanName = profName.trim() || draft.name || 'Đương số';
 
-    const { profile, profiles: nextList } = saveProfile({
-      ...(editingId ? { id: editingId } : {}),
-      ...draft,
-      name: cleanName,
-      relation: profRelation,
-      isDefaultSelf: profIsDefault,
-      lifeEvents: sourceData.lifeEvents || matchedActiveProfile?.lifeEvents || [],
-    });
+    const { profile, profiles: nextList } = saveProfile(
+      {
+        ...(editingId ? { id: editingId } : {}),
+        ...draft,
+        name: cleanName,
+        relation: profRelation,
+        isDefaultSelf: profIsDefault,
+        lifeEvents: sourceData.lifeEvents || matchedActiveProfile?.lifeEvents || [],
+      },
+      undefined,
+      resolvedScope,
+    );
 
     if (onProfilesChange) onProfilesChange(nextList, profile);
     setIsSaveOpen(false);
@@ -152,7 +174,7 @@ export default function SavedProfilesBar({
 
   const handleTogglePinDefault = (profile) => {
     const nextDefault = !profile.isDefaultSelf;
-    const nextList = setDefaultSelfProfile(profile.id, nextDefault);
+    const nextList = setDefaultSelfProfile(profile.id, nextDefault, undefined, resolvedScope);
     if (onProfilesChange) onProfilesChange(nextList);
     showNotice(
       nextDefault
@@ -162,7 +184,7 @@ export default function SavedProfilesBar({
   };
 
   const handleDelete = (profile) => {
-    const nextList = deleteProfile(profile.id);
+    const nextList = deleteProfile(profile.id, undefined, resolvedScope);
     if (onProfilesChange) onProfilesChange(nextList);
     showNotice(`Đã xóa hồ sơ "${profile.name}" khỏi Danh bạ`);
   };
@@ -215,7 +237,9 @@ export default function SavedProfilesBar({
               <strong>Lá số mặc định của tôi: {defaultSelfProfile.name}</strong>
               <span>
                 {defaultSelfProfile.gender === 0 ? 'Nữ' : 'Nam'} ·{' '}
-                {defaultSelfProfile.day}/{defaultSelfProfile.month}/{defaultSelfProfile.year} (
+                {defaultSelfProfile.day}/{defaultSelfProfile.month}
+                {defaultSelfProfile.calendarType === 'lunar' && defaultSelfProfile.isLeapMonth ? ' nhuận' : ''}
+                /{defaultSelfProfile.year} (
                 {defaultSelfProfile.calendarType === 'lunar' ? 'ÂL' : 'DL'}) · Giờ {defaultSelfProfile.hourBranch}
               </span>
             </div>
@@ -321,7 +345,8 @@ export default function SavedProfilesBar({
                     <span className="tv-prof-chip-info">
                       <strong>{prof.name}</strong>
                       <small>
-                        {prof.gender === 0 ? '♀ Nữ' : '♂ Nam'} · {prof.day}/{prof.month}/{prof.year}{' '}
+                        {prof.gender === 0 ? '♀ Nữ' : '♂ Nam'} · {prof.day}/{prof.month}
+                        {prof.calendarType === 'lunar' && prof.isLeapMonth ? 'N' : ''}/{prof.year}{' '}
                         {prof.calendarType === 'lunar' ? 'ÂL' : 'DL'} · {prof.hourBranch}
                         {prof.lifeEvents?.length > 0 ? ` · 📌${prof.lifeEvents.length}` : ''}
                       </small>
@@ -394,7 +419,9 @@ export default function SavedProfilesBar({
                   <span>{d.gender === 0 ? '♀ Nữ' : '♂ Nam'}</span>
                   <span>·</span>
                   <span>
-                    Ngày {d.day}/{d.month}/{d.year} ({d.calendarType === 'lunar' ? 'Âm lịch' : 'Dương lịch'})
+                    Ngày {d.day}/{d.month}
+                    {d.calendarType === 'lunar' && d.isLeapMonth ? ' (nhuận)' : ''}/{d.year} (
+                    {d.calendarType === 'lunar' ? 'Âm lịch' : 'Dương lịch'})
                   </span>
                   <span>·</span>
                   <span>{hLabel}</span>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getSsoApiBase, getSsoWebBase, getSsoLoginUrl, takeSsoCodeFromUrl, exchangeSsoCode, createSsoCodeExchangeCoordinator, fetchSsoSession, isSessionRejected, createSsoAuthFetch, SSO_BEARER_STORAGE_KEY, setSsoBearerToken, clearSsoBearerToken, ssoFetch } from '../src/utils/ssoConfig.mjs';
+import { getSsoApiBase, getSsoWebBase, getSsoLoginUrl, takeSsoCodeFromUrl, exchangeSsoCode, createSsoCodeExchangeCoordinator, fetchSsoSession, isSessionRejected, createSsoAuthFetch, SSO_BEARER_STORAGE_KEY, SSO_TAB_SYNC_CHANNEL, readSsoBearerToken, storeSsoBearerToken, setSsoBearerToken, clearSsoBearerToken, syncBearerFromSiblingTabs, attachSsoTabSync, closeSsoTabSyncListener, ssoFetch } from '../src/utils/ssoConfig.mjs';
 import { createSsoProxy } from '../vite/ssoProxy.mjs';
 
 test('local API uses a proxy while login returns to the original app, query and hash', () => {
@@ -198,5 +198,203 @@ test('callback exchange clears an old bearer on 401/403 but preserves it on 5xx'
   } finally {
     globalThis.fetch = originalFetch;
     clearSsoBearerToken();
+  }
+});
+
+function createMemoryStorage() {
+  const map = new Map();
+  return {
+    getItem: (key) => (map.has(key) ? map.get(key) : null),
+    setItem: (key, value) => { map.set(key, String(value)); },
+    removeItem: (key) => { map.delete(key); },
+    size: () => map.size,
+  };
+}
+
+function createMockBroadcastChannelClass(recordedMessages = []) {
+  const channelsByName = new Map();
+
+  return class MockBroadcastChannel {
+    constructor(name) {
+      this.name = name;
+      this.closed = false;
+      this.onmessage = null;
+      this.listeners = new Set();
+      this.unrefCalled = false;
+      if (!channelsByName.has(name)) {
+        channelsByName.set(name, new Set());
+      }
+      channelsByName.get(name).add(this);
+    }
+
+    addEventListener(type, listener) {
+      if (type === 'message' && typeof listener === 'function') {
+        this.listeners.add(listener);
+      }
+    }
+
+    removeEventListener(type, listener) {
+      if (type === 'message') {
+        this.listeners.delete(listener);
+      }
+    }
+
+    postMessage(data) {
+      if (this.closed) return;
+      recordedMessages.push({ channel: this.name, data });
+      const peers = Array.from(channelsByName.get(this.name) || []);
+      queueMicrotask(() => {
+        for (const peer of peers) {
+          if (peer === this || peer.closed) continue;
+          const event = { data };
+          for (const listener of peer.listeners) {
+            listener(event);
+          }
+          if (typeof peer.onmessage === 'function') {
+            peer.onmessage(event);
+          }
+        }
+      });
+    }
+
+    unref() {
+      this.unrefCalled = true;
+    }
+
+    close() {
+      this.closed = true;
+      this.listeners.clear();
+      this.onmessage = null;
+      channelsByName.get(this.name)?.delete(this);
+    }
+  };
+}
+
+test('newly opened same-origin Tab B hydrates bearer from Tab A via BroadcastChannel without touching localStorage, and syncs rotation/logout', async () => {
+  const originalWindow = globalThis.window;
+  const originalBroadcastChannel = globalThis.BroadcastChannel;
+  const originalLocalStorage = globalThis.localStorage;
+  const originalFetch = globalThis.fetch;
+
+  const recordedMessages = [];
+  const MockBroadcastChannel = createMockBroadcastChannelClass(recordedMessages);
+  const tabASession = createMemoryStorage();
+  const tabBSession = createMemoryStorage();
+  const sharedLocalStorage = createMemoryStorage();
+
+  // Tab A is already logged in with a valid session bearer in its tab-scoped sessionStorage.
+  tabASession.setItem(SSO_BEARER_STORAGE_KEY, 'tab-a-session-bearer');
+
+  globalThis.BroadcastChannel = MockBroadcastChannel;
+  globalThis.localStorage = sharedLocalStorage;
+  // Active window represents newly opened Tab B (e.g. clicking "Mở NoteNow ↗" with target="_blank" rel="noopener").
+  globalThis.window = { sessionStorage: tabBSession };
+
+  const tabA = attachSsoTabSync({
+    storage: tabASession,
+    BroadcastChannelImpl: MockBroadcastChannel,
+  });
+
+  const meRequests = [];
+  globalThis.fetch = async (url, options = {}) => {
+    meRequests.push({ url, options });
+    return new Response(JSON.stringify({ user: { id: 'user-cross-tab', email: 'vu@vunph.id.vn' } }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  try {
+    assert.equal(readSsoBearerToken(tabBSession), null);
+
+    // Tab B calls fetchSsoSession with empty sessionStorage -> requests bearer from Tab A!
+    const session = await fetchSsoSession('https://sso.vunph.click');
+    assert.equal(session.user.id, 'user-cross-tab');
+    assert.equal(tabBSession.getItem(SSO_BEARER_STORAGE_KEY), 'tab-a-session-bearer');
+    assert.equal(meRequests.length, 1);
+    assert.equal(meRequests[0].url, 'https://sso.vunph.click/sso/me');
+    assert.equal(
+      new Headers(meRequests[0].options.headers).get('authorization'),
+      'Bearer tab-a-session-bearer',
+    );
+    // Security invariant: NEVER write bearer token to localStorage!
+    assert.equal(sharedLocalStorage.size(), 0);
+    assert.equal(sharedLocalStorage.getItem(SSO_BEARER_STORAGE_KEY), null);
+
+    // Providing bearer must NOT trigger a sync-bearer storm.
+    assert.deepEqual(
+      recordedMessages.map((m) => m.data.type),
+      ['request-bearer', 'provide-bearer'],
+    );
+    assert.equal(recordedMessages[0].channel, SSO_TAB_SYNC_CHANNEL);
+
+    // Storing a refreshed/new bearer in Tab B broadcasts sync-bearer once to Tab A.
+    recordedMessages.length = 0;
+    assert.equal(storeSsoBearerToken('rotated-cross-tab-bearer'), true);
+    await new Promise((resolve) => queueMicrotask(resolve));
+    assert.equal(tabBSession.getItem(SSO_BEARER_STORAGE_KEY), 'rotated-cross-tab-bearer');
+    assert.equal(tabASession.getItem(SSO_BEARER_STORAGE_KEY), 'rotated-cross-tab-bearer');
+    assert.deepEqual(
+      recordedMessages.map((m) => m.data.type),
+      ['sync-bearer'],
+    );
+
+    // Logging out / clearing bearer in Tab B clears Tab A's sessionStorage too without re-broadcasting.
+    recordedMessages.length = 0;
+    clearSsoBearerToken();
+    await new Promise((resolve) => queueMicrotask(resolve));
+    assert.equal(tabBSession.getItem(SSO_BEARER_STORAGE_KEY), null);
+    assert.equal(tabASession.getItem(SSO_BEARER_STORAGE_KEY), null);
+    assert.equal(readSsoBearerToken(), null);
+    assert.deepEqual(
+      recordedMessages.map((m) => m.data.type),
+      ['clear-bearer'],
+    );
+  } finally {
+    tabA.close();
+    closeSsoTabSyncListener();
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+    if (originalBroadcastChannel === undefined) delete globalThis.BroadcastChannel;
+    else globalThis.BroadcastChannel = originalBroadcastChannel;
+    if (originalLocalStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = originalLocalStorage;
+    globalThis.fetch = originalFetch;
+    clearSsoBearerToken();
+  }
+});
+
+test('syncBearerFromSiblingTabs resolves null after timeout when no sibling tab holds a bearer and skips BroadcastChannel for custom mock storage', async () => {
+  const originalWindow = globalThis.window;
+  const originalBroadcastChannel = globalThis.BroadcastChannel;
+
+  const recordedMessages = [];
+  const MockBroadcastChannel = createMockBroadcastChannelClass(recordedMessages);
+  const emptyTabStorage = createMemoryStorage();
+  const customInjectedStorage = createMemoryStorage();
+
+  globalThis.BroadcastChannel = MockBroadcastChannel;
+  globalThis.window = { sessionStorage: emptyTabStorage };
+
+  try {
+    // Custom injected storage in unit tests bypasses BroadcastChannel immediately (0 messages).
+    const customResult = await syncBearerFromSiblingTabs({
+      timeoutMs: 80,
+      storage: customInjectedStorage,
+    });
+    assert.equal(customResult, null);
+    assert.equal(recordedMessages.length, 0);
+
+    // Default tab storage with no logged-in sibling times out cleanly and closes temporary channel.
+    const guestResult = await syncBearerFromSiblingTabs({ timeoutMs: 15 });
+    assert.equal(guestResult, null);
+    assert.equal(recordedMessages.length, 1);
+    assert.equal(recordedMessages[0].data.type, 'request-bearer');
+  } finally {
+    closeSsoTabSyncListener();
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+    if (originalBroadcastChannel === undefined) delete globalThis.BroadcastChannel;
+    else globalThis.BroadcastChannel = originalBroadcastChannel;
   }
 });

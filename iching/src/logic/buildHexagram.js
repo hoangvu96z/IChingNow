@@ -233,6 +233,30 @@ function annotateLines({
   });
 }
 
+let lastCreatedAt = '';
+let collisionSeq = 0;
+
+export function formatUniqueCreatedAt(castDate, castTime) {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const dStr = castDate || `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const tStr = castTime || `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const parts = tStr.split(':');
+  const hh = pad(parts[0] || '00');
+  const mm = pad(parts[1] || '00');
+  const ss = parts[2] ? pad(parts[2]) : pad(now.getSeconds());
+
+  let candidate = `${dStr} ${hh}:${mm}:${ss}`;
+  if (candidate === lastCreatedAt) {
+    collisionSeq++;
+    candidate = `${candidate}.${String(collisionSeq).padStart(3, '0')}`;
+  } else {
+    lastCreatedAt = candidate;
+    collisionSeq = 0;
+  }
+  return candidate;
+}
+
 // ──────────────────────────────────────────────────────────────────────────
 // Hàm chính: buildLucHaoResult
 // ──────────────────────────────────────────────────────────────────────────
@@ -355,9 +379,11 @@ export function buildLucHaoResult({ formData, lines, mode }) {
     : null;
 
   // ── Build createdAt ─────────────────────────────────────────────────────
-  const createdAt = formData.castDate && formData.castTime
-    ? new Date(`${formData.castDate}T${formData.castTime}:00+07:00`).toISOString()
-    : new Date().toISOString();
+  const createdAt =
+    formData.createdAt ||
+    (formData.castDate && formData.castTime
+      ? formatUniqueCreatedAt(formData.castDate, formData.castTime)
+      : new Date().toISOString());
 
   return {
     // Metadata

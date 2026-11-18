@@ -10,7 +10,8 @@ export function getLocalNoteImageSource(image) {
 
 export function getLocalNoteAudioSource(audio) {
   const url = audio?.url;
-  return typeof url === 'string' && (/^data:audio\//i.test(url) || url.startsWith('blob:'))
+  return typeof url === 'string' &&
+    (/^data:(?:audio|video|application)\//i.test(url) || url.startsWith('blob:'))
     ? url
     : null;
 }
@@ -92,7 +93,7 @@ export function getInlineImageOrphanIndices(inlineImages, attachmentImages) {
 }
 
 const IMAGE_EXT_RE = /\.(png|jpe?g|webp|gif)$/i;
-const AUDIO_EXT_RE = /\.(mp3|wav|ogg|m4a|aac|webm|flac)$/i;
+const AUDIO_EXT_RE = /\.(mp3|wav|ogg|opus|m4a|mp4|aac|webm|flac|3gp|amr)$/i;
 
 function getMediaExtension(file, isAudio = false) {
   const name = file.name || '';

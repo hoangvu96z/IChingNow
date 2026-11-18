@@ -2,7 +2,8 @@ import TuViEvidenceProvider from './components/TuViEvidenceProvider';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import { anLaSoTuVi } from './utils/tuViEngine';
-import BirthInputForm from './components/BirthInputForm.jsx';
+import BirthInputForm, { buildBirthInputPayload } from './components/BirthInputForm.jsx';
+import BirthHourRectifierModal from './components/BirthHourRectifierModal.jsx';
 import LasoChart from './components/LasoChart.jsx';
 import TuViOverviewDashboard from './components/TuViOverviewDashboard.jsx';
 import TuViAiPanel from './components/TuViAiPanel.jsx';
@@ -21,9 +22,11 @@ import CombinedReadingModal from '@shared/components/CombinedReading/CombinedRea
 import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
 import SaveToNoteNowButton from '../../shared/src/components/SaveToNoteNowButton.jsx';
 import SavedProfilesBar from './components/SavedProfilesBar.jsx';
-import { buildTuViNoteNowPayload } from './utils/tuviTimelineModel.js';
+import { buildTuViNoteNowPayload } from './utils/noteNowPayload.js';
 import {
   loadSavedProfiles,
+  replaceSavedProfiles,
+  reconcileProfilesFromReadings,
   getDefaultSelfProfile,
   findMatchingProfileForInput,
   profileToBirthFormState,
@@ -32,7 +35,34 @@ import {
   upsertProfileLifeEvent,
   deleteProfileLifeEvent,
   extractProfileDraftFromInputData,
+  normalizeLifeEvent,
 } from './utils/tuviProfiles.js';
+
+function computePureNatalChart(baseInput, candidateResult) {
+  if (!baseInput) return candidateResult || null;
+  if (
+    candidateResult &&
+    !candidateResult.viewYear &&
+    Array.isArray(candidateResult.palates) &&
+    candidateResult.palates.length === 12
+  ) {
+    return candidateResult;
+  }
+  try {
+    const pure = anLaSoTuVi({
+      ...baseInput,
+      viewYear: undefined,
+      viewYearCanIndex: undefined,
+      viewYearChiIndex: undefined,
+    });
+    if (pure && Array.isArray(pure.palates) && pure.palates.length === 12) {
+      return pure;
+    }
+  } catch {
+    // Fallback to candidateResult if natal recalculation fails
+  }
+  return candidateResult || null;
+}
 
 // Generate star particles for background
 function StarParticles() {
@@ -84,15 +114,44 @@ function ThemeToggleButton({ theme, onToggle }) {
   );
 }
 
-function ReadingSession({ result, inputData, reading, persistReading, ensureChartSaved, onSaved, yunxianState, onYunxianChange, lifeEvents = [] }) {
+function ReadingSession({
+  result,
+  natalResultRef,
+  inputData,
+  inputDataRef,
+  reading,
+  persistReading,
+  ensureChartSaved,
+  onSaved,
+  yunxianState,
+  onYunxianChange,
+  lifeEvents = [],
+}) {
   const active = useRef(false);
-  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   const savedId = useRef(reading?.id || null);
+  useEffect(() => {
+    if (reading?.id) {
+      savedId.current = reading.id;
+    }
+  }, [reading?.id]);
+
   const save = async (aiConversation) => {
     if (!savedId.current) savedId.current = await ensureChartSaved();
-    const id = await persistReading(savedId.current, { result, inputData, aiConversation });
+    const baseResult = natalResultRef?.current || result;
+    const latestInput = inputDataRef?.current || inputData;
+    const id = await persistReading(savedId.current, {
+      result: baseResult,
+      inputData: latestInput,
+      aiConversation,
+    });
     savedId.current = id;
-    if (active.current) onSaved(id);
+    if (active.current) onSaved(id, aiConversation);
   };
   return (
     <TuViAiPanel
@@ -137,6 +196,7 @@ export default function App() {
   }, []);
 
   const { user, isAuthenticated, login } = useAuth();
+  const profileScopeKey = isAuthenticated && user?.id ? String(user.id) : '';
   const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, deleteReading, deleteAllReadings } = useReadingsApi(isAuthenticated, user?.id);
   const { streak, recordActivity } = useStreak('tuvi');
   const [reading, setReading] = useState(null);
@@ -144,12 +204,12 @@ export default function App() {
   const [historyActionError, setHistoryActionError] = useState('');
   const [chartResult, setChartResult] = useState(null);
   const [inputData, setInputData] = useState(null);
-  const [savedProfiles, setSavedProfiles] = useState(() => loadSavedProfiles());
+  const [savedProfiles, setSavedProfiles] = useState(() => loadSavedProfiles(undefined, profileScopeKey));
   const [formDraftData, setFormDraftData] = useState(null);
   const [sessionLifeEvents, setSessionLifeEvents] = useState([]);
   const [presetProfile, setPresetProfile] = useState(() => {
     if (typeof window !== 'undefined' && window.location.hash !== '#hop-hon' && !window.location.search) {
-      const def = getDefaultSelfProfile();
+      const def = getDefaultSelfProfile(undefined, profileScopeKey);
       return def ? profileToBirthFormState(def) : null;
     }
     return null;
@@ -160,6 +220,46 @@ export default function App() {
     viewYear: null,
     lunarMonth: null,
   });
+
+  const natalChartResultRef = useRef(null);
+  const inFlightSavePromiseRef = useRef(null);
+  const readingIdRef = useRef(null);
+  const latestAiConversationRef = useRef(null);
+  const inputDataRef = useRef(null);
+
+  useEffect(() => {
+    inputDataRef.current = inputData;
+  }, [inputData]);
+
+  useEffect(() => {
+    readingIdRef.current = reading?.id || null;
+    if (reading?.data?.aiConversation !== undefined) {
+      latestAiConversationRef.current = reading.data.aiConversation;
+    }
+  }, [reading]);
+
+  // Reload user-scoped profiles when auth user changes
+  useEffect(() => {
+    const loaded = loadSavedProfiles(undefined, profileScopeKey);
+    setSavedProfiles(loaded);
+    if (typeof window !== 'undefined' && window.location.hash !== '#hop-hon' && !window.location.search) {
+      const def = getDefaultSelfProfile(undefined, profileScopeKey);
+      setPresetProfile(def ? profileToBirthFormState(def) : null);
+    }
+  }, [profileScopeKey]);
+
+  // Reconcile server-saved tuvi-laso readings' lifeEvents into user-scoped saved profiles
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id || historyLoading || !Array.isArray(history) || history.length === 0) {
+      return;
+    }
+    const currentLocal = loadSavedProfiles(undefined, profileScopeKey);
+    const reconciled = reconcileProfilesFromReadings(currentLocal, history);
+    if (JSON.stringify(currentLocal) !== JSON.stringify(reconciled)) {
+      const persisted = replaceSavedProfiles(reconciled, undefined, profileScopeKey);
+      setSavedProfiles(persisted);
+    }
+  }, [isAuthenticated, user?.id, profileScopeKey, historyLoading, history]);
 
   const handleYunxianChange = useCallback((nextState) => {
     setYunxianState((prev) => {
@@ -195,18 +295,23 @@ export default function App() {
           console.error('Failed to recalculate chart for target viewYear:', err);
         }
       } else if ((targetMode === 'mingpan' || targetMode === 'daxian') && chartResult?.viewYear) {
-        try {
-          const natalChart = anLaSoTuVi({
-            ...inputData,
-            viewYear: undefined,
-            viewYearCanIndex: undefined,
-            viewYearChiIndex: undefined,
-          });
-          if (natalChart && natalChart.palates) {
-            setChartResult(natalChart);
+        if (natalChartResultRef.current && Array.isArray(natalChartResultRef.current.palates)) {
+          setChartResult(natalChartResultRef.current);
+        } else {
+          try {
+            const natalChart = anLaSoTuVi({
+              ...inputData,
+              viewYear: undefined,
+              viewYearCanIndex: undefined,
+              viewYearChiIndex: undefined,
+            });
+            if (natalChart && natalChart.palates) {
+              natalChartResultRef.current = natalChart;
+              setChartResult(natalChart);
+            }
+          } catch (err) {
+            console.error('Failed to recalculate natal chart:', err);
           }
-        } catch (err) {
-          console.error('Failed to recalculate natal chart:', err);
         }
       }
     }
@@ -216,9 +321,9 @@ export default function App() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCombinedModal, setShowCombinedModal] = useState(false);
   const [showJournal, setShowJournal] = useState(false);
+  const [showActiveRectifierModal, setShowActiveRectifierModal] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [retrySave, setRetrySave] = useState(0);
-  const chartSaveRef = useRef(null);
 
   useEffect(() => {
     const retry = () => setRetrySave(value => value + 1);
@@ -227,14 +332,28 @@ export default function App() {
   }, []);
 
   const handleSubmit = useCallback((data) => {
-    const result = anLaSoTuVi(data);
+    const normalizedEvents = Array.isArray(data?.lifeEvents)
+      ? data.lifeEvents.map(normalizeLifeEvent).sort((a, b) => a.year - b.year)
+      : [];
+    const normalizedInput = normalizedEvents.length > 0
+      ? { ...data, lifeEvents: normalizedEvents }
+      : data;
+
+    const result = anLaSoTuVi(normalizedInput);
+    const natalBase = computePureNatalChart(normalizedInput, result);
     recordActivity();
+
+    natalChartResultRef.current = natalBase;
+    inFlightSavePromiseRef.current = null;
+    readingIdRef.current = null;
+    latestAiConversationRef.current = null;
+    inputDataRef.current = normalizedInput;
 
     setReading(null);
     setSessionId(value => value + 1);
     setChartResult(result);
-    setInputData(data);
-    setSessionLifeEvents(Array.isArray(data?.lifeEvents) ? data.lifeEvents : []);
+    setInputData(normalizedInput);
+    setSessionLifeEvents(normalizedEvents);
     setYunxianState({
       mode: result?.viewYear ? 'liunian' : 'mingpan',
       daXianChiIndex: null,
@@ -242,7 +361,7 @@ export default function App() {
       lunarMonth: null,
     });
     setShowForm(false);
-    chartSaveRef.current = null;
+    setShowActiveRectifierModal(false);
     setSaveStatus('');
 
     // Scroll to top
@@ -250,13 +369,19 @@ export default function App() {
   }, [recordActivity]);
 
   const handleNewReading = useCallback(() => {
+    natalChartResultRef.current = null;
+    inFlightSavePromiseRef.current = null;
+    readingIdRef.current = null;
+    latestAiConversationRef.current = null;
+    inputDataRef.current = null;
+
     setReading(null);
     setSessionId(value => value + 1);
     setChartResult(null);
     setInputData(null);
     setSessionLifeEvents([]);
     if (typeof window !== 'undefined' && !window.location.search) {
-      const def = getDefaultSelfProfile();
+      const def = getDefaultSelfProfile(undefined, profileScopeKey);
       setPresetProfile(def ? profileToBirthFormState(def) : null);
     }
     setYunxianState({
@@ -266,25 +391,39 @@ export default function App() {
       lunarMonth: null,
     });
     setShowForm(true);
-    chartSaveRef.current = null;
+    setShowActiveRectifierModal(false);
     setSaveStatus('');
-  }, []);
+  }, [profileScopeKey]);
 
   useEffect(() => { handleNewReading(); }, [user?.id, handleNewReading]);
 
-  // Initial chart save and AI save share one in-flight creation request.
-  const ensureChartSaved = useCallback(() => {
-    if (chartSaveRef.current) return chartSaveRef.current;
+  // Initial chart save and AI / lifeEvents saves share one in-flight creation request.
+  const ensureChartSaved = useCallback((overrideInputData) => {
+    if (readingIdRef.current) return Promise.resolve(readingIdRef.current);
+    if (inFlightSavePromiseRef.current) return inFlightSavePromiseRef.current;
+    const baseResult = natalChartResultRef.current || chartResult;
+    const payloadInput = overrideInputData || inputDataRef.current || inputData;
+    if (!baseResult || !payloadInput) return Promise.resolve(null);
+
     setSaveStatus('Đang tự lưu lá số…');
-    const pending = persistReading(null, { result: chartResult, inputData });
-    chartSaveRef.current = pending;
+    const pending = persistReading(null, { result: baseResult, inputData: payloadInput });
+    inFlightSavePromiseRef.current = pending;
     pending.then(id => {
-      if (chartSaveRef.current !== pending) return;
-      setReading({ id, data: { result: chartResult, inputData } });
+      if (inFlightSavePromiseRef.current !== pending) return;
+      readingIdRef.current = id;
+      setReading(prev => ({
+        ...prev,
+        id,
+        data: {
+          ...prev?.data,
+          result: baseResult,
+          inputData: inputDataRef.current || payloadInput,
+        },
+      }));
       setSaveStatus('Đã tự lưu lá số');
     }).catch(() => {
-      if (chartSaveRef.current !== pending) return;
-      chartSaveRef.current = null;
+      if (inFlightSavePromiseRef.current !== pending) return;
+      inFlightSavePromiseRef.current = null;
       setSaveStatus('Chưa lưu được lá số. Sẽ thử lại khi kết nối phục hồi.');
     });
     return pending;
@@ -316,8 +455,20 @@ export default function App() {
         return;
       }
     }
+
+    const restoredEvents = Array.isArray(item.data?.inputData?.lifeEvents)
+      ? item.data.inputData.lifeEvents.map(normalizeLifeEvent).sort((a, b) => a.year - b.year)
+      : [];
+    const natalBase = computePureNatalChart(item.data.inputData, result);
+
+    natalChartResultRef.current = natalBase;
+    inFlightSavePromiseRef.current = null;
+    readingIdRef.current = restoredReading?.id || null;
+    latestAiConversationRef.current = restoredReading?.data?.aiConversation ?? null;
+    inputDataRef.current = item.data.inputData;
+
     setReading(restoredReading);
-    chartSaveRef.current = null;
+    setSessionLifeEvents(restoredEvents);
     setInputData(item.data.inputData);
     setChartResult(result);
     setYunxianState({
@@ -328,6 +479,7 @@ export default function App() {
     });
     setShowForm(false);
     setShowHistoryModal(false);
+    setShowActiveRectifierModal(false);
     setSessionId(value => value + 1);
     setSaveStatus('Đã lưu trong lịch sử');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -336,33 +488,86 @@ export default function App() {
   const handleDeleteReading = useCallback(async (id) => {
     await deleteReading(id);
     if (reading?.id === id) {
+      readingIdRef.current = null;
       setReading(null);
     }
   }, [deleteReading, reading?.id]);
 
   const handleDeleteAll = useCallback(async () => {
     await deleteAllReadings();
+    readingIdRef.current = null;
     setReading(null);
   }, [deleteAllReadings]);
 
   const matchedActiveProfile = useMemo(() => {
     if (!inputData || !savedProfiles.length) return null;
-    return findMatchingProfileForInput(inputData);
-  }, [inputData, savedProfiles]);
+    return findMatchingProfileForInput(inputData, undefined, profileScopeKey);
+  }, [inputData, savedProfiles, profileScopeKey]);
 
   const activeLifeEvents = useMemo(() => {
-    if (matchedActiveProfile && Array.isArray(matchedActiveProfile.lifeEvents)) {
-      return matchedActiveProfile.lifeEvents;
+    const profileEvents = Array.isArray(matchedActiveProfile?.lifeEvents)
+      ? matchedActiveProfile.lifeEvents
+      : [];
+    const sessionEvents = Array.isArray(sessionLifeEvents) ? sessionLifeEvents : [];
+    if (!profileEvents.length) return sessionEvents;
+    if (!sessionEvents.length) return profileEvents;
+    const byId = new Map();
+    for (const ev of profileEvents) {
+      if (ev?.id) byId.set(ev.id, ev);
     }
-    return sessionLifeEvents;
+    for (const ev of sessionEvents) {
+      if (ev?.id) byId.set(ev.id, ev);
+    }
+    return Array.from(byId.values()).sort((a, b) => (a.year || 0) - (b.year || 0));
   }, [matchedActiveProfile, sessionLifeEvents]);
+
+  const syncLifeEventsToServer = useCallback(async (nextInputData) => {
+    if (!isAuthenticated || !user?.id) return;
+    const baseResult = natalChartResultRef.current || chartResult;
+    if (!baseResult || !nextInputData) return;
+    try {
+      let resolvedReadingId = reading?.id || readingIdRef.current || null;
+      if (!resolvedReadingId && inFlightSavePromiseRef.current) {
+        resolvedReadingId = await inFlightSavePromiseRef.current;
+      }
+      if (!resolvedReadingId) {
+        resolvedReadingId = await ensureChartSaved(nextInputData);
+        if (!resolvedReadingId) return;
+      }
+      const patchPayload = {
+        result: natalChartResultRef.current || baseResult,
+        inputData: nextInputData,
+      };
+      const currentAi = latestAiConversationRef.current ?? reading?.data?.aiConversation;
+      if (currentAi !== undefined && currentAi !== null) {
+        patchPayload.aiConversation = currentAi;
+      }
+      setSaveStatus('Đang đồng bộ mốc biến cố…');
+      const savedId = await persistReading(resolvedReadingId, patchPayload);
+      const finalId = savedId || resolvedReadingId;
+      readingIdRef.current = finalId;
+      setReading(prev => ({
+        ...prev,
+        id: finalId,
+        data: {
+          ...prev?.data,
+          ...patchPayload,
+        },
+      }));
+      setSaveStatus('Đã tự lưu lá số & biến cố năm');
+    } catch {
+      setSaveStatus('Chưa đồng bộ được biến cố lên đám mây. Đã lưu trên thiết bị.');
+    }
+  }, [isAuthenticated, user?.id, chartResult, reading, ensureChartSaved, persistReading]);
 
   const handleProfilesChange = useCallback((nextProfiles, savedProf) => {
     setSavedProfiles(nextProfiles);
-    if (savedProf && inputData) {
-      setInputData((prev) => (prev ? { ...prev, profileId: savedProf.id } : prev));
+    if (savedProf && inputDataRef.current) {
+      const updated = { ...inputDataRef.current, profileId: savedProf.id };
+      inputDataRef.current = updated;
+      setInputData(updated);
     }
-  }, [inputData]);
+  }, []);
 
   const handleSelectSavedProfile = useCallback((profile) => {
     if (!profile) return;
@@ -383,34 +588,139 @@ export default function App() {
 
   const handleUpsertLifeEvent = useCallback((eventInput) => {
     if (!eventInput) return;
+    const normalizedEvent = normalizeLifeEvent(eventInput);
+    const existingFiltered = activeLifeEvents.filter((ev) => ev.id !== normalizedEvent.id);
+    const nextEvents = [...existingFiltered, normalizedEvent].sort((a, b) => a.year - b.year);
+
+    setSessionLifeEvents(nextEvents);
+
+    const currentInput = inputDataRef.current || inputData;
+    let nextInputData = currentInput
+      ? { ...currentInput, lifeEvents: nextEvents }
+      : null;
+
     if (matchedActiveProfile) {
-      const { profiles: nextList } = upsertProfileLifeEvent(matchedActiveProfile.id, eventInput);
+      const { profiles: nextList } = upsertProfileLifeEvent(
+        matchedActiveProfile.id,
+        normalizedEvent,
+        undefined,
+        profileScopeKey,
+      );
       setSavedProfiles(nextList);
-      return;
-    }
-    if (inputData) {
-      const existingFiltered = sessionLifeEvents.filter((ev) => ev.id !== eventInput.id);
-      const nextEvents = [...existingFiltered, eventInput];
-      setSessionLifeEvents(nextEvents);
-      const draft = extractProfileDraftFromInputData(inputData, {
+      if (nextInputData && !nextInputData.profileId) {
+        nextInputData = { ...nextInputData, profileId: matchedActiveProfile.id };
+      }
+    } else if (currentInput) {
+      const draft = extractProfileDraftFromInputData(currentInput, {
         lifeEvents: nextEvents,
       });
-      const { profile: autoSaved, profiles: nextList } = saveProfile(draft);
+      const { profile: autoSaved, profiles: nextList } = saveProfile(
+        draft,
+        undefined,
+        profileScopeKey,
+      );
       setSavedProfiles(nextList);
-      if (autoSaved) {
-        setInputData((prev) => (prev ? { ...prev, profileId: autoSaved.id } : prev));
+      if (autoSaved && nextInputData) {
+        nextInputData = { ...nextInputData, profileId: autoSaved.id };
       }
     }
-  }, [matchedActiveProfile, inputData, sessionLifeEvents]);
+
+    if (nextInputData) {
+      inputDataRef.current = nextInputData;
+      setInputData(nextInputData);
+      syncLifeEventsToServer(nextInputData);
+    }
+  }, [activeLifeEvents, matchedActiveProfile, inputData, profileScopeKey, syncLifeEventsToServer]);
 
   const handleDeleteLifeEvent = useCallback((eventId) => {
     if (!eventId) return;
+    const nextEvents = activeLifeEvents.filter((ev) => ev.id !== eventId);
+
     if (matchedActiveProfile) {
-      const { profiles: nextList } = deleteProfileLifeEvent(matchedActiveProfile.id, eventId);
+      const { profiles: nextList } = deleteProfileLifeEvent(
+        matchedActiveProfile.id,
+        eventId,
+        undefined,
+        profileScopeKey,
+      );
       setSavedProfiles(nextList);
     }
-    setSessionLifeEvents((prev) => prev.filter((ev) => ev.id !== eventId));
-  }, [matchedActiveProfile]);
+    setSessionLifeEvents(nextEvents);
+
+    const currentInput = inputDataRef.current || inputData;
+    if (currentInput) {
+      const nextInputData = { ...currentInput, lifeEvents: nextEvents };
+      inputDataRef.current = nextInputData;
+      setInputData(nextInputData);
+      syncLifeEventsToServer(nextInputData);
+    }
+  }, [activeLifeEvents, matchedActiveProfile, inputData, profileScopeKey, syncLifeEventsToServer]);
+
+  const activeRectifierBaseInput = useMemo(() => {
+    if (!inputData) return null;
+    const draft = extractProfileDraftFromInputData(inputData);
+    const isLunar = draft.calendarType === 'lunar';
+    const effectiveLeap = isLunar ? Boolean(draft.isLeapMonth) : false;
+    return {
+      name: draft.name || 'Đương số',
+      day: draft.day,
+      month: draft.month,
+      year: draft.year,
+      hourIndex: draft.hourValue,
+      gender: draft.gender,
+      calendarType: draft.calendarType,
+      isLunar,
+      isLeap: effectiveLeap,
+      isLeapMonth: effectiveLeap,
+      schoolConfig: inputData.schoolConfig,
+    };
+  }, [inputData]);
+
+  const handleApplyActiveRectification = useCallback((candidate, modalEvents = []) => {
+    if (!candidate?.formPatch) return;
+    const byId = new Map();
+    for (const ev of activeLifeEvents) {
+      if (ev?.id) byId.set(ev.id, normalizeLifeEvent(ev));
+    }
+    if (Array.isArray(modalEvents)) {
+      for (const ev of modalEvents) {
+        if (ev) {
+          const norm = normalizeLifeEvent(ev);
+          byId.set(norm.id, norm);
+        }
+      }
+    }
+    const mergedLifeEvents = Array.from(byId.values()).sort((a, b) => a.year - b.year);
+
+    const nextIsLunar =
+      candidate.formPatch.calendarType === 'lunar' || Boolean(candidate.formPatch.isLunar);
+    const nextIsLeap = nextIsLunar
+      ? Boolean(candidate.formPatch.isLeap || candidate.formPatch.isLeapMonth)
+      : false;
+
+    try {
+      const payload = buildBirthInputPayload({
+        name: inputData?.name || activeRectifierBaseInput?.name || 'Đương số',
+        day: candidate.formPatch.day,
+        month: candidate.formPatch.month,
+        year: candidate.formPatch.year,
+        hourIndex: candidate.formPatch.hourIndex,
+        gender: candidate.formPatch.gender,
+        calendarType: nextIsLunar ? 'lunar' : 'solar',
+        isLunar: nextIsLunar,
+        isLeap: nextIsLeap,
+        isLeapMonth: nextIsLeap,
+        schoolConfig: inputData?.schoolConfig,
+      });
+      setHistoryActionError('');
+      handleSubmit({
+        ...payload,
+        ...(mergedLifeEvents.length > 0 ? { lifeEvents: mergedLifeEvents } : {}),
+      });
+    } catch (err) {
+      setHistoryActionError(err.message || 'Không thể lập lại lá số với giờ sinh vừa chọn.');
+    }
+  }, [activeLifeEvents, inputData, activeRectifierBaseInput, handleSubmit]);
 
   const buildNoteNowPayload = useCallback(() => {
     return buildTuViNoteNowPayload({
@@ -483,6 +793,7 @@ export default function App() {
               formDraftData={formDraftData}
               onSelectProfile={handleSelectSavedProfile}
               onOpenHopHonPair={handleOpenHopHonPair}
+              scopeKey={profileScopeKey}
             />
             <BirthInputForm
               onSubmit={handleSubmit}
@@ -511,6 +822,7 @@ export default function App() {
               activeInputData={inputData}
               onSelectProfile={handleSelectSavedProfile}
               onOpenHopHonPair={handleOpenHopHonPair}
+              scopeKey={profileScopeKey}
               compact
             />
 
@@ -521,6 +833,15 @@ export default function App() {
                 </span>
               ) : <span />}
               <div className="tuvi-chart-toolbar-actions">
+                <button
+                  type="button"
+                  id="btn-active-rectify-hour"
+                  className="tuvi-rectify-hour-btn"
+                  onClick={() => setShowActiveRectifierModal(true)}
+                  title="Đối chứng các canh giờ sinh lân cận và kiểm chứng bằng biến cố thực tế"
+                >
+                  <span aria-hidden="true">🕰️</span> Đối chứng giờ sinh
+                </button>
                 <SaveToNoteNowButton
                   buildPayload={buildNoteNowPayload}
                   isAuthenticated={isAuthenticated}
@@ -566,16 +887,42 @@ export default function App() {
             <ReadingSession
               key={`${user?.id || 'guest'}-${sessionId}`}
               result={chartResult}
+              natalResultRef={natalChartResultRef}
               inputData={inputData}
+              inputDataRef={inputDataRef}
               reading={reading}
               persistReading={persistReading}
               ensureChartSaved={ensureChartSaved}
-              onSaved={id => { setReading(previous => ({ ...previous, id })); setSaveStatus('Đã tự lưu lá số và hội thoại'); }}
+              onSaved={(id, aiConversation) => {
+                readingIdRef.current = id;
+                latestAiConversationRef.current = aiConversation;
+                setReading(previous => ({
+                  ...previous,
+                  id,
+                  data: {
+                    ...previous?.data,
+                    result: natalChartResultRef.current || chartResult,
+                    inputData: inputDataRef.current || inputData,
+                    aiConversation,
+                  },
+                }));
+                setSaveStatus('Đã tự lưu lá số và hội thoại');
+              }}
               yunxianState={yunxianState}
               onYunxianChange={handleYunxianChange}
               lifeEvents={activeLifeEvents}
             />
             </TuViEvidenceProvider>
+
+            {activeRectifierBaseInput && (
+              <BirthHourRectifierModal
+                isOpen={showActiveRectifierModal}
+                onClose={() => setShowActiveRectifierModal(false)}
+                baseInput={activeRectifierBaseInput}
+                initialEvents={activeLifeEvents}
+                onApplyCandidate={handleApplyActiveRectification}
+              />
+            )}
           </>
         )}
       </main>

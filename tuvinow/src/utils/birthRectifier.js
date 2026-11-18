@@ -6,7 +6,7 @@
  * Hoàn toàn tất định (deterministic), minh bạch bằng chứng sao & cung vị, không hộp đen.
  */
 
-import { Lunar } from 'lunar-javascript';
+import { Lunar, LunarMonth } from 'lunar-javascript';
 import { anLaSoTuVi, DIA_CHI, THIEN_CAN } from './tuViEngine.js';
 import { getDaXianSiHua, getLiuNianSiHua } from '../../../shared/src/utils/ziwei/sihua.js';
 import { GIO_SINH_OPTIONS, solarToLunar, validateLunarDate, validateSolarDate } from './lunarConverter.js';
@@ -289,9 +289,14 @@ export function resolveCandidateBirthInput(baseInput, spec) {
     year = 1990,
     gender = 1,
     isLunar = false,
+    calendarType,
     isLeapMonth = false,
+    isLeap = false,
     schoolConfig,
   } = baseInput || {};
+
+  const effectiveIsLunar = calendarType ? calendarType === 'lunar' : Boolean(isLunar);
+  const effectiveLeap = effectiveIsLunar ? Boolean(isLeapMonth || isLeap) : false;
 
   const hourIndex = ((Math.trunc(Number(spec?.hourIndex) || 0) % 12) + 12) % 12;
   const dayOffset = Math.trunc(Number(spec?.dayOffset) || 0);
@@ -300,16 +305,31 @@ export function resolveCandidateBirthInput(baseInput, spec) {
   let solarMonth;
   let solarDay;
 
-  if (isLunar) {
+  if (effectiveIsLunar) {
     const lYear = Number(year);
     const lMonth = Number(month);
     const lDay = Number(day);
-    if (!validateLunarDate(lYear, lMonth, lDay)) {
+    let validLunar = false;
+    if (effectiveLeap) {
+      try {
+        const lm = LunarMonth.fromYm(lYear, -Math.abs(lMonth));
+        if (lm && typeof lm.getDayCount === 'function') {
+          validLunar = Number.isInteger(lDay) && lDay >= 1 && lDay <= lm.getDayCount();
+        } else {
+          validLunar = validateLunarDate(lYear, lMonth, lDay);
+        }
+      } catch {
+        validLunar = validateLunarDate(lYear, lMonth, lDay);
+      }
+    } else {
+      validLunar = validateLunarDate(lYear, lMonth, lDay);
+    }
+    if (!validLunar) {
       throw new Error('Ngày âm lịch cơ sở không hợp lệ để khảo giờ sinh.');
     }
     let lunarObj;
     try {
-      lunarObj = Lunar.fromYmd(lYear, isLeapMonth ? -Math.abs(lMonth) : Math.abs(lMonth), lDay);
+      lunarObj = Lunar.fromYmd(lYear, effectiveLeap ? -Math.abs(lMonth) : Math.abs(lMonth), lDay);
     } catch {
       lunarObj = Lunar.fromYmd(lYear, Math.abs(lMonth), lDay);
     }
@@ -333,24 +353,29 @@ export function resolveCandidateBirthInput(baseInput, spec) {
 
   const lunarData = solarToLunar(solarYear, solarMonth, solarDay);
   const cleanName = (name || '').trim() || 'Đương số';
+  const resolvedPatchLeap = effectiveIsLunar ? Boolean(lunarData.isLeap) : false;
 
   const engineInput = {
     name: cleanName,
     ...lunarData,
     lunarHourIndex: hourIndex,
     gender: Number(gender) === 0 ? 0 : 1,
-    isLunar: Boolean(isLunar),
-    solarInput: isLunar ? null : { day: solarDay, month: solarMonth, year: solarYear },
+    calendarType: effectiveIsLunar ? 'lunar' : 'solar',
+    isLunar: effectiveIsLunar,
+    isLeapMonth: resolvedPatchLeap,
+    solarInput: effectiveIsLunar ? null : { day: solarDay, month: solarMonth, year: solarYear },
     ...(schoolConfig ? { schoolConfig } : {}),
   };
 
   const formPatch = {
     name: cleanName,
-    day: isLunar ? lunarData.lunarDay : solarDay,
-    month: isLunar ? lunarData.lunarMonth : solarMonth,
-    year: isLunar ? lunarData.lunarYear : solarYear,
-    isLunar: Boolean(isLunar),
-    isLeapMonth: Boolean(lunarData.isLeap),
+    day: effectiveIsLunar ? lunarData.lunarDay : solarDay,
+    month: effectiveIsLunar ? lunarData.lunarMonth : solarMonth,
+    year: effectiveIsLunar ? lunarData.lunarYear : solarYear,
+    calendarType: effectiveIsLunar ? 'lunar' : 'solar',
+    isLunar: effectiveIsLunar,
+    isLeap: resolvedPatchLeap,
+    isLeapMonth: resolvedPatchLeap,
     hourIndex,
     gender: Number(gender) === 0 ? 0 : 1,
     dayOffsetApplied: dayOffset,

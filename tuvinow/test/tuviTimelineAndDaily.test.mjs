@@ -15,6 +15,7 @@ import {
   buildThirtyDayLiuRiCalendar,
   buildTuViNoteNowPayload,
 } from '../src/utils/tuviTimelineModel.js';
+import { buildTuViNoteNowPayload as buildNoteNowFromPayloadModule } from '../src/utils/noteNowPayload.js';
 
 const TUVI_ROOT = path.resolve(import.meta.dirname, '..');
 const REACT_EXTERNAL_PLUGIN = {
@@ -165,6 +166,15 @@ test('buildTuViNoteNowPayload & buildTuViPrompt with pinned lifeEvents calibrati
     yunxianState: { mode: 'liunian', viewYear: 2026 },
     lifeEvents,
   });
+  const payloadFromReExport = buildNoteNowFromPayloadModule({
+    result: chart,
+    inputData: SAMPLE_INPUT_A,
+    yunxianState: { mode: 'liunian', viewYear: 2026 },
+    lifeEvents,
+  });
+  assert.equal(payload.bgColor, 'indigo');
+  assert.equal(payloadFromReExport.bgColor, 'indigo');
+  assert.deepEqual(payloadFromReExport, payload);
   assert.equal(payload.sourceAppLabel, 'TuViNow');
   assert.ok(payload.title.includes('Đặng Minh Quân'));
   assert.ok(payload.summaryLines.some((line) => line.includes('Kết hôn') || line.includes('2020')));
@@ -224,9 +234,68 @@ test('SSR & Web Platform compliance: native <dialog closedby="any">, no role="di
     const { default: TuViTimelineAndDailyPanel } = await server.ssrLoadModule(
       '/src/components/TuViTimelineAndDailyPanel.jsx',
     );
-    const { default: BirthInputForm } = await server.ssrLoadModule(
+    const { default: BirthInputForm, buildBirthInputPayload } = await server.ssrLoadModule(
       '/src/components/BirthInputForm.jsx',
     );
+
+    // Bug 4.1: buildBirthInputPayload preserves lunar leap month (isLeap: true)
+    const leapPayload = buildBirthInputPayload({
+      name: 'Trần Minh Quân',
+      day: 30,
+      month: 6,
+      year: 2017, // Năm 2017 có tháng 6 nhuận đủ 30 ngày
+      hourIndex: 4,
+      gender: 1,
+      calendarType: 'lunar',
+      isLeapMonth: true,
+    });
+    assert.equal(leapPayload.calendarType, 'lunar');
+    assert.equal(leapPayload.isLunar, true);
+    assert.equal(leapPayload.isLeap, true);
+    assert.equal(leapPayload.isLeapMonth, true);
+    assert.ok(leapPayload.lunarDateStr.includes('Nhuận'));
+
+    // Solar input ignores isLeapMonth toggle
+    const solarPayload = buildBirthInputPayload({
+      name: 'Trần Minh Quân',
+      day: 14,
+      month: 8,
+      year: 1992,
+      hourIndex: 4,
+      gender: 1,
+      calendarType: 'solar',
+      isLeapMonth: true,
+    });
+    assert.equal(solarPayload.calendarType, 'solar');
+    assert.equal(solarPayload.isLunar, false);
+    assert.equal(solarPayload.isLeap, false);
+    assert.equal(solarPayload.isLeapMonth, false);
+
+    // Leap month vs regular month chart calculation
+    const leap2025 = buildBirthInputPayload({
+      name: 'Đương số nhuận',
+      day: 20,
+      month: 6,
+      year: 2025,
+      hourIndex: 6,
+      gender: 0,
+      calendarType: 'lunar',
+      isLeapMonth: true,
+    });
+    const reg2025 = buildBirthInputPayload({
+      name: 'Đương số thường',
+      day: 20,
+      month: 6,
+      year: 2025,
+      hourIndex: 6,
+      gender: 0,
+      calendarType: 'lunar',
+      isLeapMonth: false,
+    });
+    const chartLeap = anLaSoTuVi(leap2025);
+    const chartReg = anLaSoTuVi(reg2025);
+    assert.equal(chartLeap.palates.length, 12);
+    assert.notEqual(chartLeap.menhCung, chartReg.menhCung);
 
     const chart = anLaSoTuVi(SAMPLE_INPUT_A);
 
@@ -300,6 +369,69 @@ test('SSR & Web Platform compliance: native <dialog closedby="any">, no role="di
       React.createElement(BirthInputForm, { onSubmit: () => {} }),
     );
     assert.ok(formHtml.includes('Không chắc giờ sinh? Khảo &amp; Định giờ chuẩn'));
+    assert.ok(!formHtml.includes('id="input-leap-month"'));
+
+    const lunarFormHtml = renderToStaticMarkup(
+      React.createElement(BirthInputForm, {
+        onSubmit: () => {},
+        initialValues: {
+          name: 'Trần Minh Quân',
+          calendarType: 'lunar',
+          day: 20,
+          month: 6,
+          year: 2025,
+          hourIndex: 4,
+          gender: 1,
+          isLeapMonth: true,
+        },
+      }),
+    );
+    assert.ok(lunarFormHtml.includes('id="input-leap-month"'));
+    assert.ok(lunarFormHtml.includes('Tháng nhuận (Âm lịch)'));
+    assert.ok(lunarFormHtml.includes('checked=""'));
+
+    // Bug 4.4: SavedProfilesBar highlights ONLY the leap-month profile when viewing a leap-month chart
+    const leapBarHtml = renderToStaticMarkup(
+      React.createElement(SavedProfilesBar, {
+        profiles: [
+          {
+            id: 'p-reg',
+            name: 'Đương số nhuận',
+            relation: 'self',
+            gender: 0,
+            calendarType: 'lunar',
+            day: 20,
+            month: 6,
+            year: 2025,
+            isLeapMonth: false,
+            hourValue: 6,
+            hourBranch: 'Ngọ',
+            isDefaultSelf: false,
+            lifeEvents: [],
+          },
+          {
+            id: 'p-leap',
+            name: 'Đương số nhuận',
+            relation: 'other',
+            gender: 0,
+            calendarType: 'lunar',
+            day: 20,
+            month: 6,
+            year: 2025,
+            isLeapMonth: true,
+            hourValue: 6,
+            hourBranch: 'Ngọ',
+            isDefaultSelf: false,
+            lifeEvents: [],
+          },
+        ],
+        activeInputData: leap2025,
+        onSelectProfile: () => {},
+      }),
+    );
+    const activeChipCount = (leapBarHtml.match(/tv-profile-chip-card is-current/g) || []).length;
+    assert.equal(activeChipCount, 1);
+    assert.ok(leapBarHtml.includes('20/6N/2025'));
   } finally {
     await server.close();
   }

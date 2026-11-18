@@ -927,7 +927,6 @@ export default function NoteEditor({
                   {audioSources[idx] ? (
                     <audio
                       controls
-                      loading="lazy"
                       preload="metadata"
                       src={audioSources[idx]}
                       className="nn-editor-audio-player"

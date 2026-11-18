@@ -8,7 +8,9 @@ export function createManualReadingEntry({
   const spreadName = language === 'en'
     ? `Manual Pick (${pickCount} cards)`
     : `Chọn từng lá (${pickCount} lá)`;
-  const timestamp = createdAt.toISOString();
+  const now = createdAt instanceof Date ? createdAt : new Date(createdAt || Date.now());
+  const createdAtIso = now.toISOString();
+  const timestamp = createdAtIso;
   const cards = drawnCards.map(({ id, name, orientation }) => ({
     id,
     name,
@@ -16,7 +18,8 @@ export function createManualReadingEntry({
   }));
 
   return {
-    id: String(createdAt.getTime()),
+    id: String(now.getTime()),
+    createdAt: createdAtIso,
     timestamp,
     question: question.trim(),
     spread: 'custom',

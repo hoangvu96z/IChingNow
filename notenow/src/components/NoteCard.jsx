@@ -225,7 +225,6 @@ export default function NoteCard({
               {audioSources[idx] ? (
                 <audio
                   controls
-                  loading="lazy"
                   preload="metadata"
                   src={audioSources[idx]}
                   className="nn-card-audio-player"
