@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { REFLECTION_STATUSES } from '../utils/readingMapping.js';
 
 export default function TarotReflectionCard({
@@ -31,14 +31,39 @@ export default function TarotReflectionCard({
   const [savedNotice, setSavedNotice] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+  const resolvedReadingId = readingId || reading?.id || null;
+  const readingTsKey = reading?.createdAt || reading?.timestamp || null;
+  const isDirtyRef = useRef(false);
+  const prevKeyRef = useRef({ id: resolvedReadingId, ts: readingTsKey });
+
   // Sync state whenever reading props update
   useEffect(() => {
+    const prev = prevKeyRef.current;
+    const sameReadingIdAssigned = Boolean(
+      readingTsKey &&
+      prev.ts === readingTsKey &&
+      !prev.id &&
+      resolvedReadingId
+    );
+    const switchingReading =
+      prev.ts !== readingTsKey ||
+      Boolean(prev.id && resolvedReadingId && String(prev.id) !== String(resolvedReadingId));
+    prevKeyRef.current = { id: resolvedReadingId, ts: readingTsKey };
+
+    if (sameReadingIdAssigned && isDirtyRef.current) {
+      return;
+    }
+
     setStatus(reading?.verificationStatus || reading?.data?.verificationStatus || 'pending');
     setNote(reading?.reflectionNote || reading?.data?.reflectionNote || '');
-    setSavedNotice('');
-    setErrorMsg('');
+    isDirtyRef.current = false;
+    if (switchingReading) {
+      setSavedNotice('');
+      setErrorMsg('');
+    }
   }, [
-    reading?.id,
+    resolvedReadingId,
+    readingTsKey,
     reading?.verificationStatus,
     reading?.data?.verificationStatus,
     reading?.reflectionNote,
@@ -61,6 +86,7 @@ export default function TarotReflectionCard({
         reflectionNote: note.trim(),
         reflectionUpdatedAt: updatedAt,
       });
+      isDirtyRef.current = false;
       setSavedNotice(isEn ? '✓ Đã lưu chiêm nghiệm' : '✓ Đã lưu chiêm nghiệm');
       setTimeout(() => setSavedNotice(''), 4000);
     } catch (err) {
@@ -107,6 +133,7 @@ export default function TarotReflectionCard({
                 borderColor: isSelected ? st.border : undefined,
               }}
               onClick={() => {
+                isDirtyRef.current = true;
                 setStatus(st.id);
                 setSavedNotice('');
               }}
@@ -130,6 +157,7 @@ export default function TarotReflectionCard({
               : 'Ghi chép diễn biến thực tế: sự việc diễn ra thế nào so với trải bài? Bạn đã áp dụng lời khuyên ra sao để điều hướng cuộc sống? (Tối đa 1000 ký tự)...'
           }
           onChange={(e) => {
+            isDirtyRef.current = true;
             setNote(e.target.value);
             setSavedNotice('');
           }}

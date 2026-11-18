@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   VERIFICATION_STATUSES,
   VERIFICATION_META,
@@ -29,8 +29,26 @@ export default function OutcomeVerificationCard({
 
   const createdAt = result?.createdAt;
   const embeddedVerification = result?.verification;
+  const isDirtyRef = useRef(false);
+  const prevIdentityRef = useRef({ readingId, createdAt });
 
   useEffect(() => {
+    const prev = prevIdentityRef.current;
+    const sameCastIdAssigned = Boolean(
+      createdAt &&
+      prev.createdAt === createdAt &&
+      !prev.readingId &&
+      readingId
+    );
+    const switchingReading =
+      prev.createdAt !== createdAt ||
+      Boolean(prev.readingId && readingId && String(prev.readingId) !== String(readingId));
+    prevIdentityRef.current = { readingId, createdAt };
+
+    if (sameCastIdAssigned && isDirtyRef.current) {
+      return;
+    }
+
     const cur = getVerificationForReading(readingId, {
       createdAt,
       verification: embeddedVerification,
@@ -38,8 +56,11 @@ export default function OutcomeVerificationCard({
     setStatus(cur?.status || 'pending');
     setActualDate(cur?.actualDate || '');
     setNote(cur?.note || '');
-    setSavedNotice('');
-    setSaveError('');
+    isDirtyRef.current = false;
+    if (switchingReading) {
+      setSavedNotice('');
+      setSaveError('');
+    }
   }, [readingId, createdAt, embeddedVerification]);
 
   const actualCanChi = useMemo(() => {
@@ -59,6 +80,7 @@ export default function OutcomeVerificationCard({
         { status, actualDate, note },
         result?.createdAt || null
       );
+      isDirtyRef.current = false;
       setSavedNotice('✓ Đã lưu nghiệm lý thành công');
     } catch (err) {
       setSaveError(err?.message || 'Đã lưu cục bộ (chưa thể đồng bộ máy chủ)');
@@ -126,7 +148,12 @@ export default function OutcomeVerificationCard({
                   type="button"
                   aria-pressed={active}
                   className="iching-touch-control"
-                  onClick={() => setStatus(key)}
+                  onClick={() => {
+                    isDirtyRef.current = true;
+                    setStatus(key);
+                    setSavedNotice('');
+                    setSaveError('');
+                  }}
                   style={{
                     padding: '7px 12px',
                     borderRadius: 8,
@@ -168,7 +195,12 @@ export default function OutcomeVerificationCard({
               type="date"
               className="form-input iching-touch-control"
               value={actualDate}
-              onChange={(e) => setActualDate(e.target.value)}
+              onChange={(e) => {
+                isDirtyRef.current = true;
+                setActualDate(e.target.value);
+                setSavedNotice('');
+                setSaveError('');
+              }}
               style={{ width: '100%' }}
             />
           </div>
@@ -203,7 +235,12 @@ export default function OutcomeVerificationCard({
             rows={compact ? 2 : 3}
             placeholder="Ghi lại diễn biến thực tế, ứng vào hào nào / ngày Chi nào để đúc kết kinh nghiệm..."
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => {
+              isDirtyRef.current = true;
+              setNote(e.target.value);
+              setSavedNotice('');
+              setSaveError('');
+            }}
             style={{ width: '100%', resize: 'vertical', lineHeight: 1.5 }}
           />
         </div>

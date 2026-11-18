@@ -134,7 +134,7 @@ function DraggableNoteGrid({
 
 // ─── Main NoteBoard ──────────────────────────────────────────────────────────
 
-export default function NoteBoard({ user }) {
+export default function NoteBoard({ user, authLoading = false }) {
   const { t } = useLanguage();
   const [notes, setNotes] = useState([]);
   const [sharedNotes, setSharedNotes] = useState([]);
@@ -235,6 +235,7 @@ export default function NoteBoard({ user }) {
   }, [addToast, t]);
 
   useEffect(() => {
+    if (authLoading) return undefined;
     let cancelled = false;
     (async () => {
       await fetchNotes();
@@ -251,7 +252,7 @@ export default function NoteBoard({ user }) {
       cancelled = true;
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, [fetchNotes, importIncomingDrafts]);
+  }, [authLoading, user?.id, fetchNotes, importIncomingDrafts]);
 
   // Listen to search events from header
   useEffect(() => {

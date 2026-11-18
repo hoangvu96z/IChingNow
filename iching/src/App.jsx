@@ -700,6 +700,7 @@ export default function App() {
 
   // Track reading ID đang active (để lưu AI conversation & Nghiệm Lý)
   const [activeReadingId, setActiveReadingId] = useState(null);
+  const autoSavedKeyRef = useRef(null);
 
   const handleUpdateVerification = useCallback(
     async (readingId, verificationObj, createdAtKey) => {
@@ -744,7 +745,9 @@ export default function App() {
 
   // Tự động lưu Lục Hào vào lịch sử (Chỉ khi quẻ mới được lập, chưa có activeReadingId)
   useEffect(() => {
-    if (result && !activeReadingId) {
+    const castKey = result?.createdAt || null;
+    if (result && !activeReadingId && castKey && autoSavedKeyRef.current !== castKey) {
+      autoSavedKeyRef.current = castKey;
       setReadingSaveError('');
       saveReading(result, 'luc-hao').then((saved) => {
         if (saved?.id) {
@@ -753,13 +756,18 @@ export default function App() {
           url.searchParams.set('id', saved.id);
           window.history.pushState({ id: saved.id }, '', url.toString());
         }
-      }).catch((err) => setReadingSaveError(err.message || 'Không thể lưu bản ghi.'));
+      }).catch((err) => {
+        autoSavedKeyRef.current = null;
+        setReadingSaveError(err.message || 'Không thể lưu bản ghi.');
+      });
     }
   }, [result, activeReadingId, saveReading]);
 
   // Tự động lưu Mai Hoa vào lịch sử (Chỉ khi quẻ mới được lập, chưa có activeReadingId)
   useEffect(() => {
-    if (maiHoaResult && !activeReadingId) {
+    const castKey = maiHoaResult?.createdAt || null;
+    if (maiHoaResult && !activeReadingId && castKey && autoSavedKeyRef.current !== castKey) {
+      autoSavedKeyRef.current = castKey;
       setReadingSaveError('');
       saveReading(maiHoaResult, 'mai-hoa').then((saved) => {
         if (saved?.id) {
@@ -768,7 +776,10 @@ export default function App() {
           url.searchParams.set('id', saved.id);
           window.history.pushState({ id: saved.id }, '', url.toString());
         }
-      }).catch((err) => setReadingSaveError(err.message || 'Không thể lưu bản ghi.'));
+      }).catch((err) => {
+        autoSavedKeyRef.current = null;
+        setReadingSaveError(err.message || 'Không thể lưu bản ghi.');
+      });
     }
   }, [maiHoaResult, activeReadingId, saveReading]);
 
@@ -872,6 +883,7 @@ export default function App() {
 
   // Reset (chỉ xoá lines + result, giữ mode để user gieo lại)
   function handleReset() {
+    autoSavedKeyRef.current = null;
     setActiveReadingId(null);
     setLines([]);
     setResult(null);
@@ -879,6 +891,7 @@ export default function App() {
 
   // Reset Mai Hoa
   function handleMaiHoaReset() {
+    autoSavedKeyRef.current = null;
     setMaiHoaResult(null);
   }
 
@@ -959,6 +972,7 @@ export default function App() {
 
   // Lập quẻ mới hoàn toàn: clear cả form lẫn state, quay về trang chủ
   function handleFullReset() {
+    autoSavedKeyRef.current = null;
     setFormData(getDefaultForm());
     setLines([]);
     setResult(null);

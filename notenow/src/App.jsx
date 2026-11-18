@@ -531,7 +531,7 @@ export default function App() {
 
       {/* Content routing */}
       {route.page === 'board' && (
-        <NoteBoard user={user} />
+        <NoteBoard user={user} authLoading={authLoading} />
       )}
 
       {route.page === 'share' && (
