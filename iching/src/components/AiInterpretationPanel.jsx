@@ -191,20 +191,43 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
     setUserQuestion('');
     setFollowUpError('');
 
+    // ── Phân biệt phương pháp: Lục Hào (gieo 6 hào) vs Mai Hoa (số / ngày giờ) ──
+    const isMaiHoa = result?.method === 'mai-hoa' || result?.subMode === 'time' || result?.subMode === 'serial';
+
     try {
-      const sysPrompt = isEn
-        ? `You are a deeply wise I Ching (Kinh Dịch) scholar with profound knowledge of Eastern philosophy, hexagram imagery, primary and changed hexagrams, Ti-Yong (Thể-Dụng), and moving lines. Provide a detailed, practical, empathetic, and actionable interpretation for the user. Always respond in English.`
-        : `Bạn là một chuyên gia Kinh Dịch (I Ching) uyên bác, am hiểu sâu sắc về triết học phương Đông, tượng quẻ, quẻ chủ, quẻ biến, thể dụng và ý nghĩa các hào động. Hãy đưa ra lời luận giải chi tiết, thực tế, dễ hiểu và đưa ra lời khuyên hành động cụ thể cho người hỏi. Luôn trả lời bằng tiếng Việt.`;
+      // ── System prompt riêng cho từng phương pháp ──────────────────────────
+      let sysPrompt;
+      if (isMaiHoa) {
+        sysPrompt = isEn
+          ? `You are an expert in Mai Hoa Yi Shu (梅花易數 — Plum Blossom Numerology), the divination method created by Shao Yong (邵雍) of Song Dynasty. You understand how trigrams are derived from numbers or time (year/month/day/hour), how the Upper (Thượng quái / 體 Thể) and Lower (Hạ quái / 用 Dụng) trigrams represent Subject and Object, and how the single moving line (Hào động) transforms the Primary hexagram (Quẻ Chủ) into the Changed hexagram (Quẻ Biến). The nuclear hexagram (Quẻ Hỗ) reveals hidden dynamics. Your interpretation focuses on the symbolic imagery of the two trigrams and the five-element (Ngũ Hành) relationship between Body (Thể) and Use (Dụng). Do NOT apply Lục Hào Tăng San Bốc Dịch rules (no Nhật thần/Nguyệt lệnh line-by-line analysis). Always respond in English.`
+          : `Bạn là chuyên gia về Mai Hoa Dịch Số (梅花易數 — phương pháp lập quẻ Thiệu Khang đời Tống). Bạn thấu hiểu cách tính quẻ từ số seri, ngày giờ (năm/tháng/ngày/giờ âm lịch), cách xác định Thượng quái (Thể) và Hạ quái (Dụng), và cách hào động duy nhất biến Quẻ Chủ sang Quẻ Biến. Quẻ Hỗ ẩn chứa diễn biến bên trong. Bạn luận giải dựa trên tượng quẻ, tượng quái, Ngũ Hành tương sinh tương khắc giữa Thể và Dụng — KHÔNG áp dụng quy tắc Lục Hào Tăng San Bốc Dịch (không phân tích Nhật thần, Nguyệt lệnh, Lục Thân từng hào). Luôn trả lời bằng tiếng Việt.`;
+      } else {
+        sysPrompt = isEn
+          ? `You are a deeply wise Lục Hào (六爻 — Six Lines Divination) scholar, expert in Zēng Shān Bǔ Yì (增刪卜易 — Tăng San Bốc Dịch) and Ứng Kỳ timing. You analyze the six Nap Giap (納甲) lines with their Six Relatives (Lục Thân), Day/Month branches (Nhật thần/Nguyệt lệnh), Dụng Thần (Useful God), Ám Động, Nhật Phá, Tam Hợp, Tuần Không, Hidden Spirit (Phục Thần), and Symbolic Stars. This is LUCH HAO cast (3-coin method), not Mai Hoa. Always respond in English.`
+          : `Bạn là chuyên gia Lục Hào (六爻) theo pháp Tăng San Bốc Dịch (增刪卜易). Bạn phân tích 6 hào Nạp Giáp với Lục Thân, Nhật thần, Nguyệt lệnh, Dụng Thần, Ám Động, Nhật Phá, Tham Sinh Vong Khắc, Tam Hợp Cục, Hợp Trụ, Nhập Mộ, Phi–Phục, Tuần Không và Thần sát. Đây là quẻ LỤC HÀO (gieo 3 đồng xu × 6 lần) — KHÔNG phải Mai Hoa Dịch Số. Luôn trả lời bằng tiếng Việt.`;
+      }
 
       const question = result.question || '';
       const caster = result.caster || '';
       const castDate = result.castDate || '';
       const castTime = result.castTime || '';
-      const extraContext = buildLucHaoPromptContext(result, isEn);
+      // extraContext chỉ áp dụng cho Lục Hào (Tăng San data)
+      const extraContext = isMaiHoa ? '' : buildLucHaoPromptContext(result, isEn);
 
-      const userPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInclude the following topics in your interpretation sections:\n1. **Hexagram Overview**: Primary hexagram, nuclear hexagram (Quẻ Hỗ), changed hexagram, special traits (Lục Xung, Lục Hợp, Du Hồn, Quy Hồn if any), and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation, Subject-Object (Thế/Ứng) dynamics, Useful God (Dụng Thần) strength under Day/Month branches (Nhật thần, Nguyệt lệnh), Ám Động / Nhật Phá, Tham Sinh Vong Khắc / Tam Hợp Cục / Hợp Trụ / Nhập Mộ, Void branches (Tuần Không), Hidden Spirit (Phục Thần), and Symbolic Stars (Lộc, Mã, Đào Hoa) if relevant.\n3. **Moving Lines & Ứng Kỳ Timing**: Analyze moving lines transformations (Hóa tiến/thoái, hồi đầu sinh/khắc) and cite the concrete Ứng Kỳ manifestation dates provided above.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải các nội dung sau trong các mục luận giải:\n1. **Tổng quan quẻ dịch**: Ý nghĩa Quẻ Chủ, Quẻ Hỗ, Quẻ Biến, đặc tính quẻ (Lục Xung, Lục Hợp, Du Hồn, Quy Hồn nếu có) và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại, tương quan Hào Thế/Ứng, sức mạnh của Dụng Thần theo Tăng San Bốc Dịch (Ám Động, Nhật Phá, Tham Sinh Vong Khắc, Tam Hợp Cục, Hợp Trụ, Nhập Mộ, Phi–Phục, Tuần Không) và các Thần sát (Lộc, Dịch Mã, Đào Hoa) nếu có.\n3. **Ý nghĩa hào động & Dự báo Ứng Kỳ**: Phân tích sự biến hóa của hào động (hồi đầu sinh/khắc, hóa tiến/thoái...) và nêu rõ thời điểm ứng nghiệm (Ứng Kỳ) theo các mốc ngày Dương lịch / Can Chi đã tính sẵn.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
+      // ── User prompt riêng cho từng phương pháp ────────────────────────────
+      let userPrompt;
+      if (isMaiHoa) {
+        const subLabel = result.subMode === 'time'
+          ? (isEn ? 'Date/Time of Intent' : 'Ngày giờ động tâm')
+          : (isEn ? 'Serial Number' : 'Số seri');
+        userPrompt = isEn
+          ? `Please interpret the following Mai Hoa Yi Shu (Plum Blossom Numerology) reading:\n- Topic / Question: "${question}"\n- Method: ${subLabel}\n- Date & Time: ${castDate} ${castTime}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInterpret using Mai Hoa method (Shao Yong) with the following sections:\n1. **Trigram Imagery (Tượng Quái)**: Describe the symbolic imagery of the Upper trigram (Thượng quái / Thể) and Lower trigram (Hạ quái / Dụng) in relation to the question.\n2. **Thể–Dụng Relationship**: Analyze the Five-Element (Ngũ Hành) relationship between Body (Thể) and Use (Dụng) trigrams — is Dụng generating, controlling, or weakening Thể? What does this say about the situation?\n3. **Moving Line & Changed Hexagram**: Interpret the single moving line's transformation and what the Changed hexagram (Quẻ Biến) reveals about the outcome.\n4. **Nuclear Hexagram (Quẻ Hỗ)**: What hidden dynamic does the nuclear hexagram reveal?\n5. **Actionable Guidance**: Provide 3 concrete, practical steps based on this reading.`
+          : `Hãy luận giải quẻ Mai Hoa Dịch Số sau cho tôi:\n- Việc cần xem: "${question}"\n- Phương pháp: ${subLabel}\n- Thời gian lập: ${castDate} ${castTime}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nLuận giải theo đúng phép Mai Hoa Dịch Số (Thiệu Khang) gồm các mục:\n1. **Tượng quái**: Phân tích hình tượng Thượng quái (Thể) và Hạ quái (Dụng) liên hệ với việc cần xem — tượng quái nói lên điều gì về tình thế?\n2. **Quan hệ Thể–Dụng**: Phân tích Ngũ Hành tương sinh tương khắc giữa quái Thể và quái Dụng — Dụng sinh Thể, khắc Thể hay bị Thể khắc? Điều này ứng với câu hỏi như thế nào?\n3. **Hào động & Quẻ Biến**: Luận ý nghĩa hào động duy nhất và những điều Quẻ Biến tiết lộ về kết cục.\n4. **Quẻ Hỗ**: Quẻ Hỗ ẩn chứa diễn biến nội tại gì trong việc cần hỏi?\n5. **Lời khuyên hành động**: Đưa ra 3 lời khuyên cụ thể, thiết thực nhất dựa trên quẻ.`;
+      } else {
+        userPrompt = isEn
+          ? `Please interpret the following Lục Hào (Six Lines) reading for me:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Detailed Hexagram Info:\n${plainTextResult}\n\nInclude the following topics in your interpretation sections:\n1. **Hexagram Overview**: Primary hexagram, nuclear hexagram (Quẻ Hỗ), changed hexagram, special traits (Lục Xung, Lục Hợp, Du Hồn, Quy Hồn if any), and Ti-Yong energetic relationship.\n2. **Detailed Analysis for Question**: Address "${question}" directly, analyzing current situation, Subject-Object (Thế/Ứng) dynamics, Useful God (Dụng Thần) strength under Day/Month branches (Nhật thần, Nguyệt lệnh), Ám Động / Nhật Phá, Tham Sinh Vong Khắc / Tam Hợp Cục / Hợp Trụ / Nhập Mộ, Void branches (Tuần Không), Hidden Spirit (Phục Thần), and Symbolic Stars (Lộc, Mã, Đào Hoa) if relevant.\n3. **Moving Lines & Ứng Kỳ Timing**: Analyze moving lines transformations (Hóa tiến/thoái, hồi đầu sinh/khắc) and cite the concrete Ứng Kỳ manifestation dates provided above.\n4. **Actionable Guidance**: Provide 3 concrete, practical steps to navigate this situation.`
+          : `Hãy luận giải quẻ Lục Hào sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}\n\nHãy luận giải các nội dung sau trong các mục luận giải:\n1. **Tổng quan quẻ dịch**: Ý nghĩa Quẻ Chủ, Quẻ Hỗ, Quẻ Biến, đặc tính quẻ (Lục Xung, Lục Hợp, Du Hồn, Quy Hồn nếu có) và mối tương quan giữa Thể và Dụng.\n2. **Luận giải chi tiết cho câu hỏi**: Trực tiếp câu hỏi "${question}", phân tích tình thế hiện tại, tương quan Hào Thế/Ứng, sức mạnh của Dụng Thần theo Tăng San Bốc Dịch (Ám Động, Nhật Phá, Tham Sinh Vong Khắc, Tam Hợp Cục, Hợp Trụ, Nhập Mộ, Phi–Phục, Tuần Không) và các Thần sát (Lộc, Dịch Mã, Đào Hoa) nếu có.\n3. **Ý nghĩa hào động & Dự báo Ứng Kỳ**: Phân tích sự biến hóa của hào động (hồi đầu sinh/khắc, hóa tiến/thoái...) và nêu rõ thời điểm ứng nghiệm (Ứng Kỳ) theo các mốc ngày Dương lịch / Can Chi đã tính sẵn.\n4. **Lời khuyên hành động**: Đưa ra 3 lời khuyên hành động thực tế, cụ thể nhất để cải biến tình huống hoặc nắm bắt cơ hội.`;
+      }
 
       const messages = [
         { role: 'system', content: sysPrompt },
@@ -265,20 +288,35 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
     setFollowUpError('');
     setFollowUpRetryStatus('');
 
+    // ── Phân biệt phương pháp cho follow-up ──────────────────────────────
+    const isMaiHoaFollowUp = result?.method === 'mai-hoa' || result?.subMode === 'time' || result?.subMode === 'serial';
+
     try {
-      const sysPrompt = isEn
-        ? `You are an expert I Ching (Kinh Dịch) scholar. The user is asking a follow-up question based on their hexagram reading and previous interpretation.\nRequirements:\n1. Answer CONCISELY and directly address the user's question. Do NOT repeat introductory information or hexagram setup.\n2. Briefly analyze based on hexagram imagery, moving lines, or Ti-Yong energy.\n3. Conclude with clear, practical advice. Always respond in English.`
-        : `Bạn là một chuyên gia Kinh Dịch (I Ching) uyên bác, thấu đáo. Người dùng đang hỏi thêm một câu hỏi cụ thể dựa trên quẻ dịch và thông tin đã luận giải trước đó.\nYêu cầu quan trọng khi trả lời câu hỏi thêm:\n1. Trả lời NGẮN GỌN, súc tích, đi thẳng vào trọng tâm câu hỏi của người dùng. KHÔNG dông dài, KHÔNG lặp lại phần giới thiệu hay thông tin quẻ ban đầu.\n2. Phân tích ngắn gọn dựa trên tượng quẻ, hào động hoặc thể dụng liên quan trực tiếp tới thắc mắc này.\n3. Đưa ra kết luận hoặc lời khuyên cụ thể, ngắn gọn, dễ hiểu. Luôn trả lời bằng tiếng Việt.`;
+      // Follow-up system prompt tùy phương pháp
+      let sysPrompt;
+      if (isMaiHoaFollowUp) {
+        sysPrompt = isEn
+          ? `You are an expert in Mai Hoa Yi Shu (Plum Blossom Numerology — Shao Yong method). The user is asking a follow-up question. Answer CONCISELY using Mai Hoa logic: trigram imagery, Thể–Dụng Five-Element relationship, moving line, and changed hexagram. Do NOT use Lục Hào Tăng San rules. Always respond in English.`
+          : `Bạn là chuyên gia Mai Hoa Dịch Số (phép Thiệu Khang). Người dùng đang hỏi thêm. Trả lời NGẮN GỌN dựa trên tượng quái, quan hệ Ngũ Hành Thể–Dụng, hào động và quẻ biến — KHÔNG áp dụng quy tắc Lục Hào. Luôn trả lời bằng tiếng Việt.`;
+      } else {
+        sysPrompt = isEn
+          ? `You are an expert Lục Hào (Six Lines) scholar. The user is asking a follow-up question based on their reading and previous interpretation.\nRequirements:\n1. Answer CONCISELY and directly address the user's question. Do NOT repeat introductory information or hexagram setup.\n2. Briefly analyze based on hexagram imagery, moving lines, Dụng Thần strength, or Ứng Kỳ timing.\n3. Conclude with clear, practical advice. Always respond in English.`
+          : `Bạn là chuyên gia Lục Hào Tăng San Bốc Dịch. Người dùng đang hỏi thêm một câu hỏi cụ thể dựa trên quẻ dịch đã luận giải.\nYêu cầu:\n1. Trả lời NGẮN GỌN, đi thẳng vào trọng tâm. KHÔNG lặp lại thông tin quẻ ban đầu.\n2. Phân tích ngắn gọn dựa trên tượng quẻ, hào động, Dụng Thần hoặc Ứng Kỳ liên quan.\n3. Đưa ra kết luận hoặc lời khuyên cụ thể. Luôn trả lời bằng tiếng Việt.`;
+      }
 
       const question = result?.question || '';
       const caster = result?.caster || '';
       const castDate = result?.castDate || '';
       const castTime = result?.castTime || '';
-      const extraContext = buildLucHaoPromptContext(result, isEn);
+      const extraContext = isMaiHoaFollowUp ? '' : buildLucHaoPromptContext(result, isEn);
+
+      const methodLabel = isMaiHoaFollowUp
+        ? (result?.subMode === 'time' ? (isEn ? 'Date/Time of Intent' : 'Ngày giờ động tâm') : (isEn ? 'Serial Number' : 'Số seri'))
+        : (isEn ? 'Six Lines (Lục Hào)' : 'Lục Hào');
 
       const initialUserPrompt = isEn
-        ? `Please interpret the following I Ching hexagram reading:\n- Topic / Question: "${question}"\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Hexagram details:\n${plainTextResult}`
-        : `Hãy luận giải quẻ dịch sau cho tôi:\n- Việc cần xem: "${question}"\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}`;
+        ? `Please interpret the following ${isMaiHoaFollowUp ? 'Mai Hoa Yi Shu' : 'Lục Hào'} reading:\n- Topic / Question: "${question}"\n- Method: ${methodLabel}\n- Caster: ${caster || 'Self-cast'}\n- Date & Time: ${castDate} ${castTime}${extraContext}\n- Hexagram details:\n${plainTextResult}`
+        : `Hãy luận giải quẻ ${isMaiHoaFollowUp ? 'Mai Hoa Dịch Số' : 'Lục Hào'} sau cho tôi:\n- Việc cần xem: "${question}"\n- Phương pháp: ${methodLabel}\n- Người lập quẻ: ${caster || 'Tự gieo quẻ'}\n- Thời gian lập: ${castDate} ${castTime}${extraContext}\n- Thông tin quẻ chi tiết:\n${plainTextResult}`;
 
       const messages = [
         { role: 'system', content: sysPrompt },
