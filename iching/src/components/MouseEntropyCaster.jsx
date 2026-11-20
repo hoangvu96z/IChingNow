@@ -7,19 +7,18 @@ import { soundEngine } from '../utils/soundEffects.js';
 import { useLanguage } from '../context/useLanguage.js';
 
 const ENTROPY_NEEDED = 100;
-const CANVAS_W = 340;
-const CANVAS_H = 175;
 
 /**
  * MouseEntropyCaster
  * ------------------
  * Vùng tương tác thu thập entropy vật lý thật từ chuyển động chuột hoặc vuốt ngón tay.
- * 
+ *
  * ĐẶC ĐIỂM:
  * - 100% không dùng Math.random() — đồng xu được sinh từ vi gia tốc, góc rẽ, thời gian tay người di chuyển.
  * - Hiệu ứng vệt sáng thư pháp (golden ink trail) chuyển dần sang màu ngọc bích (jade) khi tích đủ năng lượng.
  * - Hạt bụi kim ngân bồng bềnh (golden particles).
  * - Tự động tung 3 đồng xu 3D với âm thanh leng keng khi đạt 100% năng lượng.
+ * - FIX: Kết quả 3 đồng xu hiển thị ngay lập tức, khớp chính xác với hào được ghi nhận.
  */
 export default function MouseEntropyCaster({
   onLineReady,
@@ -38,11 +37,14 @@ export default function MouseEntropyCaster({
   const isCollecting = useRef(false);
   const [lineCommitGate] = useState(() => createLineCommitGate());
 
-  const [phase, setPhase] = useState('idle'); // 'idle' | 'collecting' | 'flashing' | 'tossing' | 'done'
+  // phase: 'idle' | 'collecting' | 'reveal' | 'done'
+  const [phase, setPhase] = useState('idle');
   const [entropyPct, setEntropyPct] = useState(0);
-  const [resultCoins, setResultCoins] = useState(null);
-  const [lastLine, setLastLine] = useState(null);
+  // lineResult holds the finalized { coins, total, yinYang, moving, type, index } for display
+  const [lineResult, setLineResult] = useState(null);
   const [hasInteracted, setHasInteracted] = useState(false);
+  // Brief flash overlay state for the "entropy locked" moment
+  const [isFlashing, setIsFlashing] = useState(false);
 
   // Dọn dẹp gate khi unmount
   useEffect(() => () => lineCommitGate.cancel(), [lineCommitGate]);
@@ -106,13 +108,13 @@ export default function MouseEntropyCaster({
     }
 
     // Hiệu ứng loé sáng khi đầy năng lượng
-    if (phase === 'flashing') {
-      ctx.fillStyle = 'rgba(26, 107, 74, 0.16)';
+    if (isFlashing) {
+      ctx.fillStyle = 'rgba(26, 107, 74, 0.18)';
       ctx.fillRect(0, 0, W, H);
     }
 
     rafRef.current = requestAnimationFrame(draw);
-  }, [hasInteracted, phase]);
+  }, [hasInteracted, phase, isFlashing]);
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(draw);
@@ -147,9 +149,9 @@ export default function MouseEntropyCaster({
     poolRef.current.reset();
     setPhase('idle');
     setEntropyPct(0);
-    setResultCoins(null);
-    setLastLine(null);
+    setLineResult(null);
     setHasInteracted(false);
+    setIsFlashing(false);
     trailRef.current = [];
     particlesRef.current = [];
     isCollecting.current = false;
@@ -168,7 +170,7 @@ export default function MouseEntropyCaster({
   }
 
   function handlePointerEnter(e) {
-    if (disabled || isDone || phase === 'tossing' || phase === 'flashing' || phase === 'done') return;
+    if (disabled || isDone || phase === 'reveal' || phase === 'done') return;
     isCollecting.current = true;
     setPhase('collecting');
     setHasInteracted(true);
@@ -181,7 +183,7 @@ export default function MouseEntropyCaster({
 
   function handlePointerMove(e) {
     if (!isCollecting.current || disabled || isDone) return;
-    if (phase === 'tossing' || phase === 'flashing' || phase === 'done') return;
+    if (phase === 'reveal' || phase === 'done') return;
 
     if (e.cancelable) e.preventDefault();
 
@@ -225,28 +227,32 @@ export default function MouseEntropyCaster({
   }
 
   // ─── Kích hoạt gieo 3 đồng xu từ entropy ─────────────────────────
+  // FIX: Trích xuất kết quả NGAY LẬP TỨC khi entropy đủ,
+  //      rồi hiển thị 3 đồng xu đúng với hào được ghi nhận, không delay ẩn.
   async function triggerToss() {
     isCollecting.current = false;
     const commitToken = lineCommitGate.begin();
     if (commitToken === null) return;
 
-    setPhase('flashing');
-    await new Promise(r => setTimeout(r, 280));
-    if (!lineCommitGate.isCurrent(commitToken)) return;
-
-    setPhase('tossing');
-
-    // Trích xuất 3 đồng xu ngẫu nhiên thật từ entropy di chuyển chuột
+    // ── Bước 1: Trích xuất kết quả NGAY từ entropy người dùng ──────
     const coins = poolRef.current.drain3Coins();
-    setResultCoins(coins);
-    soundEngine.playCoinToss?.();
+    const lineData = { index: currentStep + 1, ...coinsToLine(coins) };
+    // lineData.coins === coins (cùng mảng tham chiếu từ coinsToLine)
 
-    await new Promise(r => setTimeout(r, 680));
+    // ── Bước 2: Flash ngắn 200ms, hiển thị kết quả coin ngay ───────
+    setIsFlashing(true);
+    soundEngine.playCoinToss?.();
+    // Hiển thị lineResult ngay để coin đúng thấy được trong lúc flash
+    setLineResult(lineData);
+    setPhase('reveal');
+    setEntropyPct(100);
+
+    await new Promise(r => setTimeout(r, 220));
+    setIsFlashing(false);
     if (!lineCommitGate.isCurrent(commitToken)) return;
 
+    // ── Bước 3: Coin settle + tiếng kim loại ───────────────────────
     soundEngine.playCoinClink?.();
-    const lineData = { index: currentStep + 1, ...coinsToLine(coins) };
-    setLastLine(lineData);
 
     // Nếu là hào 6 (hào cuối cùng) -> chuông ngân vang
     if (currentStep === 5) {
@@ -255,49 +261,67 @@ export default function MouseEntropyCaster({
       }, 500);
     }
 
+    // ── Bước 4: Ghi nhận hào sau 1.1s cho người dùng thấy kết quả ──
     lineCommitGate.schedule(commitToken, () => {
       onLineReady(lineData);
-      setLastLine(null);
       setPhase('done');
+      setLineResult(null);
     }, 1100);
   }
 
-  const isTossing = phase === 'tossing' || phase === 'flashing';
   const yaoNames = isEn
     ? ['1st Line (Initial)', '2nd Line', '3rd Line', '4th Line', '5th Line (Ruler)', '6th Line (Top)']
     : ['Hào Sơ (1)', 'Hào Nhị (2)', 'Hào Tam (3)', 'Hào Tứ (4)', 'Hào Ngũ (5)', 'Hào Thượng (6)'];
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%' }}>
+  const lineTypeLabel = {
+    'lao-am':      isEn ? 'Old Yin (Moving)' : 'Lão Âm ✦',
+    'thieu-duong': isEn ? 'Young Yang' : 'Thiếu Dương',
+    'thieu-am':    isEn ? 'Young Yin' : 'Thiếu Âm',
+    'lao-duong':   isEn ? 'Old Yang (Moving)' : 'Lão Dương ✦',
+  };
 
-      {/* Vùng Canvas di chuột */}
+  const isRevealing = phase === 'reveal';
+  const showCoins = isRevealing && lineResult;
+  const showResult = isRevealing && lineResult && !isFlashing;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, width: '100%' }}>
+
+      {/* ── Canvas di chuột ──────────────────────────────────────── */}
       <div style={{
         position: 'relative',
         width: '100%',
-        maxWidth: CANVAS_W,
-        borderRadius: 16,
+        borderRadius: 18,
         overflow: 'hidden',
         border: `2px solid ${
-          phase === 'flashing'
+          isFlashing
             ? 'var(--color-jade, #1a6b4a)'
             : phase === 'collecting'
-            ? 'rgba(184, 134, 11, 0.55)'
+            ? 'rgba(184, 134, 11, 0.65)'
+            : phase === 'reveal'
+            ? 'var(--color-jade, #1a6b4a)'
             : 'rgba(184, 134, 11, 0.22)'
         }`,
         boxShadow: phase === 'collecting'
-          ? '0 0 22px rgba(184, 134, 11, 0.16)'
+          ? '0 0 28px rgba(184, 134, 11, 0.18)'
+          : phase === 'reveal'
+          ? '0 0 24px rgba(26, 107, 74, 0.2)'
           : 'inset 0 2px 8px rgba(44, 24, 16, 0.04)',
-        cursor: disabled || isDone || isTossing ? 'default' : 'crosshair',
+        cursor: disabled || isDone || isRevealing ? 'default' : 'crosshair',
         transition: 'border-color 0.25s, box-shadow 0.25s',
         userSelect: 'none',
         touchAction: 'none',
         background: 'var(--color-paper, #faf3e0)',
+        // Responsive height via aspect-ratio
+        aspectRatio: '2 / 1',
+        minHeight: 120,
+        maxHeight: 220,
       }}>
         <canvas
           ref={canvasRef}
-          width={CANVAS_W}
-          height={CANVAS_H}
-          style={{ display: 'block', width: '100%', height: 'auto' }}
+          width={680}
+          height={340}
+          style={{ display: 'block', width: '100%', height: '100%', objectFit: 'fill' }}
           onMouseEnter={handlePointerEnter}
           onMouseMove={handlePointerMove}
           onMouseLeave={handlePointerLeave}
@@ -312,7 +336,7 @@ export default function MouseEntropyCaster({
           onTouchEnd={handlePointerLeave}
         />
 
-        {/* Overlay văn bản chỉ dẫn tương tác */}
+        {/* Overlay hướng dẫn tương tác */}
         {!disabled && !isDone && (
           <div style={{
             position: 'absolute',
@@ -321,72 +345,75 @@ export default function MouseEntropyCaster({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
+            gap: 8,
             pointerEvents: 'none',
           }}>
             {phase === 'idle' && (
               <>
-                <div style={{ fontSize: '1.75rem', opacity: 0.5, animation: 'float 2s ease-in-out infinite' }}>
+                <div style={{ fontSize: '2rem', opacity: 0.45, animation: 'float 2s ease-in-out infinite' }}>
                   🖱️
                 </div>
                 <div style={{
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
                   textAlign: 'center',
                   color: 'var(--color-ink, #2c1810)',
-                  background: 'rgba(255, 255, 255, 0.85)',
-                  padding: '5px 14px',
-                  borderRadius: 20,
-                  boxShadow: '0 2px 6px rgba(44, 24, 16, 0.08)',
-                  backdropFilter: 'blur(3px)',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  padding: '6px 18px',
+                  borderRadius: 24,
+                  boxShadow: '0 2px 8px rgba(44, 24, 16, 0.1)',
+                  backdropFilter: 'blur(4px)',
                 }}>
                   {isEn
-                    ? `Move mouse freely to cast ${yaoNames[currentStep]}`
+                    ? `Rê chuột để gieo ${yaoNames[currentStep]}`
                     : `Di chuyển chuột để gieo ${yaoNames[currentStep]}`}
+                </div>
+                <div style={{
+                  fontSize: '0.7rem',
+                  color: 'var(--color-ink-muted)',
+                  background: 'rgba(255,255,255,0.75)',
+                  padding: '3px 12px',
+                  borderRadius: 14,
+                  backdropFilter: 'blur(3px)',
+                }}>
+                  🔬 {isEn ? 'Real physical randomness from your hand' : 'Ngẫu nhiên vật lý thật từ chuyển động tay bạn'}
                 </div>
               </>
             )}
 
             {phase === 'collecting' && (
               <div style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                color: 'var(--color-gold, #b8860b)',
-                background: 'rgba(255, 255, 255, 0.92)',
-                padding: '4px 14px',
-                borderRadius: 20,
-                border: '1px solid rgba(184, 134, 11, 0.35)',
-                boxShadow: '0 2px 8px rgba(184, 134, 11, 0.12)',
-              }}>
-                {isEn ? `Collecting entropy... ${entropyPct}%` : `Đang thu nhận khí... ${entropyPct}%`}
-              </div>
-            )}
-
-            {phase === 'flashing' && (
-              <div style={{
                 fontSize: '0.82rem',
                 fontWeight: 800,
-                color: 'var(--color-jade, #1a6b4a)',
-                background: 'rgba(255, 255, 255, 0.96)',
-                padding: '5px 16px',
-                borderRadius: 20,
-                border: '1.5px solid var(--color-jade, #1a6b4a)',
-                boxShadow: '0 4px 12px rgba(26, 107, 74, 0.2)',
+                color: entropyPct >= 80
+                  ? 'var(--color-jade, #1a6b4a)'
+                  : 'var(--color-gold, #b8860b)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                padding: '6px 18px',
+                borderRadius: 24,
+                border: `1.5px solid ${entropyPct >= 80 ? 'rgba(26,107,74,0.5)' : 'rgba(184, 134, 11, 0.4)'}`,
+                boxShadow: `0 3px 10px ${entropyPct >= 80 ? 'rgba(26,107,74,0.15)' : 'rgba(184,134,11,0.12)'}`,
+                transition: 'all 0.3s',
               }}>
-                ✨ {isEn ? 'Entropy locked — Casting!' : 'Đã hội tụ — Khởi gieo!'}
+                {entropyPct >= 80
+                  ? (isEn ? `⚡ Almost there! ${entropyPct}%` : `⚡ Sắp đủ! ${entropyPct}%`)
+                  : (isEn ? `🌀 Keep moving... ${entropyPct}%` : `🌀 Tiếp tục di chuột... ${entropyPct}%`)}
               </div>
             )}
 
-            {phase === 'tossing' && (
+            {isFlashing && (
               <div style={{
-                fontSize: '0.78rem',
-                color: 'var(--color-ink-muted, #6b4c3b)',
-                fontWeight: 600,
-                background: 'rgba(255, 255, 255, 0.88)',
-                padding: '3px 12px',
-                borderRadius: 14,
+                fontSize: '0.9rem',
+                fontWeight: 900,
+                color: 'var(--color-jade, #1a6b4a)',
+                background: 'rgba(255, 255, 255, 0.98)',
+                padding: '7px 20px',
+                borderRadius: 24,
+                border: '2px solid var(--color-jade, #1a6b4a)',
+                boxShadow: '0 6px 18px rgba(26, 107, 74, 0.25)',
+                animation: 'pulse 0.2s ease-out',
               }}>
-                {isEn ? '3 Coins in the air...' : '3 Đồng xu đang bay...'}
+                ✨ {isEn ? 'Entropy locked — Revealing!' : 'Đã hội tụ — Hiển thị kết quả!'}
               </div>
             )}
           </div>
@@ -400,15 +427,15 @@ export default function MouseEntropyCaster({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(250, 243, 224, 0.8)',
+            background: 'rgba(250, 243, 224, 0.82)',
             pointerEvents: 'none',
           }}>
             <div style={{
-              fontSize: '0.8rem',
+              fontSize: '0.82rem',
               color: 'var(--color-vermillion, #c0392b)',
-              fontWeight: 600,
+              fontWeight: 700,
               textAlign: 'center',
-              padding: '0 16px',
+              padding: '0 20px',
             }}>
               ⚠ {isEn ? 'Please enter your inquiry question above' : 'Hãy nhập việc cần xem trước'}
             </div>
@@ -416,29 +443,35 @@ export default function MouseEntropyCaster({
         )}
       </div>
 
-      {/* Thanh năng lượng Entropy */}
+      {/* ── Thanh năng lượng Entropy ──────────────────────────────── */}
       {!isDone && phase !== 'done' && (
-        <div style={{ width: '100%', maxWidth: CANVAS_W }}>
+        <div style={{ width: '100%' }}>
+          {/* Bar track */}
           <div style={{
-            height: 7,
-            borderRadius: 4,
-            background: 'rgba(184, 134, 11, 0.12)',
+            height: 10,
+            borderRadius: 6,
+            background: 'rgba(184, 134, 11, 0.1)',
             overflow: 'hidden',
-            border: '1px solid rgba(184, 134, 11, 0.22)',
+            border: '1px solid rgba(184, 134, 11, 0.2)',
+            position: 'relative',
           }}>
             <div style={{
               height: '100%',
               width: `${entropyPct}%`,
-              borderRadius: 4,
+              borderRadius: 6,
               background: entropyPct >= 100
                 ? 'linear-gradient(90deg, #1a6b4a 0%, #27c93f 100%)'
+                : entropyPct >= 80
+                ? 'linear-gradient(90deg, #b8860b 0%, #27c93f 100%)'
                 : 'linear-gradient(90deg, #b8860b 0%, #d4a017 100%)',
-              transition: 'width 0.08s ease, background 0.3s',
+              transition: 'width 0.08s ease, background 0.4s',
+              boxShadow: entropyPct >= 100 ? '0 0 10px rgba(39,201,63,0.5)' : 'none',
             }} />
           </div>
 
+          {/* Bar label */}
           <div style={{
-            marginTop: 5,
+            marginTop: 6,
             fontSize: '0.72rem',
             color: entropyPct >= 100 ? 'var(--color-jade, #1a6b4a)' : 'var(--color-ink-muted, #6b4c3b)',
             fontWeight: 600,
@@ -448,85 +481,150 @@ export default function MouseEntropyCaster({
           }}>
             <span>
               {phase === 'idle' && (isEn
-                ? '🖱️ Move cursor over canvas to generate true randomness'
-                : '🖱️ Rê chuột trong ô để tạo quẻ từ tay bạn')}
+                ? '🖱️ Rê chuột vào ô để tạo nguồn ngẫu nhiên thật'
+                : '🖱️ Rê chuột vào ô để tạo nguồn ngẫu nhiên thật')}
               {phase === 'collecting' && (isEn
-                ? `🌀 Keep moving your hand... (${entropyPct}%)`
+                ? `🌀 Keep moving freely... (${entropyPct}%)`
                 : `🌀 Tiếp tục di chuột tự do... (${entropyPct}%)`)}
-              {phase === 'flashing' && (isEn
-                ? '✅ 100% Entropy — Tossing 3 coins!'
-                : '✅ Đủ 100% Năng lượng — Đang gieo!')}
+              {phase === 'reveal' && (isEn
+                ? '✅ Entropy complete — Result locked!'
+                : '✅ Đủ entropy — Kết quả đã xác định!')}
             </span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{entropyPct}%</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 800 }}>{entropyPct}%</span>
           </div>
         </div>
       )}
 
-      {/* Hiển thị 3 Đồng Xu 3D kết quả */}
-      {(isTossing || (lastLine && phase !== 'idle')) && resultCoins && (
+      {/* ── 3 Đồng Xu Kết Quả — Hiển thị NGAY khi entropy đủ ──────── */}
+      {showCoins && (
         <div style={{
           display: 'flex',
-          justifyContent: 'center',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: 18,
-          padding: '10px 0',
-          minHeight: 96,
+          gap: 14,
+          width: '100%',
+          animation: 'fadeInUp 0.3s ease-out',
         }}>
-          {resultCoins.map((coinFace, idx) => (
-            <AncientCoin3D
-              key={idx}
-              face={coinFace}
-              isTossing={isTossing}
-              size={64}
-              delay={idx * 0.07}
-              showLabel={!isTossing}
-              disabled={true}
-            />
-          ))}
+          {/* Coin row */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-end',
+            gap: 20,
+            padding: '8px 0 4px',
+          }}>
+            {lineResult.coins.map((coinFace, idx) => (
+              <AncientCoin3D
+                key={`${currentStep}-${idx}`}
+                face={coinFace}
+                isTossing={isFlashing}
+                size={68}
+                delay={isFlashing ? idx * 0.07 : 0}
+                showLabel={!isFlashing}
+                disabled={true}
+              />
+            ))}
+          </div>
+
+          {/* Line result card — hiện ngay sau flash */}
+          {showResult && (
+            <div className="animate-in" style={{
+              padding: '10px 20px',
+              background: 'var(--color-paper, #faf3e0)',
+              borderRadius: 20,
+              border: `1.5px solid ${lineResult.moving ? 'rgba(192,57,43,0.5)' : 'rgba(26,107,74,0.4)'}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: `0 4px 14px ${lineResult.moving ? 'rgba(192,57,43,0.1)' : 'rgba(26,107,74,0.1)'}`,
+              width: '100%',
+              maxWidth: 340,
+            }}>
+              {/* Yao glyph + name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  fontSize: '1.6rem',
+                  fontWeight: 900,
+                  color: lineResult.yinYang === 'yang'
+                    ? 'var(--color-gold, #b8860b)'
+                    : 'var(--color-vermillion, #c0392b)',
+                  letterSpacing: lineResult.yinYang === 'yin' ? 4 : 0,
+                }}>
+                  {lineResult.yinYang === 'yang' ? '—' : '══'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-ink)' }}>
+                    <span style={{ color: 'var(--color-vermillion)' }}>{yaoNames[lineResult.index - 1]}: </span>
+                    <span style={{ color: lineResult.moving ? 'var(--color-vermillion)' : 'var(--color-jade)' }}>
+                      {lineTypeLabel[lineResult.type] || lineResult.type}
+                    </span>
+                  </div>
+                  <div style={{
+                    fontSize: '0.73rem',
+                    color: 'var(--color-gold)',
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                  }}>
+                    {lineResult.coins.map(c => c === 'ngua' ? '3' : '2').join(' + ')} = {lineResult.total}
+                    {lineResult.moving && (
+                      <span style={{ color: 'var(--color-vermillion)', marginLeft: 6 }}>
+                        {isEn ? '⚡ Moving!' : '⚡ Hào động!'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Next line hint */}
+              <div style={{
+                fontSize: '0.7rem',
+                color: 'var(--color-ink-muted)',
+                borderTop: '1px dashed rgba(184,134,11,0.25)',
+                paddingTop: 6,
+                width: '100%',
+                textAlign: 'center',
+              }}>
+                {currentStep < 5
+                  ? (isEn ? '↓ Continue to next line...' : '↓ Tiếp tục gieo hào tiếp theo...')
+                  : (isEn ? '🎉 All 6 lines complete!' : '🎉 Đã gieo đủ 6 hào!')}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Hào vừa gieo xong */}
-      {lastLine && !isTossing && (
-        <div className="animate-in" style={{
-          padding: '8px 18px',
-          background: 'var(--color-paper, #faf3e0)',
-          borderRadius: 20,
-          border: '1.5px solid rgba(192, 57, 43, 0.35)',
-          display: 'flex',
-          gap: 10,
-          alignItems: 'center',
-          boxShadow: '0 2px 10px rgba(44, 24, 16, 0.06)',
-        }}>
-          <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--color-vermillion)' }}>
-            {lastLine.yinYang === 'yang' ? '—' : '══'}
-          </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--color-ink)', fontWeight: 600 }}>
-            <span style={{ color: 'var(--color-vermillion)' }}>{yaoNames[lastLine.index - 1]}: </span>
-            <span style={{ color: 'var(--color-gold)', marginLeft: 4 }}>
-              ({lastLine.coins?.map(c => c === 'ngua' ? '3' : '2').join('+')} = {lastLine.total})
-            </span>
-            {lastLine.moving && (
-              <span style={{ color: 'var(--color-vermillion)', fontWeight: 700, marginLeft: 4 }}> (Động!)</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Gợi ý cho Mobile / Touch */}
+      {/* ── Gợi ý Mobile ───────────────────────────────────────────── */}
       {phase === 'idle' && !disabled && (
         <div style={{
-          fontSize: '0.7rem',
+          fontSize: '0.68rem',
           color: 'var(--color-ink-muted)',
           textAlign: 'center',
-          lineHeight: 1.4,
-          opacity: 0.75,
+          lineHeight: 1.5,
+          opacity: 0.8,
         }}>
           📱 {isEn
-            ? 'Touch screen: Swipe your finger across the area'
+            ? 'Mobile: Swipe your finger across the canvas'
             : 'Màn hình cảm ứng: Vuốt ngón tay qua lại trong ô'}
         </div>
       )}
+
+      {/* Global CSS */}
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+          0%   { transform: scale(1); }
+          50%  { transform: scale(1.06); }
+          100% { transform: scale(1); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(-6px); }
+        }
+      `}</style>
     </div>
   );
 }
