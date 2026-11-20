@@ -8,6 +8,7 @@ import LasoChart from './components/LasoChart.jsx';
 import TuViOverviewDashboard from './components/TuViOverviewDashboard.jsx';
 import TuViAiPanel from './components/TuViAiPanel.jsx';
 import HopHonPage from './components/HopHonPage.jsx';
+import HuyenKhongPage from './components/HuyenKhongPage.jsx';
 import { useReadingsApi } from './hooks/useReadingsApi';
 import { getHistoryRestoreError } from './utils/historyRestore.js';
 import TuViHistoryModal from './components/TuViHistoryModal.jsx';
@@ -166,10 +167,18 @@ function ReadingSession({
   );
 }
 
+function resolvePageFromHash(hash = '') {
+  if (hash === '#hop-hon') return 'hop-hon';
+  if (hash === '#huyen-khong') return 'huyen-khong';
+  return 'la-so';
+}
+
 export default function App() {
-  const [page, setPage] = useState(() => window.location.hash === '#hop-hon' ? 'hop-hon' : 'la-so');
+  const [page, setPage] = useState(() =>
+    typeof window !== 'undefined' ? resolvePageFromHash(window.location.hash) : 'la-so'
+  );
   useEffect(() => {
-    const update = () => setPage(window.location.hash === '#hop-hon' ? 'hop-hon' : 'la-so');
+    const update = () => setPage(resolvePageFromHash(window.location.hash));
     window.addEventListener('hashchange', update);
     return () => window.removeEventListener('hashchange', update);
   }, []);
@@ -208,7 +217,12 @@ export default function App() {
   const [formDraftData, setFormDraftData] = useState(null);
   const [sessionLifeEvents, setSessionLifeEvents] = useState([]);
   const [presetProfile, setPresetProfile] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash !== '#hop-hon' && !window.location.search) {
+    if (
+      typeof window !== 'undefined' &&
+      window.location.hash !== '#hop-hon' &&
+      window.location.hash !== '#huyen-khong' &&
+      !window.location.search
+    ) {
       const def = getDefaultSelfProfile(undefined, profileScopeKey);
       return def ? profileToBirthFormState(def) : null;
     }
@@ -242,7 +256,12 @@ export default function App() {
   useEffect(() => {
     const loaded = loadSavedProfiles(undefined, profileScopeKey);
     setSavedProfiles(loaded);
-    if (typeof window !== 'undefined' && window.location.hash !== '#hop-hon' && !window.location.search) {
+    if (
+      typeof window !== 'undefined' &&
+      window.location.hash !== '#hop-hon' &&
+      window.location.hash !== '#huyen-khong' &&
+      !window.location.search
+    ) {
       const def = getDefaultSelfProfile(undefined, profileScopeKey);
       setPresetProfile(def ? profileToBirthFormState(def) : null);
     }
@@ -776,6 +795,7 @@ export default function App() {
         <nav className="tuvi-page-nav" aria-label="Chức năng Tử Vi">
           <a href="#la-so" aria-current={page === 'la-so' ? 'page' : undefined}>Lá số cá nhân</a>
           <a href="#hop-hon" aria-current={page === 'hop-hon' ? 'page' : undefined}>♡ Hợp hôn</a>
+          <a href="#huyen-khong" aria-current={page === 'huyen-khong' ? 'page' : undefined}>🧭 Huyền Không</a>
         </nav>
         {historyActionError && (
           <div role="alert" style={{ margin: '0 0 16px', padding: '10px 14px', borderRadius: 10, color: 'var(--badge-triet-color)', background: 'var(--badge-triet-bg)', border: '1px solid var(--badge-triet-border)' }}>
@@ -784,6 +804,7 @@ export default function App() {
         )}
         <HistoryLoadErrorNotice error={historyError} onRetry={loadHistory} />
         {page === 'hop-hon' && <HopHonPage />}
+        {page === 'huyen-khong' && <HuyenKhongPage savedProfiles={savedProfiles} />}
         {page === 'la-so' && showForm && !chartResult && (
           <>
             <SavedProfilesBar

@@ -2334,18 +2334,20 @@
 
   .tuvi-page-nav {
     width: 100%;
+    flex-wrap: wrap;
     margin: 4px auto 16px;
   }
 
   .tuvi-page-nav a {
-    flex: 1 1 0;
+    flex: 1 1 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 12px;
-    font-size: 0.9rem;
+    padding: 9px 10px;
+    font-size: 0.84rem;
     font-weight: 600;
     text-align: center;
+    white-space: nowrap;
   }
 
   .hh-form-toolbar {
