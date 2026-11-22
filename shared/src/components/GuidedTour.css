@@ -1,0 +1,300 @@
+/* ============================================================================
+ * GuidedTour — Interactive Step-by-Step Spotlight Overlay (All 4 Main Apps)
+ * ============================================================================ */
+
+.gt-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  pointer-events: none;
+  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.gt-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 22, 0.74);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+
+.gt-click-catcher {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.gt-spotlight-ring {
+  position: fixed;
+  border-radius: 12px;
+  border: 2.5px solid var(--gt-accent, #d4a017);
+  box-shadow: 0 0 0 9999px rgba(8, 10, 22, 0.74), 0 0 22px rgba(212, 160, 23, 0.45);
+  pointer-events: none;
+  transition: top 0.22s ease, left 0.22s ease, width 0.22s ease, height 0.22s ease;
+}
+
+.gt-card {
+  position: fixed;
+  z-index: 1202;
+  pointer-events: auto;
+  background: #14172b;
+  color: #f8fafc;
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+[data-theme="light"] .gt-card {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.26);
+}
+
+.gt-card.is-mobile-dock {
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: auto;
+  max-height: 62vh;
+}
+
+.gt-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gt-step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.gt-step-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: var(--gt-accent, #d4a017);
+  color: #0f172a;
+}
+
+.gt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #1e293b;
+  color: #fde68a;
+  border: 1px solid rgba(253, 230, 138, 0.35);
+}
+
+[data-theme="light"] .gt-badge {
+  background: #fef3c7;
+  color: #78350f;
+  border-color: #f59e0b;
+}
+
+.gt-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+[data-theme="light"] .gt-close-btn {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.gt-title {
+  margin: 0;
+  font-size: 1.06rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.gt-body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+
+[data-theme="light"] .gt-body {
+  color: #334155;
+}
+
+.gt-tip {
+  padding: 9px 11px;
+  border-radius: 10px;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.14);
+  color: #a7f3d0;
+  border: 1px solid rgba(52, 211, 153, 0.38);
+}
+
+[data-theme="light"] .gt-tip {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.gt-fallback-note {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  background: rgba(251, 191, 36, 0.14);
+  color: #fde68a;
+  border: 1px dashed rgba(251, 191, 36, 0.45);
+}
+
+[data-theme="light"] .gt-fallback-note {
+  background: #fffbeb;
+  color: #78350f;
+  border-color: #f59e0b;
+}
+
+.gt-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gt-cta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.gt-cta-link:hover {
+  background: #1e40af;
+}
+
+.gt-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.gt-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.26);
+  cursor: pointer;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+[data-theme="light"] .gt-dot {
+  background: #cbd5e1;
+}
+
+.gt-dot.is-active {
+  width: 22px;
+  background: var(--gt-accent, #d4a017);
+}
+
+.gt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.gt-footer-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.gt-btn-primary,
+.gt-btn-secondary,
+.gt-btn-ghost {
+  padding: 8px 14px;
+  min-height: 38px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gt-btn-primary {
+  background: var(--gt-accent, #d4a017);
+  color: #0f172a;
+  border: none;
+}
+
+.gt-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="light"] .gt-btn-secondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.gt-btn-ghost {
+  background: transparent;
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.78rem;
+  padding: 6px 10px;
+}
+
+[data-theme="light"] .gt-btn-ghost {
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-spotlight-ring,
+  .gt-dot {
+    transition: none;
+  }
+}

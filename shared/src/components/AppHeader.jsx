@@ -363,6 +363,8 @@ export default function AppHeader({
   languageLabel,
   themeToggle,
   onOpenJournal,
+  onOpenGuide,
+  guideLabel = 'Hướng dẫn',
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef(null);
@@ -466,6 +468,24 @@ export default function AppHeader({
           }}>
             {/* Apps dropdown */}
             <AppsDropdown appId={appId} colors={colors} />
+
+            {onOpenGuide && (
+              <button
+                type="button"
+                id="btn-app-guide"
+                onClick={onOpenGuide}
+                aria-label={guideLabel}
+                title={guideLabel}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '6px 11px', borderRadius: 8,
+                  color: colors.accent, background: colors.accentSoft,
+                  border: `1px solid ${colors.border}`, cursor: 'pointer',
+                  font: 'inherit', fontSize: '0.8125rem', fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}
+              >❓ {guideLabel}</button>
+            )}
 
             {onOpenJournal && (
               <button
@@ -571,6 +591,20 @@ export default function AppHeader({
 
         {/* Apps list */}
         <MobileAppsList appId={appId} colors={colors} />
+
+        {onOpenGuide && (
+          <button
+            type="button"
+            id="btn-app-guide-mobile"
+            onClick={() => { setDrawerOpen(false); onOpenGuide(); }}
+            style={{
+              background: colors.accentSoft, border: `1px solid ${colors.border}`,
+              borderRadius: 8, color: colors.accent, padding: '12px 16px',
+              cursor: 'pointer', fontSize: '0.9375rem', fontWeight: 700,
+              textAlign: 'center', fontFamily: 'inherit',
+            }}
+          >❓ {guideLabel}</button>
+        )}
 
         {onOpenJournal && (
           <button

@@ -8,6 +8,7 @@ import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { ssoApi, notesApi, safeStorage } from './api.js';
 import { useLanguage } from './context/LanguageContext.jsx';
 import { AppsDropdown } from '@shared/components/AppHeader.jsx';
+import GuidedTour from '@shared/components/GuidedTour.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { trackPageVisit } from '@shared/utils/analytics.js';
 import {
@@ -289,6 +290,7 @@ export default function App() {
   });
   const [route, setRoute] = useState(getRoute);
   const [showHelp, setShowHelp] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     trackPageVisit('notenow');
@@ -439,7 +441,7 @@ export default function App() {
           {/* Guide / Feature Intro */}
           <button
             className="nn-theme-toggle"
-            onClick={() => setShowHelp(true)}
+            onClick={() => setShowGuide(true)}
             title={t('header.help_title', 'Hướng dẫn & Tính năng')}
             aria-label={t('header.help_title', 'Hướng dẫn & Tính năng')}
             type="button"
@@ -526,7 +528,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         language={language}
         onToggleLanguage={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
-        onOpenHelp={() => setShowHelp(true)}
+        onOpenHelp={() => setShowGuide(true)}
       />
 
       {/* Content routing */}
@@ -550,6 +552,75 @@ export default function App() {
       <HelpModal
         isOpen={showHelp}
         onClose={() => setShowHelp(false)}
+      />
+
+      <GuidedTour
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        accentColor="#10b981"
+        language={language}
+        title={language === 'en' ? 'NoteNow Quick Guide' : 'Hướng dẫn sử dụng NoteNow'}
+        footerAction={{
+          label: language === 'en' ? 'All Features' : 'Xem chi tiết tính năng',
+          onClick: () => setShowHelp(true),
+        }}
+        steps={
+          language === 'en'
+            ? [
+                {
+                  id: 'nn-create',
+                  selector: '#btn-new-note, #btn-create-first-note',
+                  title: '1. Create a new note',
+                  body: 'Click "Create new note…" to write rich text, checklists, tags (#tag), colors, or record voice memos.',
+                },
+                {
+                  id: 'nn-search',
+                  selector: '#search-notes, .nn-search-mobile-input, #note-quick-filters',
+                  title: '2. Search & filter quickly',
+                  body: 'Search by keyword or filter notes by type, color dot, or #tag right above your board.',
+                  fallbackNote: 'Use the search box at the top or filter chips once you have saved notes.',
+                },
+                {
+                  id: 'nn-board',
+                  selector: '#note-board',
+                  title: '3. Manage notes & SpiritNow imports',
+                  body: 'Pin important notes, lock private notes with a password, share links, or receive readings saved directly from IChingNow / TuViNow / TarotNow.',
+                },
+                {
+                  id: 'nn-auth',
+                  selector: '#btn-login, .nn-header-auth',
+                  title: '4. Sign in with SSO to sync',
+                  body: 'Guests can take notes right away. Sign in with SpiritNow SSO to sync notes across devices and collaborate.',
+                },
+              ]
+            : [
+                {
+                  id: 'nn-create',
+                  selector: '#btn-new-note, #btn-create-first-note',
+                  title: '1. Tạo ghi chú mới',
+                  body: 'Bấm vào ô "Tạo ghi chú mới…" để soạn văn bản, danh sách việc cần làm, gắn nhãn #tag, đổi màu hoặc thu âm ghi chú.',
+                },
+                {
+                  id: 'nn-search',
+                  selector: '#search-notes, .nn-search-mobile-input, #note-quick-filters',
+                  title: '2. Tìm kiếm & lọc theo màu / thẻ',
+                  body: 'Nhập từ khóa vào ô tìm kiếm phía trên hoặc lọc nhanh theo loại ghi chú, chấm màu và thẻ #tag.',
+                  fallbackNote: 'Thanh tìm kiếm ở trên cùng và bộ lọc nhanh sẽ giúp bạn tìm lại ghi chú tức thì.',
+                },
+                {
+                  id: 'nn-board',
+                  selector: '#note-board',
+                  title: '3. Quản lý ghi chú & lưu từ các app khác',
+                  body: 'Ghim ghi chú quan trọng, đặt mật khẩu bảo vệ, chia sẻ link hoặc nhận trực tiếp kết quả quẻ/lá số/bài Tarot được lưu sang.',
+                },
+                {
+                  id: 'nn-auth',
+                  selector: '#btn-login, .nn-header-auth',
+                  title: '4. Đăng nhập SSO để đồng bộ đa thiết bị',
+                  body: 'Bạn có thể tạo note ngay không cần đăng nhập; khi đăng nhập SpiritNow SSO, ghi chú sẽ tự đồng bộ an toàn.',
+                },
+              ]
+        }
       />
 
       {/* Shared Footer — compact, distinct background, no app pills */}

@@ -1,20 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { buildPlainTextResult } from '../logic/buildPlainText.js';
+import { buildIChingAiPrompt } from '../utils/promptBuilder.js';
 import { copyToClipboard, downloadTxt, downloadJson } from '../logic/clipboard.js';
 import { useLanguage } from '../context/useLanguage.js';
-import { useAuth } from '../context/useAuth.js';
 
 /**
- * Card plaintext – nền tối, monospace, nút copy + download
+ * Card xuất kết quả & Copy Prompt cho AI (mở miễn phí cho mọi người dùng, khuyên dùng Google Gemini)
  */
 export default function PlainTextExportCard({ result }) {
   const { t, language } = useLanguage();
-  const { isAuthenticated, login } = useAuth();
-  const [copied, setCopied]   = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [copiedJ, setCopiedJ] = useState(false);
 
   const hasResult = !!result;
-  const text = hasResult ? buildPlainTextResult(result, language) : '';
+  const text = useMemo(() => (hasResult ? buildPlainTextResult(result, language) : ''), [hasResult, result, language]);
+  const aiPrompt = useMemo(() => (hasResult ? buildIChingAiPrompt(result, text, language) : ''), [hasResult, result, text, language]);
+
+  async function handleCopyPrompt() {
+    if (!hasResult) return;
+    await copyToClipboard(aiPrompt);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2500);
+  }
 
   async function handleCopyText() {
     if (!hasResult) return;
@@ -42,70 +50,85 @@ export default function PlainTextExportCard({ result }) {
     downloadJson(result, `que-kinh-dich-${ts}.json`);
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px dashed rgba(184, 134, 11, 0.3)',
-          borderRadius: 12,
-          padding: '24px 16px',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 12,
-          marginTop: 8,
-        }}
-      >
-        <span style={{ fontSize: '1.8rem' }}>🔒</span>
-        <p
-          style={{
-            margin: 0,
-            fontSize: '0.88rem',
-            color: 'var(--color-ink-muted, #718096)',
-            lineHeight: 1.5,
-            maxWidth: 640,
-          }}
-        >
-          {t('export.guest_notice', 'Bạn cần đăng nhập để sử dụng tính năng xuất kết quả quẻ Kinh Dịch.')}
-        </p>
-        <button
-          type="button"
-          onClick={login}
-          style={{
-            padding: '8px 20px',
-            background: 'linear-gradient(135deg, #d4a017 0%, #b8860b 100%)',
-            border: '1px solid rgba(212, 160, 23, 0.55)',
-            borderRadius: 10,
-            color: '#1a0a06',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(184, 134, 11, 0.3)',
-          }}
-        >
-          🔑 {t('auth.login_now', 'Đăng nhập ngay')}
-        </button>
-      </div>
-    );
-  }
+  const isEn = language === 'en';
 
   return (
     <div className="terminal-card">
+      {/* Gemini Recommendation Banner */}
+      <div
+        style={{
+          padding: '10px 14px',
+          background: 'linear-gradient(90deg, rgba(16,185,129,0.14), rgba(59,130,246,0.12))',
+          borderBottom: '1px solid rgba(52,211,153,0.28)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        <span style={{ fontSize: '0.82rem', lineHeight: 1.45, color: 'var(--color-terminal-text, #e2e8f0)' }}>
+          {isEn
+            ? '⭐ Best experience: Copy this AI Prompt and paste into Google Gemini for deep, accurate interpretation (free for everyone).'
+            : '⭐ Quan trọng: Hãy bấm Copy Prompt cho AI bên dưới và dán vào Google Gemini (khuyên dùng) để được luận giải sâu & chuẩn nhất — miễn phí cho mọi người dùng.'}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            id="btn-iching-copy-ai-prompt"
+            onClick={handleCopyPrompt}
+            disabled={!hasResult}
+            style={{
+              padding: '7px 14px',
+              borderRadius: 8,
+              border: 'none',
+              background: copiedPrompt ? '#16a34a' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              color: copiedPrompt ? '#ffffff' : '#0f172a',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: hasResult ? 'pointer' : 'not-allowed',
+              opacity: hasResult ? 1 : 0.45,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {copiedPrompt
+              ? (isEn ? '✓ Copied AI Prompt!' : '✓ Đã copy Prompt AI!')
+              : (isEn ? '✨ Copy Prompt for AI (Gemini)' : '✨ Copy Prompt cho AI (Gemini)')}
+          </button>
+          <a
+            href="https://gemini.google.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '6px 11px',
+              borderRadius: 8,
+              background: '#1d4ed8',
+              color: '#ffffff',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isEn ? 'Open Gemini ↗' : 'Mở Gemini ↗'}
+          </a>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="terminal-header" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div className="terminal-dot" style={{ background: '#ff5f56' }} />
           <div className="terminal-dot" style={{ background: '#ffbd2e' }} />
           <div className="terminal-dot" style={{ background: '#27c93f' }} />
-          <span style={{ marginLeft: 8, color: '#718096', fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+          <span style={{ marginLeft: 8, color: '#94a3b8', fontSize: '0.8125rem', fontFamily: 'monospace' }}>
             {t('export.header', 'plaintext — kết quả lập quẻ')}
           </span>
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
+            type="button"
             onClick={handleCopyText}
             disabled={!hasResult}
             style={{
@@ -129,6 +152,7 @@ export default function PlainTextExportCard({ result }) {
           </button>
 
           <button
+            type="button"
             onClick={handleDownloadTxt}
             disabled={!hasResult}
             style={{
@@ -136,7 +160,7 @@ export default function PlainTextExportCard({ result }) {
               borderRadius: 6,
               border: '1px solid rgba(113,128,150,0.4)',
               background: 'transparent',
-              color: '#718096',
+              color: '#94a3b8',
               fontSize: '0.8125rem',
               cursor: hasResult ? 'pointer' : 'not-allowed',
               opacity: hasResult ? 1 : 0.4,
@@ -147,6 +171,7 @@ export default function PlainTextExportCard({ result }) {
           </button>
 
           <button
+            type="button"
             onClick={handleCopyJson}
             disabled={!hasResult}
             style={{
@@ -167,6 +192,7 @@ export default function PlainTextExportCard({ result }) {
           </button>
 
           <button
+            type="button"
             onClick={handleDownloadJson}
             disabled={!hasResult}
             style={{
@@ -191,7 +217,7 @@ export default function PlainTextExportCard({ result }) {
         {hasResult ? (
           <span style={{ color: 'var(--color-terminal-text)' }}>{text}</span>
         ) : (
-          <span style={{ color: '#4a5568', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+          <span style={{ color: '#64748b', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
             {t('export.empty_result', '// Chưa có kết quả.\n// Hãy gieo quẻ để xem kết quả ở đây.')}
           </span>
         )}

@@ -138,3 +138,32 @@ export function buildLucHaoPromptContext(result, isEn = false) {
   const bullets = buildLucHaoPromptBullets(result, isEn);
   return bullets.length > 0 ? `\n- ${bullets.join('\n- ')}` : '';
 }
+
+export function buildIChingAiPrompt(result, plainText, language = 'vi') {
+  if (!result) return '';
+  const isEn = language === 'en';
+  const extraContext = buildLucHaoPromptContext(result, isEn);
+  const question = result.question?.trim() || (isEn ? '(General guidance)' : '(Hỏi tổng quan)');
+
+  if (isEn) {
+    return [
+      'You are an experienced I Ching & Liu Yao (Six Lines / Zeng Shan Bu Yi) master.',
+      `Question: "${question}"`,
+      extraContext ? `Engine Diagnostics & Context:${extraContext}` : '',
+      `\nFull Hexagram Data:\n${plainText}`,
+      '\nPlease analyze the Useful God (Dung Than), Month/Day influences, moving lines, Tomb/Clash/Void states, Timing (Ung Ky), and give clear, practical action advice.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  return [
+    'Bạn là bậc thầy Kinh Dịch & Lục Hào (Tăng San Bốc Dịch). Hãy luận giải sâu sắc, khách quan và thực tế quẻ dưới đây:',
+    `Việc cần xem: "${question}"`,
+    extraContext ? `Tóm tắt dữ kiện Dụng Thần & Ứng Kỳ:${extraContext}` : '',
+    `\nDữ liệu quẻ chi tiết:\n${plainText}`,
+    '\nYêu cầu luận giải:\n1. Phân tích Dụng Thần, Nhật Thần/Nguyệt Lệnh (vượng/suy) và Thế – Ứng.\n2. Luận hào động, biến, Mộ/Tuyệt/Tuần Không (nếu có) và dự báo Ứng Kỳ.\n3. Kết luận rõ Cát/Hung và đưa ra lời khuyên hành động cụ thể.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
