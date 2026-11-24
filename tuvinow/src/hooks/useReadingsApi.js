@@ -55,10 +55,20 @@ export function useReadingsApi(isAuthenticated, userId) {
       });
     if (!reading?.id) throw new Error('Máy chủ chưa xác nhận đã lưu lá số');
     if (generation.current === current && reading) {
-      setHistory(previous => [{ ...reading, data }, ...previous.filter(row => row.id !== reading.id)]);
+      setHistory(previous => {
+        const existing = previous.find(row => row.id === reading.id);
+        return [{ ...reading, data: { ...existing?.data, ...data } }, ...previous.filter(row => row.id !== reading.id)];
+      });
     }
     return reading?.id;
   }, [history, isAuthenticated, userId]);
+  const updateFavorite = async (id, favorite) => {
+    const current = generation.current;
+    await readingsApi.update(id, { favorite });
+    if (generation.current === current) setHistory(previous => previous.map(row =>
+      row.id === id ? { ...row, data: { ...row.data, favorite } } : row
+    ));
+  };
   const deleteReading = async (id) => {
     const current = generation.current;
     await readingsApi.delete(id);
@@ -69,6 +79,6 @@ export function useReadingsApi(isAuthenticated, userId) {
     await readingsApi.clear();
     if (generation.current === current) setHistory([]);
   };
-  return { history, error, loading, loadHistory, persistReading, deleteReading, deleteAllReadings };
+  return { history, error, loading, loadHistory, persistReading, updateFavorite, deleteReading, deleteAllReadings };
 }
 

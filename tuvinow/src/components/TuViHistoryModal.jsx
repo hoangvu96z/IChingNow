@@ -11,21 +11,41 @@ export default function TuViHistoryModal({
   onDelete,
   onDeleteAll,
   onRefresh,
+  onFavorite,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sort, setSort] = useState('newest');
+  const [favoritePending, setFavoritePending] = useState(null);
   const filtered = useMemo(() => {
-    if (!searchTerm.trim()) return history;
-    const term = searchTerm.toLowerCase();
+    const term = searchTerm.trim().toLowerCase();
     return history.filter((item) => {
-      const name = (item.data?.inputData?.name || item.title || '').toLowerCase();
-      const canChi = (item.data?.result?.canChiNam || '').toLowerCase();
-      const cuc = (item.data?.result?.cucName || '').toLowerCase();
-      return name.includes(term) || canChi.includes(term) || cuc.includes(term);
+      const values = [item.data?.inputData?.name, item.title, item.data?.result?.canChiNam, item.data?.result?.cucName];
+      const date = new Date(item.createdAt);
+      const localDay = Number.isNaN(date.getTime()) ? '' : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      return (!term || values.some(value => String(value || '').toLowerCase().includes(term))) &&
+        (!dateFrom || localDay >= dateFrom) && (!dateTo || (localDay && localDay <= dateTo)) &&
+        (!favoritesOnly || item.data?.favorite === true);
+    }).sort((a, b) => {
+      if (sort === 'name') return (a.data?.inputData?.name || a.title || '').localeCompare(b.data?.inputData?.name || b.title || '', 'vi');
+      const delta = (new Date(a.createdAt).getTime() || 0) - (new Date(b.createdAt).getTime() || 0);
+      return sort === 'oldest' ? delta : -delta;
     });
-  }, [history, searchTerm]);
+  }, [history, searchTerm, dateFrom, dateTo, favoritesOnly, sort]);
+
+  const toggleFavorite = async (event, item) => {
+    event.stopPropagation();
+    if (!onFavorite || favoritePending !== null) return;
+    setFavoritePending(item.id);
+    try { await onFavorite(item.id, !item.data?.favorite); }
+    catch (err) { alert(`Không lưu được yêu thích: ${err.message}`); }
+    finally { setFavoritePending(null); }
+  };
 
   if (!isOpen) return null;
 
@@ -97,7 +117,7 @@ export default function TuViHistoryModal({
           border: '1px solid var(--border-subtle)',
           boxShadow: '0 20px 50px rgba(0, 0, 0, 0.45)',
           borderRadius: '16px',
-          maxWidth: '720px',
+          maxWidth: '1100px',
           width: '100%',
           maxHeight: '85vh',
           display: 'flex',
@@ -217,6 +237,13 @@ export default function TuViHistoryModal({
               outline: 'none',
             }}
           />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'end', marginTop: 10 }}>
+            <label>Từ ngày <input aria-label="Từ ngày" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></label>
+            <label>Đến ngày <input aria-label="Đến ngày" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></label>
+            <label>Sắp xếp <select value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Mới nhất</option><option value="oldest">Cũ nhất</option><option value="name">Tên A–Z</option></select></label>
+            <label><input type="checkbox" checked={favoritesOnly} onChange={e => setFavoritesOnly(e.target.checked)} /> Chỉ yêu thích</label>
+            <span>{filtered.length}/{history.length} lá số</span>
+          </div>
         </div>
 
         {/* List Content */}
@@ -248,10 +275,10 @@ export default function TuViHistoryModal({
             >
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🔮</div>
               <div style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600, marginBottom: '6px' }}>
-                {searchTerm ? 'Không tìm thấy lá số phù hợp' : 'Chưa có lá số nào được lưu'}
+                {history.length ? 'Không tìm thấy lá số phù hợp' : 'Chưa có lá số nào được lưu'}
               </div>
               <p style={{ margin: 0, fontSize: '0.82rem', maxWidth: '340px', marginInline: 'auto' }}>
-                {searchTerm
+                {history.length
                   ? 'Thử tìm kiếm với từ khóa khác'
                   : 'Lá số của bạn sẽ tự động lưu khi an lá số trong lúc đăng nhập tài khoản.'}
               </p>
@@ -376,6 +403,12 @@ export default function TuViHistoryModal({
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <button type="button" onClick={e => toggleFavorite(e, item)} disabled={favoritePending !== null}
+                      aria-label={item.data?.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'} aria-pressed={!!item.data?.favorite}
+                      title={item.data?.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'}
+                      style={{ border: 0, background: 'transparent', color: 'var(--accent-gold)', cursor: 'pointer', fontSize: '1.4rem' }}>
+                      {item.data?.favorite ? '★' : '☆'}
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

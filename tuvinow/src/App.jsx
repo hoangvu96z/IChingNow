@@ -206,7 +206,7 @@ export default function App() {
 
   const { user, isAuthenticated, login } = useAuth();
   const profileScopeKey = isAuthenticated && user?.id ? String(user.id) : '';
-  const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, deleteReading, deleteAllReadings } = useReadingsApi(isAuthenticated, user?.id);
+  const { history, error: historyError, loading: historyLoading, loadHistory, persistReading, updateFavorite, deleteReading, deleteAllReadings } = useReadingsApi(isAuthenticated, user?.id);
   const { streak, recordActivity } = useStreak('tuvi');
   const [reading, setReading] = useState(null);
   const [sessionId, setSessionId] = useState(0);
@@ -958,6 +958,7 @@ export default function App() {
         onDelete={handleDeleteReading}
         onDeleteAll={handleDeleteAll}
         onRefresh={loadHistory}
+        onFavorite={updateFavorite}
       />
 
       {/* Combined Reading Modal (Tử Vi + Kinh Dịch) */}

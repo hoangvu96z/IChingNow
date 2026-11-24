@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { formatReadingTimestamp } from '../utils/tarotAnalytics.js';
 import TarotReflectionCard from './TarotReflectionCard.jsx';
@@ -13,12 +13,35 @@ export default function HistoryManagementModal({
   onDeleteMultiple,
   onClearAll,
   onUpdateReflection,
+  onUpdateFavorite,
 }) {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [previewId, setPreviewId] = useState(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [spreadFilter, setSpreadFilter] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [favoritePending, setFavoritePending] = useState(null);
+  const [favoriteError, setFavoriteError] = useState('');
+  useEffect(() => { setSelectedIds(new Set()); }, [searchTerm, dateFrom, dateTo, spreadFilter, favoritesOnly]);
+  const isFavorite = (item) => Boolean(item.data?.isFavorite);
+  const itemDate = (item) => {
+    const d = new Date(item.timestamp || item.createdAt);
+    if (Number.isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const toggleFavorite = async (item) => {
+    if (!onUpdateFavorite || favoritePending !== null) return;
+    setFavoritePending(item.id);
+    setFavoriteError('');
+    try { await onUpdateFavorite(item.id, { isFavorite: !isFavorite(item) }); }
+    catch { setFavoriteError(isEn ? 'Could not update favorite. Please try again.' : 'Không lưu được yêu thích. Vui lòng thử lại.'); }
+    finally { setFavoritePending(null); }
+  };
 
   // Derive preview item live from history by id so edits never revert!
   const previewItem = useMemo(
@@ -35,15 +58,23 @@ export default function HistoryManagementModal({
       : item.spreadName || 'Trải bài';
   }, [t]);
 
+  const spreadOptions = useMemo(() => [...new Set(history.map(formatSpreadName))].sort((a, b) => a.localeCompare(b)), [history, formatSpreadName]);
   const filteredHistory = useMemo(() => {
-    if (!searchTerm.trim()) return history;
-    const term = searchTerm.toLowerCase();
+    const term = searchTerm.trim().toLocaleLowerCase();
     return history.filter((item) => {
-      const spreadName = formatSpreadName(item).toLowerCase();
-      const question = (item.question || '').toLowerCase();
-      return spreadName.includes(term) || question.includes(term);
+      const date = itemDate(item);
+      return (!term || formatSpreadName(item).toLocaleLowerCase().includes(term) || (item.question || '').toLocaleLowerCase().includes(term))
+        && (!spreadFilter || formatSpreadName(item) === spreadFilter)
+        && (!favoritesOnly || isFavorite(item))
+        && (!dateFrom || (date && date >= dateFrom))
+        && (!dateTo || (date && date <= dateTo));
+    }).slice().sort((a, b) => {
+      if (sortOrder === 'name') return formatSpreadName(a).localeCompare(formatSpreadName(b));
+      const aTime = new Date(a.timestamp || a.createdAt).getTime() || 0;
+      const bTime = new Date(b.timestamp || b.createdAt).getTime() || 0;
+      return sortOrder === 'oldest' ? aTime - bTime : bTime - aTime;
     });
-  }, [history, searchTerm, formatSpreadName]);
+  }, [history, searchTerm, formatSpreadName, dateFrom, dateTo, spreadFilter, favoritesOnly, sortOrder]);
 
   if (!isOpen) return null;
 
@@ -53,9 +84,9 @@ export default function HistoryManagementModal({
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
-      setSelectedIds(new Set());
+      setSelectedIds((prev) => new Set([...prev].filter((id) => !filteredHistory.some((item) => item.id === id))));
     } else {
-      setSelectedIds(new Set(filteredHistory.map((item) => item.id)));
+      setSelectedIds((prev) => new Set([...prev, ...filteredHistory.map((item) => item.id)]));
     }
   };
 
@@ -339,7 +370,7 @@ export default function HistoryManagementModal({
             border: '1px solid var(--border-gold)',
             borderRadius: 16,
             width: '100%',
-            maxWidth: 680,
+            maxWidth: 1100,
             maxHeight: '85vh',
             display: 'flex',
             flexDirection: 'column',
@@ -434,6 +465,16 @@ export default function HistoryManagementModal({
                 boxSizing: 'border-box',
               }}
             />
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', gap: 10 }}>
+              <label>{isEn ? 'From' : 'Từ ngày'} <input aria-label={isEn ? 'From date' : 'Từ ngày'} type="date" value={dateFrom} max={dateTo || undefined} onChange={(e) => setDateFrom(e.target.value)} /></label>
+              <label>{isEn ? 'To' : 'Đến ngày'} <input aria-label={isEn ? 'To date' : 'Đến ngày'} type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => setDateTo(e.target.value)} /></label>
+              <label>{isEn ? 'Spread' : 'Loại trải bài'} <select value={spreadFilter} onChange={(e) => setSpreadFilter(e.target.value)}><option value="">{isEn ? 'All' : 'Tất cả'}</option>{spreadOptions.map((name) => <option key={name} value={name}>{name}</option>)}</select></label>
+              <label>{isEn ? 'Sort' : 'Sắp xếp'} <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}><option value="newest">{isEn ? 'Newest' : 'Mới nhất'}</option><option value="oldest">{isEn ? 'Oldest' : 'Cũ nhất'}</option><option value="name">{isEn ? 'Spread name' : 'Tên trải bài'}</option></select></label>
+              <label><input type="checkbox" checked={favoritesOnly} onChange={(e) => setFavoritesOnly(e.target.checked)} /> {isEn ? 'Favorites only' : 'Chỉ yêu thích'}</label>
+              <span>{filteredHistory.length} / {history.length}</span>
+            </div>
+            {favoriteError && <div role="alert" style={{ color: 'var(--accent-red)' }}>{favoriteError}</div>}
 
             {/* Action toolbar */}
             <div
@@ -531,7 +572,7 @@ export default function HistoryManagementModal({
                   fontSize: '0.9rem',
                 }}
               >
-                {searchTerm
+                {(searchTerm || dateFrom || dateTo || spreadFilter || favoritesOnly)
                   ? t('history.no_search_results', 'Không tìm thấy bài trải phù hợp')
                   : t('history.empty', 'Chưa có trải bài nào được lưu')}
               </div>
@@ -571,6 +612,7 @@ export default function HistoryManagementModal({
                       style={{ width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }}
                     />
 
+                    <button type="button" disabled={favoritePending !== null || item._decryptionError} onClick={() => toggleFavorite(item)} aria-label={isFavorite(item) ? (isEn ? 'Remove favorite' : 'Bỏ yêu thích') : (isEn ? 'Add favorite' : 'Đánh dấu yêu thích')} aria-pressed={isFavorite(item)} title={isFavorite(item) ? (isEn ? 'Remove favorite' : 'Bỏ yêu thích') : (isEn ? 'Add favorite' : 'Đánh dấu yêu thích')} style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--gold-color)', fontSize: '1.5rem' }}>{isFavorite(item) ? '★' : '☆'}</button>
                     {/* Info Column */}
                     <div
                       style={{

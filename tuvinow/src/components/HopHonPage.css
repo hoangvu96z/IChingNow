@@ -2583,3 +2583,9 @@
   }
 }
 
+
+.hh-history-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.hh-history-filters label { display: inline-flex; align-items: center; gap: 5px; }
+.hh-history-entry { display: flex; align-items: stretch; gap: 8px; }
+.hop-hon .hh-history-entry .hh-history-row { flex: 1; min-width: 0; }
+.hop-hon .hh-history-star { font-size: 1.4rem; color: var(--accent-gold); cursor: pointer; }

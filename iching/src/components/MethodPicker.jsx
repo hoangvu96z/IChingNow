@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../context/useLanguage.js';
 
 /**
- * Màn hình chọn phương pháp gieo quẻ — 6 lựa chọn cân đối (3×2 desktop, 2×3 tablet, 1×6 mobile).
+ * Màn hình chọn phương pháp gieo quẻ — 4 lựa chọn cân đối.
  */
 export default function MethodPicker({ onPick, onOpenAtlas, questionEmpty = false }) {
   const { t } = useLanguage();
@@ -35,39 +35,6 @@ export default function MethodPicker({ onPick, onOpenAtlas, questionEmpty = fals
       border: 'rgba(184,134,11,0.30)',
       hoverBg: 'linear-gradient(135deg, rgba(184,134,11,0.22), rgba(184,134,11,0.05))',
       hoverBorder: 'var(--color-gold)',
-    },
-    {
-      mode: 'mouse-entropy',
-      badge: t('picker.luc_hao', 'LỤC HÀO'),
-      badgeColor: '#1a6b4a',
-      badgeBg: 'rgba(26,107,74,0.12)',
-      icon: '🖱️',
-      title: t('method.mouse.title', 'Chuột ngẫu nhiên'),
-      desc: t('method.mouse.desc', 'Di chuột tạo entropy — random thật từ tay bạn'),
-      meta: t('method.mouse.meta', '6 hào · entropy thật'),
-      gradient: 'linear-gradient(135deg, rgba(26,107,74,0.08), rgba(26,107,74,0.02))',
-      border: 'rgba(26,107,74,0.25)',
-      hoverBg: 'linear-gradient(135deg, rgba(26,107,74,0.20), rgba(26,107,74,0.04))',
-      hoverBorder: 'var(--color-jade)',
-    },
-    {
-      mode: 'manual-input',
-      badge: t('picker.luc_hao', 'LỤC HÀO'),
-      badgeColor: 'var(--color-vermillion)',
-      badgeBg: 'rgba(192,57,43,0.12)',
-      icon: '📜',
-      title: t('method.manual_input.title', 'Nhập Quẻ Thực Tế / Sổ Tay'),
-      desc: t(
-        'method.manual_input.desc',
-        'Nhập quẻ gieo bằng xu thật ngoài đời hoặc quẻ trong sách cổ (6/7/8/9 hoặc Thượng/Hạ Quái)'
-      ),
-      meta: t('method.manual_input.meta', '6/7/8/9 · Thượng/Hạ'),
-      gradient: 'linear-gradient(135deg, rgba(184,134,11,0.12), rgba(192,57,43,0.03))',
-      border: 'rgba(184,134,11,0.35)',
-      hoverBg: 'linear-gradient(135deg, rgba(184,134,11,0.24), rgba(192,57,43,0.08))',
-      hoverBorder: 'var(--color-gold)',
-      isNew: true,
-      allowWithoutQuestion: true,
     },
     {
       mode: 'mai-hoa-time',
@@ -125,11 +92,11 @@ export default function MethodPicker({ onPick, onOpenAtlas, questionEmpty = fals
             {questionEmpty
               ? t(
                   'picker.desc_empty',
-                  'Vui lòng nhập việc cần xem ở bên trên (hoặc chọn Nhập Quẻ Thực Tế / Sổ Tay để nghiên cứu quẻ).'
+                  'Vui lòng nhập việc cần xem ở bên trên trước khi chọn.'
                 )
               : t(
                   'picker.desc_ready',
-                  'Chọn 1 trong 6 phương pháp gieo hoặc nhập quẻ dưới đây để bắt đầu.'
+                  'Chọn 1 trong 4 phương pháp gieo dưới đây để bắt đầu.'
                 )}
           </div>
         </div>
@@ -158,11 +125,11 @@ export default function MethodPicker({ onPick, onOpenAtlas, questionEmpty = fals
         )}
       </div>
 
-      {/* 6 Card gọn gàng 3×2 / 2×3 / 1×6 */}
+      {/* 4 phương pháp gieo quẻ */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
           gap: 12,
         }}
         className="method-picker-6grid"

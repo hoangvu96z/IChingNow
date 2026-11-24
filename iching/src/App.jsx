@@ -1356,6 +1356,7 @@ export default function App() {
             onDeleteMultiple={deleteMultipleReadings}
             onClearAll={handleClearHistory}
             onUpdateVerification={handleUpdateVerification}
+            onUpdateFavorite={(id, favorite) => updateReadingData(id, { favorite })}
           />
         </div>
       </main>

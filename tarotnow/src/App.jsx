@@ -1370,6 +1370,7 @@ ${summaryObj.advice}${dignitySummaryAppend}
             onDeleteMultiple={deleteMultipleReadings}
             onClearAll={clearHistory}
             onUpdateReflection={handleSaveReflection}
+            onUpdateFavorite={updateReadingData}
           />
 
           {/* Personal Tarot Reading Analytics Modal (Native <dialog>) */}

@@ -158,10 +158,17 @@ export default function HistoryManagementModal({
   onDeleteMultiple,
   onClearAll,
   onUpdateVerification,
+  onUpdateFavorite,
 }) {
   const { t, language } = useLanguage();
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
+  const [pendingFavorites, setPendingFavorites] = useState(new Set());
   const [previewItem, setPreviewItem] = useState(null);
   const [previewTab, setPreviewTab] = useState('info');
   const [actionError, setActionError] = useState('');
@@ -211,14 +218,37 @@ export default function HistoryManagementModal({
   };
 
   const filteredHistory = useMemo(() => {
-    if (!searchTerm.trim()) return history;
-    const term = searchTerm.toLowerCase();
+    const term = searchTerm.trim().toLocaleLowerCase();
+    const dateKey = (timestamp) => {
+      const date = new Date(typeof timestamp === 'string' ? timestamp.replace(' ', 'T') : timestamp);
+      if (Number.isNaN(date.getTime())) return '';
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
     return history.filter((item) => {
-      const title = formatHistoryTitle(item).toLowerCase();
-      const question = (item.question || '').toLowerCase();
-      return title.includes(term) || question.includes(term);
+      const date = dateKey(item.timestamp);
+      return (!term || `${formatHistoryTitle(item)} ${item.question || ''}`.toLocaleLowerCase().includes(term)) &&
+        (typeFilter === 'all' || item.type === typeFilter) &&
+        (!favoritesOnly || item.data?.favorite === true) &&
+        (!dateFrom || (date && date >= dateFrom)) && (!dateTo || (date && date <= dateTo));
+    }).sort((a, b) => {
+      if (sortBy === 'title') return formatHistoryTitle(a).localeCompare(formatHistoryTitle(b), language);
+      const time = (item) => new Date(typeof item.timestamp === 'string' ? item.timestamp.replace(' ', 'T') : item.timestamp).getTime() || 0;
+      return sortBy === 'oldest' ? time(a) - time(b) : time(b) - time(a);
     });
-  }, [history, searchTerm, formatHistoryTitle]);
+  }, [history, searchTerm, formatHistoryTitle, dateFrom, dateTo, typeFilter, favoritesOnly, sortBy, language]);
+
+  const handleToggleFavorite = async (item) => {
+    if (!onUpdateFavorite || pendingFavorites.has(item.id)) return;
+    setPendingFavorites(prev => new Set(prev).add(item.id));
+    setActionError('');
+    try {
+      await onUpdateFavorite(item.id, !item.data?.favorite);
+    } catch (error) {
+      setActionError(error?.message || 'Không thể cập nhật yêu thích. Vui lòng thử lại.');
+    } finally {
+      setPendingFavorites(prev => { const next = new Set(prev); next.delete(item.id); return next; });
+    }
+  };
 
   const activePreviewItem = useMemo(() => {
     if (!previewItem) return null;
@@ -266,8 +296,11 @@ export default function HistoryManagementModal({
     filteredHistory.every((item) => selectedIds.has(item.id));
 
   const handleToggleSelectAll = () => {
-    if (isAllSelected) setSelectedIds(new Set());
-    else setSelectedIds(new Set(filteredHistory.map((item) => item.id)));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      filteredHistory.forEach(item => isAllSelected ? next.delete(item.id) : next.add(item.id));
+      return next;
+    });
   };
 
   const handleToggleSelectOne = (id) => {
@@ -337,7 +370,7 @@ export default function HistoryManagementModal({
       )}
 
       <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
-        <div style={{ background: 'var(--color-paper-card, #fdfbf7)', border: '1px solid var(--color-gold, #b8860b)', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', overflow: 'hidden', fontFamily: "'Be Vietnam Pro', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ background: 'var(--color-paper-card, #fdfbf7)', border: '1px solid var(--color-gold, #b8860b)', borderRadius: 16, width: '100%', maxWidth: 1100, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', overflow: 'hidden', fontFamily: "'Be Vietnam Pro', sans-serif" }} onClick={(e) => e.stopPropagation()}>
 
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(184, 134, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #1a0a06 0%, #3d1a10 100%)', color: '#f5d78e' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -358,10 +391,32 @@ export default function HistoryManagementModal({
 
           <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(184, 134, 11, 0.15)', background: 'rgba(184, 134, 11, 0.04)', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <input type="text" placeholder={t('history.search_placeholder', '🔍 Tìm kiếm theo tên quẻ hoặc câu hỏi...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(184, 134, 11, 0.3)', background: 'var(--color-paper)', color: 'var(--color-ink)', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', alignItems: 'end', flexWrap: 'wrap', gap: 10 }}>
+              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Từ ngày
+                <input type="date" value={dateFrom} max={dateTo || undefined} onChange={e => setDateFrom(e.target.value)} />
+              </label>
+              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Đến ngày
+                <input type="date" value={dateTo} min={dateFrom || undefined} onChange={e => setDateTo(e.target.value)} />
+              </label>
+              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Loại gieo quẻ
+                <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+                  <option value="all">Tất cả</option><option value="luc-hao">Lục Hào</option><option value="mai-hoa">Mai Hoa</option>
+                </select>
+              </label>
+              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Sắp xếp
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  <option value="newest">Mới nhất</option><option value="oldest">Cũ nhất</option><option value="title">Tên quẻ A–Z</option>
+                </select>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', paddingBottom: 3 }}>
+                <input type="checkbox" checked={favoritesOnly} onChange={e => setFavoritesOnly(e.target.checked)} /> ⭐ Chỉ yêu thích
+              </label>
+              <button type="button" onClick={() => { setSearchTerm(''); setDateFrom(''); setDateTo(''); setTypeFilter('all'); setFavoritesOnly(false); setSortBy('newest'); }} style={{ cursor: 'pointer', padding: '4px 8px' }}>Xóa bộ lọc</button>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-ink)', cursor: 'pointer', userSelect: 'none' }}>
                 <input type="checkbox" checked={isAllSelected} onChange={handleToggleSelectAll} disabled={filteredHistory.length === 0} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                {t('history.select_all', 'Chọn tất cả')} ({filteredHistory.length})
+                {t('history.select_all', 'Chọn tất cả')} ({filteredHistory.length}) · Đã chọn {selectedIds.size}
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
                 {selectedIds.size > 0 && (
@@ -381,7 +436,7 @@ export default function HistoryManagementModal({
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filteredHistory.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-ink-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                {searchTerm ? t('history.no_search_results', 'Không tìm thấy quẻ phù hợp') : t('history.empty', 'Chưa có quẻ nào trong lịch sử')}
+                {history.length ? t('history.no_search_results', 'Không tìm thấy quẻ phù hợp') : t('history.empty', 'Chưa có quẻ nào trong lịch sử')}
               </div>
             ) : (
               filteredHistory.map((item) => {
@@ -392,6 +447,10 @@ export default function HistoryManagementModal({
                 return (
                   <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: isChecked ? '1px solid var(--color-gold, #b8860b)' : '1px solid rgba(184, 134, 11, 0.18)', background: isChecked ? 'rgba(184, 134, 11, 0.12)' : 'var(--color-paper-dark)', transition: 'all 0.15s ease' }}>
                     <input type="checkbox" checked={isChecked} onChange={() => handleToggleSelectOne(item.id)} style={{ width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }} />
+
+                    <button type="button" onClick={() => handleToggleFavorite(item)} disabled={pendingFavorites.has(item.id) || item._decryptionError || !onUpdateFavorite} aria-label={item.data?.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'} aria-pressed={!!item.data?.favorite} title={item._decryptionError ? 'Không thể cập nhật bản ghi không giải mã được' : item.data?.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'} style={{ border: 0, background: 'transparent', color: item.data?.favorite ? '#b8860b' : '#8c7b68', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: 2 }}>
+                      {item.data?.favorite ? '★' : '☆'}
+                    </button>
 
                     <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => handleSelectItem(item)}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
