@@ -41,7 +41,8 @@ const SHARED_SHIM_PLUGIN = {
       id.endsWith('/shared/src/components/AppHeader.jsx') ||
       id.endsWith('/shared/src/components/AppFooter.jsx') ||
       id.endsWith('/shared/src/components/CombinedReading/CombinedReadingModal.jsx') ||
-      id.endsWith('/shared/src/components/SpiritualJournal.jsx')
+      id.endsWith('/shared/src/components/SpiritualJournal.jsx') ||
+      id.endsWith('/shared/src/components/GuidedTour.jsx')
     ) {
       return 'export default function Stub() { return null; }';
     }

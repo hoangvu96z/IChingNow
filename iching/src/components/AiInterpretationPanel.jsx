@@ -389,7 +389,7 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
       onRequestBonus={requestBonus}
       onApplyCoupon={applyCoupon}
     />
-    <section className="card animate-in" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <section className="card animate-in" data-tour="iching-ai" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(184,134,11,0.15)', paddingBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -419,6 +419,48 @@ export default function AiInterpretationPanel({ result, plainTextResult, reading
             ⚙️ <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{t('ai.settings', 'Cấu hình')}</span>
           </button>
         </div>
+      </div>
+
+      {/* Reference-only Notice + Scroll to Copy Prompt */}
+      <div
+        role="note"
+        style={{
+          padding: '10px 12px',
+          borderRadius: 8,
+          background: 'rgba(217, 119, 6, 0.1)',
+          border: '1px solid rgba(217, 119, 6, 0.32)',
+          fontSize: '0.82rem',
+          lineHeight: 1.5,
+          color: 'var(--color-ink)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        <span>
+          {isEn
+            ? 'ℹ️ Note: Built-in AI reading is for reference only (currently unstable). For best results, scroll down to Copy Prompt and paste into Google Gemini.'
+            : 'ℹ️ Lưu ý: AI luận giải trực tiếp tại đây chỉ mang tính tham khảo (hiện chưa hoạt động thật sự tốt). Khuyên dùng nút Copy Prompt bên dưới và dán vào Google Gemini.'}
+        </span>
+        <button
+          type="button"
+          onClick={() => document.getElementById('iching-export-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          style={{
+            padding: '5px 10px',
+            borderRadius: 6,
+            border: '1px solid rgba(184, 134, 11, 0.45)',
+            background: 'rgba(184, 134, 11, 0.12)',
+            color: 'var(--color-ink)',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {isEn ? '⬇ Go to Copy Prompt' : '⬇ Tới mục Copy Prompt'}
+        </button>
       </div>
 
       {/* AI Settings Form */}

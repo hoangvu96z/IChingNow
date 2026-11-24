@@ -39,10 +39,11 @@ test('App.jsx has no automatic welcome modal and retains manual HelpModal flow',
   assert.match(appJsx, /const\s+\[showHelp,\s*setShowHelp\]\s*=\s*useState\(false\)/, 'App.jsx must define showHelp state');
   assert.doesNotMatch(appJsx, /showOnboarding/, 'App.jsx must not define or use showOnboarding state');
 
-  // Header button must trigger setShowHelp(true)
+  // Header button opens the interactive GuidedTour and retains manual HelpModal access
   const headerBtnMatch = appJsx.match(/id="btn-help-guide"[^>]*>|onClick=\{[^}]*\}\s*[^>]*id="btn-help-guide"/);
   assert.ok(headerBtnMatch, 'Header help button must exist');
-  assert.match(appJsx, /onClick=\{[^}]*setShowHelp\(true\)[^}]*\}[\s\S]*?id="btn-help-guide"/, 'Header help button must call setShowHelp(true)');
+  assert.match(appJsx, /onClick=\{[^}]*setShowGuide\(true\)[^}]*\}[\s\S]*?id="btn-help-guide"/, 'Header help button must open GuidedTour via setShowGuide(true)');
+  assert.match(appJsx, /setShowHelp\(true\)/, 'App.jsx must retain manual trigger to open HelpModal');
 
   // Closing help only sets showHelp false, and OnboardingModal is not rendered
   assert.match(appJsx, /<HelpModal\s+isOpen=\{showHelp\}\s+onClose=\{\(\)\s*=>\s*setShowHelp\(false\)\}\s*\/>/, 'HelpModal close only sets showHelp false');

@@ -21,6 +21,7 @@ import ShareCard from './components/ShareCard.jsx';
 import { useStreak } from '@shared/utils/useStreak.js';
 import CombinedReadingModal from '@shared/components/CombinedReading/CombinedReadingModal.jsx';
 import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
+import GuidedTour from '@shared/components/GuidedTour.jsx';
 import SaveToNoteNowButton from '../../shared/src/components/SaveToNoteNowButton.jsx';
 import SavedProfilesBar from './components/SavedProfilesBar.jsx';
 import { buildTuViNoteNowPayload } from './utils/noteNowPayload.js';
@@ -340,6 +341,7 @@ export default function App() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCombinedModal, setShowCombinedModal] = useState(false);
   const [showJournal, setShowJournal] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [showActiveRectifierModal, setShowActiveRectifierModal] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [retrySave, setRetrySave] = useState(0);
@@ -763,6 +765,8 @@ export default function App() {
         onLogoClick={() => { window.location.hash = 'la-so'; handleNewReading(); }}
         useAuthHook={useAuth}
         onOpenJournal={() => setShowJournal(true)}
+        onOpenGuide={() => setShowGuide(true)}
+        guideLabel="Hướng dẫn"
         logo={
           <img
             src={`${import.meta.env.BASE_URL}favicon.svg`}
@@ -816,11 +820,13 @@ export default function App() {
               onOpenHopHonPair={handleOpenHopHonPair}
               scopeKey={profileScopeKey}
             />
-            <BirthInputForm
-              onSubmit={handleSubmit}
-              presetProfile={presetProfile}
-              onDraftChange={setFormDraftData}
-            />
+            <div data-tour="tuvi-form" style={{ width: '100%' }}>
+              <BirthInputForm
+                onSubmit={handleSubmit}
+                presetProfile={presetProfile}
+                onDraftChange={setFormDraftData}
+              />
+            </div>
             {isAuthenticated && history.length > 0 && (
               <div className="tuvi-form-history">
                 <div>
@@ -888,12 +894,14 @@ export default function App() {
             </div>
 
             <TuViEvidenceProvider key={`${user?.id || 'guest'}-${sessionId}`} result={chartResult}>
-            <LasoChart
-              result={chartResult}
-              inputData={inputData}
-              yunxianState={yunxianState}
-              onYunxianChange={handleYunxianChange}
-            />
+            <div data-tour="tuvi-chart" style={{ width: '100%' }}>
+              <LasoChart
+                result={chartResult}
+                inputData={inputData}
+                yunxianState={yunxianState}
+                onYunxianChange={handleYunxianChange}
+              />
+            </div>
             <ShareCard result={chartResult} inputData={inputData} yunxianState={yunxianState} />
             <TuViOverviewDashboard
               result={chartResult}
@@ -981,6 +989,54 @@ export default function App() {
         userId={user?.id}
         onLogin={login}
         currentApp="tuvi"
+      />
+
+      <GuidedTour
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        accentColor={tuviTheme.accent}
+        language="vi"
+        title="Hướng dẫn sử dụng TuViNow"
+        steps={[
+          {
+            id: 'tuvi-nav',
+            selector: '.tuvi-page-nav',
+            title: '1. Chọn chế độ xem Tử Vi / Phong thủy',
+            body: 'Chuyển nhanh giữa Lá số cá nhân, Hợp hôn đôi lứa hoặc lập Tinh bàn Huyền Không Phi Tinh ngay tại thanh này.',
+          },
+          {
+            id: 'tuvi-form',
+            selector: '[data-tour="tuvi-form"]',
+            title: '2. Nhập ngày giờ sinh & An lá số',
+            body: 'Nhập họ tên, ngày/tháng/năm sinh (Dương hoặc Âm), giờ sinh và giới tính, rồi bấm nút An Lá Số ở cuối form.',
+            fallbackNote: 'Bạn đang xem lá số đã lập (hoặc tab khác). Bấm "Lập lá số mới" nếu muốn nhập lại thông tin.',
+          },
+          {
+            id: 'tuvi-chart',
+            selector: '[data-tour="tuvi-chart"]',
+            title: '3. Xem 12 Cung, Đại Vận & Lưu Niên',
+            body: 'Bấm trực tiếp vào sao/cung trên lá số để tra cứu nhanh, hoặc đổi chế độ Bản Mệnh / Đại Hạn / Lưu Niên / Lưu Nguyệt ở thanh phía trên lá số.',
+            fallbackNote: 'Sau khi bấm An Lá Số, lá số 12 cung sẽ hiển thị ngay tại đây.',
+          },
+          {
+            id: 'tuvi-export',
+            selector: '[data-tour="tuvi-export"]',
+            badge: '⭐ Quan trọng nhất',
+            title: '4. Copy Prompt cho AI (Khuyên dùng Gemini)',
+            body: 'Cuộn xuống cuối trang tới hộp "Xuất dữ liệu luận giải cho AI", chọn chủ đề & bấm "Copy prompt cho AI (Gemini)" — hoàn toàn miễn phí không cần đăng nhập!',
+            tip: '💡 Mẹo chuẩn nhất: Dán thẳng prompt vừa copy vào Google Gemini để luận 12 cung, Tứ Hóa và vận hạn chi tiết nhất.',
+            ctaLink: { label: 'Mở Google Gemini', href: 'https://gemini.google.com/' },
+            fallbackNote: 'Sau khi lập lá số, cuộn xuống cuối trang để lấy prompt copy cho Google Gemini.',
+          },
+          {
+            id: 'tuvi-ai',
+            selector: '[data-tour="tuvi-ai"]',
+            badge: 'Chỉ tham khảo',
+            title: '5. Lưu ý về AI luận giải trực tiếp',
+            body: 'Tính năng AI luận giải tích hợp tại trang hiện chưa hoạt động thật sự tốt và chỉ để tham khảo. Hãy ưu tiên copy prompt ở bước 4 sang Google Gemini.',
+            fallbackNote: 'Khi đã an lá số, ưu tiên mục Copy prompt ở cuối trang thay cho nút AI trực tiếp.',
+          },
+        ]}
       />
 
       {/* ===== FOOTER ===== */}

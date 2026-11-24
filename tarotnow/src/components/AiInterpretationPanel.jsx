@@ -498,7 +498,7 @@ export default function AiInterpretationPanel({
       onRequestBonus={requestBonus}
       onApplyCoupon={applyCoupon}
     />
-    <div className="interpretation-section glass-panel" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div data-tour="tarot-ai" className="interpretation-section glass-panel" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Header */}
       <div className="ai-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(229,193,88,0.2)', paddingBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
         <div className="ai-panel-title-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
@@ -534,6 +534,47 @@ export default function AiInterpretationPanel({
       </div>
 
       <TarotSettingsPanel isOpen={showSettings} onSubmit={handleSaveSettings} onClose={() => setShowSettings(false)} formSettings={formSettings} setFormSettings={setFormSettings} modelsList={modelsList} t={t} />
+
+      <div
+        role="note"
+        style={{
+          padding: '10px 12px',
+          borderRadius: 8,
+          background: 'rgba(217, 119, 6, 0.1)',
+          border: '1px solid rgba(217, 119, 6, 0.35)',
+          fontSize: '0.82rem',
+          lineHeight: 1.5,
+          color: 'var(--text-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        <span>
+          {isEn
+            ? 'ℹ️ Note: Built-in AI reading is for reference only (currently unstable). For best results, scroll down to Copy Prompt and paste into Google Gemini.'
+            : 'ℹ️ Lưu ý: AI luận giải trực tiếp tại đây chỉ mang tính tham khảo (hiện chưa hoạt động thật sự tốt). Khuyên dùng mục Copy Prompt bên dưới dán vào Google Gemini.'}
+        </span>
+        <button
+          type="button"
+          onClick={() => document.getElementById('tarot-export-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          style={{
+            padding: '5px 10px',
+            borderRadius: 6,
+            border: '1px solid var(--border-gold)',
+            background: 'var(--bg-panel)',
+            color: 'var(--gold-color)',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {isEn ? '⬇ Go to Copy Prompt' : '⬇ Tới mục Copy Prompt'}
+        </button>
+      </div>
 
       <TarotPromptTemplateSelector hasInterpretation={Boolean(interpretation)} loading={loading} promptTemplate={promptTemplate} setPromptTemplate={setPromptTemplate} t={t} />
 

@@ -18,6 +18,7 @@ import AiInterpretationPanel from './components/AiInterpretationPanel.jsx';
 import IChingShareCard from './components/IChingShareCard.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
+import GuidedTour from '@shared/components/GuidedTour.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { ichingTheme } from '@shared/themes/iching.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
@@ -121,16 +122,28 @@ function getDefaultForm() {
   };
 }
 
-/** Card xuất kết quả cho Mai Hoa — giống PlainTextExportCard nhưng dùng buildMaiHoaPlainText */
+/** Card xuất kết quả cho Mai Hoa — mở miễn phí cho mọi người dùng, khuyên dùng Google Gemini */
 function MaiHoaExportCard({ result }) {
   const { t, language } = useLanguage();
-  const { isAuthenticated, login } = useAuth();
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copied,  setCopied]  = useState(false);
   const [copiedJ, setCopiedJ] = useState(false);
 
   const hasResult = !!result;
   const text      = hasResult ? buildMaiHoaPlainText(result, language) : '';
+  const isEn      = language === 'en';
+  const aiPrompt  = hasResult
+    ? (isEn
+      ? `You are a Plum Blossom Numerology (Mai Hoa Dich So) master. Analyze this reading objectively and give clear, practical advice:\n\n${text}\n\nPlease examine Ti/Yong (The/Dung) Five Elements interactions, seasonal timing, and concrete recommendations.`
+      : `Bạn là bậc thầy Mai Hoa Dịch Số. Hãy luận giải sâu sắc, khách quan quẻ dưới đây:\n\n${text}\n\nYêu cầu: Phân tích quan hệ Thể – Dụng (Ngũ Hành sinh khắc), Quẻ Chủ – Hỗ – Biến, thời vận và đưa ra lời khuyên hành động cụ thể.`)
+    : '';
 
+  async function handleCopyPrompt() {
+    if (!hasResult) return;
+    await copyToClipboard(aiPrompt);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2500);
+  }
   async function handleCopyText() {
     if (!hasResult) return;
     await copyToClipboard(text);
@@ -154,74 +167,84 @@ function MaiHoaExportCard({ result }) {
     downloadJson(result, `mai-hoa-${ts}.json`);
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px dashed rgba(184, 134, 11, 0.3)',
-          borderRadius: 12,
-          padding: '24px 16px',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 12,
-          marginTop: 8,
-        }}
-      >
-        <span style={{ fontSize: '1.8rem' }}>🔒</span>
-        <p
-          style={{
-            margin: 0,
-            fontSize: '0.88rem',
-            color: 'var(--color-ink-muted, #718096)',
-            lineHeight: 1.5,
-            maxWidth: 640,
-          }}
-        >
-          {t('export.guest_notice', 'Bạn cần đăng nhập để sử dụng tính năng xuất kết quả quẻ Kinh Dịch.')}
-        </p>
-        <button
-          type="button"
-          onClick={login}
-          style={{
-            padding: '8px 20px',
-            background: 'linear-gradient(135deg, #d4a017 0%, #b8860b 100%)',
-            border: '1px solid rgba(212, 160, 23, 0.55)',
-            borderRadius: 10,
-            color: '#1a0a06',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(184, 134, 11, 0.3)',
-          }}
-        >
-          🔑 {t('auth.login_now', 'Đăng nhập ngay')}
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="terminal-card">
+      <div
+        style={{
+          padding: '10px 14px',
+          background: 'linear-gradient(90deg, rgba(16,185,129,0.14), rgba(59,130,246,0.12))',
+          borderBottom: '1px solid rgba(52,211,153,0.28)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        <span style={{ fontSize: '0.82rem', lineHeight: 1.45, color: 'var(--color-terminal-text, #e2e8f0)' }}>
+          {isEn
+            ? '⭐ Best experience: Copy this AI Prompt and paste into Google Gemini for deep interpretation (free for everyone).'
+            : '⭐ Quan trọng: Hãy bấm Copy Prompt cho AI và dán vào Google Gemini (khuyên dùng) để được luận giải sâu nhất — miễn phí cho mọi người dùng.'}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            id="btn-maihoa-copy-ai-prompt"
+            onClick={handleCopyPrompt}
+            disabled={!hasResult}
+            style={{
+              padding: '7px 14px',
+              borderRadius: 8,
+              border: 'none',
+              background: copiedPrompt ? '#16a34a' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              color: copiedPrompt ? '#ffffff' : '#0f172a',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: hasResult ? 'pointer' : 'not-allowed',
+              opacity: hasResult ? 1 : 0.45,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {copiedPrompt
+              ? (isEn ? '✓ Copied AI Prompt!' : '✓ Đã copy Prompt AI!')
+              : (isEn ? '✨ Copy Prompt for AI (Gemini)' : '✨ Copy Prompt cho AI (Gemini)')}
+          </button>
+          <a
+            href="https://gemini.google.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '6px 11px',
+              borderRadius: 8,
+              background: '#1d4ed8',
+              color: '#ffffff',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isEn ? 'Open Gemini ↗' : 'Mở Gemini ↗'}
+          </a>
+        </div>
+      </div>
       <div className="terminal-header" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div className="terminal-dot" style={{ background: '#ff5f56' }} />
           <div className="terminal-dot" style={{ background: '#ffbd2e' }} />
           <div className="terminal-dot" style={{ background: '#27c93f' }} />
-          <span style={{ marginLeft: 8, color: '#718096', fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+          <span style={{ marginLeft: 8, color: '#94a3b8', fontSize: '0.8125rem', fontFamily: 'monospace' }}>
             {t('export.header', 'plaintext — kết quả lập quẻ')}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
             { label: copied  ? t('export.copied_text', '✓ Đã copy') : t('export.copy_text', '⎘ Copy text'), onClick: handleCopyText,  bg: copied  ? '#27c93f' : 'rgba(246,201,14,0.15)', color: copied  ? 'white' : 'var(--color-terminal-accent)' },
-            { label: t('export.download_txt', '↓ .txt'),                               onClick: handleDownloadTxt, bg: 'transparent', color: '#718096', border: '1px solid rgba(113,128,150,0.4)' },
+            { label: t('export.download_txt', '↓ .txt'),                               onClick: handleDownloadTxt, bg: 'transparent', color: '#94a3b8', border: '1px solid rgba(113,128,150,0.4)' },
             { label: copiedJ ? t('export.copied_json', '✓ JSON')    : t('export.copy_json', '⎘ JSON'),      onClick: handleCopyJson,   bg: copiedJ ? '#27c93f' : 'rgba(39,201,63,0.1)',   color: copiedJ ? 'white' : '#27c93f' },
             { label: t('export.download_json', '↓ .json'),                              onClick: handleDownloadJson, bg: 'transparent', color: '#27c93f', border: '1px solid rgba(39,201,63,0.3)' },
           ].map(({ label, onClick, bg, color, border }) => (
-            <button key={label} onClick={onClick} disabled={!hasResult} style={{
+            <button key={label} type="button" onClick={onClick} disabled={!hasResult} style={{
               padding: '5px 12px', borderRadius: 6, border: border || 'none',
               background: bg, color, fontSize: '0.8125rem', fontWeight: 600,
               cursor: hasResult ? 'pointer' : 'not-allowed', opacity: hasResult ? 1 : 0.4,
@@ -234,7 +257,7 @@ function MaiHoaExportCard({ result }) {
         {hasResult ? (
           <span style={{ color: 'var(--color-terminal-text)', whiteSpace: 'pre-wrap' }}>{text}</span>
         ) : (
-          <span style={{ color: '#4a5568', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+          <span style={{ color: '#64748b', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
             {t('export.empty_result', '// Chưa có kết quả.\n// Hãy gieo quẻ để xem kết quả ở đây.')}
           </span>
         )}
@@ -267,7 +290,7 @@ function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMetho
   return (
     <>
       {/* Quẻ Preview */}
-      <section className="card" style={{ padding: 20 }}>
+      <section className="card" data-tour="iching-result" style={{ padding: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: '10px', flexWrap: 'wrap' }}>
           <div className="section-title" style={{ margin: 0 }}>{t('result.hex_title', 'Kết quả quẻ')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minInlineSize: 0 }}>
@@ -411,7 +434,7 @@ function CoinCastResultSection({ result, isAuthenticated, onLogin, onChangeMetho
       />
 
       {/* Plaintext Export */}
-      <section className="animate-in">
+      <section className="animate-in" id="iching-export-section" data-tour="iching-export">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {t('result.export_title', '📋 Xuất kết quả')}
         </div>
@@ -437,7 +460,7 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
 
   return (
     <>
-      <section className="card" style={{ padding: 20 }}>
+      <section className="card" data-tour="iching-result" style={{ padding: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: '10px', flexWrap: 'wrap' }}>
           <div className="section-title" style={{ margin: 0 }}>
             {t('maihoa.result_card_title', 'Kết quả quẻ Mai Hoa')}
@@ -602,7 +625,7 @@ function MaiHoaResultSection({ result, isAuthenticated, onLogin, onChangeMethod,
       />
 
       {/* Xuất kết quả Mai Hoa */}
-      <section className="animate-in">
+      <section className="animate-in" id="iching-export-section" data-tour="iching-export">
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {t('result.export_title', '📋 Xuất kết quả')}
         </div>
@@ -654,6 +677,7 @@ export default function App() {
   const [showGame, setShowGame] = useState(false);
   const [showKnowledge, setShowKnowledge] = useState(false);
   const [showAtlas, setShowAtlas] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [atlasInitialHexId, setAtlasInitialHexId] = useState(1);
   const [manualSeedLineValues, setManualSeedLineValues] = useState(null);
   const [formData,         setFormData]         = useState(getDefaultForm());
@@ -999,6 +1023,8 @@ export default function App() {
         onLogoClick={handleFullReset}
         useAuthHook={useAuth}
         onOpenJournal={() => setIsJournalOpen(true)}
+        onOpenGuide={() => setShowGuide(true)}
+        guideLabel={language === 'en' ? 'Guide' : 'Hướng dẫn'}
         logo={
           <div
             aria-hidden="true"
@@ -1167,7 +1193,7 @@ export default function App() {
           />
 
           {/* 1. Form nhập liệu (Ở TRÊN CÙNG / GIỮA) */}
-          <section className="card" style={{ padding: 24 }}>
+          <section className="card" data-tour="iching-form" style={{ padding: 24 }}>
             <div className="section-title" style={{ marginBottom: 16 }}>
               {t('form.title', 'Thông tin lập quẻ')}
             </div>
@@ -1181,7 +1207,7 @@ export default function App() {
           {/* 2. Chọn phương pháp / Bảng gieo / Kết quả */}
           {/* ─── STATE 1: Chưa chọn phương pháp → MethodPicker ─── */}
           {!hasPickedMethod && !hasResult && (
-            <section className="card" style={{ padding: 24 }}>
+            <section className="card" data-tour="iching-method" style={{ padding: 24 }}>
               <MethodPicker
                 onPick={handleMethodPick}
                 onOpenAtlas={() => handleOpenAtlas(1)}
@@ -1192,18 +1218,20 @@ export default function App() {
 
           {/* ─── STATE 2A: Nhập Quẻ Thực Tế / Sổ Tay ─── */}
           {hasPickedMethod && !hasResult && mode === 'manual-input' && (
-            <ManualHexagramInput
-              key={manualSeedLineValues ? manualSeedLineValues.join('-') : 'default-manual'}
-              formData={formData}
-              initialLineValues={manualSeedLineValues}
-              onComplete={handleManualInputComplete}
-              onCancel={handleChangeMethod}
-            />
+            <div data-tour="iching-method">
+              <ManualHexagramInput
+                key={manualSeedLineValues ? manualSeedLineValues.join('-') : 'default-manual'}
+                formData={formData}
+                initialLineValues={manualSeedLineValues}
+                onComplete={handleManualInputComplete}
+                onCancel={handleChangeMethod}
+              />
+            </div>
           )}
 
           {/* ─── STATE 2B: Đã chọn phương pháp gieo khác nhưng chưa gieo → Casting Panel ─── */}
           {hasPickedMethod && !hasResult && mode !== 'manual-input' && (
-            <section className="card animate-in" style={{ padding: 24 }}>
+            <section className="card animate-in" data-tour="iching-method" style={{ padding: 24 }}>
               <div
                 style={{
                   display: 'flex',
@@ -1377,6 +1405,97 @@ export default function App() {
         userId={user?.id}
         onLogin={login}
         currentApp="iching"
+      />
+
+      <GuidedTour
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        accentColor={ichingTheme.accent}
+        language={language}
+        title={language === 'en' ? 'IChingNow Quick Guide' : 'Hướng dẫn gieo quẻ Kinh Dịch'}
+        steps={
+          language === 'en'
+            ? [
+                {
+                  id: 'step-form',
+                  selector: '[data-tour="iching-form"]',
+                  title: '1. Enter your question & cast time',
+                  body: 'Fill in the question you want answered, optionally adjust cast date/time or Solar Term, then scroll down to pick a casting method.',
+                },
+                {
+                  id: 'step-method',
+                  selector: '[data-tour="iching-method"]',
+                  title: '2. Choose casting method & cast',
+                  body: 'Pick Quick Cast (3 coins), Line-by-Line, Mouse Entropy, Plum Blossom (Time / Serial), or enter an existing hexagram manually.',
+                  fallbackNote: 'You already have a hexagram result open. Click "New Hexagram" at the top to switch casting methods.',
+                },
+                {
+                  id: 'step-result',
+                  selector: '[data-tour="iching-result"]',
+                  title: '3. Read Primary / Changed Hexagram & Lines',
+                  body: 'Scroll through the hexagram preview and 6-line table (Yong Shen, Six Spirits, Void, Moving lines) right below.',
+                  fallbackNote: 'After casting, your hexagram and 6-line table will appear here.',
+                },
+                {
+                  id: 'step-export',
+                  selector: '[data-tour="iching-export"]',
+                  badge: '⭐ Recommended',
+                  title: '4. Copy Prompt for AI (Best with Google Gemini)',
+                  body: 'Scroll to the bottom "Export Results" box and click "Copy Prompt for AI (Gemini)" — unlocked free for all users without login!',
+                  tip: 'Paste the copied prompt into Google Gemini for the deepest and most accurate Six-Lines interpretation.',
+                  ctaLink: { label: 'Open Google Gemini', href: 'https://gemini.google.com/' },
+                  fallbackNote: 'After casting, scroll to the bottom Export card to copy the full AI prompt.',
+                },
+                {
+                  id: 'step-ai',
+                  selector: '[data-tour="iching-ai"]',
+                  badge: 'Reference only',
+                  title: '5. Built-in AI panel notice',
+                  body: 'The built-in AI button is currently unstable and for reference only. Prefer copying the prompt in Step 4 into Google Gemini.',
+                  fallbackNote: 'When viewing a result, prefer the bottom Copy Prompt card over the built-in AI panel.',
+                },
+              ]
+            : [
+                {
+                  id: 'step-form',
+                  selector: '[data-tour="iching-form"]',
+                  title: '1. Nhập việc cần xem & thời gian',
+                  body: 'Gõ ngắn gọn việc bạn đang băn khoăn vào ô "Việc cần xem" (chọn ngày/giờ động tâm nếu cần), rồi cuộn xuống dưới.',
+                },
+                {
+                  id: 'step-method',
+                  selector: '[data-tour="iching-method"]',
+                  title: '2. Chọn phương pháp & gieo quẻ',
+                  body: 'Chọn Gieo nhanh 3 xu, Gieo từng hào, Chuột ngẫu nhiên, Mai Hoa (Giờ / Seri tiền) hoặc Nhập quẻ có sẵn rồi bấm gieo.',
+                  fallbackNote: 'Bạn đang xem kết quả quẻ. Bấm "Lập quẻ mới" hoặc "Đổi phương pháp" nếu muốn gieo lại.',
+                },
+                {
+                  id: 'step-result',
+                  selector: '[data-tour="iching-result"]',
+                  title: '3. Xem Quẻ Chủ – Quẻ Biến & Bảng Lục Hào',
+                  body: 'Sau khi gieo, xem hình quẻ, bảng Lục Hào (Thế/Ứng, Dụng Thần, Tuần Không, Hào động) và có thể bấm vào từng hào để tra cứu.',
+                  fallbackNote: 'Sau khi gieo quẻ xong, phần kết quả chi tiết sẽ hiện ngay tại đây.',
+                },
+                {
+                  id: 'step-export',
+                  selector: '[data-tour="iching-export"]',
+                  badge: '⭐ Quan trọng nhất',
+                  title: '4. Copy Prompt cho AI (Khuyên dùng Gemini)',
+                  body: 'Cuộn xuống cuối trang tới hộp Xuất kết quả, bấm "✨ Copy Prompt cho AI (Gemini)". Mở miễn phí cho mọi người dùng không cần đăng nhập!',
+                  tip: '💡 Mẹo chuẩn nhất: Dán thẳng prompt vừa copy vào Google Gemini để AI phân tích Lục Hào & Ứng Kỳ sâu sát nhất.',
+                  ctaLink: { label: 'Mở Google Gemini', href: 'https://gemini.google.com/' },
+                  fallbackNote: 'Sau khi gieo quẻ, cuộn xuống cuối trang để bấm nút Copy Prompt cho AI (Gemini).',
+                },
+                {
+                  id: 'step-ai',
+                  selector: '[data-tour="iching-ai"]',
+                  badge: 'Chỉ tham khảo',
+                  title: '5. Lưu ý về nút AI luận giải trực tiếp',
+                  body: 'Tính năng AI luận giải tích hợp trên web hiện chưa hoạt động thật sự tốt và chỉ mang tính tham khảo. Bạn nên dùng nút Copy Prompt ở bước 4 sang Google Gemini.',
+                  fallbackNote: 'Khi xem kết quả quẻ, ưu tiên dùng mục Copy Prompt ở cuối trang thay cho AI trực tiếp.',
+                },
+              ]
+        }
       />
 
       {/* Responsive grid styles */}

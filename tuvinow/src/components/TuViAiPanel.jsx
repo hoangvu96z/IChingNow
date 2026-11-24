@@ -387,6 +387,7 @@ export default function TuViAiPanel({
     <div className="tuvi-ai">
       <section
         className="tv-card tv-reading-card"
+        data-tour="tuvi-ai"
         aria-labelledby="tuvi-ai-title"
       >
         <header className="tv-card-header">
@@ -479,6 +480,18 @@ export default function TuViAiPanel({
         )}
 
         <div className="tv-reading-body">
+          <div className="tv-notice" role="note" style={{ marginBottom: 14, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span>
+              ℹ️ Lưu ý: AI luận giải trực tiếp tại đây chỉ mang tính tham khảo (hiện chưa hoạt động thật sự tốt). Khuyên dùng nút <strong>Copy prompt cho AI</strong> bên dưới và dán vào <strong>Google Gemini</strong>.
+            </span>
+            <button
+              type="button"
+              className="tv-text-button"
+              onClick={() => document.getElementById('tuvi-export-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            >
+              ⬇ Tới mục Copy Prompt
+            </button>
+          </div>
           <div className="tv-context">
             <span className="tv-context-star">✦</span>
             <strong>{readingContext?.label || inputData?.name || 'Lá số của bạn'}</strong>
@@ -705,6 +718,8 @@ export default function TuViAiPanel({
       </section>
 
       <section
+        id="tuvi-export-section"
+        data-tour="tuvi-export"
         className="tv-card tv-export-card"
         aria-labelledby="tuvi-export-title"
       >
@@ -977,20 +992,32 @@ export default function TuViAiPanel({
           <div className="tv-export-actions">
             <p>
               {readingContext ? 'Bao gồm đầy đủ hai lá số, cách chấm điểm và giới hạn của các quy tắc hiện có. Sao chép toàn bộ để AI giữ đúng ngữ cảnh hai người.' : exportTab === 'prompt'
-                ? 'Gồm đủ 12 cung, quan hệ tam hợp/xung chiếu, Tứ Hóa và các hạn đã tính; kèm hướng dẫn luận giải theo chủ đề và câu hỏi đã chọn. Sao chép toàn bộ để dùng với AI khác.'
+                ? '⭐ Khuyên dùng: Copy prompt này dán vào Google Gemini để AI luận giải 12 cung, Tứ Hóa và vận hạn sâu sát nhất (miễn phí cho mọi người dùng).'
                 : 'Dữ liệu đầy đủ từ lá số đang xem, gồm sao, trạng thái, Tuần/Triệt, Cân lượng và các hạn nếu có. Phần chưa có dữ liệu được ghi rõ.'}
             </p>
-            <button
-              className={`tv-button tv-primary ${exportCopied ? 'tv-copied' : ''}`}
-              onClick={() => copy(exportText)}
-            >
-              <Icon name={exportCopied ? 'check' : 'copy'} />
-              {exportCopied
-                ? 'Đã sao chép!'
-                : exportTab === 'prompt'
-                  ? 'Copy prompt cho AI'
-                  : 'Copy dữ liệu lá số'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={`tv-button tv-primary ${exportCopied ? 'tv-copied' : ''}`}
+                onClick={() => copy(exportText)}
+              >
+                <Icon name={exportCopied ? 'check' : 'copy'} />
+                {exportCopied
+                  ? 'Đã sao chép!'
+                  : exportTab === 'prompt'
+                    ? 'Copy prompt cho AI (Gemini)'
+                    : 'Copy dữ liệu lá số'}
+              </button>
+              <a
+                href="https://gemini.google.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="tv-button tv-secondary"
+                style={{ textDecoration: 'none' }}
+              >
+                Mở Gemini ↗
+              </a>
+            </div>
           </div>
           {copyMessage && (exportCopied || !copiedText) && (
             <p className="tv-copy-feedback" role="status">

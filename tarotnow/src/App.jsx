@@ -19,6 +19,7 @@ import ManualPickMode from './components/ManualPickMode';
 import AiInterpretationPanel from './components/AiInterpretationPanel';
 import AppHeader from './components/AppHeader.jsx';
 import SpiritualJournal from '@shared/components/SpiritualJournal.jsx';
+import GuidedTour from '@shared/components/GuidedTour.jsx';
 import AppFooter from '@shared/components/AppFooter.jsx';
 import { tarotTheme } from '@shared/themes/tarot.js';
 import { trackPageVisit } from '@shared/utils/analytics.js';
@@ -109,6 +110,7 @@ export default function App() {
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const resultsAnchorRef = useRef(null);
   const inFlightSaveRef = useRef(null);
 
@@ -734,6 +736,8 @@ ${summaryObj.advice}${dignitySummaryAppend}
         onLogoClick={handleResetApp}
         useAuthHook={useAuth}
         onOpenJournal={() => setIsJournalOpen(true)}
+        onOpenGuide={() => setShowGuide(true)}
+        guideLabel={language === 'en' ? 'Guide' : 'Hướng dẫn'}
         logo={
           <div style={{
             width: 20,
@@ -862,7 +866,7 @@ ${summaryObj.advice}${dignitySummaryAppend}
           {activeMode === 'random' && (
           <div style={{ display: 'contents' }}>
 
-          <div className="setup-panel glass-panel">
+          <div className="setup-panel glass-panel" data-tour="tarot-setup">
             {/* Question Textarea */}
             <div className="form-group">
               <label className="form-label" htmlFor="question-input">
@@ -1028,7 +1032,7 @@ ${summaryObj.advice}${dignitySummaryAppend}
 
           {/* Cards Result Grid Display */}
           {(drawnCards.length > 0 || isDrawing) && (
-            <div ref={resultsAnchorRef} className="draw-results-section glass-panel">
+            <div ref={resultsAnchorRef} data-tour="tarot-result" className="draw-results-section glass-panel">
               <div className="results-header-container">
                 <h2 className="results-title">{t('result.title', 'Kết Quả Rút Bài')}</h2>
                 <p className="results-spread-subtitle" style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--gold-color)', fontWeight: 600 }}>
@@ -1406,6 +1410,97 @@ ${summaryObj.advice}${dignitySummaryAppend}
         userId={user?.id}
         onLogin={login}
         currentApp="tarot"
+      />
+
+      <GuidedTour
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        accentColor={tarotTheme.accent}
+        language={language}
+        title={language === 'en' ? 'TarotNow Quick Guide' : 'Hướng dẫn trải bài TarotNow'}
+        steps={
+          language === 'en'
+            ? [
+                {
+                  id: 'tarot-mode',
+                  selector: '.mode-switcher',
+                  title: '1. Pick a draw mode',
+                  body: 'Choose Random Draw, Manual Pick (tap cards yourself), or Physical Deck (enter cards you drew offline).',
+                },
+                {
+                  id: 'tarot-setup',
+                  selector: '[data-tour="tarot-setup"]',
+                  title: '2. Enter your question & spread',
+                  body: 'Type your question, pick a spread layout (1 card, 3 cards, Celtic Cross...) and lens, then click Draw Tarot Cards.',
+                  fallbackNote: 'Switch to Random Draw tab to enter your question and spread.',
+                },
+                {
+                  id: 'tarot-result',
+                  selector: '[data-tour="tarot-result"]',
+                  title: '3. Flip 3D cards & tap for meanings',
+                  body: 'Your drawn cards appear here with positions and Elemental Dignities. Click any card to inspect full upright/reversed meanings.',
+                  fallbackNote: 'After drawing cards, the 3D spread layout appears here.',
+                },
+                {
+                  id: 'tarot-export',
+                  selector: '[data-tour="tarot-export"]',
+                  badge: '⭐ Recommended',
+                  title: '4. Copy Prompt for AI (Best with Google Gemini)',
+                  body: 'Scroll down to "Export Data for AI" and click "Copy Prompt for AI (Gemini)" — unlocked free for all users!',
+                  tip: 'Paste the copied prompt into Google Gemini for deep, holistic card synthesis.',
+                  ctaLink: { label: 'Open Google Gemini', href: 'https://gemini.google.com/' },
+                  fallbackNote: 'After drawing cards, scroll down to the Export panel to copy your AI prompt.',
+                },
+                {
+                  id: 'tarot-ai',
+                  selector: '[data-tour="tarot-ai"]',
+                  badge: 'Reference only',
+                  title: '5. Built-in AI panel notice',
+                  body: 'The built-in AI button is currently unstable and for reference only. Prefer copying the prompt in Step 4 into Google Gemini.',
+                  fallbackNote: 'After drawing cards, prefer the Copy Prompt box over the built-in AI button.',
+                },
+              ]
+            : [
+                {
+                  id: 'tarot-mode',
+                  selector: '.mode-switcher',
+                  title: '1. Chọn kiểu rút bài',
+                  body: 'Chọn Rút Ngẫu Nhiên, Chọn Tay trực quan, hoặc Nhập bài ngoài đời nếu bạn tự trải bộ bài thật.',
+                },
+                {
+                  id: 'tarot-setup',
+                  selector: '[data-tour="tarot-setup"]',
+                  title: '2. Nhập câu hỏi & chọn sơ đồ trải bài',
+                  body: 'Nhập câu hỏi của bạn, chọn trải bài (1 lá, 3 lá, Celtic Cross...) và bấm nút "RÚT BÀI TAROT" ở bên dưới.',
+                  fallbackNote: 'Chọn tab "Rút Ngẫu Nhiên" để nhập câu hỏi và bấm rút bài.',
+                },
+                {
+                  id: 'tarot-result',
+                  selector: '[data-tour="tarot-result"]',
+                  title: '3. Xem lá bài 3D & Tương tác nguyên tố',
+                  body: 'Chạm vào từng lá bài để xem chi tiết ý nghĩa xuôi/ngược và xem phân tích Tương tác Nguyên tố ngay phía dưới.',
+                  fallbackNote: 'Sau khi rút bài, kết quả các lá bài sẽ hiện tại đây.',
+                },
+                {
+                  id: 'tarot-export',
+                  selector: '[data-tour="tarot-export"]',
+                  badge: '⭐ Quan trọng nhất',
+                  title: '4. Copy Prompt cho AI (Khuyên dùng Gemini)',
+                  body: 'Cuộn xuống hộp "Xuất dữ liệu luận giải cho AI", chọn kiểu luận giải & bấm "✨ Copy Prompt cho AI (Gemini)" — miễn phí cho mọi người dùng!',
+                  tip: '💡 Mẹo chuẩn nhất: Dán thẳng prompt vừa copy vào Google Gemini để AI liên kết toàn bộ lá bài và vị trí sâu sắc nhất.',
+                  ctaLink: { label: 'Mở Google Gemini', href: 'https://gemini.google.com/' },
+                  fallbackNote: 'Sau khi rút bài, cuộn xuống hộp Xuất dữ liệu ở cuối trang để copy prompt sang Google Gemini.',
+                },
+                {
+                  id: 'tarot-ai',
+                  selector: '[data-tour="tarot-ai"]',
+                  badge: 'Chỉ tham khảo',
+                  title: '5. Lưu ý về nút AI luận giải trực tiếp',
+                  body: 'Tính năng AI luận giải tích hợp tại đây hiện chưa hoạt động thật sự tốt và chỉ mang tính tham khảo. Hãy ưu tiên copy prompt ở bước 4 sang Google Gemini.',
+                  fallbackNote: 'Khi xem kết quả trải bài, ưu tiên mục Copy Prompt thay cho AI trực tiếp.',
+                },
+              ]
+        }
       />
     </>
   );
