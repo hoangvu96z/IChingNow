@@ -436,7 +436,7 @@ function PersonForm({ label, value, onChange, side, savedProfiles = [] }) {
             value={dateValue}
             onChange={handleDateChange}
             onClick={(e) => {
-              try { e.target.showPicker?.(); } catch {}
+              try { e.target.showPicker?.(); } catch { }
             }}
           />
           {dateValue && (
@@ -1555,7 +1555,7 @@ export function PairSession({ initial, onStored, initialActiveTab = 'overview' }
 
   const persist = (conversation) => {
     latest.current = conversation;
-    const operation = pending.current.catch(() => {}).then(async () => {
+    const operation = pending.current.catch(() => { }).then(async () => {
       if (!active.current) throw new Error('Phiên hợp hôn đã đóng.');
       setSaveStatus('Đang tự lưu hồ sơ và hội thoại…');
       const payload = { pair: initial.pair, conversation };
@@ -1586,9 +1586,9 @@ export function PairSession({ initial, onStored, initialActiveTab = 'overview' }
 
   useEffect(() => {
     active.current = true;
-    if (!initial.id) persist(latest.current).catch(() => {});
+    if (!initial.id) persist(latest.current).catch(() => { });
     const retry = () => {
-      if (active.current) persist(latest.current).catch(() => {});
+      if (active.current) persist(latest.current).catch(() => { });
     };
     window.addEventListener('online', retry);
     return () => {
@@ -1857,7 +1857,7 @@ export function PairSession({ initial, onStored, initialActiveTab = 'overview' }
       <div className="hh-save" role="status">
         <span>{saveStatus}</span>
         {saveFailed && (
-          <button type="button" onClick={() => persist(latest.current).catch(() => {})}>
+          <button type="button" onClick={() => persist(latest.current).catch(() => { })}>
             Thử lại
           </button>
         )}
@@ -1893,6 +1893,7 @@ function AuthenticatedPage({ userId }) {
   });
   const [session, setSession] = useState(null);
   const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [historySearch, setHistorySearch] = useState('');
   const [historyFrom, setHistoryFrom] = useState('');
@@ -1900,22 +1901,43 @@ function AuthenticatedPage({ userId }) {
   const [historyFavorites, setHistoryFavorites] = useState(false);
   const [historySort, setHistorySort] = useState('newest');
   const [favoritePending, setFavoritePending] = useState(null);
+  const resolveCoupleNames = (row) => {
+    const pair = row?.restored?.pair;
+    const a = pair?.assessment;
+    const husband = a?.husbandName || pair?.chong?.person?.hoTen || pair?.payload?.chong?.hoTen || pair?.chong?.inputData?.name || '';
+    const wife = a?.wifeName || pair?.vo?.person?.hoTen || pair?.payload?.vo?.hoTen || pair?.vo?.inputData?.name || '';
+    return { husband, wife };
+  };
+
   const visibleHistory = useMemo(() => history.filter(row => {
-    const assessment = row.restored?.pair?.assessment;
-    const names = `${assessment?.husbandName || ''} ${assessment?.wifeName || ''}`.toLowerCase();
+    const { husband, wife } = resolveCoupleNames(row);
+    const names = `${husband} ${wife}`.toLowerCase();
     const date = new Date(row.createdAt);
     const day = Number.isNaN(date.getTime()) ? '' : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    return names.includes(historySearch.trim().toLowerCase()) && (!historyFrom || day >= historyFrom) &&
+    return names.includes(historySearch.trim().toLowerCase()) && (!historyFrom || (day && day >= historyFrom)) &&
       (!historyTo || (day && day <= historyTo)) && (!historyFavorites || row.data?.favorite === true);
   }).sort((a, b) => {
-    if (historySort === 'name') return (a.restored?.pair?.assessment?.husbandName || '').localeCompare(b.restored?.pair?.assessment?.husbandName || '', 'vi');
+    if (historySort === 'name') return resolveCoupleNames(a).husband.localeCompare(resolveCoupleNames(b).husband, 'vi');
     const delta = (new Date(a.createdAt).getTime() || 0) - (new Date(b.createdAt).getTime() || 0);
     return historySort === 'oldest' ? delta : -delta;
   }), [history, historySearch, historyFrom, historyTo, historyFavorites, historySort]);
 
+  const hasHistoryFilters = Boolean(
+    historySearch.trim() || historyFrom || historyTo || historyFavorites || historySort !== 'newest'
+  );
+
+  function resetHistoryFilters() {
+    setHistorySearch('');
+    setHistoryFrom('');
+    setHistoryTo('');
+    setHistoryFavorites(false);
+    setHistorySort('newest');
+  }
+
   async function toggleFavorite(row) {
     if (favoritePending !== null) return;
     setFavoritePending(row.id);
+    setHistoryError('');
     try {
       const favorite = !row.data?.favorite;
       await ssoRequest(`/readings/${encodeURIComponent(row.id)}`, { method: 'PATCH', body: { data: { favorite } } });
@@ -1941,6 +1963,7 @@ function AuthenticatedPage({ userId }) {
 
   async function loadHistory() {
     const seq = ++sequence.current;
+    if (active.current) setHistoryLoading(true);
     try {
       const { readings = [] } = await ssoRequest(`/readings?app=${HISTORY_APP}`);
       const rows = await Promise.all(
@@ -1954,6 +1977,8 @@ function AuthenticatedPage({ userId }) {
       }
     } catch (e) {
       if (active.current && seq === sequence.current) setHistoryError(e.message);
+    } finally {
+      if (active.current && seq === sequence.current) setHistoryLoading(false);
     }
   }
 
@@ -2110,57 +2135,210 @@ function AuthenticatedPage({ userId }) {
       <details className="hh-history">
         <summary>📂 Lịch sử Hợp hôn ({history.length})</summary>
         <div className="hh-history-body">
-          {historyError && <p className="hh-alert" role="alert">{historyError}</p>}
-          <div className="hh-history-filters">
-            <input aria-label="Tìm theo tên" placeholder="Tìm theo tên" value={historySearch} onChange={e => setHistorySearch(e.target.value)} />
-            <label>Từ ngày <input type="date" value={historyFrom} onChange={e => setHistoryFrom(e.target.value)} /></label>
-            <label>Đến ngày <input type="date" value={historyTo} onChange={e => setHistoryTo(e.target.value)} /></label>
-            <label>Sắp xếp <select value={historySort} onChange={e => setHistorySort(e.target.value)}><option value="newest">Mới nhất</option><option value="oldest">Cũ nhất</option><option value="name">Tên A–Z</option></select></label>
-            <label><input type="checkbox" checked={historyFavorites} onChange={e => setHistoryFavorites(e.target.checked)} /> Chỉ yêu thích</label>
-            <span>{visibleHistory.length}/{history.length} hồ sơ</span>
-            <button type="button" onClick={loadHistory}>Làm mới danh sách</button>
-          </div>
-          {visibleHistory.length === 0 && <p>Không có hồ sơ phù hợp.</p>}
-          {visibleHistory.map((row) => (
-            <div key={row.id} className="hh-history-entry">
-            <button
-              type="button"
-              key={row.id}
-              className="hh-history-row"
-              onClick={() => {
-                const restored = row.restored;
-                if (
-                  !restored?.pair?.assessment ||
-                  !restored?.pair?.chong?.result?.palates ||
-                  !restored?.pair?.vo?.result?.palates
-                ) {
-                  setError('Hồ sơ này không đọc được dữ liệu.');
-                  return;
-                }
-                if (restored.pair.payload) {
-                  setPayload({
-                    chong: { ...emptyPerson('Nam'), ...restored.pair.payload.chong },
-                    vo: { ...emptyPerson('Nữ'), ...restored.pair.payload.vo },
-                  });
-                }
-                setSession({ ...restored, id: row.id, key: crypto.randomUUID() });
-                setError('');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            >
-              <span>
-                {row.restored?.pair?.assessment
-                  ? `${row.restored.pair.assessment.husbandName} & ${row.restored.pair.assessment.wifeName}`
-                  : 'Hồ sơ chưa đọc được'}
-              </span>
-              <small>{new Date(row.createdAt).toLocaleDateString('vi-VN')}</small>
-            </button>
-            <button type="button" className="hh-history-star" disabled={favoritePending !== null} onClick={() => toggleFavorite(row)}
-              aria-label={row.data?.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'} aria-pressed={!!row.data?.favorite}>
-              {row.data?.favorite ? '★' : '☆'}
-            </button>
+          {historyError && (
+            <div className="hh-history-alert" role="alert">
+              <span>⚠️ {historyError}</span>
+              <button
+                type="button"
+                className="hh-history-alert-close"
+                onClick={() => setHistoryError('')}
+                aria-label="Đóng thông báo lỗi"
+              >
+                ✕
+              </button>
             </div>
-          ))}
+          )}
+
+          <div className="hh-history-filters">
+            <div className="hh-history-toolbar-top">
+              <div className="hh-history-search">
+                <span className="hh-history-search-icon" aria-hidden="true">🔍</span>
+                <input
+                  type="text"
+                  aria-label="Tìm theo tên"
+                  placeholder="Tìm theo tên cặp đôi..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                />
+                {historySearch && (
+                  <button
+                    type="button"
+                    className="hh-history-search-clear"
+                    onClick={() => setHistorySearch('')}
+                    aria-label="Xóa từ khóa tìm kiếm"
+                    title="Xóa tìm kiếm"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className={`hh-history-fav-btn${historyFavorites ? ' is-active' : ''}`}
+                aria-pressed={historyFavorites}
+                onClick={() => setHistoryFavorites((prev) => !prev)}
+              >
+                <span aria-hidden="true">{historyFavorites ? '★' : '☆'}</span>
+                <span>Yêu thích</span>
+              </button>
+
+              <span className="hh-history-count">
+                {visibleHistory.length} / {history.length} hồ sơ
+              </span>
+
+              <button
+                type="button"
+                className="hh-history-refresh-btn"
+                onClick={loadHistory}
+                disabled={historyLoading}
+              >
+                <span aria-hidden="true">🔄</span>
+                <span>{historyLoading ? 'Đang tải…' : 'Làm mới'}</span>
+              </button>
+            </div>
+
+            <div className="hh-history-toolbar-controls">
+              <label className="hh-history-field">
+                <span>Từ ngày</span>
+                <input
+                  type="date"
+                  max={historyTo || undefined}
+                  value={historyFrom}
+                  onChange={(e) => setHistoryFrom(e.target.value)}
+                />
+              </label>
+
+              <label className="hh-history-field">
+                <span>Đến ngày</span>
+                <input
+                  type="date"
+                  min={historyFrom || undefined}
+                  value={historyTo}
+                  onChange={(e) => setHistoryTo(e.target.value)}
+                />
+              </label>
+
+              <label className="hh-history-field">
+                <span>Sắp xếp</span>
+                <select value={historySort} onChange={(e) => setHistorySort(e.target.value)}>
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="name">Tên A–Z</option>
+                </select>
+              </label>
+
+              <button
+                type="button"
+                className="hh-history-reset-btn"
+                onClick={resetHistoryFilters}
+                disabled={!hasHistoryFilters}
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+          </div>
+
+          {visibleHistory.length === 0 ? (
+            <div className="hh-history-empty">
+              <p>
+                {history.length === 0
+                  ? 'Chưa có hồ sơ Hợp hôn nào được lưu.'
+                  : 'Không có hồ sơ phù hợp với bộ lọc hiện tại.'}
+              </p>
+              {history.length > 0 && hasHistoryFilters && (
+                <button
+                  type="button"
+                  className="hh-history-reset-btn"
+                  onClick={resetHistoryFilters}
+                >
+                  Đặt lại bộ lọc
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="hh-history-list">
+              {visibleHistory.map((row) => {
+                const assessment = row.restored?.pair?.assessment;
+                const { husband, wife } = resolveCoupleNames(row);
+                const coupleLabel = (husband || wife)
+                  ? `${husband || 'Bên A'} & ${wife || 'Bên B'}`
+                  : null;
+                const isFavorite = row.data?.favorite === true;
+                const totalScore = assessment?.totalScore;
+                const hasAi = Boolean(row.restored?.conversation?.initialInterpretation);
+                const derivedTierKey = assessment?.tier
+                  || (totalScore >= 82 ? 'thuong_dang' : totalScore >= 70 ? 'trung_thuong' : totalScore >= 55 ? 'trung_binh' : 'can_hoa_giai');
+                const tierMeta = TIER_META[derivedTierKey] || TIER_META.trung_binh;
+                const createdDate = row.createdAt ? new Date(row.createdAt) : null;
+                const formattedDate = createdDate && !Number.isNaN(createdDate.getTime())
+                  ? createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                  : '';
+
+                return (
+                  <div key={row.id} className={`hh-history-card${isFavorite ? ' is-favorite' : ''}`}>
+                    <button
+                      type="button"
+                      className="hh-history-row"
+                      onClick={() => {
+                        const restored = row.restored;
+                        if (
+                          !restored?.pair?.assessment ||
+                          !restored?.pair?.chong?.result?.palates ||
+                          !restored?.pair?.vo?.result?.palates
+                        ) {
+                          setError('Hồ sơ này không đọc được dữ liệu.');
+                          return;
+                        }
+                        if (restored.pair.payload) {
+                          setPayload({
+                            chong: { ...emptyPerson('Nam'), ...restored.pair.payload.chong },
+                            vo: { ...emptyPerson('Nữ'), ...restored.pair.payload.vo },
+                          });
+                        }
+                        setSession({ ...restored, id: row.id, key: crypto.randomUUID() });
+                        setError('');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
+                      <span className="hh-history-row-main">
+                        <span className="hh-history-couple">
+                          {coupleLabel || 'Hồ sơ chưa đọc được'}
+                        </span>
+                        <span className="hh-history-meta">
+                          {totalScore != null && (
+                            <span className={`hh-history-score-pill ${tierMeta.cls}`}>
+                              {totalScore}/100 · {tierMeta.badge}
+                            </span>
+                          )}
+                          {hasAi && (
+                            <span className="hh-history-ai-pill">
+                              <span aria-hidden="true">✦</span> Có luận giải AI
+                            </span>
+                          )}
+                          {formattedDate && (
+                            <span className="hh-history-date">📅 {formattedDate}</span>
+                          )}
+                        </span>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`hh-history-star${isFavorite ? ' is-active' : ''}`}
+                      disabled={favoritePending !== null}
+                      onClick={() => toggleFavorite(row)}
+                      aria-label={isFavorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'}
+                      aria-pressed={isFavorite}
+                      title={isFavorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'}
+                    >
+                      {isFavorite ? '★' : '☆'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </details>
     </>

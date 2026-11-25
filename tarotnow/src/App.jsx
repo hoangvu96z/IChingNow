@@ -34,6 +34,7 @@ import PhysicalSpreadInput from './components/PhysicalSpreadInput.jsx';
 import PersonalTarotInsightsModal from './components/PersonalTarotInsightsModal.jsx';
 import TarotReflectionCard from './components/TarotReflectionCard.jsx';
 import { formatReadingTimestamp } from './utils/tarotAnalytics.js';
+import { saveGuestTarotReadings } from './utils/readingMapping.js';
 import { buildTarotNoteNowPayload } from './utils/noteNowPayload.js';
 import SaveToNoteNowButton from '../../shared/src/components/SaveToNoteNowButton.jsx';
 import {
@@ -127,6 +128,27 @@ export default function App() {
     updateReadingData,
     updateReadingReflection,
   } = useReadingsApi(isAuthenticated, user?.id, { inFlightSaveRef });
+
+  const handleUpdateFavorite = useCallback(async (id, partial) => {
+    if (isAuthenticated) {
+      return updateReadingData(id, partial);
+    }
+    setHistory((prev) => {
+      const next = prev.map((item) => {
+        const isMatch =
+          String(item.id) === String(id) ||
+          (item._remoteId && String(item._remoteId) === String(id));
+        if (!isMatch) return item;
+        return {
+          ...item,
+          ...partial,
+          data: item.data ? { ...item.data, ...partial } : { ...partial },
+        };
+      });
+      saveGuestTarotReadings(next);
+      return next;
+    });
+  }, [isAuthenticated, updateReadingData, setHistory]);
 
   // Track active reading ID for AI conversation persistence
   const [activeReadingId, setActiveReadingId] = useState(null);
@@ -1307,19 +1329,37 @@ ${summaryObj.advice}${dignitySummaryAppend}
                       ? t('spread.name.' + item.spreadId, item.spreadName) 
                       : (item.spreadName === 'Tùy chỉnh' || item.spreadName === 'Custom' ? t('history.custom', 'Tùy chỉnh') : item.spreadName);
                   const isPhys = Boolean(item.physicalLogged || item.data?.physicalLogged);
+                  const isFav = Boolean(item.data?.isFavorite);
                   return (
-                    <div 
-                      key={item.id} 
-                      className="history-item" 
+                    <div
+                      key={item.id}
+                      className={`history-item${isFav ? ' is-favorite' : ''}`}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSelectHistoryItem(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSelectHistoryItem(item);
+                        }
+                      }}
                       style={{ cursor: 'pointer' }}
                     >
                       <div className="history-meta">
-                        <span>
+                        <span className="history-meta-spread">
                           {isPhys ? '🃏 ' : ''}
                           {histSpreadName}
+                          {isFav && (
+                            <span
+                              className="history-fav-pill"
+                              aria-label={language === 'en' ? 'Favorite' : 'Yêu thích'}
+                              title={language === 'en' ? 'Favorite' : 'Yêu thích'}
+                            >
+                              ★
+                            </span>
+                          )}
                         </span>
-                        <span>{formatReadingTimestamp(item.timestamp || item.createdAt, language)}</span>
+                        <span className="history-meta-time">{formatReadingTimestamp(item.timestamp || item.createdAt, language)}</span>
                       </div>
                       <p className="history-question">"{item.question}"</p>
                       <div className="history-cards-line">
@@ -1374,7 +1414,7 @@ ${summaryObj.advice}${dignitySummaryAppend}
             onDeleteMultiple={deleteMultipleReadings}
             onClearAll={clearHistory}
             onUpdateReflection={handleSaveReflection}
-            onUpdateFavorite={updateReadingData}
+            onUpdateFavorite={handleUpdateFavorite}
           />
 
           {/* Personal Tarot Reading Analytics Modal (Native <dialog>) */}

@@ -1,8 +1,16 @@
 import { evidencePlainText } from '../logic/interpretationEvidence';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '../context/useLanguage.js';
 import OutcomeVerificationCard from './OutcomeVerificationCard.jsx';
 import { VERIFICATION_META, getVerificationForReading } from '../logic/verification.js';
+
+function getVerificationBadgeLabel(status, meta, isEn) {
+  if (!isEn) return meta.shortVi;
+  if (status === 'accurate') return '✅ Accurate';
+  if (status === 'partial') return '🌗 Partial';
+  if (status === 'different') return '🔄 Different';
+  return meta.labelEn || meta.shortVi;
+}
 
 // ─── Detail Overlay Component (Module Scope to prevent remounting) ───────────
 function DetailView({
@@ -15,59 +23,109 @@ function DetailView({
   formatTimeShort,
   handleSelectItem,
   onUpdateVerification,
+  language,
+  t,
 }) {
+  const isEn = language === 'en';
   const conv = item?.data?.aiConversation;
   const hasAI = !!(conv?.initialInterpretation || (conv?.followUps && conv.followUps.length > 0));
+  const followUpCount = conv?.followUps?.length || 0;
+  const methodLabel = item.type === 'luc-hao'
+      ? `☯ ${t('history.luc_hao_badge', isEn ? 'Six Lines' : 'Lục Hào')}`
+      : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`;
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      className="iching-detail-backdrop"
       onClick={onClose}
     >
       <div
-        style={{ background: 'var(--color-paper-card, #fdfbf7)', border: '1px solid var(--color-gold, #b8860b)', borderRadius: 16, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="iching-detail-modal-title"
+        className="iching-detail-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ padding: '14px 20px', background: 'linear-gradient(135deg, #1a0a06 0%, #3d1a10 100%)', color: '#f5d78e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div>
-            <div style={{ fontFamily: "'Noto Serif', serif", fontWeight: 700, fontSize: '1.05rem' }}>{formatHistoryTitle(item)}</div>
-            <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: 2 }}>
-              {item.type === 'luc-hao' ? '🪙 Lục Hào' : '🌸 Mai Hoa'} · {formatTime(item.timestamp)}
+        <div className="iching-detail-header">
+          <div style={{ minWidth: 0 }}>
+            <h3 id="iching-detail-modal-title" className="iching-detail-title">
+              {formatHistoryTitle(item)}
+            </h3>
+            <div className="iching-detail-subtitle">
+              {methodLabel} · {formatTime(item.timestamp)}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 30, height: 30, color: '#f5d78e', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <button
+            type="button"
+            className="iching-history-close"
+            onClick={onClose}
+            aria-label={isEn ? 'Close details' : 'Đóng chi tiết'}
+          >
+            ✕
+          </button>
         </div>
 
         {item._decryptionError && (
-          <div role="alert" style={{ padding: '10px 20px', color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', borderBottom: '1px solid rgba(192,57,43,0.25)', fontSize: '0.82rem' }}>
-            Không giải mã được dữ liệu mã hóa cũ. Bản ghi chỉ đọc để bảo vệ nội dung gốc; bạn vẫn có thể xóa bản ghi.
+          <div role="alert" className="iching-history-alert">
+            {isEn
+              ? 'Unable to decrypt legacy encrypted data. Kept read-only to protect original content; you can still delete this record.'
+              : 'Không giải mã được dữ liệu mã hóa cũ. Bản ghi chỉ đọc để bảo vệ nội dung gốc; bạn vẫn có thể xóa bản ghi.'}
           </div>
         )}
 
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,134,11,0.15)', background: 'rgba(184,134,11,0.04)' }}>
+        <div className="iching-detail-tabs" role="tablist">
           {[
-            { key: 'info', label: '📋 Thông tin quẻ' },
-            { key: 'ai', label: hasAI ? `💬 Hội thoại AI (${conv.followUps?.length || 0} câu hỏi)` : '💬 Hội thoại AI' },
-          ].map(tab => (
-            <button key={tab.key} onClick={() => setPreviewTab(tab.key)} style={{ flex: 1, padding: '10px 16px', border: 'none', background: previewTab === tab.key ? 'rgba(184,134,11,0.1)' : 'transparent', borderBottom: previewTab === tab.key ? '2px solid var(--color-gold, #b8860b)' : '2px solid transparent', color: previewTab === tab.key ? 'var(--color-gold, #b8860b)' : 'var(--color-ink-muted)', fontSize: '0.85rem', fontWeight: previewTab === tab.key ? 700 : 500, cursor: 'pointer', transition: 'all 0.15s' }}>
+            { key: 'info', label: isEn ? '📋 Reading Info' : '📋 Thông tin quẻ' },
+            {
+              key: 'ai',
+              label: hasAI
+                ? (isEn ? `💬 AI Conversation (${followUpCount})` : `💬 Hội thoại AI (${followUpCount} câu hỏi)`)
+                : (isEn ? '💬 AI Conversation' : '💬 Hội thoại AI'),
+            },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={previewTab === tab.key}
+              onClick={() => setPreviewTab(tab.key)}
+              className={`iching-detail-tab ${previewTab === tab.key ? 'is-active' : ''}`}
+            >
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+        <div className="iching-detail-body">
           {previewTab === 'info' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {item.question && (
-                <div style={{ background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 8, padding: '10px 14px' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-gold)', marginBottom: 4, textTransform: 'uppercase' }}>Việc cần xem</div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--color-ink)' }}>{item.question === '(Không có câu hỏi)' ? '(Không có câu hỏi)' : item.question}</div>
+                <div className="iching-detail-question-box">
+                  <div className="iching-detail-question-label">
+                    {isEn ? 'Question / Matter' : 'Việc cần xem'}
+                  </div>
+                  <div className="iching-detail-question-text">
+                    {item.question === '(Không có câu hỏi)'
+                      ? t('history.no_question', '(Không có câu hỏi)')
+                      : item.question}
+                  </div>
                 </div>
               )}
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-ink-muted)', lineHeight: 1.8 }}>
-                <strong>Thời gian:</strong> {formatTime(item.timestamp)}<br />
-                <strong>Phương pháp:</strong> {item.type === 'luc-hao' ? 'Lục Hào' : 'Mai Hoa'}<br />
-                {item.data?.caster && <><strong>Người lập:</strong> {item.data.caster}<br /></>}
+              <div className="iching-detail-meta-list">
+                <div>
+                  <strong>{isEn ? 'Time:' : 'Thời gian:'}</strong> {formatTime(item.timestamp)}
+                </div>
+                <div>
+                  <strong>{isEn ? 'Method:' : 'Phương pháp:'}</strong>{' '}
+                  {item.type === 'luc-hao'
+                    ? t('history.luc_hao_badge', isEn ? 'Six Lines' : 'Lục Hào')
+                    : t('history.mai_hoa_badge', 'Mai Hoa')}
+                </div>
+                {item.data?.caster && (
+                  <div>
+                    <strong>{isEn ? 'Caster:' : 'Người lập:'}</strong> {item.data.caster}
+                  </div>
+                )}
               </div>
               {!item._decryptionError && onUpdateVerification && (
                 <OutcomeVerificationCard
@@ -81,52 +139,71 @@ function DetailView({
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {!hasAI ? (
-                <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--color-ink-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>
-                  🤖 Chưa có hội thoại AI nào được lưu cho quẻ này.<br />
-                  <span style={{ fontSize: '0.8rem', marginTop: 4, display: 'block' }}>Hãy mở lại quẻ và yêu cầu AI luận giải để lưu hội thoại.</span>
+                <div className="iching-detail-ai-empty">
+                  {isEn ? (
+                    <>
+                      🤖 No AI conversation has been saved for this reading yet.
+                      <span style={{ fontSize: '0.8rem', marginTop: 4, display: 'block' }}>
+                        Open the reading and request an AI interpretation to save it here.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      🤖 Chưa có hội thoại AI nào được lưu cho quẻ này.
+                      <span style={{ fontSize: '0.8rem', marginTop: 4, display: 'block' }}>
+                        Hãy mở lại quẻ và yêu cầu AI luận giải để lưu hội thoại.
+                      </span>
+                    </>
+                  )}
                 </div>
               ) : (
                 <>
                   {conv.initialInterpretation && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-gold)' }}>
-                        <span>🤖 Luận giải ban đầu của AI</span>
+                        <span>{isEn ? '🤖 Initial AI Interpretation' : '🤖 Luận giải ban đầu của AI'}</span>
                         {conv.initialTimestamp && (
                           <span style={{ fontFamily: 'monospace', fontWeight: 400, color: 'var(--color-ink-muted)', marginLeft: 'auto' }}>
                             🕐 {formatTimeShort(conv.initialTimestamp)}
                           </span>
                         )}
                       </div>
-                      <div style={{ background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.15)', borderRadius: 8, padding: '10px 14px', fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.65, maxHeight: 200, overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
-                        {evidencePlainText(conv.initialInterpretation).slice(0, 800)}{evidencePlainText(conv.initialInterpretation).length > 800 ? '...' : ''}
+                      <div className="iching-detail-ai-box">
+                        {evidencePlainText(conv.initialInterpretation).slice(0, 800)}
+                        {evidencePlainText(conv.initialInterpretation).length > 800 ? '...' : ''}
                       </div>
                     </div>
                   )}
                   {conv.followUps && conv.followUps.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        💬 Câu hỏi thêm ({conv.followUps.length})
+                        {isEn ? `💬 Follow-up Questions (${conv.followUps.length})` : `💬 Câu hỏi thêm (${conv.followUps.length})`}
                       </div>
                       {conv.followUps.map((fu, idx) => (
-                        <div key={fu.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: 6, borderLeft: '3px solid rgba(184,134,11,0.3)', paddingLeft: 12 }}>
+                        <div key={fu.id || idx} className="iching-detail-followup-item">
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-vermillion)', minWidth: 22 }}>Q{idx + 1}</span>
-                            <div style={{ flex: 1 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '0.83rem', color: 'var(--color-ink)', fontWeight: 600 }}>{fu.question}</div>
                               {fu.questionTimestamp && (
-                                <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>🕐 {formatTimeShort(fu.questionTimestamp)}</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>
+                                  🕐 {formatTimeShort(fu.questionTimestamp)}
+                                </div>
                               )}
                             </div>
                           </div>
                           {fu.answer && (
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, paddingLeft: 22 }}>
                               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-jade)', minWidth: 22 }}>AI</span>
-                              <div style={{ flex: 1 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: '0.82rem', color: 'var(--color-ink)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
-                                  {evidencePlainText(fu.answer).slice(0, 600)}{evidencePlainText(fu.answer).length > 600 ? '...' : ''}
+                                  {evidencePlainText(fu.answer).slice(0, 600)}
+                                  {evidencePlainText(fu.answer).length > 600 ? '...' : ''}
                                 </div>
                                 {fu.answerTimestamp && (
-                                  <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>🕐 {formatTimeShort(fu.answerTimestamp)}</div>
+                                  <div style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace', marginTop: 2 }}>
+                                    🕐 {formatTimeShort(fu.answerTimestamp)}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -141,9 +218,18 @@ function DetailView({
           )}
         </div>
 
-        <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(184,134,11,0.15)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid rgba(184,134,11,0.3)', background: 'transparent', color: 'var(--color-ink)', fontSize: '0.85rem', cursor: 'pointer' }}>Đóng</button>
-          <button disabled={item._decryptionError} onClick={() => handleSelectItem(item)} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg, #b8860b, #d4a017)', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: item._decryptionError ? 'not-allowed' : 'pointer', opacity: item._decryptionError ? 0.55 : 1 }}>🔍 Mở lại quẻ này ➔</button>
+        <div className="iching-detail-footer">
+          <button type="button" onClick={onClose} className="iching-detail-btn-close">
+            {isEn ? 'Close' : 'Đóng'}
+          </button>
+          <button
+            type="button"
+            disabled={item._decryptionError}
+            onClick={() => handleSelectItem(item)}
+            className="iching-detail-btn-open"
+          >
+            {isEn ? '🔍 Open reading ➔' : '🔍 Mở lại quẻ này ➔'}
+          </button>
         </div>
       </div>
     </div>
@@ -161,6 +247,7 @@ export default function HistoryManagementModal({
   onUpdateFavorite,
 }) {
   const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -168,6 +255,7 @@ export default function HistoryManagementModal({
   const [typeFilter, setTypeFilter] = useState('all');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [pendingFavorites, setPendingFavorites] = useState(new Set());
   const [previewItem, setPreviewItem] = useState(null);
   const [previewTab, setPreviewTab] = useState('info');
@@ -244,7 +332,9 @@ export default function HistoryManagementModal({
     try {
       await onUpdateFavorite(item.id, !item.data?.favorite);
     } catch (error) {
-      setActionError(error?.message || 'Không thể cập nhật yêu thích. Vui lòng thử lại.');
+      setActionError(
+        error?.message || (isEn ? 'Unable to update favorite. Please try again.' : 'Không thể cập nhật yêu thích. Vui lòng thử lại.')
+      );
     } finally {
       setPendingFavorites(prev => { const next = new Set(prev); next.delete(item.id); return next; });
     }
@@ -264,6 +354,18 @@ export default function HistoryManagementModal({
     );
     return found || previewItem;
   }, [history, previewItem]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (activePreviewItem) setPreviewItem(null);
+        else onClose();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, activePreviewItem, onClose]);
 
   const handleModalSaveVerification = useCallback(
     async (readingId, verificationObj, createdAtKey) => {
@@ -291,6 +393,31 @@ export default function HistoryManagementModal({
 
   if (!isOpen) return null;
 
+  const activeFilterCount = [
+    typeFilter !== 'all',
+    Boolean(dateFrom),
+    Boolean(dateTo),
+    sortBy !== 'newest',
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = Boolean(
+    searchTerm.trim() ||
+    dateFrom ||
+    dateTo ||
+    typeFilter !== 'all' ||
+    favoritesOnly ||
+    sortBy !== 'newest'
+  );
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setDateFrom('');
+    setDateTo('');
+    setTypeFilter('all');
+    setFavoritesOnly(false);
+    setSortBy('newest');
+  };
+
   const isAllSelected =
     filteredHistory.length > 0 &&
     filteredHistory.every((item) => selectedIds.has(item.id));
@@ -315,7 +442,13 @@ export default function HistoryManagementModal({
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
     const count = selectedIds.size;
-    if (window.confirm(t('history.confirm_delete_selected', `Bạn có chắc chắn muốn xóa ${count} quẻ đã chọn không?`))) {
+    const confirmMsg = t(
+      'history.confirm_delete_selected',
+      isEn
+        ? `Are you sure you want to delete ${count} selected reading(s)?`
+        : `Bạn có chắc chắn muốn xóa ${count} quẻ đã chọn không?`
+    );
+    if (window.confirm(confirmMsg)) {
       setActionError('');
       try {
         await onDeleteMultiple(history.filter((h) => selectedIds.has(h.id)));
@@ -323,35 +456,64 @@ export default function HistoryManagementModal({
         setPreviewItem(null);
       } catch (error) {
         if (Array.isArray(error?.failedIds)) setSelectedIds(new Set(error.failedIds));
-        setActionError(error?.message || 'Không thể xóa các bản ghi. Những bản ghi chưa xóa vẫn được giữ lại.');
+        setActionError(
+          error?.message ||
+          (isEn
+            ? 'Unable to delete selected readings. Remaining records were kept.'
+            : 'Không thể xóa các bản ghi. Những bản ghi chưa xóa vẫn được giữ lại.')
+        );
       }
     }
   };
 
   const handleClearAll = async () => {
     if (history.length === 0) return;
-    if (window.confirm(t('history.confirm_clear', 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử gieo quẻ không?'))) {
+    const confirmMsg = t(
+      'history.confirm_clear',
+      isEn
+        ? 'Are you sure you want to clear your entire casting history?'
+        : 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử gieo quẻ không?'
+    );
+    if (window.confirm(confirmMsg)) {
       setActionError('');
       try {
         await onClearAll();
         setSelectedIds(new Set());
         setPreviewItem(null);
       } catch (error) {
-        setActionError(error?.message || 'Không thể xóa lịch sử. Dữ liệu vẫn được giữ lại.');
+        setActionError(
+          error?.message ||
+          (isEn
+            ? 'Unable to clear history. Your records were kept.'
+            : 'Không thể xóa lịch sử. Dữ liệu vẫn được giữ lại.')
+        );
       }
     }
   };
 
   const handleSelectItem = (item) => {
     if (item?._decryptionError) {
-      setActionError('Không thể mở bản ghi này vì dữ liệu mã hóa cũ không giải mã được với tài khoản hiện tại. Bản ghi được giữ nguyên ở chế độ chỉ đọc.');
+      setActionError(
+        isEn
+          ? 'Cannot open this reading because legacy encrypted data could not be decrypted with the current account. Kept read-only.'
+          : 'Không thể mở bản ghi này vì dữ liệu mã hóa cũ không giải mã được với tài khoản hiện tại. Bản ghi được giữ nguyên ở chế độ chỉ đọc.'
+      );
       return;
     }
     setActionError('');
     onSelect(item);
     onClose();
   };
-  const handlePreviewItem = (item, e) => { e.stopPropagation(); setPreviewItem(item); setPreviewTab('info'); };
+
+  const handlePreviewItem = (item, e) => {
+    e.stopPropagation();
+    setPreviewItem(item);
+    setPreviewTab('info');
+  };
+
+  const countPillLabel = filteredHistory.length !== history.length
+    ? `${filteredHistory.length} / ${history.length}`
+    : `${history.length} ${isEn ? (history.length === 1 ? 'reading' : 'readings') : 'quẻ'}`;
 
   return (
     <>
@@ -366,135 +528,344 @@ export default function HistoryManagementModal({
           formatTimeShort={formatTimeShort}
           handleSelectItem={handleSelectItem}
           onUpdateVerification={handleModalSaveVerification}
+          language={language}
+          t={t}
         />
       )}
 
-      <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
-        <div style={{ background: 'var(--color-paper-card, #fdfbf7)', border: '1px solid var(--color-gold, #b8860b)', borderRadius: 16, width: '100%', maxWidth: 1100, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', overflow: 'hidden', fontFamily: "'Be Vietnam Pro', sans-serif" }} onClick={(e) => e.stopPropagation()}>
-
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(184, 134, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #1a0a06 0%, #3d1a10 100%)', color: '#f5d78e' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: '1.25rem' }}>📜</span>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontFamily: "'Noto Serif', serif", fontWeight: 700 }}>{t('history.manage_title', 'Quản lý Lịch sử Gieo Quẻ')}</h3>
-                <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>{t('history.total_count', `Tổng số: ${history.length} quẻ`)}</span>
+      <div className="iching-history-backdrop" onClick={onClose}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="iching-history-modal-title"
+          className="iching-history-modal"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="iching-history-header">
+            <div className="iching-history-header-main">
+              <span className="iching-history-header-icon" aria-hidden="true">📜</span>
+              <div style={{ minWidth: 0 }}>
+                <div className="iching-history-title-row">
+                  <h3 id="iching-history-modal-title" className="iching-history-title">
+                    {t('history.manage_title', isEn ? 'Reading History' : 'Quản lý Lịch sử Gieo Quẻ')}
+                  </h3>
+                  <span className="iching-history-count-pill">{countPillLabel}</span>
+                </div>
+                <div className="iching-history-subtitle">
+                  {t(
+                    'history.total_count',
+                    isEn ? `Total: ${history.length} saved readings` : `Tổng số: ${history.length} quẻ`
+                  )}
+                </div>
               </div>
             </div>
-            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: '#f5d78e', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="iching-history-close"
+              aria-label={isEn ? 'Close history modal' : 'Đóng quản lý lịch sử'}
+            >
+              ✕
+            </button>
           </div>
 
           {actionError && (
-            <div role="alert" style={{ padding: '10px 20px', color: 'var(--color-vermillion)', background: 'rgba(192,57,43,0.1)', borderBottom: '1px solid rgba(192,57,43,0.25)', fontSize: '0.82rem' }}>
+            <div role="alert" className="iching-history-alert">
               {actionError}
             </div>
           )}
 
-          <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(184, 134, 11, 0.15)', background: 'rgba(184, 134, 11, 0.04)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <input type="text" placeholder={t('history.search_placeholder', '🔍 Tìm kiếm theo tên quẻ hoặc câu hỏi...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(184, 134, 11, 0.3)', background: 'var(--color-paper)', color: 'var(--color-ink)', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
-            <div style={{ display: 'flex', alignItems: 'end', flexWrap: 'wrap', gap: 10 }}>
-              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Từ ngày
-                <input type="date" value={dateFrom} max={dateTo || undefined} onChange={e => setDateFrom(e.target.value)} />
-              </label>
-              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Đến ngày
-                <input type="date" value={dateTo} min={dateFrom || undefined} onChange={e => setDateTo(e.target.value)} />
-              </label>
-              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Loại gieo quẻ
-                <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-                  <option value="all">Tất cả</option><option value="luc-hao">Lục Hào</option><option value="mai-hoa">Mai Hoa</option>
-                </select>
-              </label>
-              <label style={{ display: 'grid', gap: 4, fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>Sắp xếp
-                <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                  <option value="newest">Mới nhất</option><option value="oldest">Cũ nhất</option><option value="title">Tên quẻ A–Z</option>
-                </select>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', paddingBottom: 3 }}>
-                <input type="checkbox" checked={favoritesOnly} onChange={e => setFavoritesOnly(e.target.checked)} /> ⭐ Chỉ yêu thích
-              </label>
-              <button type="button" onClick={() => { setSearchTerm(''); setDateFrom(''); setDateTo(''); setTypeFilter('all'); setFavoritesOnly(false); setSortBy('newest'); }} style={{ cursor: 'pointer', padding: '4px 8px' }}>Xóa bộ lọc</button>
+          <div className="iching-history-toolbar">
+            <div className="iching-history-search-row">
+              <div className="iching-history-search-wrap">
+                <span className="iching-history-search-icon" aria-hidden="true">🔍</span>
+                <input
+                  type="text"
+                  className="iching-history-search-input"
+                  placeholder={t(
+                    'history.search_placeholder',
+                    isEn ? 'Search by hexagram or question...' : 'Tìm kiếm theo tên quẻ hoặc câu hỏi...'
+                  )}
+                  aria-label={isEn ? 'Search reading history' : 'Tìm kiếm lịch sử gieo quẻ'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm.length > 0 && (
+                  <button
+                    type="button"
+                    className="iching-history-search-clear"
+                    onClick={() => setSearchTerm('')}
+                    aria-label={isEn ? 'Clear search' : 'Xóa tìm kiếm'}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className={`iching-history-fav-pill ${favoritesOnly ? 'is-active' : ''}`}
+                aria-pressed={favoritesOnly}
+                onClick={() => setFavoritesOnly((prev) => !prev)}
+              >
+                <span aria-hidden="true">★</span>
+                <span>{isEn ? 'Favorites' : 'Yêu thích'}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`iching-history-filter-toggle ${mobileFiltersOpen || activeFilterCount > 0 ? 'is-active' : ''}`}
+                aria-expanded={mobileFiltersOpen}
+                aria-controls="iching-history-filters-panel"
+                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+              >
+                <span aria-hidden="true">🎛️</span>
+                <span>{isEn ? 'Filter' : 'Lọc'}</span>
+                {activeFilterCount > 0 && (
+                  <span className="iching-history-filter-badge">{activeFilterCount}</span>
+                )}
+              </button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-ink)', cursor: 'pointer', userSelect: 'none' }}>
-                <input type="checkbox" checked={isAllSelected} onChange={handleToggleSelectAll} disabled={filteredHistory.length === 0} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                {t('history.select_all', 'Chọn tất cả')} ({filteredHistory.length}) · Đã chọn {selectedIds.size}
+
+            <div
+              id="iching-history-filters-panel"
+              className={`iching-history-filters ${mobileFiltersOpen ? 'is-open' : ''}`}
+            >
+              <div className="iching-history-filter-group">
+                <span className="iching-history-filter-label">
+                  {isEn ? 'Method' : 'Loại quẻ'}
+                </span>
+                <div
+                  className="iching-history-segmented"
+                  role="group"
+                  aria-label={isEn ? 'Filter by reading method' : 'Lọc theo loại quẻ'}
+                >
+                  {[
+                    { value: 'all', label: isEn ? 'All' : 'Tất cả' },
+                    { value: 'luc-hao', label: `☯ ${t('history.luc_hao_badge', isEn ? 'Six Lines' : 'Lục Hào')}` },
+                    { value: 'mai-hoa', label: `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}` },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      aria-pressed={typeFilter === opt.value}
+                      onClick={() => setTypeFilter(opt.value)}
+                      className={`iching-history-seg-btn ${typeFilter === opt.value ? 'is-active' : ''}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="iching-history-filter-group">
+                <span className="iching-history-filter-label">{isEn ? 'From' : 'Từ ngày'}</span>
+                <input
+                  type="date"
+                  className="iching-history-control"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
               </label>
-              <div style={{ display: 'flex', gap: 8 }}>
+
+              <label className="iching-history-filter-group">
+                <span className="iching-history-filter-label">{isEn ? 'To' : 'Đến ngày'}</span>
+                <input
+                  type="date"
+                  className="iching-history-control"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </label>
+
+              <label className="iching-history-filter-group">
+                <span className="iching-history-filter-label">{isEn ? 'Sort' : 'Sắp xếp'}</span>
+                <select
+                  className="iching-history-control"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="newest">{isEn ? 'Newest' : 'Mới nhất'}</option>
+                  <option value="oldest">{isEn ? 'Oldest' : 'Cũ nhất'}</option>
+                  <option value="title">{isEn ? 'Hexagram A–Z' : 'Tên quẻ A–Z'}</option>
+                </select>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                disabled={!hasActiveFilters}
+                className={`iching-history-reset-btn ${hasActiveFilters ? 'is-active' : ''}`}
+              >
+                {isEn ? 'Clear filters' : 'Xóa bộ lọc'}
+              </button>
+            </div>
+
+            <div className="iching-history-bulk-bar">
+              <label className="iching-history-select-all">
+                <input
+                  type="checkbox"
+                  className="iching-history-checkbox"
+                  checked={isAllSelected}
+                  onChange={handleToggleSelectAll}
+                  disabled={filteredHistory.length === 0}
+                />
+                <span>
+                  {t('history.select_all', isEn ? 'Select all' : 'Chọn tất cả')} ({filteredHistory.length}) ·{' '}
+                  {isEn ? `${selectedIds.size} selected` : `Đã chọn ${selectedIds.size}`}
+                </span>
+              </label>
+              <div className="iching-history-bulk-actions">
                 {selectedIds.size > 0 && (
-                  <button onClick={handleDeleteSelected} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--color-vermillion)', background: 'rgba(192, 57, 43, 0.1)', color: 'var(--color-vermillion)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-                    🗑️ {t('history.delete_selected', `Xóa (${selectedIds.size}) mục`)}
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelected}
+                    className="iching-history-danger-btn is-solid"
+                  >
+                    🗑️ {t('history.delete_selected', isEn ? `Delete (${selectedIds.size})` : `Xóa (${selectedIds.size})`)}
                   </button>
                 )}
                 {history.length > 0 && (
-                  <button onClick={handleClearAll} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(192, 57, 43, 0.4)', background: 'transparent', color: 'var(--color-vermillion)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-                    ⚠️ {t('history.clear_all', 'Xóa tất cả')}
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="iching-history-danger-btn"
+                  >
+                    ⚠️ {t('history.clear_all', isEn ? 'Clear all' : 'Xóa tất cả')}
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="iching-history-list">
             {filteredHistory.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-ink-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                {history.length ? t('history.no_search_results', 'Không tìm thấy quẻ phù hợp') : t('history.empty', 'Chưa có quẻ nào trong lịch sử')}
+              <div className="iching-history-empty">
+                <span className="iching-history-empty-icon" aria-hidden="true">
+                  {history.length ? '🔎' : '📜'}
+                </span>
+                <span>
+                  {history.length
+                    ? t('history.no_search_results', isEn ? 'No matching readings found' : 'Không tìm thấy quẻ phù hợp')
+                    : t('history.empty', isEn ? 'No saved castings yet' : 'Chưa có quẻ nào trong lịch sử')}
+                </span>
               </div>
             ) : (
               filteredHistory.map((item) => {
                 const isChecked = selectedIds.has(item.id);
+                const isFavorited = item.data?.favorite === true;
                 const isLucHao = item.type === 'luc-hao';
                 const hasAI = !!(item.data?.aiConversation?.initialInterpretation || (item.data?.aiConversation?.followUps?.length > 0));
                 const followUpCount = item.data?.aiConversation?.followUps?.length || 0;
+                const titleText = formatHistoryTitle(item);
+                const ver = item.verification || getVerificationForReading(item.id, item.data);
+
                 return (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: isChecked ? '1px solid var(--color-gold, #b8860b)' : '1px solid rgba(184, 134, 11, 0.18)', background: isChecked ? 'rgba(184, 134, 11, 0.12)' : 'var(--color-paper-dark)', transition: 'all 0.15s ease' }}>
-                    <input type="checkbox" checked={isChecked} onChange={() => handleToggleSelectOne(item.id)} style={{ width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }} />
+                  <div
+                    key={item.id}
+                    className={`iching-history-card ${isFavorited ? 'is-favorited' : ''} ${isChecked ? 'is-checked' : ''}`}
+                  >
+                    <div className="iching-history-card-controls">
+                      <input
+                        type="checkbox"
+                        className="iching-history-checkbox"
+                        checked={isChecked}
+                        onChange={() => handleToggleSelectOne(item.id)}
+                        aria-label={isEn ? `Select ${titleText}` : `Chọn ${titleText}`}
+                      />
 
-                    <button type="button" onClick={() => handleToggleFavorite(item)} disabled={pendingFavorites.has(item.id) || item._decryptionError || !onUpdateFavorite} aria-label={item.data?.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'} aria-pressed={!!item.data?.favorite} title={item._decryptionError ? 'Không thể cập nhật bản ghi không giải mã được' : item.data?.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'} style={{ border: 0, background: 'transparent', color: item.data?.favorite ? '#b8860b' : '#8c7b68', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: 2 }}>
-                      {item.data?.favorite ? '★' : '☆'}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFavorite(item)}
+                        disabled={pendingFavorites.has(item.id) || item._decryptionError || !onUpdateFavorite}
+                        aria-label={
+                          isFavorited
+                            ? (isEn ? 'Remove from favorites' : 'Bỏ yêu thích')
+                            : (isEn ? 'Add to favorites' : 'Đánh dấu yêu thích')
+                        }
+                        aria-pressed={isFavorited}
+                        title={
+                          item._decryptionError
+                            ? (isEn ? 'Cannot update undecryptable record' : 'Không thể cập nhật bản ghi không giải mã được')
+                            : isFavorited
+                              ? (isEn ? 'Remove from favorites' : 'Bỏ yêu thích')
+                              : (isEn ? 'Add to favorites' : 'Đánh dấu yêu thích')
+                        }
+                        className={`iching-history-star-btn ${isFavorited ? 'is-favorited' : ''}`}
+                      >
+                        {isFavorited ? '★' : '☆'}
+                      </button>
+                    </div>
 
-                    <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => handleSelectItem(item)}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: isLucHao ? 'var(--color-vermillion)' : 'var(--color-jade)', background: isLucHao ? 'rgba(192, 57, 43, 0.12)' : 'rgba(26, 107, 74, 0.12)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' }}>
-                            {isLucHao ? `🪙 ${t('history.luc_hao_badge', 'Lục Hào')}` : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
+                    <div className="iching-history-card-body" onClick={() => handleSelectItem(item)}>
+                      <div className="iching-history-card-meta">
+                        <div className="iching-history-card-badges">
+                          <span className={`iching-history-method-badge ${isLucHao ? 'is-luc-hao' : 'is-mai-hoa'}`}>
+                            {isLucHao
+                                ? `☯ ${t('history.luc_hao_badge', isEn ? 'Six Lines' : 'Lục Hào')}`
+                                : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
                           </span>
                           {hasAI && (
-                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-gold)', background: 'rgba(184,134,11,0.14)', padding: '2px 6px', borderRadius: 4 }}>
-                              💬 AI {followUpCount > 0 ? `+${followUpCount}` : ''}
+                            <span className="iching-history-ai-badge">
+                              💬 AI{followUpCount > 0 ? ` +${followUpCount}` : ''}
                             </span>
                           )}
-                          {(() => {
-                            const ver = item.verification || getVerificationForReading(item.id, item.data);
-                            if (!ver || ver.status === 'pending') return null;
+                          {ver && ver.status !== 'pending' && (() => {
                             const meta = VERIFICATION_META[ver.status];
+                            if (!meta) return null;
                             return (
-                              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: meta.color, background: meta.bg, border: `1px solid ${meta.border}`, padding: '2px 6px', borderRadius: 4 }}>
-                                {meta.shortVi}{ver.actualDate ? ` (${ver.actualDate})` : ''}
+                              <span
+                                className="iching-history-ver-badge"
+                                style={{
+                                  color: meta.color,
+                                  background: meta.bg,
+                                  border: `1px solid ${meta.border}`,
+                                }}
+                              >
+                                {getVerificationBadgeLabel(ver.status, meta, isEn)}
+                                {ver.actualDate ? ` (${ver.actualDate})` : ''}
                               </span>
                             );
                           })()}
                         </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', fontFamily: 'monospace' }}>{formatTime(item.timestamp)}</span>
+                        <span className="iching-history-time">{formatTime(item.timestamp)}</span>
                       </div>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: "'Noto Serif', serif", color: 'var(--color-ink)', marginBottom: 2 }}>{formatHistoryTitle(item)}</div>
-                        {item._decryptionError && (
-                          <div role="status" style={{ fontSize: '0.72rem', color: 'var(--color-vermillion)', fontWeight: 600, marginBottom: 4 }}>
-                            ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
-                          </div>
-                        )}
+
+                      <div className="iching-history-card-title">{titleText}</div>
+
+                      {item._decryptionError && (
+                        <div role="status" className="iching-history-decrypt-warn">
+                          {isEn
+                            ? '⚠ Unable to decrypt legacy data · read-only'
+                            : '⚠ Không giải mã được dữ liệu cũ · chỉ đọc'}
+                        </div>
+                      )}
+
                       {item.question && (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {item.question === '(Không có câu hỏi)' ? t('history.no_question', '(Không có câu hỏi)') : item.question}
+                        <div className="iching-history-card-question">
+                          {item.question === '(Không có câu hỏi)'
+                            ? t('history.no_question', '(Không có câu hỏi)')
+                            : item.question}
                         </div>
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-                      <button onClick={(e) => handlePreviewItem(item, e)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(184,134,11,0.35)', background: 'rgba(184,134,11,0.1)', color: 'var(--color-gold)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
-                        👁 Chi tiết
+                    <div className="iching-history-card-actions">
+                      <button
+                        type="button"
+                        onClick={(e) => handlePreviewItem(item, e)}
+                        className="iching-history-btn-detail"
+                      >
+                        👁 {isEn ? 'Details' : 'Chi tiết'}
                       </button>
-                      <button onClick={() => handleSelectItem(item)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(184, 134, 11, 0.3)', background: 'rgba(184, 134, 11, 0.08)', color: 'var(--color-ink)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
-                        {t('history.view_btn', 'Xem quẻ')} ➔
+                      <button
+                        type="button"
+                        onClick={() => handleSelectItem(item)}
+                        className={`iching-history-btn-open ${item._decryptionError ? 'is-readonly' : ''}`}
+                      >
+                        {t('history.view_btn', isEn ? 'Open' : 'Xem quẻ')} ➔
                       </button>
                     </div>
                   </div>

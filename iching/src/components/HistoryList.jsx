@@ -3,6 +3,14 @@ import { useLanguage } from '../context/useLanguage.js';
 import { useAuth } from '../context/useAuth.js';
 import { VERIFICATION_META, getVerificationForReading } from '../logic/verification.js';
 
+function getVerificationBadgeLabel(status, meta, isEn) {
+  if (!isEn) return meta.shortVi;
+  if (status === 'accurate') return '✅ Accurate';
+  if (status === 'partial') return '🌗 Partial';
+  if (status === 'different') return '🔄 Different';
+  return meta.labelEn || meta.shortVi;
+}
+
 export default function HistoryList({
   history = [],
   onSelect,
@@ -10,6 +18,7 @@ export default function HistoryList({
   currentActiveData,
 }) {
   const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const { isAuthenticated, login } = useAuth();
 
   const formatHistoryTitle = (item) => {
@@ -59,48 +68,25 @@ export default function HistoryList({
         <div className="section-title" style={{ marginBottom: 12 }}>
           {t('history.title', '📜 Lịch sử gieo quẻ')}
         </div>
-        <div
-          style={{
-            background: 'rgba(184, 134, 11, 0.06)',
-            border: '1px dashed rgba(184, 134, 11, 0.3)',
-            borderRadius: 10,
-            padding: '16px 14px',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <span style={{ fontSize: '1.5rem' }}>🔒</span>
+        <div className="iching-history-guest-box">
+          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">🔒</span>
           <p
             style={{
               margin: 0,
               fontSize: '0.85rem',
-              color: 'var(--color-ink-muted, #7f8c8d)',
-              lineHeight: 1.4,
+              color: 'var(--color-ink-muted)',
+              lineHeight: 1.45,
             }}
           >
             {t(
               'history.guest_notice',
-              'Bạn cần phải đăng nhập để sử dụng tính năng lưu và quản lý lịch sử gieo quẻ.'
+              isEn
+                ? 'Please sign in to save and manage your reading history.'
+                : 'Bạn cần phải đăng nhập để sử dụng tính năng lưu và quản lý lịch sử gieo quẻ.'
             )}
           </p>
-          <button
-            onClick={login}
-            style={{
-              padding: '6px 16px',
-              background: 'linear-gradient(135deg, #d4a017 0%, #b8860b 100%)',
-              border: '1px solid rgba(212, 160, 23, 0.55)',
-              borderRadius: 8,
-              color: '#1a0a06',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(184, 134, 11, 0.3)',
-            }}
-          >
-            🔑 {t('auth.login_now', 'Đăng nhập ngay')}
+          <button type="button" onClick={login} className="iching-history-guest-btn">
+            🔑 {t('auth.login_now', isEn ? 'Sign in now' : 'Đăng nhập ngay')}
           </button>
         </div>
       </section>
@@ -112,55 +98,21 @@ export default function HistoryList({
 
   return (
     <section className="card animate-in" style={{ padding: 20 }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 14,
-        }}
-      >
+      <div className="iching-history-list-header">
         <div className="section-title" style={{ margin: 0 }}>
           {t('history.title', '📜 Lịch sử gieo quẻ')}
           {history.length > 0 && (
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                color: 'var(--color-ink-muted)',
-                marginLeft: 6,
-              }}
-            >
-              ({history.length})
-            </span>
+            <span className="iching-history-list-count">({history.length})</span>
           )}
         </div>
 
         {history.length > 0 && (
           <button
+            type="button"
             onClick={onOpenManageModal}
-            style={{
-              background: 'rgba(184, 134, 11, 0.08)',
-              border: '1px solid rgba(184, 134, 11, 0.25)',
-              color: 'var(--color-ink, #2c3e50)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              padding: '4px 10px',
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = 'rgba(184, 134, 11, 0.16)')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = 'rgba(184, 134, 11, 0.08)')
-            }
+            className="iching-history-manage-btn"
           >
-            ⚙️ {t('history.manage_btn', 'Quản lý lịch sử')}
+            ⚙️ {t('history.manage_btn', isEn ? 'Manage' : 'Quản lý lịch sử')}
           </button>
         )}
       </div>
@@ -178,139 +130,85 @@ export default function HistoryList({
           {t('history.empty', 'Chưa có quẻ nào được lưu')}
         </div>
       ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
+        <div className="iching-history-preview-stack">
           {previewItems.map((item) => {
             const active = isCurrentActive(item);
+            const isFavorited = item.data?.favorite === true;
             const isLucHao = item.type === 'luc-hao';
+            const ver = item.verification || getVerificationForReading(item.id, item.data);
+
             return (
               <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelect(item)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: active
-                    ? '1px solid var(--color-gold)'
-                    : '1px solid rgba(184, 134, 11, 0.15)',
-                  background: active
-                    ? 'rgba(184, 134, 11, 0.14)'
-                    : 'var(--color-paper-dark)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.background = 'rgba(184, 134, 11, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(184, 134, 11, 0.35)';
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(item);
                   }
                 }}
-                onMouseLeave={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.background = 'var(--color-paper-dark)';
-                    e.currentTarget.style.borderColor = 'rgba(184, 134, 11, 0.15)';
-                  }
-                }}
+                className={`iching-history-preview-card ${isFavorited ? 'is-favorited' : ''} ${active ? 'is-active' : ''}`}
               >
                 {/* Top row */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                    <span
-                      style={{
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        color: isLucHao
-                          ? 'var(--color-vermillion)'
-                          : 'var(--color-jade)',
-                        background: isLucHao
-                          ? 'rgba(192, 57, 43, 0.08)'
-                          : 'rgba(26, 107, 74, 0.08)',
-                        padding: '1px 6px',
-                        borderRadius: 4,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                      }}
-                    >
+                <div className="iching-history-card-meta" style={{ marginBottom: 2 }}>
+                  <div className="iching-history-card-badges">
+                    <span className={`iching-history-method-badge ${isLucHao ? 'is-luc-hao' : 'is-mai-hoa'}`}>
                       {isLucHao
-                        ? `🪙 ${t('history.luc_hao_badge', 'Lục Hào')}`
-                        : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
+                          ? `☯ ${t('history.luc_hao_badge', isEn ? 'Six Lines' : 'Lục Hào')}`
+                          : `🌸 ${t('history.mai_hoa_badge', 'Mai Hoa')}`}
                     </span>
-                    {(() => {
-                      const ver = item.verification || getVerificationForReading(item.id, item.data);
-                      if (!ver || ver.status === 'pending') return null;
+                    {isFavorited && (
+                      <span
+                        className="iching-history-fav-badge"
+                        title={isEn ? 'Favorite' : 'Yêu thích'}
+                        aria-label={isEn ? 'Favorite' : 'Yêu thích'}
+                      >
+                        ★
+                      </span>
+                    )}
+                    {ver && ver.status !== 'pending' && (() => {
                       const meta = VERIFICATION_META[ver.status];
+                      if (!meta) return null;
                       return (
                         <span
+                          className="iching-history-ver-badge"
                           style={{
-                            fontSize: '0.64rem',
-                            fontWeight: 700,
-                            padding: '1px 6px',
-                            borderRadius: 4,
                             background: meta.bg,
                             color: meta.color,
                             border: `1px solid ${meta.border}`,
                           }}
                         >
-                          {meta.shortVi}
+                          {getVerificationBadgeLabel(ver.status, meta, isEn)}
                         </span>
                       );
                     })()}
                   </div>
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      color: 'var(--color-ink-muted)',
-                      fontFamily: 'monospace',
-                    }}
-                  >
+                  <span className="iching-history-time" style={{ fontSize: '0.72rem' }}>
                     {formatTime(item.timestamp)}
                   </span>
                 </div>
 
                 {/* Hexagram title */}
                 <div
-                  style={{
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: 'var(--color-ink)',
-                    fontFamily: "'Noto Serif', serif",
-                  }}
+                  className="iching-history-card-title"
+                  style={{ fontSize: '0.86rem', marginBottom: 0 }}
                 >
                   {formatHistoryTitle(item)}
                 </div>
 
                 {item._decryptionError && (
-                  <div role="status" style={{ fontSize: '0.72rem', color: 'var(--color-vermillion)', fontWeight: 600 }}>
-                    ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
+                  <div role="status" className="iching-history-decrypt-warn" style={{ marginBottom: 0 }}>
+                    {isEn
+                      ? '⚠ Unable to decrypt legacy data · read-only'
+                      : '⚠ Không giải mã được dữ liệu cũ · chỉ đọc'}
                   </div>
                 )}
 
                 {/* Truncated question */}
                 {item.question && (
-                  <div
-                    style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--color-ink-muted)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '100%',
-                    }}
-                  >
+                  <div className="iching-history-card-question" style={{ fontSize: '0.76rem' }}>
                     {item.question === '(Không có câu hỏi)'
                       ? t('history.no_question', '(No question)')
                       : item.question}
@@ -322,21 +220,14 @@ export default function HistoryList({
 
           {history.length > 5 && (
             <button
+              type="button"
               onClick={onOpenManageModal}
-              style={{
-                background: 'transparent',
-                border: '1px dashed rgba(184, 134, 11, 0.3)',
-                borderRadius: 8,
-                padding: '8px',
-                color: 'var(--color-gold, #b8860b)',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'center',
-                marginTop: 4,
-              }}
+              className="iching-history-view-all-btn"
             >
-              {t('history.view_more', `Xem tất cả ${history.length} quẻ ➔`)}
+              {t(
+                'history.view_more',
+                isEn ? `View all ${history.length} readings ➔` : `Xem tất cả ${history.length} quẻ ➔`
+              )}
             </button>
           )}
         </div>

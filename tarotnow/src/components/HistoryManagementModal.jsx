@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { formatReadingTimestamp } from '../utils/tarotAnalytics.js';
+import { formatReadingTimestamp, parseReadingTimestampMs } from '../utils/tarotAnalytics.js';
 import TarotReflectionCard from './TarotReflectionCard.jsx';
 import { REFLECTION_STATUSES } from '../utils/readingMapping.js';
 
@@ -27,20 +27,49 @@ export default function HistoryManagementModal({
   const [sortOrder, setSortOrder] = useState('newest');
   const [favoritePending, setFavoritePending] = useState(null);
   const [favoriteError, setFavoriteError] = useState('');
-  useEffect(() => { setSelectedIds(new Set()); }, [searchTerm, dateFrom, dateTo, spreadFilter, favoritesOnly]);
+  const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [searchTerm, dateFrom, dateTo, spreadFilter, favoritesOnly]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (previewId !== null) {
+          setPreviewId(null);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, previewId, onClose]);
+
   const isFavorite = (item) => Boolean(item.data?.isFavorite);
+
   const itemDate = (item) => {
-    const d = new Date(item.timestamp || item.createdAt);
-    if (Number.isNaN(d.getTime())) return '';
+    const ms = parseReadingTimestampMs(item);
+    if (!ms) return '';
+    const d = new Date(ms);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
+
   const toggleFavorite = async (item) => {
-    if (!onUpdateFavorite || favoritePending !== null) return;
+    if (!onUpdateFavorite || favoritePending !== null || item?._decryptionError) return;
     setFavoritePending(item.id);
     setFavoriteError('');
-    try { await onUpdateFavorite(item.id, { isFavorite: !isFavorite(item) }); }
-    catch { setFavoriteError(isEn ? 'Could not update favorite. Please try again.' : 'Không lưu được yêu thích. Vui lòng thử lại.'); }
-    finally { setFavoritePending(null); }
+    try {
+      await onUpdateFavorite(item.id, { isFavorite: !isFavorite(item) });
+    } catch {
+      setFavoriteError(
+        isEn ? 'Could not update favorite. Please try again.' : 'Không lưu được yêu thích. Vui lòng thử lại.'
+      );
+    } finally {
+      setFavoritePending(null);
+    }
   };
 
   // Derive preview item live from history by id so edits never revert!
@@ -58,25 +87,55 @@ export default function HistoryManagementModal({
       : item.spreadName || 'Trải bài';
   }, [t]);
 
-  const spreadOptions = useMemo(() => [...new Set(history.map(formatSpreadName))].sort((a, b) => a.localeCompare(b)), [history, formatSpreadName]);
+  const spreadOptions = useMemo(
+    () => [...new Set(history.map(formatSpreadName))].sort((a, b) => a.localeCompare(b)),
+    [history, formatSpreadName]
+  );
+
   const filteredHistory = useMemo(() => {
     const term = searchTerm.trim().toLocaleLowerCase();
-    return history.filter((item) => {
-      const date = itemDate(item);
-      return (!term || formatSpreadName(item).toLocaleLowerCase().includes(term) || (item.question || '').toLocaleLowerCase().includes(term))
-        && (!spreadFilter || formatSpreadName(item) === spreadFilter)
-        && (!favoritesOnly || isFavorite(item))
-        && (!dateFrom || (date && date >= dateFrom))
-        && (!dateTo || (date && date <= dateTo));
-    }).slice().sort((a, b) => {
-      if (sortOrder === 'name') return formatSpreadName(a).localeCompare(formatSpreadName(b));
-      const aTime = new Date(a.timestamp || a.createdAt).getTime() || 0;
-      const bTime = new Date(b.timestamp || b.createdAt).getTime() || 0;
-      return sortOrder === 'oldest' ? aTime - bTime : bTime - aTime;
-    });
+    return history
+      .filter((item) => {
+        const date = itemDate(item);
+        return (
+          (!term ||
+            formatSpreadName(item).toLocaleLowerCase().includes(term) ||
+            (item.question || '').toLocaleLowerCase().includes(term)) &&
+          (!spreadFilter || formatSpreadName(item) === spreadFilter) &&
+          (!favoritesOnly || isFavorite(item)) &&
+          (!dateFrom || (date && date >= dateFrom)) &&
+          (!dateTo || (date && date <= dateTo))
+        );
+      })
+      .slice()
+      .sort((a, b) => {
+        if (sortOrder === 'name') return formatSpreadName(a).localeCompare(formatSpreadName(b));
+        const aTime = parseReadingTimestampMs(a);
+        const bTime = parseReadingTimestampMs(b);
+        return sortOrder === 'oldest' ? aTime - bTime : bTime - aTime;
+      });
   }, [history, searchTerm, formatSpreadName, dateFrom, dateTo, spreadFilter, favoritesOnly, sortOrder]);
 
   if (!isOpen) return null;
+
+  const activeFilterCount =
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0) +
+    (spreadFilter ? 1 : 0) +
+    (sortOrder !== 'newest' ? 1 : 0);
+
+  const hasAnyActiveFilter = Boolean(
+    searchTerm.trim() || dateFrom || dateTo || spreadFilter || favoritesOnly || sortOrder !== 'newest'
+  );
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setDateFrom('');
+    setDateTo('');
+    setSpreadFilter('');
+    setFavoritesOnly(false);
+    setSortOrder('newest');
+  };
 
   const isAllSelected =
     filteredHistory.length > 0 &&
@@ -137,132 +196,66 @@ export default function HistoryManagementModal({
     setPreviewId(item.id);
   };
 
+  const handleRestoreItem = (item) => {
+    if (!item || item._decryptionError) return;
+    if (onSelect) onSelect(item);
+    onClose();
+  };
+
   return (
     <>
       {/* Live Preview & Outcome Reflection Detail Dialog */}
       {previewItem && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 1100,
-            background: 'rgba(5, 3, 15, 0.82)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-            boxSizing: 'border-box',
-          }}
+          className="tarot-history-detail-backdrop"
           onClick={() => setPreviewId(null)}
+          role="presentation"
         >
           <div
-            style={{
-              background: 'var(--bg-panel, #150f2e)',
-              border: '1px solid var(--border-gold)',
-              borderRadius: 16,
-              width: '100%',
-              maxWidth: 640,
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.65)',
-              overflow: 'hidden',
-              color: 'var(--text-primary)',
-              boxSizing: 'border-box',
-            }}
+            className="tarot-history-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tarot-history-detail-title"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Detail Header */}
-            <div
-              style={{
-                padding: '14px 18px',
-                borderBottom: '1px solid var(--border-gold)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: 'linear-gradient(135deg, #090615 0%, #1a103c 100%)',
-              }}
-            >
-              <div>
-                <h4
-                  style={{
-                    margin: 0,
-                    fontSize: '1.05rem',
-                    color: 'var(--gold-color)',
-                    fontFamily: "'Cinzel', serif",
-                  }}
-                >
-                  {formatSpreadName(previewItem)}
-                </h4>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  {formatReadingTimestamp(previewItem.timestamp || previewItem.createdAt, language)}
-                </span>
+            <div className="tarot-history-header">
+              <div className="tarot-history-header-main">
+                <span className="tarot-history-header-icon" aria-hidden="true">🔮</span>
+                <div className="tarot-history-header-text">
+                  <h4 id="tarot-history-detail-title" className="tarot-history-title">
+                    {formatSpreadName(previewItem)}
+                  </h4>
+                  <span className="tarot-history-subtitle">
+                    {formatReadingTimestamp(previewItem.timestamp || previewItem.createdAt, language)}
+                  </span>
+                </div>
               </div>
               <button
                 type="button"
+                className="tarot-dialog-close-btn tarot-history-close"
                 onClick={() => setPreviewId(null)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(229, 193, 88, 0.3)',
-                  borderRadius: '50%',
-                  width: 30,
-                  height: 30,
-                  color: 'var(--gold-color)',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                aria-label={isEn ? 'Close details' : 'Đóng chi tiết'}
               >
                 ✕
               </button>
             </div>
 
             {/* Detail Content */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: '16px 18px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 14,
-              }}
-            >
+            <div className="tarot-history-detail-body">
               {previewItem.question && (
-                <div
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: 8,
-                    background: 'rgba(229, 193, 88, 0.08)',
-                    border: '1px solid rgba(229, 193, 88, 0.25)',
-                    fontSize: '0.85rem',
-                    fontStyle: 'italic',
-                    lineHeight: 1.5,
-                  }}
-                >
+                <div className="tarot-history-detail-question">
                   "{previewItem.question}"
                 </div>
               )}
 
               {/* Cards list */}
               {previewItem.cards && previewItem.cards.length > 0 && (
-                <div>
-                  <div
-                    style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      color: 'var(--gold-color)',
-                      marginBottom: 8,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
+                <div className="tarot-history-detail-cards-section">
+                  <div className="tarot-history-detail-section-label">
                     {isEn ? 'Cards in Spread' : 'Các lá bài trong trải'} ({previewItem.cards.length})
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <div className="tarot-history-card-badges">
                     {previewItem.cards.map((cHist, idx) => {
                       const card = tarotCards.find((tc) => tc.id === cHist.id);
                       const cardNameTrans = card ? card.name : cHist.name;
@@ -270,14 +263,7 @@ export default function HistoryManagementModal({
                       return (
                         <span
                           key={idx}
-                          style={{
-                            fontSize: '0.72rem',
-                            padding: '4px 8px',
-                            borderRadius: 6,
-                            background: isRev ? 'rgba(235, 94, 85, 0.12)' : 'rgba(229, 193, 88, 0.12)',
-                            border: isRev ? '1px solid rgba(235, 94, 85, 0.3)' : '1px solid var(--border-gold)',
-                            color: isRev ? 'var(--accent-red)' : 'var(--gold-color)',
-                          }}
+                          className={`tarot-history-card-chip is-detail${isRev ? ' is-reversed' : ''}`}
                         >
                           #{idx + 1} {cardNameTrans} {isRev ? '↓' : '↑'}
                         </span>
@@ -298,50 +284,22 @@ export default function HistoryManagementModal({
             </div>
 
             {/* Detail Footer Actions */}
-            <div
-              style={{
-                padding: '12px 18px',
-                borderTop: '1px solid var(--border-gold)',
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 10,
-              }}
-            >
+            <div className="tarot-history-detail-footer">
               <button
                 type="button"
+                className="tarot-history-action-btn"
                 onClick={() => setPreviewId(null)}
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: 8,
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  background: 'transparent',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                }}
               >
                 {isEn ? 'Close' : 'Đóng'}
               </button>
               <button
                 type="button"
+                className="tarot-history-action-btn is-primary"
                 disabled={Boolean(previewItem._decryptionError)}
-                onClick={() => {
-                  if (onSelect) onSelect(previewItem);
-                  onClose();
-                }}
-                style={{
-                  padding: '7px 16px',
-                  borderRadius: 8,
-                  border: '1px solid var(--gold-color)',
-                  background: 'linear-gradient(135deg, rgba(229,193,88,0.25), rgba(184,134,11,0.4))',
-                  color: 'var(--gold-color)',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  cursor: previewItem._decryptionError ? 'not-allowed' : 'pointer',
-                  opacity: previewItem._decryptionError ? 0.5 : 1,
-                }}
+                onClick={() => handleRestoreItem(previewItem)}
               >
-                🔮 {isEn ? 'Restore this reading' : 'Mở lại trải bài này'} ➔
+                <span aria-hidden="true">🔮</span>
+                <span>{isEn ? 'Restore this reading' : 'Mở lại trải bài này'} ➔</span>
               </button>
             </div>
           </div>
@@ -350,63 +308,31 @@ export default function HistoryManagementModal({
 
       {/* Main History Modal */}
       <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 1000,
-          background: 'rgba(5, 3, 15, 0.75)',
-          backdropFilter: 'blur(6px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 16,
-          boxSizing: 'border-box',
-        }}
+        className="tarot-history-backdrop"
         onClick={onClose}
+        role="presentation"
       >
         <div
-          style={{
-            background: 'var(--bg-panel)',
-            border: '1px solid var(--border-gold)',
-            borderRadius: 16,
-            width: '100%',
-            maxWidth: 1100,
-            maxHeight: '85vh',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
-            overflow: 'hidden',
-            fontFamily: "'Inter', sans-serif",
-            color: 'var(--text-primary)',
-          }}
+          className="tarot-history-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tarot-history-modal-title"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div
-            style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid var(--border-gold)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'linear-gradient(135deg, #090615 0%, #1a103c 100%)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: '1.25rem' }}>🎴</span>
-              <div>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: '1.1rem',
-                    fontFamily: "'Cinzel', serif",
-                    fontWeight: 700,
-                    color: '#e5c158',
-                  }}
-                >
-                  {t('history.manage_title', 'Quản lý Lịch sử Trải Bài')}
-                </h3>
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)' }}>
+          <div className="tarot-history-header">
+            <div className="tarot-history-header-main">
+              <span className="tarot-history-header-icon" aria-hidden="true">🎴</span>
+              <div className="tarot-history-header-text">
+                <div className="tarot-history-title-row">
+                  <h3 id="tarot-history-modal-title" className="tarot-history-title">
+                    {t('history.manage_title', 'Quản lý Lịch sử Trải Bài')}
+                  </h3>
+                  <span className="tarot-history-total-pill">
+                    {history.length} {isEn ? 'readings' : 'trải bài'}
+                  </span>
+                </div>
+                <span className="tarot-history-subtitle">
                   {t('history.total_count', `Tổng số: ${history.length} lần trải bài`)}
                 </span>
               </div>
@@ -414,135 +340,188 @@ export default function HistoryManagementModal({
 
             <button
               type="button"
+              className="tarot-dialog-close-btn tarot-history-close"
               onClick={onClose}
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(229,193,88,0.25)',
-                borderRadius: '50%',
-                width: 32,
-                height: 32,
-                color: '#e5c158',
-                fontSize: '1.1rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              aria-label={isEn ? 'Close history manager' : 'Đóng quản lý lịch sử'}
             >
               ✕
             </button>
           </div>
 
-          {/* Toolbar: Search + Bulk Actions */}
-          <div
-            style={{
-              padding: '12px 20px',
-              borderBottom: '1px solid var(--border-gold)',
-              background: 'rgba(229, 193, 88, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            {/* Search box */}
-            <input
-              type="text"
-              placeholder={t(
-                'history.search_placeholder',
-                '🔍 Tìm kiếm theo tên bài hoặc câu hỏi...'
-              )}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                borderRadius: 8,
-                border: '1px solid var(--border-gold)',
-                background: 'var(--bg-color)',
-                color: 'var(--text-primary)',
-                fontSize: '0.875rem',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
+          {/* Toolbar: Search + Filters + Bulk Actions */}
+          <div className="tarot-history-toolbar">
+            {/* Row 1: Search + Favorites toggle + Mobile filter toggle */}
+            <div className="tarot-history-search-row">
+              <div className="tarot-history-search-wrap">
+                <span className="tarot-history-search-icon" aria-hidden="true">🔍</span>
+                <input
+                  type="text"
+                  className="tarot-history-search-input"
+                  aria-label={isEn ? 'Search readings' : 'Tìm kiếm trải bài'}
+                  placeholder={t(
+                    'history.search_placeholder',
+                    'Tìm kiếm theo tên bài hoặc câu hỏi...'
+                  )}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    className="tarot-history-search-clear"
+                    onClick={() => setSearchTerm('')}
+                    aria-label={isEn ? 'Clear search' : 'Xóa từ khóa'}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', gap: 10 }}>
-              <label>{isEn ? 'From' : 'Từ ngày'} <input aria-label={isEn ? 'From date' : 'Từ ngày'} type="date" value={dateFrom} max={dateTo || undefined} onChange={(e) => setDateFrom(e.target.value)} /></label>
-              <label>{isEn ? 'To' : 'Đến ngày'} <input aria-label={isEn ? 'To date' : 'Đến ngày'} type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => setDateTo(e.target.value)} /></label>
-              <label>{isEn ? 'Spread' : 'Loại trải bài'} <select value={spreadFilter} onChange={(e) => setSpreadFilter(e.target.value)}><option value="">{isEn ? 'All' : 'Tất cả'}</option>{spreadOptions.map((name) => <option key={name} value={name}>{name}</option>)}</select></label>
-              <label>{isEn ? 'Sort' : 'Sắp xếp'} <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}><option value="newest">{isEn ? 'Newest' : 'Mới nhất'}</option><option value="oldest">{isEn ? 'Oldest' : 'Cũ nhất'}</option><option value="name">{isEn ? 'Spread name' : 'Tên trải bài'}</option></select></label>
-              <label><input type="checkbox" checked={favoritesOnly} onChange={(e) => setFavoritesOnly(e.target.checked)} /> {isEn ? 'Favorites only' : 'Chỉ yêu thích'}</label>
-              <span>{filteredHistory.length} / {history.length}</span>
-            </div>
-            {favoriteError && <div role="alert" style={{ color: 'var(--accent-red)' }}>{favoriteError}</div>}
-
-            {/* Action toolbar */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  color: 'var(--gold-color)',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                }}
+              <button
+                type="button"
+                className={`tarot-history-fav-toggle${favoritesOnly ? ' is-active' : ''}`}
+                aria-pressed={favoritesOnly}
+                onClick={() => setFavoritesOnly((prev) => !prev)}
               >
+                <span aria-hidden="true">{favoritesOnly ? '★' : '☆'}</span>
+                <span>{isEn ? 'Favorites' : 'Yêu thích'}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`tarot-history-filter-toggle-btn${showFiltersMobile ? ' is-active' : ''}`}
+                aria-expanded={showFiltersMobile}
+                onClick={() => setShowFiltersMobile((prev) => !prev)}
+              >
+                <span aria-hidden="true">🎛️</span>
+                <span>{isEn ? 'Filter' : 'Lọc'}</span>
+                {activeFilterCount > 0 && (
+                  <span className="tarot-history-filter-badge">{activeFilterCount}</span>
+                )}
+              </button>
+            </div>
+
+            {/* Row 2: Date range, Spread, Sort, Clear filters, Count */}
+            <div className={`tarot-history-filters${showFiltersMobile ? ' is-open-mobile' : ''}`}>
+              <div className="tarot-history-filter-field">
+                <label htmlFor="tarot-hist-date-from" className="tarot-history-filter-label">
+                  {isEn ? 'From' : 'Từ ngày'}
+                </label>
+                <input
+                  id="tarot-hist-date-from"
+                  className="tarot-history-control"
+                  aria-label={isEn ? 'From date' : 'Từ ngày'}
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="tarot-history-filter-field">
+                <label htmlFor="tarot-hist-date-to" className="tarot-history-filter-label">
+                  {isEn ? 'To' : 'Đến ngày'}
+                </label>
+                <input
+                  id="tarot-hist-date-to"
+                  className="tarot-history-control"
+                  aria-label={isEn ? 'To date' : 'Đến ngày'}
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+
+              <div className="tarot-history-filter-field">
+                <label htmlFor="tarot-hist-spread" className="tarot-history-filter-label">
+                  {isEn ? 'Spread' : 'Loại trải bài'}
+                </label>
+                <select
+                  id="tarot-hist-spread"
+                  className="tarot-history-control"
+                  value={spreadFilter}
+                  onChange={(e) => setSpreadFilter(e.target.value)}
+                >
+                  <option value="">{isEn ? 'All' : 'Tất cả'}</option>
+                  {spreadOptions.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="tarot-history-filter-field">
+                <label htmlFor="tarot-hist-sort" className="tarot-history-filter-label">
+                  {isEn ? 'Sort' : 'Sắp xếp'}
+                </label>
+                <select
+                  id="tarot-hist-sort"
+                  className="tarot-history-control"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                >
+                  <option value="newest">{isEn ? 'Newest' : 'Mới nhất'}</option>
+                  <option value="oldest">{isEn ? 'Oldest' : 'Cũ nhất'}</option>
+                  <option value="name">{isEn ? 'Spread name' : 'Tên trải bài'}</option>
+                </select>
+              </div>
+
+              <div className="tarot-history-filter-meta">
+                {hasAnyActiveFilter && (
+                  <button
+                    type="button"
+                    className="tarot-history-reset-btn"
+                    onClick={handleResetFilters}
+                  >
+                    ✕ {isEn ? 'Clear filters' : 'Xóa bộ lọc'}
+                  </button>
+                )}
+                <span className="tarot-history-count-pill" aria-live="polite">
+                  {filteredHistory.length} / {history.length}
+                </span>
+              </div>
+            </div>
+
+            {favoriteError && (
+              <div role="alert" className="tarot-history-error-banner">
+                {favoriteError}
+              </div>
+            )}
+
+            {/* Bulk Action Toolbar */}
+            <div className="tarot-history-bulk-bar">
+              <label className="tarot-history-select-all">
                 <input
                   type="checkbox"
+                  className="tarot-history-checkbox"
                   checked={isAllSelected}
                   onChange={handleToggleSelectAll}
                   disabled={filteredHistory.length === 0}
-                  style={{ width: 16, height: 16, cursor: 'pointer' }}
                 />
-                {t('history.select_all', 'Chọn tất cả')} ({filteredHistory.length})
+                <span>
+                  {t('history.select_all', 'Chọn tất cả')} ({filteredHistory.length})
+                  {selectedIds.size > 0 && ` · ${isEn ? 'Selected' : 'Đã chọn'} ${selectedIds.size}`}
+                </span>
               </label>
 
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="tarot-history-bulk-actions">
                 {selectedIds.size > 0 && (
                   <button
                     type="button"
+                    className="tarot-history-danger-btn"
                     onClick={handleDeleteSelected}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      border: '1px solid var(--accent-red)',
-                      background: 'rgba(235, 94, 85, 0.12)',
-                      color: 'var(--accent-red)',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
                   >
-                    🗑️ {t('history.delete_selected', `Xóa (${selectedIds.size}) mục`)}
+                    🗑️ {t('history.delete_selected', `Xóa (${selectedIds.size})`)}
                   </button>
                 )}
 
                 {history.length > 0 && (
                   <button
                     type="button"
+                    className="tarot-history-danger-btn is-outline"
                     onClick={handleClearAll}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      border: '1px solid rgba(235, 94, 85, 0.4)',
-                      background: 'transparent',
-                      color: 'var(--accent-red)',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
                   >
                     ⚠️ {t('history.clear_all', 'Xóa tất cả')}
                   </button>
@@ -552,34 +531,39 @@ export default function HistoryManagementModal({
           </div>
 
           {/* List Content */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '12px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}
-          >
+          <div className="tarot-history-list">
             {filteredHistory.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '40px 20px',
-                  color: 'var(--text-muted)',
-                  fontStyle: 'italic',
-                  fontSize: '0.9rem',
-                }}
-              >
-                {(searchTerm || dateFrom || dateTo || spreadFilter || favoritesOnly)
-                  ? t('history.no_search_results', 'Không tìm thấy bài trải phù hợp')
-                  : t('history.empty', 'Chưa có trải bài nào được lưu')}
+              <div className="tarot-history-empty">
+                <div className="tarot-history-empty-icon" aria-hidden="true">
+                  {hasAnyActiveFilter ? '🔭' : '🎴'}
+                </div>
+                <p className="tarot-history-empty-text">
+                  {hasAnyActiveFilter
+                    ? t('history.no_search_results', 'Không tìm thấy bài trải phù hợp')
+                    : t('history.empty', 'Chưa có trải bài nào được lưu')}
+                </p>
+                {hasAnyActiveFilter && (
+                  <button
+                    type="button"
+                    className="tarot-history-reset-btn"
+                    onClick={handleResetFilters}
+                  >
+                    ✕ {isEn ? 'Clear filters' : 'Xóa bộ lọc'}
+                  </button>
+                )}
               </div>
             ) : (
               filteredHistory.map((item) => {
                 const isChecked = selectedIds.has(item.id);
+                const favorited = isFavorite(item);
                 const spreadName = formatSpreadName(item);
+                const isPhysical = Boolean(
+                  item.physicalLogged ||
+                    item.data?.physicalLogged ||
+                    item.physicalDeck ||
+                    item.data?.physicalDeck
+                );
+                const hasAiConversation = Boolean(item.data?.aiConversation?.initialInterpretation);
 
                 // Check outcome reflection status badge
                 const reflectionStatus =
@@ -589,148 +573,139 @@ export default function HistoryManagementModal({
                 return (
                   <div
                     key={item.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '12px 14px',
-                      borderRadius: 10,
-                      border: isChecked
-                        ? '1px solid var(--gold-color)'
-                        : '1px solid var(--border-gold)',
-                      background: isChecked
-                        ? 'rgba(229, 193, 88, 0.12)'
-                        : 'var(--bg-color)',
-                      transition: 'all 0.15s ease',
-                    }}
+                    className={`tarot-history-card${isChecked ? ' is-checked' : ''}${
+                      favorited ? ' is-favorite' : ''
+                    }${item._decryptionError ? ' is-locked' : ''}`}
                   >
-                    {/* Checkbox */}
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => handleToggleSelectOne(item.id)}
-                      style={{ width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }}
-                    />
+                    <div className="tarot-history-card-lead">
+                      <input
+                        type="checkbox"
+                        className="tarot-history-checkbox"
+                        checked={isChecked}
+                        onChange={() => handleToggleSelectOne(item.id)}
+                        aria-label={
+                          isEn ? `Select ${spreadName}` : `Chọn ${spreadName}`
+                        }
+                      />
 
-                    <button type="button" disabled={favoritePending !== null || item._decryptionError} onClick={() => toggleFavorite(item)} aria-label={isFavorite(item) ? (isEn ? 'Remove favorite' : 'Bỏ yêu thích') : (isEn ? 'Add favorite' : 'Đánh dấu yêu thích')} aria-pressed={isFavorite(item)} title={isFavorite(item) ? (isEn ? 'Remove favorite' : 'Bỏ yêu thích') : (isEn ? 'Add favorite' : 'Đánh dấu yêu thích')} style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--gold-color)', fontSize: '1.5rem' }}>{isFavorite(item) ? '★' : '☆'}</button>
+                      <button
+                        type="button"
+                        className={`tarot-history-star-btn${favorited ? ' is-active' : ''}`}
+                        disabled={favoritePending !== null || item._decryptionError}
+                        onClick={() => toggleFavorite(item)}
+                        aria-label={
+                          favorited
+                            ? isEn
+                              ? 'Remove favorite'
+                              : 'Bỏ yêu thích'
+                            : isEn
+                            ? 'Add favorite'
+                            : 'Đánh dấu yêu thích'
+                        }
+                        aria-pressed={favorited}
+                        title={
+                          favorited
+                            ? isEn
+                              ? 'Remove favorite'
+                              : 'Bỏ yêu thích'
+                            : isEn
+                            ? 'Add favorite'
+                            : 'Đánh dấu yêu thích'
+                        }
+                      >
+                        {favorited ? '★' : '☆'}
+                      </button>
+                    </div>
+
                     {/* Info Column */}
                     <div
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        cursor: !item._decryptionError ? 'pointer' : 'default',
-                      }}
+                      className="tarot-history-card-body"
                       onClick={() => handleOpenDetail(item)}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 8,
-                          marginBottom: 4,
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span
-                            style={{
-                              fontSize: '0.85rem',
-                              fontWeight: 700,
-                              color: 'var(--gold-color)',
-                              fontFamily: "'Cinzel', serif",
-                            }}
-                          >
-                            {spreadName}
-                          </span>
-                          {statusMeta && statusMeta.id !== 'pending' && (
+                      <div className="tarot-history-card-top">
+                        <div className="tarot-history-card-title-group">
+                          <span className="tarot-history-card-spread">{spreadName}</span>
+
+                          {isPhysical && (
                             <span
-                              style={{
-                                fontSize: '0.68rem',
-                                fontWeight: 700,
-                                color: statusMeta.color,
-                                background: statusMeta.bg,
-                                border: `1px solid ${statusMeta.border}`,
-                                padding: '1px 6px',
-                                borderRadius: 4,
-                              }}
+                              className="tarot-history-meta-pill is-physical"
+                              title={isEn ? 'Physical deck reading' : 'Trải bài bằng bộ bài thật'}
                             >
+                              🃏 {isEn ? 'Physical' : 'Bài thật'}
+                            </span>
+                          )}
+
+                          {hasAiConversation && (
+                            <span
+                              className="tarot-history-meta-pill is-ai"
+                              title={isEn ? 'Includes AI interpretation' : 'Có luận giải AI'}
+                            >
+                              ✨ AI
+                            </span>
+                          )}
+
+                          {statusMeta && statusMeta.id !== 'pending' && (
+                            <span className={`tarot-history-reflection-badge status-${statusMeta.id}`}>
                               {isEn ? statusMeta.labelEn : statusMeta.labelVi}
                             </span>
                           )}
                         </div>
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-muted)',
-                          }}
-                        >
+
+                        <span className="tarot-history-card-time">
                           {formatReadingTimestamp(item.timestamp || item.createdAt, language)}
                         </span>
                       </div>
 
                       {item.question && (
-                        <p
-                          style={{
-                            margin: '0 0 6px 0',
-                            fontSize: '0.8rem',
-                            color: 'var(--text-primary)',
-                            fontStyle: 'italic',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          "{item.question}"
-                        </p>
+                        <p className="tarot-history-card-question">"{item.question}"</p>
                       )}
 
                       {item._decryptionError && (
-                        <div role="status" style={{ margin: '0 0 6px', color: 'var(--accent-red)', fontSize: '0.72rem', fontWeight: 600 }}>
+                        <div role="status" className="tarot-history-decrypt-warn">
                           ⚠ Không giải mã được dữ liệu cũ · chỉ đọc
                         </div>
                       )}
 
                       {/* Cards Badges */}
                       {item.cards && item.cards.length > 0 && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: 4,
-                          }}
-                        >
+                        <div className="tarot-history-card-badges">
                           {item.cards.map((cHist, idx) => {
                             const card = tarotCards.find((tc) => tc.id === cHist.id);
                             const cardNameTrans = card ? card.name : cHist.name;
+                            const isRev = cHist.orientation === 'reversed';
                             return (
                               <span
                                 key={idx}
-                                style={{
-                                  fontSize: '0.68rem',
-                                  padding: '2px 6px',
-                                  borderRadius: 4,
-                                  background:
-                                    cHist.orientation === 'reversed'
-                                      ? 'rgba(235, 94, 85, 0.12)'
-                                      : 'rgba(229, 193, 88, 0.12)',
-                                  border:
-                                    cHist.orientation === 'reversed'
-                                      ? '1px solid rgba(235, 94, 85, 0.3)'
-                                      : '1px solid var(--border-gold)',
-                                  color:
-                                    cHist.orientation === 'reversed'
-                                      ? 'var(--accent-red)'
-                                      : 'var(--gold-color)',
-                                }}
+                                className={`tarot-history-card-chip${isRev ? ' is-reversed' : ''}`}
                               >
-                                {cardNameTrans}{' '}
-                                {cHist.orientation === 'reversed' ? '↓' : '↑'}
+                                {cardNameTrans} {isRev ? '↓' : '↑'}
                               </span>
                             );
                           })}
                         </div>
                       )}
+                    </div>
+
+                    {/* Right Action Buttons */}
+                    <div className="tarot-history-card-actions">
+                      <button
+                        type="button"
+                        className="tarot-history-action-btn"
+                        disabled={Boolean(item._decryptionError)}
+                        onClick={() => handleOpenDetail(item)}
+                      >
+                        <span aria-hidden="true">👁</span>
+                        <span>{isEn ? 'Details' : 'Chi tiết'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="tarot-history-action-btn is-primary"
+                        disabled={Boolean(item._decryptionError)}
+                        onClick={() => handleRestoreItem(item)}
+                      >
+                        <span aria-hidden="true">🔮</span>
+                        <span>{isEn ? 'Restore' : 'Mở lại'} ➔</span>
+                      </button>
                     </div>
                   </div>
                 );
